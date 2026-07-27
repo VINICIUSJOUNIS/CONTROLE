@@ -23,7 +23,7 @@ function applyFormat(value: number, format: ValueFormat) {
     case "rate":
       return `R$ ${value.toFixed(4)}`;
     default:
-      return value;
+      return String(value);
   }
 }
 
@@ -51,10 +51,14 @@ export function BarChartCard({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          <BarChart data={data} margin={{ top: 4, right: 12, left: -12, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: "var(--muted)" }} />
-            <YAxis tick={{ fontSize: 11, fill: "var(--muted)" }} />
+            <YAxis
+              tick={{ fontSize: 11, fill: "var(--muted)" }}
+              tickFormatter={(value) => applyFormat(Number(value), valueFormat)}
+              width={valueFormat === "currency" ? 68 : valueFormat === "rate" ? 84 : 40}
+            />
             <Tooltip
               contentStyle={{
                 background: "var(--card)",

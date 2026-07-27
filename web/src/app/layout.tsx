@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Sidebar } from "@/components/layout/sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Central de Tesouraria | Emprestimos & ACC",
+  title: "Controle | Emprestimos & ACC",
   description: "Plataforma de Tesouraria Corporativa para gestao de emprestimos e ACC",
+  icons: {
+    icon: "/nayme-logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -31,11 +33,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <div className="flex-1 min-w-0">{children}</div>
-          </div>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          {children}
         </ThemeProvider>
       </body>
     </html>

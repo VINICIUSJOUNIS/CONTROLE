@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMINISTRADOR
+  TESOURARIA
+  FINANCEIRO
+  CONSULTA
+}
+
+enum Side {
+  COMPRA
+  VENDA
+}
+
+enum ContractType {
+  NDF
+  TRAVA
+}
+
+enum HedgeStatus {
+  A_LIQUIDAR
+  LIQUIDADA
+}
+
+model Profile {
+  id        String   @id
+  email     String   @unique
+  name      String?
+  role      Role     @default(CONSULTA)
+  createdAt DateTime @default(now())
+
+  @@map("profiles")
+}
+
+model Corretora {
+  id              String          @id @default(uuid())
+  name            String          @unique
+  color           String
+  hedgeOperations HedgeOperation[]
+  createdAt       DateTime        @default(now())
+
+  @@map("corretoras")
+}
+
+model HedgeOperation {
+  id                    String       @id @default(uuid())
+  corretora             Corretora    @relation(fields: [corretoraId], references: [id])
+  corretoraId           String
+  contractType          ContractType @default(NDF)
+  side                  Side?
+  contractDate          DateTime     @db.Date
+  vencimento            DateTime     @db.Date
+  valorUsd              Decimal      @db.Decimal(18, 2)
+  liquidacaoParcialUsd  Decimal      @default(0) @db.Decimal(18, 2)
+  saldoUsd              Decimal      @default(0) @db.Decimal(18, 2)
+  nivelCompra           Decimal      @default(0) @db.Decimal(10, 4)
+  nivelVenda            Decimal      @default(0) @db.Decimal(10, 4)
+  desagioValor          Decimal      @default(0) @db.Decimal(18, 2)
+  totalReais            Decimal      @default(0) @db.Decimal(18, 2)
+  status                HedgeStatus  @default(A_LIQUIDAR)
+  observacao            String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@index([corretoraId])
+  @@index([status])
+  @@map("hedge_operations")
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Landmark,
@@ -9,8 +9,11 @@ import {
   Globe2,
   LineChart,
   Building2,
+  FileText,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
@@ -19,19 +22,32 @@ const navItems = [
   { href: "/cambial", label: "Dashboard Cambial", icon: Globe2 },
   { href: "/taxas", label: "Evolucao das Taxas", icon: LineChart },
   { href: "/bancos", label: "Comparativo de Bancos", icon: Building2 },
+  { href: "/relatorios", label: "Relatorios", icon: FileText },
 ];
 
-export function Sidebar() {
+const roleLabels: Record<string, string> = {
+  ADMINISTRADOR: "Administrador",
+  TESOURARIA: "Tesouraria",
+  FINANCEIRO: "Financeiro",
+  CONSULTA: "Consulta",
+};
+
+export function Sidebar({ profile }: { profile: { email: string; role: string } }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
-    <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+    <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden">
       <div className="flex items-center gap-2 px-5 py-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-          CT
-        </div>
         <div>
-          <p className="text-sm font-semibold text-white">Central de Tesouraria</p>
+          <p className="text-sm font-semibold text-white">Controle</p>
           <p className="text-xs text-sidebar-foreground/70">Emprestimos &amp; ACC</p>
         </div>
       </div>
@@ -56,8 +72,17 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="px-5 py-4 text-xs text-sidebar-foreground/50">
-        v0.1 - Prototipo com dados de exemplo
+      <div className="border-t border-white/10 px-4 py-3">
+        <p className="text-xs font-medium text-white">
+          {roleLabels[profile.role] ?? profile.role}
+        </p>
+        <button
+          onClick={handleSignOut}
+          className="mt-2 flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-white"
+        >
+          <LogOut size={13} />
+          Sair
+        </button>
       </div>
     </aside>
   );

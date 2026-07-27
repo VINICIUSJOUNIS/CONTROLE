@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMINISTRADOR
+  TESOURARIA
+  FINANCEIRO
+  CONSULTA
+}
+
+enum LoanStatus {
+  ATIVO
+  LIQUIDADO
+  EM_ATRASO
+}
+
+enum AccStatus {
+  EM_ABERTO
+  LIQUIDADO
+  EM_ATRASO
+}
+
+enum Indexer {
+  CDI
+  SOFR
+  PRE_FIXADO
+  SELIC
+}
+
+enum AmortizationSystem {
+  PRICE
+  SAC
+  BULLET
+}
+
+enum Currency {
+  USD
+  EUR
+}
+
+model Profile {
+  id        String   @id
+  email     String   @unique
+  name      String?
+  role      Role     @default(CONSULTA)
+  createdAt DateTime @default(now())
+
+  @@map("profiles")
+}
+
+model Bank {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  color         String
+  loans         Loan[]
+  accOperations AccOperation[]
+  createdAt     DateTime       @default(now())
+
+  @@map("banks")
+}
+
+model Loan {
+  id                 String             @id @default(uuid())
+  bank               Bank               @relation(fields: [bankId], references: [id])
+  bankId             String
+  contractNumber     String             @unique
+  purpose            String
+  contractedValue    Decimal            @db.Decimal(18, 2)
+  netValue           Decimal            @db.Decimal(18, 2)
+  interestRate       Decimal            @db.Decimal(6, 2)
+  indexer            Indexer
+  spread             Decimal            @db.Decimal(6, 2)
+  amortizationSystem AmortizationSystem
+  contractDate       DateTime           @db.Date
+  firstDueDate       DateTime           @db.Date
+  lastDueDate        DateTime           @db.Date
+  installments       Int
+  periodicity        String
+  guarantee          String
+  iof                Decimal            @default(0) @db.Decimal(18, 2)
+  hasInsurance       Boolean            @default(false)
+  insuranceCost      Decimal            @default(0) @db.Decimal(18, 2)
+  otherCosts         Decimal            @default(0) @db.Decimal(18, 2)
+  status             LoanStatus         @default(ATIVO)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([bankId])
+  @@index([status])
+  @@map("loans")
+}
+
+model AccOperation {
+  id                     String    @id @default(uuid())
+  bank                   Bank      @relation(fields: [bankId], references: [id])
+  bankId                 String
+  accNumber              String    @unique
+  exchangeContractNumber String
+  exporter               String
+  foreignClient          String
+  invoice                String
+  country                String
+  currency               Currency
+  invoiceValue           Decimal   @db.Decimal(18, 2)
+  contractedValueForeign Decimal   @db.Decimal(18, 2)
+  receivedValueBRL       Decimal   @db.Decimal(18, 2)
+  spotRate               Decimal   @db.Decimal(10, 4)
+  closingRate            Decimal   @db.Decimal(10, 4)
+  ptaxContracting        Decimal   @db.Decimal(10, 4)
+  ptaxSettlement         Decimal   @db.Decimal(10, 4)
+  contractDate           DateTime  @db.Date
+  closingDate            DateTime? @db.Date
+  settlementDate         DateTime  @db.Date
+  interestRate           Decimal   @db.Decimal(6, 2)
+  iof                    Decimal   @db.Decimal(18, 2)
+  exchangeSpread         Decimal   @db.Decimal(10, 4)
+  exchangeVariationValue Decimal   @default(0) @db.Decimal(10, 4)
+  bankFees               Decimal   @db.Decimal(18, 2)
+  hasInsurance           Boolean   @default(false)
+  insuranceCost          Decimal   @default(0) @db.Decimal(18, 2)
+  otherCosts             Decimal   @default(0) @db.Decimal(18, 2)
+  status                 AccStatus @default(EM_ABERTO)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([bankId])
+  @@index([status])
+  @@map("acc_operations")
+}
