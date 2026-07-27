@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCompactCurrency, formatDate } from "@/lib/format";
@@ -52,10 +51,6 @@ export function RelatorioContratosAbertos({
 
   return (
     <Card className="relative overflow-hidden print:break-inside-avoid print:border-0 print:shadow-none">
-      <div className="pointer-events-none absolute inset-0 hidden items-center justify-center print:flex">
-        <Image src="/nayme-logo.png" alt="" width={320} height={320} className="opacity-[0.08]" />
-      </div>
-
       <CardHeader className="relative flex flex-row items-center justify-between print:hidden">
         <CardTitle>{title}</CardTitle>
         <div className="flex gap-2">
