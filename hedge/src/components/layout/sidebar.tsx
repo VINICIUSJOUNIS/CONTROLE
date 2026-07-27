@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ShieldHalf, LogOut } from "lucide-react";
+import { ShieldHalf, LogOut, LayoutDashboard, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
-const navItems = [{ href: "/", label: "Operacoes de Hedge", icon: ShieldHalf }];
+const navItems = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/contratos", label: "Contratos", icon: FileText },
+  { href: "/operacoes-hedge", label: "Operacoes de Hedge", icon: ShieldHalf },
+];
 
 const roleLabels: Record<string, string> = {
   ADMINISTRADOR: "Administrador",

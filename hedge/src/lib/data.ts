@@ -47,6 +47,128 @@ export async function getHedgeOperations() {
   });
 }
 
+export async function getClientes() {
+  const clientes = await prisma.cliente.findMany({ orderBy: { name: "asc" } });
+  return clientes.map((c) => ({
+    id: c.id,
+    name: c.name,
+    city: c.city,
+    country: c.country,
+    email: c.email,
+    phone: c.phone,
+  }));
+}
+
+const dataFieldByStatus = {
+  CONTRATO_ASSINADO: "dataEstufagem",
+  PRE_EMBARQUE: "dataEstufagem",
+  ESTUFAGEM_PORTO: "dataEmbarque",
+  EMBARCADO: "dataChegada",
+  CARGA_DESTINO: "dataChegada",
+  CONTRATO_FINALIZADO: null,
+} as const;
+
+export type ContratoRow = Awaited<ReturnType<typeof getContratosExportacao>>[number];
+
+export async function getContratosExportacao() {
+  const contratos = await prisma.contratoExportacao.findMany({
+    include: { cliente: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return contratos.map((c) => {
+    const dataEstufagem = c.dataEstufagem ? toISODate(c.dataEstufagem) : null;
+    const dataEmbarque = c.dataEmbarque ? toISODate(c.dataEmbarque) : null;
+    const dataChegada = c.dataChegada ? toISODate(c.dataChegada) : null;
+
+    const relevantField = dataFieldByStatus[c.status];
+    const relevantDate =
+      relevantField === "dataEstufagem"
+        ? dataEstufagem
+        : relevantField === "dataEmbarque"
+          ? dataEmbarque
+          : relevantField === "dataChegada"
+            ? dataChegada
+            : null;
+
+    const prazoVencido = relevantDate ? relevantDate < toISODate(new Date()) : false;
+
+    return {
+      id: c.id,
+      contractNumber: c.contractNumber,
+      clienteId: c.clienteId,
+      clienteName: c.cliente.name,
+      clienteCity: c.cliente.city,
+      clienteCountry: c.cliente.country,
+      valorUsd: Number(c.valorUsd),
+      dataEstufagem,
+      dataEmbarque,
+      dataChegada,
+      status: c.status,
+      prazoVencido,
+      createdAt: c.createdAt.toISOString(),
+    };
+  });
+}
+
+export async function getExportDashboard() {
+  const contratos = await getContratosExportacao();
+
+  const totalContratos = contratos.length;
+  const emAndamento = contratos.filter((c) => c.status !== "CONTRATO_FINALIZADO").length;
+  const concluidos = contratos.filter((c) => c.status === "CONTRATO_FINALIZADO").length;
+  const vencidos = contratos.filter((c) => c.prazoVencido);
+  const prazosVencidos = vencidos.length;
+
+  const hoje = toISODate(new Date());
+  const msPerDay = 1000 * 60 * 60 * 24;
+
+  const prazosCriticos = vencidos
+    .map((c) => {
+      const relevantField = dataFieldByStatus[c.status];
+      const relevantDate =
+        relevantField === "dataEstufagem"
+          ? c.dataEstufagem
+          : relevantField === "dataEmbarque"
+            ? c.dataEmbarque
+            : relevantField === "dataChegada"
+              ? c.dataChegada
+              : null;
+      const diasAtraso = relevantDate
+        ? Math.floor((Date.parse(hoje) - Date.parse(relevantDate)) / msPerDay)
+        : 0;
+      return {
+        id: c.id,
+        contractNumber: c.contractNumber,
+        clienteName: c.clienteName,
+        data: relevantDate,
+        diasAtraso,
+      };
+    })
+    .sort((a, b) => (a.data ?? "").localeCompare(b.data ?? ""))
+    .slice(0, 8);
+
+  const contratosRecentes = [...contratos]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 8)
+    .map((c) => ({
+      id: c.id,
+      contractNumber: c.contractNumber,
+      clienteName: c.clienteName,
+      clienteCountry: c.clienteCountry,
+      status: c.status,
+    }));
+
+  return {
+    totalContratos,
+    emAndamento,
+    concluidos,
+    prazosVencidos,
+    prazosCriticos,
+    contratosRecentes,
+  };
+}
+
 export async function getHedgeKpis() {
   const operations = await getHedgeOperations();
   const abertas = operations.filter((o) => o.status === "A_LIQUIDAR");

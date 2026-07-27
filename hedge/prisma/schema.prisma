@@ -76,3 +76,43 @@ model HedgeOperation {
   @@index([status])
   @@map("hedge_operations")
 }
+
+enum StatusContrato {
+  CONTRATO_ASSINADO
+  PRE_EMBARQUE
+  ESTUFAGEM_PORTO
+  EMBARCADO
+  CARGA_DESTINO
+  CONTRATO_FINALIZADO
+}
+
+model Cliente {
+  id        String              @id @default(uuid())
+  name      String              @unique
+  city      String?
+  country   String
+  email     String?
+  phone     String?
+  contratos ContratoExportacao[]
+  createdAt DateTime            @default(now())
+
+  @@map("clientes")
+}
+
+model ContratoExportacao {
+  id             String          @id @default(uuid())
+  contractNumber String          @unique
+  cliente        Cliente         @relation(fields: [clienteId], references: [id])
+  clienteId      String
+  valorUsd       Decimal         @default(0) @db.Decimal(18, 2)
+  dataEstufagem  DateTime?       @db.Date
+  dataEmbarque   DateTime?       @db.Date
+  dataChegada    DateTime?       @db.Date
+  status         StatusContrato  @default(CONTRATO_ASSINADO)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([clienteId])
+  @@index([status])
+  @@map("contratos_exportacao")
+}
