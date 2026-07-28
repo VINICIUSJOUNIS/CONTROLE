@@ -2,7 +2,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getExportDashboard } from "@/lib/data";
-import { formatDate } from "@/lib/format";
+import { formatCompactCurrency, formatDate } from "@/lib/format";
 import { FileText, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
@@ -12,6 +12,8 @@ const statusLabels: Record<string, string> = {
   EMBARCADO: "Embarcado",
   CARGA_DESTINO: "Carga no destino",
   CONTRATO_FINALIZADO: "Contrato finalizado",
+  A_LIQUIDAR: "A liquidar",
+  LIQUIDADA: "Liquidada",
 };
 
 const statusVariant: Record<string, "default" | "success" | "danger" | "warning" | "neutral"> = {
@@ -21,6 +23,8 @@ const statusVariant: Record<string, "default" | "success" | "danger" | "warning"
   EMBARCADO: "warning",
   CARGA_DESTINO: "warning",
   CONTRATO_FINALIZADO: "success",
+  A_LIQUIDAR: "warning",
+  LIQUIDADA: "success",
 };
 
 export default async function DashboardPage() {
@@ -65,6 +69,49 @@ export default async function DashboardPage() {
             </Card>
           ))}
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Proximos Vencimentos</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto p-0">
+            <table className="w-full whitespace-nowrap text-xs">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-muted">
+                  <th className="px-4 py-3 font-medium">Tipo</th>
+                  <th className="px-4 py-3 font-medium">Contrato</th>
+                  <th className="px-4 py-3 font-medium">Banco</th>
+                  <th className="px-4 py-3 font-medium">Valor</th>
+                  <th className="px-4 py-3 font-medium">Vencimento</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dashboard.proximosVencimentos.map((item) => (
+                  <tr key={item.id} className="border-b border-border last:border-0 hover:bg-border/20">
+                    <td className="px-4 py-2.5">{item.tipo}</td>
+                    <td className="px-4 py-2.5 font-medium">{item.contrato}</td>
+                    <td className="px-4 py-2.5">{item.banco}</td>
+                    <td className="px-4 py-2.5">{formatCompactCurrency(item.valor, item.currency)}</td>
+                    <td className="px-4 py-2.5">{formatDate(item.vencimento)}</td>
+                    <td className="px-4 py-2.5">
+                      <Badge variant={statusVariant[item.status] ?? "default"}>
+                        {statusLabels[item.status] ?? item.status}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+                {dashboard.proximosVencimentos.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-muted">
+                      Nenhum contrato com vencimento futuro.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>

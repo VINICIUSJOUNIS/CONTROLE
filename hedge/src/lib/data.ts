@@ -210,6 +210,8 @@ export async function getExportDashboard() {
       status: c.status,
     }));
 
+  const proximosVencimentos = await getProximosVencimentos(contratos);
+
   return {
     totalContratos,
     emAndamento,
@@ -217,7 +219,58 @@ export async function getExportDashboard() {
     prazosVencidos,
     prazosCriticos,
     contratosRecentes,
+    proximosVencimentos,
   };
+}
+
+const sideLabels: Record<string, string> = { COMPRA: "Compra", VENDA: "Venda" };
+
+export type ProximoVencimento = Awaited<ReturnType<typeof getProximosVencimentos>>[number];
+
+async function getProximosVencimentos(contratos: ContratoRow[]) {
+  const operations = await getHedgeOperations();
+
+  const doContrato = contratos
+    .filter((c) => c.status !== "CONTRATO_FINALIZADO" && !c.prazoVencido)
+    .map((c) => {
+      const relevantField = dataFieldByStatus[c.status];
+      const vencimento =
+        relevantField === "dataEstufagem"
+          ? c.dataEstufagem
+          : relevantField === "dataEmbarque"
+            ? c.dataEmbarque
+            : relevantField === "dataChegada"
+              ? c.dataChegada
+              : null;
+      return {
+        id: c.id,
+        tipo: "Exportacao" as const,
+        contrato: c.contractNumber,
+        banco: c.corretoraName ?? "-",
+        valor: c.valorUsd,
+        currency: "USD" as const,
+        vencimento,
+        status: c.status as string,
+      };
+    })
+    .filter((row): row is typeof row & { vencimento: string } => row.vencimento !== null);
+
+  const daOperacao = operations
+    .filter((o) => o.status === "A_LIQUIDAR" && o.saldoUsd !== 0)
+    .map((o) => ({
+      id: o.id,
+      tipo: "Operacao Hedge" as const,
+      contrato: `${o.contractType}${o.side ? ` ${sideLabels[o.side] ?? o.side}` : ""}`,
+      banco: o.corretoraName,
+      valor: o.saldoUsd,
+      currency: "USD" as const,
+      vencimento: o.vencimento,
+      status: o.status as string,
+    }));
+
+  return [...doContrato, ...daOperacao]
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento))
+    .slice(0, 8);
 }
 
 export async function getHedgeKpis() {
