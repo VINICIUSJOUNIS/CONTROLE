@@ -1,5 +1,5 @@
 import { Topbar } from "@/components/layout/topbar";
-import { ContratosKanban } from "@/components/contratos/contratos-kanban";
+import { ContratosTable } from "@/components/contratos/contratos-table";
 import { getClientes, getContratosExportacao, getCorretoras } from "@/lib/data";
 
 export default async function ContratosPage() {
@@ -11,9 +11,9 @@ export default async function ContratosPage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Contratos" subtitle="Gerencie seus contratos de exportacao" />
+      <Topbar title="Contratos" subtitle="Cadastro completo dos contratos de exportacao" />
       <div className="space-y-6 p-6">
-        <ContratosKanban clientes={clientes} contratos={contratos} corretoras={corretoras} />
+        <ContratosTable clientes={clientes} contratos={contratos} corretoras={corretoras} />
       </div>
     </div>
   );

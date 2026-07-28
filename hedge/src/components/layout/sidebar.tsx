@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ShieldHalf, LogOut, LayoutDashboard, FileText, Globe2 } from "lucide-react";
+import { ShieldHalf, LogOut, LayoutDashboard, FileText, Globe2, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/contratos", label: "Contratos", icon: FileText },
+  { href: "/mesa-operacao", label: "Mesa de Operacao", icon: Workflow },
   { href: "/mapa", label: "Mapa de Exportacao", icon: Globe2 },
   { href: "/operacoes-hedge", label: "Operacoes de Hedge", icon: ShieldHalf },
 ];

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -18,74 +18,16 @@ import {
 } from "@/app/(dashboard)/contratos/actions";
 import { NovoCliente } from "@/components/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/corretoras/nova-corretora";
-import { Plus, Trash2, MapPin, Calendar } from "lucide-react";
-
-type Cliente = { id: string; name: string; city: string | null; country: string };
-type Corretora = { id: string; name: string; color: string };
-
-const statusOrder: StatusContratoValue[] = [
-  "CONTRATO_ASSINADO",
-  "PRE_EMBARQUE",
-  "ESTUFAGEM_PORTO",
-  "EMBARCADO",
-  "CARGA_DESTINO",
-  "CONTRATO_FINALIZADO",
-];
-
-const statusLabels: Record<StatusContratoValue, string> = {
-  CONTRATO_ASSINADO: "Contrato assinado",
-  PRE_EMBARQUE: "Pre embarque",
-  ESTUFAGEM_PORTO: "Estufagem/Porto",
-  EMBARCADO: "Embarcado",
-  CARGA_DESTINO: "Carga no destino",
-  CONTRATO_FINALIZADO: "Contrato finalizado",
-};
-
-const relevantDateField: Record<StatusContratoValue, "dataEstufagem" | "dataEmbarque" | "dataChegada"> = {
-  CONTRATO_ASSINADO: "dataEstufagem",
-  PRE_EMBARQUE: "dataEstufagem",
-  ESTUFAGEM_PORTO: "dataEmbarque",
-  EMBARCADO: "dataChegada",
-  CARGA_DESTINO: "dataChegada",
-  CONTRATO_FINALIZADO: "dataChegada",
-};
-
-const dateFieldLabels: Record<"dataEstufagem" | "dataEmbarque" | "dataChegada", string> = {
-  dataEstufagem: "Estufagem",
-  dataEmbarque: "Embarque",
-  dataChegada: "Chegada",
-};
-
-const despesaLabels: Record<keyof DespesasContratoInput, string> = {
-  despachante: "Despachante",
-  certificados: "Certificados",
-  freteTerrestre: "Frete terrestre",
-  freteMaritimo: "Frete maritimo",
-  taxasLocaisArmador: "Taxas locais por armador",
-  fumigacao: "Fumigacao",
-  embalagens: "Embalagens",
-  inspecao: "Inspecao",
-  despesasPortuarias: "Despesas portuarias",
-  armazem: "Armazem",
-  envioAmostra: "Envio de amostra",
-  marcacaoSacaria: "Marcacao de sacaria",
-  envioDocumentacao: "Envio de documentacao (Pierdoc/Cliente)",
-  telexRelease: "Telex release",
-  legalizacao: "Legalizacao",
-  financiamentoRts: "Financiamento RTS",
-  diariaContainerDetention: "Diaria de container / Detention",
-  despesasRedex: "Despesas com Redex",
-  estadiaContainer: "Estadia de container",
-};
-
-const despesaKeys = Object.keys(despesaLabels) as (keyof DespesasContratoInput)[];
-
-function emptyDespesasForm(): Record<keyof DespesasContratoInput, string> {
-  return Object.fromEntries(despesaKeys.map((k) => [k, "0"])) as Record<
-    keyof DespesasContratoInput,
-    string
-  >;
-}
+import {
+  Cliente,
+  Corretora,
+  statusOrder,
+  statusLabels,
+  despesaLabels,
+  despesaKeys,
+  emptyDespesasForm,
+} from "@/lib/contrato-shared";
+import { Plus, Trash2, Pencil } from "lucide-react";
 
 function emptyForm(defaultClienteId: string, defaultCountry: string) {
   return {
@@ -119,7 +61,7 @@ function formFromRow(row: ContratoRow) {
   };
 }
 
-export function ContratosKanban({
+export function ContratosTable({
   clientes,
   contratos,
   corretoras,
@@ -131,6 +73,7 @@ export function ContratosKanban({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [clienteFilter, setClienteFilter] = useState("todos");
+  const [statusFilter, setStatusFilter] = useState("todos");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -141,6 +84,7 @@ export function ContratosKanban({
     const term = search.trim().toLowerCase();
     return contratos.filter((c) => {
       if (clienteFilter !== "todos" && c.clienteId !== clienteFilter) return false;
+      if (statusFilter !== "todos" && c.status !== statusFilter) return false;
       if (term) {
         const matches =
           c.contractNumber.toLowerCase().includes(term) || c.clienteName.toLowerCase().includes(term);
@@ -148,14 +92,7 @@ export function ContratosKanban({
       }
       return true;
     });
-  }, [contratos, clienteFilter, search]);
-
-  const columns = useMemo(() => {
-    return statusOrder.map((status) => ({
-      status,
-      items: filtered.filter((c) => c.status === status),
-    }));
-  }, [filtered]);
+  }, [contratos, clienteFilter, statusFilter, search]);
 
   function openCreate() {
     setEditingId(null);
@@ -244,6 +181,14 @@ export function ContratosKanban({
           {clientes.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
+            </option>
+          ))}
+        </Select>
+        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto">
+          <option value="todos">Todas as etapas</option>
+          {statusOrder.map((status) => (
+            <option key={status} value={status}>
+              {statusLabels[status]}
             </option>
           ))}
         </Select>
@@ -404,56 +349,74 @@ export function ContratosKanban({
         </Dialog>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {columns.map((column) => (
-          <div key={column.status} className="w-72 shrink-0 space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h3 className="text-sm font-medium">{statusLabels[column.status]}</h3>
-              <Badge variant="neutral">{column.items.length}</Badge>
-            </div>
-            <div className="space-y-3">
-              {column.items.map((row) => {
-                const dateField = relevantDateField[row.status];
-                const dateValue = row[dateField];
-                return (
-                  <Card
-                    key={row.id}
-                    className="cursor-pointer p-3 hover:border-primary"
-                    onClick={() => openEdit(row)}
-                  >
-                    <p className="font-semibold">{row.contractNumber}</p>
-                    <p className="text-sm">{row.clienteName}</p>
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
-                      <MapPin size={12} />
-                      {row.country}
-                    </p>
-                    {row.corretoraName && (
-                      <p className="text-xs text-muted">Corretor: {row.corretoraName}</p>
+      <Card>
+        <CardContent className="overflow-x-auto p-0">
+          <table className="w-full whitespace-nowrap text-xs">
+            <thead>
+              <tr className="border-b border-border text-left text-xs text-muted">
+                <th className="px-4 py-3 font-medium">Contrato</th>
+                <th className="px-4 py-3 font-medium">Cliente</th>
+                <th className="px-4 py-3 font-medium">Corretor</th>
+                <th className="px-4 py-3 font-medium">Pais</th>
+                <th className="px-4 py-3 font-medium">Valor US$</th>
+                <th className="px-4 py-3 font-medium">Despesas (R$)</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Estufagem</th>
+                <th className="px-4 py-3 font-medium">Embarque</th>
+                <th className="px-4 py-3 font-medium">Chegada</th>
+                <th className="px-4 py-3 font-medium" />
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((row) => (
+                <tr key={row.id} className="border-b border-border last:border-0 hover:bg-border/20">
+                  <td className="px-4 py-2.5 font-medium">{row.contractNumber}</td>
+                  <td className="px-4 py-2.5">{row.clienteName}</td>
+                  <td className="px-4 py-2.5">{row.corretoraName ?? <span className="text-muted">-</span>}</td>
+                  <td className="px-4 py-2.5">{row.country || <span className="text-muted">-</span>}</td>
+                  <td className="px-4 py-2.5">{formatCompactCurrency(row.valorUsd, "USD")}</td>
+                  <td className="px-4 py-2.5">
+                    {row.custoTotalDespesas > 0 ? (
+                      formatCompactCurrency(row.custoTotalDespesas)
+                    ) : (
+                      <span className="text-muted">-</span>
                     )}
-                    <p className="mt-2 text-sm font-medium text-primary">
-                      {formatCompactCurrency(row.valorUsd, "USD")}
-                    </p>
-                    {row.custoTotalDespesas > 0 && (
-                      <p className="text-xs text-muted">
-                        Despesas: {formatCompactCurrency(row.custoTotalDespesas)}
-                      </p>
-                    )}
-                    <p className="mt-1 flex items-center gap-1 text-xs text-muted">
-                      <Calendar size={12} />
-                      {dateValue
-                        ? `${dateFieldLabels[dateField]}: ${formatDate(dateValue)}`
-                        : `${dateFieldLabels[dateField]}: sem data`}
-                    </p>
-                  </Card>
-                );
-              })}
-              {column.items.length === 0 && (
-                <p className="px-1 text-xs text-muted">Nenhum contrato nesta etapa.</p>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <Badge variant={row.status === "CONTRATO_FINALIZADO" ? "success" : "neutral"}>
+                      {statusLabels[row.status]}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    {row.dataEstufagem ? formatDate(row.dataEstufagem) : <span className="text-muted">-</span>}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    {row.dataEmbarque ? formatDate(row.dataEmbarque) : <span className="text-muted">-</span>}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    {row.dataChegada ? formatDate(row.dataChegada) : <span className="text-muted">-</span>}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <button
+                      onClick={() => openEdit(row)}
+                      className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={11} className="px-4 py-6 text-center text-muted">
+                    Nenhum contrato encontrado.
+                  </td>
+                </tr>
               )}
-            </div>
-          </div>
-        ))}
-      </div>
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
