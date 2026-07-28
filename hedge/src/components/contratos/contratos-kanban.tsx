@@ -7,18 +7,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
-import { formatCompactCurrency, formatDate } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
 import { ContratoRow } from "@/lib/data";
 import {
   createContrato,
   deleteContrato,
   updateContrato,
   StatusContratoValue,
+  DespesasContratoInput,
 } from "@/app/(dashboard)/contratos/actions";
 import { NovoCliente } from "@/components/clientes/novo-cliente";
+import { NovaCorretora } from "@/components/corretoras/nova-corretora";
 import { Plus, Trash2, MapPin, Calendar } from "lucide-react";
 
 type Cliente = { id: string; name: string; city: string | null; country: string };
+type Corretora = { id: string; name: string; color: string };
 
 const statusOrder: StatusContratoValue[] = [
   "CONTRATO_ASSINADO",
@@ -53,15 +56,49 @@ const dateFieldLabels: Record<"dataEstufagem" | "dataEmbarque" | "dataChegada", 
   dataChegada: "Chegada",
 };
 
-function emptyForm(defaultClienteId: string) {
+const despesaLabels: Record<keyof DespesasContratoInput, string> = {
+  despachante: "Despachante",
+  certificados: "Certificados",
+  freteTerrestre: "Frete terrestre",
+  freteMaritimo: "Frete maritimo",
+  taxasLocaisArmador: "Taxas locais por armador",
+  fumigacao: "Fumigacao",
+  embalagens: "Embalagens",
+  inspecao: "Inspecao",
+  despesasPortuarias: "Despesas portuarias",
+  armazem: "Armazem",
+  envioAmostra: "Envio de amostra",
+  marcacaoSacaria: "Marcacao de sacaria",
+  envioDocumentacao: "Envio de documentacao (Pierdoc/Cliente)",
+  telexRelease: "Telex release",
+  legalizacao: "Legalizacao",
+  financiamentoRts: "Financiamento RTS",
+  diariaContainerDetention: "Diaria de container / Detention",
+  despesasRedex: "Despesas com Redex",
+  estadiaContainer: "Estadia de container",
+};
+
+const despesaKeys = Object.keys(despesaLabels) as (keyof DespesasContratoInput)[];
+
+function emptyDespesasForm(): Record<keyof DespesasContratoInput, string> {
+  return Object.fromEntries(despesaKeys.map((k) => [k, "0"])) as Record<
+    keyof DespesasContratoInput,
+    string
+  >;
+}
+
+function emptyForm(defaultClienteId: string, defaultCountry: string) {
   return {
     contractNumber: "",
     clienteId: defaultClienteId,
+    corretoraId: "",
+    country: defaultCountry,
     valorUsd: "",
     dataEstufagem: "",
     dataEmbarque: "",
     dataChegada: "",
     status: "CONTRATO_ASSINADO" as StatusContratoValue,
+    despesas: emptyDespesasForm(),
   };
 }
 
@@ -69,20 +106,27 @@ function formFromRow(row: ContratoRow) {
   return {
     contractNumber: row.contractNumber,
     clienteId: row.clienteId,
+    corretoraId: row.corretoraId ?? "",
+    country: row.country,
     valorUsd: String(row.valorUsd),
     dataEstufagem: row.dataEstufagem ?? "",
     dataEmbarque: row.dataEmbarque ?? "",
     dataChegada: row.dataChegada ?? "",
     status: row.status as StatusContratoValue,
+    despesas: Object.fromEntries(
+      despesaKeys.map((k) => [k, String(row.despesas[k])])
+    ) as Record<keyof DespesasContratoInput, string>,
   };
 }
 
 export function ContratosKanban({
   clientes,
   contratos,
+  corretoras,
 }: {
   clientes: Cliente[];
   contratos: ContratoRow[];
+  corretoras: Corretora[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -91,7 +135,7 @@ export function ContratosKanban({
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm(clientes[0]?.id ?? ""));
+  const [form, setForm] = useState(emptyForm(clientes[0]?.id ?? "", clientes[0]?.country ?? ""));
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -115,7 +159,7 @@ export function ContratosKanban({
 
   function openCreate() {
     setEditingId(null);
-    setForm(emptyForm(clientes[0]?.id ?? ""));
+    setForm(emptyForm(clientes[0]?.id ?? "", clientes[0]?.country ?? ""));
     setError(null);
     setOpen(true);
   }
@@ -126,6 +170,17 @@ export function ContratosKanban({
     setError(null);
     setOpen(true);
   }
+
+  function handleClienteChange(clienteId: string) {
+    const cliente = clientes.find((c) => c.id === clienteId);
+    setForm({ ...form, clienteId, country: cliente?.country ?? form.country });
+  }
+
+  function handleDespesaChange(key: keyof DespesasContratoInput, value: string) {
+    setForm({ ...form, despesas: { ...form.despesas, [key]: value } });
+  }
+
+  const totalDespesas = despesaKeys.reduce((sum, k) => sum + (Number(form.despesas[k]) || 0), 0);
 
   function handleSave() {
     if (!form.contractNumber.trim()) {
@@ -141,14 +196,20 @@ export function ContratosKanban({
       return;
     }
     setError(null);
+    const despesasPayload = Object.fromEntries(
+      despesaKeys.map((k) => [k, Number(form.despesas[k]) || 0])
+    ) as DespesasContratoInput;
     const payload = {
       contractNumber: form.contractNumber.trim(),
       clienteId: form.clienteId,
+      corretoraId: form.corretoraId || null,
+      country: form.country.trim(),
       valorUsd: Number(form.valorUsd) || 0,
       dataEstufagem: form.dataEstufagem,
       dataEmbarque: form.dataEmbarque,
       dataChegada: form.dataChegada,
       status: form.status,
+      despesas: despesasPayload,
     };
     startTransition(async () => {
       try {
@@ -214,10 +275,7 @@ export function ContratosKanban({
               <div>
                 <Label>Cliente</Label>
                 <div className="flex gap-2">
-                  <Select
-                    value={form.clienteId}
-                    onChange={(e) => setForm({ ...form, clienteId: e.target.value })}
-                  >
+                  <Select value={form.clienteId} onChange={(e) => handleClienteChange(e.target.value)}>
                     {clientes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -228,7 +286,33 @@ export function ContratosKanban({
                 </div>
               </div>
 
+              <div>
+                <Label>Corretor</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={form.corretoraId}
+                    onChange={(e) => setForm({ ...form, corretoraId: e.target.value })}
+                  >
+                    <option value="">Sem corretor definido</option>
+                    {corretoras.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <NovaCorretora compact />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Pais</Label>
+                  <Input
+                    value={form.country}
+                    onChange={(e) => setForm({ ...form, country: e.target.value })}
+                    placeholder="Ex: Estados Unidos"
+                  />
+                </div>
                 <div>
                   <Label>Valor US$</Label>
                   <Input
@@ -237,21 +321,20 @@ export function ContratosKanban({
                     onChange={(e) => setForm({ ...form, valorUsd: e.target.value })}
                   />
                 </div>
-                <div>
-                  <Label>Status</Label>
-                  <Select
-                    value={form.status}
-                    onChange={(e) =>
-                      setForm({ ...form, status: e.target.value as StatusContratoValue })
-                    }
-                  >
-                    {statusOrder.map((status) => (
-                      <option key={status} value={status}>
-                        {statusLabels[status]}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
+              </div>
+
+              <div>
+                <Label>Status</Label>
+                <Select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value as StatusContratoValue })}
+                >
+                  {statusOrder.map((status) => (
+                    <option key={status} value={status}>
+                      {statusLabels[status]}
+                    </option>
+                  ))}
+                </Select>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
@@ -278,6 +361,26 @@ export function ContratosKanban({
                     value={form.dataChegada}
                     onChange={(e) => setForm({ ...form, dataChegada: e.target.value })}
                   />
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-medium">Despesas do contrato (R$)</p>
+                  <p className="text-sm font-semibold text-primary">{formatCurrency(totalDespesas)}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {despesaKeys.map((key) => (
+                    <div key={key}>
+                      <Label>{despesaLabels[key]}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={form.despesas[key]}
+                        onChange={(e) => handleDespesaChange(key, e.target.value)}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -322,11 +425,19 @@ export function ContratosKanban({
                     <p className="text-sm">{row.clienteName}</p>
                     <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
                       <MapPin size={12} />
-                      {row.clienteCountry}
+                      {row.country}
                     </p>
+                    {row.corretoraName && (
+                      <p className="text-xs text-muted">Corretor: {row.corretoraName}</p>
+                    )}
                     <p className="mt-2 text-sm font-medium text-primary">
                       {formatCompactCurrency(row.valorUsd, "USD")}
                     </p>
+                    {row.custoTotalDespesas > 0 && (
+                      <p className="text-xs text-muted">
+                        Despesas: {formatCompactCurrency(row.custoTotalDespesas)}
+                      </p>
+                    )}
                     <p className="mt-1 flex items-center gap-1 text-xs text-muted">
                       <Calendar size={12} />
                       {dateValue

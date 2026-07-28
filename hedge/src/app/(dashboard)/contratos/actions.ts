@@ -12,14 +12,39 @@ export type StatusContratoValue =
   | "CARGA_DESTINO"
   | "CONTRATO_FINALIZADO";
 
+export type DespesasContratoInput = {
+  despachante: number;
+  certificados: number;
+  freteTerrestre: number;
+  freteMaritimo: number;
+  taxasLocaisArmador: number;
+  fumigacao: number;
+  embalagens: number;
+  inspecao: number;
+  despesasPortuarias: number;
+  armazem: number;
+  envioAmostra: number;
+  marcacaoSacaria: number;
+  envioDocumentacao: number;
+  telexRelease: number;
+  legalizacao: number;
+  financiamentoRts: number;
+  diariaContainerDetention: number;
+  despesasRedex: number;
+  estadiaContainer: number;
+};
+
 export type ContratoFormInput = {
   contractNumber: string;
   clienteId: string;
+  corretoraId: string | null;
+  country: string;
   valorUsd: number;
   dataEstufagem: string;
   dataEmbarque: string;
   dataChegada: string;
   status: StatusContratoValue;
+  despesas: DespesasContratoInput;
 };
 
 function revalidateAll() {
@@ -32,11 +57,14 @@ export async function createContrato(input: ContratoFormInput) {
     data: {
       contractNumber: input.contractNumber,
       clienteId: input.clienteId,
+      corretoraId: input.corretoraId,
+      country: input.country,
       valorUsd: input.valorUsd,
       dataEstufagem: input.dataEstufagem ? parseLocalDate(input.dataEstufagem) : null,
       dataEmbarque: input.dataEmbarque ? parseLocalDate(input.dataEmbarque) : null,
       dataChegada: input.dataChegada ? parseLocalDate(input.dataChegada) : null,
       status: input.status,
+      ...input.despesas,
     },
   });
 
@@ -49,11 +77,14 @@ export async function updateContrato(id: string, input: ContratoFormInput) {
     data: {
       contractNumber: input.contractNumber,
       clienteId: input.clienteId,
+      corretoraId: input.corretoraId,
+      country: input.country,
       valorUsd: input.valorUsd,
       dataEstufagem: input.dataEstufagem ? parseLocalDate(input.dataEstufagem) : null,
       dataEmbarque: input.dataEmbarque ? parseLocalDate(input.dataEmbarque) : null,
       dataChegada: input.dataChegada ? parseLocalDate(input.dataChegada) : null,
       status: input.status,
+      ...input.despesas,
     },
   });
 

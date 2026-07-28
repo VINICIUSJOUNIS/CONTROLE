@@ -70,9 +70,31 @@ const dataFieldByStatus = {
 
 export type ContratoRow = Awaited<ReturnType<typeof getContratosExportacao>>[number];
 
+const despesaFields = [
+  "despachante",
+  "certificados",
+  "freteTerrestre",
+  "freteMaritimo",
+  "taxasLocaisArmador",
+  "fumigacao",
+  "embalagens",
+  "inspecao",
+  "despesasPortuarias",
+  "armazem",
+  "envioAmostra",
+  "marcacaoSacaria",
+  "envioDocumentacao",
+  "telexRelease",
+  "legalizacao",
+  "financiamentoRts",
+  "diariaContainerDetention",
+  "despesasRedex",
+  "estadiaContainer",
+] as const;
+
 export async function getContratosExportacao() {
   const contratos = await prisma.contratoExportacao.findMany({
-    include: { cliente: true },
+    include: { cliente: true, corretora: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -93,6 +115,13 @@ export async function getContratosExportacao() {
 
     const prazoVencido = relevantDate ? relevantDate < toISODate(new Date()) : false;
 
+    const despesas = Object.fromEntries(
+      despesaFields.map((field) => [field, Number(c[field])])
+    ) as Record<(typeof despesaFields)[number], number>;
+    const custoTotalDespesas = Number(
+      despesaFields.reduce((sum, field) => sum + Number(c[field]), 0).toFixed(2)
+    );
+
     return {
       id: c.id,
       contractNumber: c.contractNumber,
@@ -100,6 +129,9 @@ export async function getContratosExportacao() {
       clienteName: c.cliente.name,
       clienteCity: c.cliente.city,
       clienteCountry: c.cliente.country,
+      country: c.country || c.cliente.country,
+      corretoraId: c.corretoraId,
+      corretoraName: c.corretora?.name ?? null,
       valorUsd: Number(c.valorUsd),
       dataEstufagem,
       dataEmbarque,
@@ -107,8 +139,27 @@ export async function getContratosExportacao() {
       status: c.status,
       prazoVencido,
       createdAt: c.createdAt.toISOString(),
+      despesas,
+      custoTotalDespesas,
     };
   });
+}
+
+export type PaisExportacao = { country: string; totalContratos: number; valorUsd: number };
+
+export async function getExportacaoPorPais(): Promise<PaisExportacao[]> {
+  const contratos = await getContratosExportacao();
+  const porPais = new Map<string, PaisExportacao>();
+
+  for (const c of contratos) {
+    if (!c.country) continue;
+    const atual = porPais.get(c.country) ?? { country: c.country, totalContratos: 0, valorUsd: 0 };
+    atual.totalContratos += 1;
+    atual.valorUsd += c.valorUsd;
+    porPais.set(c.country, atual);
+  }
+
+  return Array.from(porPais.values()).sort((a, b) => b.valorUsd - a.valorUsd);
 }
 
 export async function getExportDashboard() {
@@ -155,7 +206,7 @@ export async function getExportDashboard() {
       id: c.id,
       contractNumber: c.contractNumber,
       clienteName: c.clienteName,
-      clienteCountry: c.clienteCountry,
+      country: c.country,
       status: c.status,
     }));
 

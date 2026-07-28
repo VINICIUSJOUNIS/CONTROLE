@@ -43,11 +43,12 @@ model Profile {
 }
 
 model Corretora {
-  id              String          @id @default(uuid())
-  name            String          @unique
+  id              String               @id @default(uuid())
+  name            String               @unique
   color           String
   hedgeOperations HedgeOperation[]
-  createdAt       DateTime        @default(now())
+  contratos       ContratoExportacao[]
+  createdAt       DateTime             @default(now())
 
   @@map("corretoras")
 }
@@ -104,11 +105,36 @@ model ContratoExportacao {
   contractNumber String          @unique
   cliente        Cliente         @relation(fields: [clienteId], references: [id])
   clienteId      String
+  corretora      Corretora?      @relation(fields: [corretoraId], references: [id])
+  corretoraId    String?
+  country        String          @default("")
   valorUsd       Decimal         @default(0) @db.Decimal(18, 2)
   dataEstufagem  DateTime?       @db.Date
   dataEmbarque   DateTime?       @db.Date
   dataChegada    DateTime?       @db.Date
   status         StatusContrato  @default(CONTRATO_ASSINADO)
+
+  // Despesas do contrato (R$) — compoe o custo final da operacao de exportacao.
+  despachante              Decimal @default(0) @db.Decimal(18, 2)
+  certificados             Decimal @default(0) @db.Decimal(18, 2)
+  freteTerrestre           Decimal @default(0) @db.Decimal(18, 2)
+  freteMaritimo            Decimal @default(0) @db.Decimal(18, 2)
+  taxasLocaisArmador       Decimal @default(0) @db.Decimal(18, 2)
+  fumigacao                Decimal @default(0) @db.Decimal(18, 2)
+  embalagens               Decimal @default(0) @db.Decimal(18, 2)
+  inspecao                 Decimal @default(0) @db.Decimal(18, 2)
+  despesasPortuarias       Decimal @default(0) @db.Decimal(18, 2)
+  armazem                  Decimal @default(0) @db.Decimal(18, 2)
+  envioAmostra             Decimal @default(0) @db.Decimal(18, 2)
+  marcacaoSacaria          Decimal @default(0) @db.Decimal(18, 2)
+  envioDocumentacao        Decimal @default(0) @db.Decimal(18, 2)
+  telexRelease             Decimal @default(0) @db.Decimal(18, 2)
+  legalizacao              Decimal @default(0) @db.Decimal(18, 2)
+  financiamentoRts         Decimal @default(0) @db.Decimal(18, 2)
+  diariaContainerDetention Decimal @default(0) @db.Decimal(18, 2)
+  despesasRedex            Decimal @default(0) @db.Decimal(18, 2)
+  estadiaContainer         Decimal @default(0) @db.Decimal(18, 2)
+
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 

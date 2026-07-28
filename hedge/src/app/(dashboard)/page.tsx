@@ -99,7 +99,7 @@ export default async function DashboardPage() {
                   <div>
                     <p className="text-sm font-medium">{item.contractNumber}</p>
                     <p className="text-xs text-muted">
-                      {item.clienteName} - {item.clienteCountry}
+                      {item.clienteName} - {item.country}
                     </p>
                   </div>
                   <Badge variant={statusVariant[item.status] ?? "default"}>
