@@ -114,6 +114,19 @@ model ContratoExportacao {
   dataChegada    DateTime?       @db.Date
   status         StatusContrato  @default(CONTRATO_ASSINADO)
 
+  // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
+  quantSacas                    Int?
+  adiantamentoUsd                Decimal   @default(0) @db.Decimal(18, 2)
+  dataAdiantamento                DateTime? @db.Date
+  financiadoPelaRts              Boolean   @default(false)
+  valorFinanciadoRtsUsd          Decimal   @default(0) @db.Decimal(18, 2)
+  dataLiberacaoFinanciamentoRts DateTime? @db.Date
+  previsaoPagamentoCliente      DateTime? @db.Date
+  saldoAReceberRtsUsd            Decimal   @default(0) @db.Decimal(18, 2)
+  valorRecebidoRtsUsd            Decimal   @default(0) @db.Decimal(18, 2)
+  dataRecebimentoRts              DateTime? @db.Date
+  obsRecebimento                 String?
+
   // Despesas do contrato (R$) — compoe o custo final da operacao de exportacao.
   despachante              Decimal @default(0) @db.Decimal(18, 2)
   certificados             Decimal @default(0) @db.Decimal(18, 2)

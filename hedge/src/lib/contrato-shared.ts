@@ -1,4 +1,8 @@
-import { StatusContratoValue, DespesasContratoInput } from "@/app/(dashboard)/contratos/actions";
+import {
+  StatusContratoValue,
+  DespesasContratoInput,
+  RecebimentoContratoInput,
+} from "@/app/(dashboard)/contratos/actions";
 
 export const statusOrder: StatusContratoValue[] = [
   "CONTRATO_ASSINADO",
@@ -69,3 +73,34 @@ export function emptyDespesasForm(): Record<keyof DespesasContratoInput, string>
 
 export type Cliente = { id: string; name: string; city: string | null; country: string };
 export type Corretora = { id: string; name: string; color: string };
+
+export const recebimentoLabels: Record<
+  Exclude<keyof RecebimentoContratoInput, "financiadoPelaRts" | "obsRecebimento">,
+  string
+> = {
+  quantSacas: "Quantidade de sacas",
+  adiantamentoUsd: "Adiantamento (US$)",
+  dataAdiantamento: "Data do adiantamento",
+  valorFinanciadoRtsUsd: "Valor financiado pela RTS (US$)",
+  dataLiberacaoFinanciamentoRts: "Data da liberacao do financiamento",
+  previsaoPagamentoCliente: "Previsao de pagamento do cliente",
+  saldoAReceberRtsUsd: "Saldo a receber (US$)",
+  valorRecebidoRtsUsd: "Valor recebido (US$)",
+  dataRecebimentoRts: "Data do recebimento",
+};
+
+export function emptyRecebimentoForm(): Record<keyof RecebimentoContratoInput, string> {
+  return {
+    quantSacas: "",
+    adiantamentoUsd: "0",
+    dataAdiantamento: "",
+    financiadoPelaRts: "false",
+    valorFinanciadoRtsUsd: "0",
+    dataLiberacaoFinanciamentoRts: "",
+    previsaoPagamentoCliente: "",
+    saldoAReceberRtsUsd: "0",
+    valorRecebidoRtsUsd: "0",
+    dataRecebimentoRts: "",
+    obsRecebimento: "",
+  };
+}

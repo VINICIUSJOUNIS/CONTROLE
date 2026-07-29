@@ -141,6 +141,19 @@ export async function getContratosExportacao() {
       createdAt: c.createdAt.toISOString(),
       despesas,
       custoTotalDespesas,
+      quantSacas: c.quantSacas,
+      adiantamentoUsd: Number(c.adiantamentoUsd),
+      dataAdiantamento: c.dataAdiantamento ? toISODate(c.dataAdiantamento) : null,
+      financiadoPelaRts: c.financiadoPelaRts,
+      valorFinanciadoRtsUsd: Number(c.valorFinanciadoRtsUsd),
+      dataLiberacaoFinanciamentoRts: c.dataLiberacaoFinanciamentoRts
+        ? toISODate(c.dataLiberacaoFinanciamentoRts)
+        : null,
+      previsaoPagamentoCliente: c.previsaoPagamentoCliente ? toISODate(c.previsaoPagamentoCliente) : null,
+      saldoAReceberRtsUsd: Number(c.saldoAReceberRtsUsd),
+      valorRecebidoRtsUsd: Number(c.valorRecebidoRtsUsd),
+      dataRecebimentoRts: c.dataRecebimentoRts ? toISODate(c.dataRecebimentoRts) : null,
+      obsRecebimento: c.obsRecebimento,
     };
   });
 }

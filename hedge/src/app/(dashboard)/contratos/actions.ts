@@ -34,6 +34,20 @@ export type DespesasContratoInput = {
   estadiaContainer: number;
 };
 
+export type RecebimentoContratoInput = {
+  quantSacas: number | null;
+  adiantamentoUsd: number;
+  dataAdiantamento: string;
+  financiadoPelaRts: boolean;
+  valorFinanciadoRtsUsd: number;
+  dataLiberacaoFinanciamentoRts: string;
+  previsaoPagamentoCliente: string;
+  saldoAReceberRtsUsd: number;
+  valorRecebidoRtsUsd: number;
+  dataRecebimentoRts: string;
+  obsRecebimento: string;
+};
+
 export type ContratoFormInput = {
   contractNumber: string;
   clienteId: string;
@@ -45,11 +59,32 @@ export type ContratoFormInput = {
   dataChegada: string;
   status: StatusContratoValue;
   despesas: DespesasContratoInput;
+  recebimento: RecebimentoContratoInput;
 };
 
 function revalidateAll() {
   revalidatePath("/");
   revalidatePath("/contratos");
+}
+
+function recebimentoData(recebimento: RecebimentoContratoInput) {
+  return {
+    quantSacas: recebimento.quantSacas,
+    adiantamentoUsd: recebimento.adiantamentoUsd,
+    dataAdiantamento: recebimento.dataAdiantamento ? parseLocalDate(recebimento.dataAdiantamento) : null,
+    financiadoPelaRts: recebimento.financiadoPelaRts,
+    valorFinanciadoRtsUsd: recebimento.valorFinanciadoRtsUsd,
+    dataLiberacaoFinanciamentoRts: recebimento.dataLiberacaoFinanciamentoRts
+      ? parseLocalDate(recebimento.dataLiberacaoFinanciamentoRts)
+      : null,
+    previsaoPagamentoCliente: recebimento.previsaoPagamentoCliente
+      ? parseLocalDate(recebimento.previsaoPagamentoCliente)
+      : null,
+    saldoAReceberRtsUsd: recebimento.saldoAReceberRtsUsd,
+    valorRecebidoRtsUsd: recebimento.valorRecebidoRtsUsd,
+    dataRecebimentoRts: recebimento.dataRecebimentoRts ? parseLocalDate(recebimento.dataRecebimentoRts) : null,
+    obsRecebimento: recebimento.obsRecebimento || null,
+  };
 }
 
 export async function createContrato(input: ContratoFormInput) {
@@ -65,6 +100,7 @@ export async function createContrato(input: ContratoFormInput) {
       dataChegada: input.dataChegada ? parseLocalDate(input.dataChegada) : null,
       status: input.status,
       ...input.despesas,
+      ...recebimentoData(input.recebimento),
     },
   });
 
@@ -85,6 +121,7 @@ export async function updateContrato(id: string, input: ContratoFormInput) {
       dataChegada: input.dataChegada ? parseLocalDate(input.dataChegada) : null,
       status: input.status,
       ...input.despesas,
+      ...recebimentoData(input.recebimento),
     },
   });
 

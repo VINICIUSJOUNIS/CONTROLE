@@ -15,6 +15,7 @@ import {
   updateContrato,
   StatusContratoValue,
   DespesasContratoInput,
+  RecebimentoContratoInput,
 } from "@/app/(dashboard)/contratos/actions";
 import { NovoCliente } from "@/components/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/corretoras/nova-corretora";
@@ -26,7 +27,11 @@ import {
   despesaLabels,
   despesaKeys,
   emptyDespesasForm,
+  recebimentoLabels,
+  emptyRecebimentoForm,
 } from "@/lib/contrato-shared";
+
+const recebimentoKeys = Object.keys(recebimentoLabels) as (keyof typeof recebimentoLabels)[];
 import { Plus, Trash2, Pencil } from "lucide-react";
 
 function emptyForm(defaultClienteId: string, defaultCountry: string) {
@@ -41,6 +46,7 @@ function emptyForm(defaultClienteId: string, defaultCountry: string) {
     dataChegada: "",
     status: "CONTRATO_ASSINADO" as StatusContratoValue,
     despesas: emptyDespesasForm(),
+    recebimento: emptyRecebimentoForm(),
   };
 }
 
@@ -58,6 +64,19 @@ function formFromRow(row: ContratoRow) {
     despesas: Object.fromEntries(
       despesaKeys.map((k) => [k, String(row.despesas[k])])
     ) as Record<keyof DespesasContratoInput, string>,
+    recebimento: {
+      quantSacas: row.quantSacas != null ? String(row.quantSacas) : "",
+      adiantamentoUsd: String(row.adiantamentoUsd),
+      dataAdiantamento: row.dataAdiantamento ?? "",
+      financiadoPelaRts: String(row.financiadoPelaRts),
+      valorFinanciadoRtsUsd: String(row.valorFinanciadoRtsUsd),
+      dataLiberacaoFinanciamentoRts: row.dataLiberacaoFinanciamentoRts ?? "",
+      previsaoPagamentoCliente: row.previsaoPagamentoCliente ?? "",
+      saldoAReceberRtsUsd: String(row.saldoAReceberRtsUsd),
+      valorRecebidoRtsUsd: String(row.valorRecebidoRtsUsd),
+      dataRecebimentoRts: row.dataRecebimentoRts ?? "",
+      obsRecebimento: row.obsRecebimento ?? "",
+    } as Record<keyof RecebimentoContratoInput, string>,
   };
 }
 
@@ -117,6 +136,10 @@ export function ContratosTable({
     setForm({ ...form, despesas: { ...form.despesas, [key]: value } });
   }
 
+  function handleRecebimentoChange(key: keyof RecebimentoContratoInput, value: string) {
+    setForm({ ...form, recebimento: { ...form.recebimento, [key]: value } });
+  }
+
   const totalDespesas = despesaKeys.reduce((sum, k) => sum + (Number(form.despesas[k]) || 0), 0);
 
   function handleSave() {
@@ -136,6 +159,19 @@ export function ContratosTable({
     const despesasPayload = Object.fromEntries(
       despesaKeys.map((k) => [k, Number(form.despesas[k]) || 0])
     ) as DespesasContratoInput;
+    const recebimentoPayload: RecebimentoContratoInput = {
+      quantSacas: form.recebimento.quantSacas ? Number(form.recebimento.quantSacas) : null,
+      adiantamentoUsd: Number(form.recebimento.adiantamentoUsd) || 0,
+      dataAdiantamento: form.recebimento.dataAdiantamento,
+      financiadoPelaRts: form.recebimento.financiadoPelaRts === "true",
+      valorFinanciadoRtsUsd: Number(form.recebimento.valorFinanciadoRtsUsd) || 0,
+      dataLiberacaoFinanciamentoRts: form.recebimento.dataLiberacaoFinanciamentoRts,
+      previsaoPagamentoCliente: form.recebimento.previsaoPagamentoCliente,
+      saldoAReceberRtsUsd: Number(form.recebimento.saldoAReceberRtsUsd) || 0,
+      valorRecebidoRtsUsd: Number(form.recebimento.valorRecebidoRtsUsd) || 0,
+      dataRecebimentoRts: form.recebimento.dataRecebimentoRts,
+      obsRecebimento: form.recebimento.obsRecebimento.trim(),
+    };
     const payload = {
       contractNumber: form.contractNumber.trim(),
       clienteId: form.clienteId,
@@ -147,6 +183,7 @@ export function ContratosTable({
       dataChegada: form.dataChegada,
       status: form.status,
       despesas: despesasPayload,
+      recebimento: recebimentoPayload,
     };
     startTransition(async () => {
       try {
@@ -329,6 +366,43 @@ export function ContratosTable({
                 </div>
               </div>
 
+              <div className="rounded-lg border border-border p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-medium">Recebimento (US$)</p>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.recebimento.financiadoPelaRts === "true"}
+                      onChange={(e) =>
+                        handleRecebimentoChange("financiadoPelaRts", String(e.target.checked))
+                      }
+                    />
+                    Financiado pela RTS
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {recebimentoKeys.map((key) => (
+                    <div key={key}>
+                      <Label>{recebimentoLabels[key]}</Label>
+                      <Input
+                        type={key.toLowerCase().startsWith("data") || key === "previsaoPagamentoCliente" ? "date" : "number"}
+                        step="0.01"
+                        value={form.recebimento[key]}
+                        onChange={(e) => handleRecebimentoChange(key, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3">
+                  <Label>Observacao do recebimento</Label>
+                  <Input
+                    value={form.recebimento.obsRecebimento}
+                    onChange={(e) => handleRecebimentoChange("obsRecebimento", e.target.value)}
+                    placeholder="Ex: Aguardando BL"
+                  />
+                </div>
+              </div>
+
               {error && <p className="text-sm text-danger">{error}</p>}
               <Button className="w-full" onClick={handleSave} disabled={isPending}>
                 {isPending ? "Salvando..." : editingId ? "Salvar alteracoes" : "Salvar contrato"}
@@ -359,6 +433,8 @@ export function ContratosTable({
                 <th className="px-4 py-3 font-medium">Corretor</th>
                 <th className="px-4 py-3 font-medium">Pais</th>
                 <th className="px-4 py-3 font-medium">Valor US$</th>
+                <th className="px-4 py-3 font-medium">Saldo a receber US$</th>
+                <th className="px-4 py-3 font-medium">Recebido US$</th>
                 <th className="px-4 py-3 font-medium">Despesas (R$)</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Estufagem</th>
@@ -375,6 +451,20 @@ export function ContratosTable({
                   <td className="px-4 py-2.5">{row.corretoraName ?? <span className="text-muted">-</span>}</td>
                   <td className="px-4 py-2.5">{row.country || <span className="text-muted">-</span>}</td>
                   <td className="px-4 py-2.5">{formatCompactCurrency(row.valorUsd, "USD")}</td>
+                  <td className="px-4 py-2.5">
+                    {row.saldoAReceberRtsUsd > 0 ? (
+                      formatCompactCurrency(row.saldoAReceberRtsUsd, "USD")
+                    ) : (
+                      <span className="text-muted">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    {row.valorRecebidoRtsUsd > 0 ? (
+                      formatCompactCurrency(row.valorRecebidoRtsUsd, "USD")
+                    ) : (
+                      <span className="text-muted">-</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5">
                     {row.custoTotalDespesas > 0 ? (
                       formatCompactCurrency(row.custoTotalDespesas)
@@ -408,7 +498,7 @@ export function ContratosTable({
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-6 text-center text-muted">
+                  <td colSpan={13} className="px-4 py-6 text-center text-muted">
                     Nenhum contrato encontrado.
                   </td>
                 </tr>
