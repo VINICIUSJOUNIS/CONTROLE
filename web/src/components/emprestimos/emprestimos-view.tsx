@@ -25,7 +25,7 @@ import {
   clearLoanInstallmentDueDate,
 } from "@/app/(dashboard)/emprestimos/actions";
 import { NovoBanco } from "@/components/bancos/novo-banco";
-import { buildAmortizationSchedule, AmortizationSystemValue } from "@/lib/amortization";
+import { buildAmortizationSchedule, AmortizationSystemValue, RateBasisValue } from "@/lib/amortization";
 import { Plus, Search, Pencil, Trash2, Table2, Check, X } from "lucide-react";
 
 type Bank = { id: string; name: string; color: string };
@@ -43,6 +43,12 @@ const statusLabels: Record<string, string> = {
   EM_ATRASO: "Em atraso",
 };
 
+const rateBasisSuffix: Record<string, string> = {
+  MENSAL: "a.m.",
+  SEMESTRAL: "a.s.",
+  ANUAL: "a.a.",
+};
+
 // Mesma regra do backend (actions.ts): 1o vencimento no dia 5 do mes seguinte a contratacao.
 function previewFirstDueDate(contractDate: string) {
   if (!contractDate) return "";
@@ -57,6 +63,7 @@ function emptyForm(defaultBankId: string) {
     purpose: "",
     contractedValue: "",
     interestRate: "",
+    rateBasis: "ANUAL" as RateBasisValue,
     indexer: "CDI" as "CDI" | "SOFR" | "PRE_FIXADO" | "SELIC",
     installments: "12",
     contractDate: new Date().toISOString().slice(0, 10),
@@ -77,6 +84,7 @@ function formFromRow(loan: LoanRow) {
     purpose: loan.purpose,
     contractedValue: String(loan.contractedValue),
     interestRate: String(loan.interestRate),
+    rateBasis: loan.rateBasis as RateBasisValue,
     indexer: loan.indexer as "CDI" | "SOFR" | "PRE_FIXADO" | "SELIC",
     installments: String(loan.installments),
     contractDate: loan.contractDate,
@@ -207,6 +215,7 @@ export function EmprestimosView({
     return buildAmortizationSchedule({
       contractedValue,
       interestRate,
+      rateBasis: form.rateBasis,
       installments,
       contractDate: form.contractDate,
       firstDueDate: previewFirstDueDate(form.contractDate),
@@ -216,6 +225,7 @@ export function EmprestimosView({
   }, [
     form.contractedValue,
     form.interestRate,
+    form.rateBasis,
     form.installments,
     form.contractDate,
     form.vencimento,
@@ -298,6 +308,7 @@ export function EmprestimosView({
       purpose: form.purpose,
       contractedValue: Number(form.contractedValue) || 0,
       interestRate: Number(form.interestRate) || 0,
+      rateBasis: form.rateBasis,
       indexer: form.indexer,
       installments: Number(form.installments) || 12,
       contractDate: form.contractDate,
@@ -425,7 +436,7 @@ export function EmprestimosView({
                   placeholder="Ex: Capital de giro"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>Valor contratado (R$)</Label>
                   <Input
@@ -442,6 +453,19 @@ export function EmprestimosView({
                     value={form.interestRate}
                     onChange={(e) => setForm({ ...form, interestRate: e.target.value })}
                   />
+                </div>
+                <div>
+                  <Label>Base da taxa</Label>
+                  <Select
+                    value={form.rateBasis}
+                    onChange={(e) =>
+                      setForm({ ...form, rateBasis: e.target.value as RateBasisValue })
+                    }
+                  >
+                    <option value="MENSAL">Ao mes</option>
+                    <option value="SEMESTRAL">Ao semestre</option>
+                    <option value="ANUAL">Ao ano</option>
+                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -626,7 +650,10 @@ export function EmprestimosView({
                   <td className="px-4 py-2.5 font-medium">{loan.contractNumber}</td>
                   <td className="px-4 py-2.5">{loan.bankName}</td>
                   <td className="px-4 py-2.5">{formatCompactCurrency(loan.contractedValue)}</td>
-                  <td className="px-4 py-2.5">{formatPercent(loan.interestRate)}</td>
+                  <td className="px-4 py-2.5">
+                    {formatPercent(loan.interestRate)}{" "}
+                    <span className="text-muted">{rateBasisSuffix[loan.rateBasis] ?? ""}</span>
+                  </td>
                   <td className="px-4 py-2.5">{loan.prazoMeses}</td>
                   <td className="px-4 py-2.5">{formatCurrencyPrecise(loan.jurosValor)}</td>
                   <td className="px-4 py-2.5">{formatCompactCurrency(loan.iof)}</td>

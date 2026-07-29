@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { RATE_BASIS_DAYS, RateBasisValue } from "@/lib/amortization";
 
 function n(value: unknown): number {
   return Number(value);
@@ -61,10 +62,11 @@ export async function getLoans() {
 
     const prazoMeses = monthsBetween(l.contractDate, l.lastDueDate);
     const prazoDias = daysBetween(l.contractDate, l.lastDueDate);
-    // Juros: valor contratado x taxa anual, proporcional ao prazo em dias corridos,
-    // usando ano comercial de 360 dias (contratacao ate o vencimento).
+    const basisDays = RATE_BASIS_DAYS[l.rateBasis as RateBasisValue] ?? RATE_BASIS_DAYS.ANUAL;
+    // Juros: valor contratado x taxa (na base informada - mes/semestre/ano), proporcional
+    // ao prazo em dias corridos (contratacao ate o vencimento).
     const jurosValor = Number(
-      (contractedValue * (interestRate / 100) * (prazoDias / DIAS_ANO_BASE)).toFixed(2)
+      (contractedValue * (interestRate / 100) * (prazoDias / basisDays)).toFixed(2)
     );
     const custoTotal = Number((jurosValor + iof + insuranceCost + otherCosts).toFixed(2));
 
@@ -77,6 +79,7 @@ export async function getLoans() {
       contractedValue,
       netValue: n(l.netValue),
       interestRate,
+      rateBasis: l.rateBasis,
       indexer: l.indexer,
       spread: n(l.spread),
       amortizationSystem: l.amortizationSystem,

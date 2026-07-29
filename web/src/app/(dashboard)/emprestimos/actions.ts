@@ -10,6 +10,7 @@ export type LoanFormInput = {
   purpose: string;
   contractedValue: number;
   interestRate: number;
+  rateBasis: "MENSAL" | "SEMESTRAL" | "ANUAL";
   indexer: "CDI" | "SOFR" | "PRE_FIXADO" | "SELIC";
   installments: number;
   contractDate: string;
@@ -42,6 +43,7 @@ export async function createLoan(input: LoanFormInput) {
       contractedValue: input.contractedValue,
       netValue: Math.round(input.contractedValue * 0.985),
       interestRate: input.interestRate,
+      rateBasis: input.rateBasis,
       indexer: input.indexer,
       spread: 2.5,
       amortizationSystem: input.amortizationSystem,
@@ -74,6 +76,7 @@ export async function updateLoan(id: string, input: LoanFormInput) {
       purpose: input.purpose || "Capital de giro",
       contractedValue: input.contractedValue,
       interestRate: input.interestRate,
+      rateBasis: input.rateBasis,
       indexer: input.indexer,
       amortizationSystem: input.amortizationSystem,
       contractDate,

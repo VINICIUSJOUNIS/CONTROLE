@@ -1,7 +1,14 @@
-// Ano comercial de 365 dias, mesma convencao de juros usada no restante do app (lib/data.ts).
-const DIAS_ANO_BASE = 365;
-
 export type AmortizationSystemValue = "PRICE" | "SAC" | "BULLET";
+
+export type RateBasisValue = "MENSAL" | "SEMESTRAL" | "ANUAL";
+
+// Dias do periodo de referencia da taxa informada (mes/semestre/ano comercial).
+// Ex: taxa "1,99% ao mes" -> juros do periodo = saldo x 1,99% x (dias corridos / 30).
+export const RATE_BASIS_DAYS: Record<RateBasisValue, number> = {
+  MENSAL: 30,
+  SEMESTRAL: 180,
+  ANUAL: 365,
+};
 
 export type AmortizationInstallment = {
   numero: number;
@@ -16,6 +23,7 @@ export type AmortizationInstallment = {
 export type LoanForAmortization = {
   contractedValue: number;
   interestRate: number;
+  rateBasis: RateBasisValue | string;
   installments: number;
   contractDate: string;
   firstDueDate: string;
@@ -47,6 +55,7 @@ export function buildAmortizationSchedule(
 ): AmortizationInstallment[] {
   const { contractedValue, installments } = loan;
   const rate = loan.interestRate / 100;
+  const basisDays = RATE_BASIS_DAYS[loan.rateBasis as RateBasisValue] ?? RATE_BASIS_DAYS.ANUAL;
   const dates = installmentDates(loan.firstDueDate, loan.lastDueDate, installments).map((date, idx) => {
     const override = vencimentoOverrides?.[idx + 1];
     return override ? new Date(override) : date;
@@ -59,7 +68,7 @@ export function buildAmortizationSchedule(
   const amortizacaoFixaSAC = Number((contractedValue / installments).toFixed(2));
 
   const prazoTotalDias = daysBetween(new Date(loan.contractDate), new Date(loan.lastDueDate));
-  const taxaPeriodicaPrice = rate * (prazoTotalDias / installments / DIAS_ANO_BASE);
+  const taxaPeriodicaPrice = rate * (prazoTotalDias / installments / basisDays);
   const parcelaFixaPrice =
     taxaPeriodicaPrice > 0
       ? (contractedValue * taxaPeriodicaPrice) / (1 - Math.pow(1 + taxaPeriodicaPrice, -installments))
@@ -68,7 +77,7 @@ export function buildAmortizationSchedule(
   return dates.map((date, idx) => {
     const isLast = idx === installments - 1;
     const dias = daysBetween(prevDate, date);
-    const juros = Number((saldo * rate * (dias / DIAS_ANO_BASE)).toFixed(2));
+    const juros = Number((saldo * rate * (dias / basisDays)).toFixed(2));
 
     let amortizacao: number;
     if (loan.amortizationSystem === "SAC") {
