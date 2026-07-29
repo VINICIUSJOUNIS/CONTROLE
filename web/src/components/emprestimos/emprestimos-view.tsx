@@ -15,10 +15,18 @@ import {
   formatPercent,
 } from "@/lib/format";
 import { LoanRow } from "@/lib/data";
-import { createLoan, deleteLoan, updateLoan } from "@/app/(dashboard)/emprestimos/actions";
+import {
+  createLoan,
+  deleteLoan,
+  updateLoan,
+  setLoanPayment,
+  deleteLoanPayment,
+  setLoanInstallmentDueDate,
+  clearLoanInstallmentDueDate,
+} from "@/app/(dashboard)/emprestimos/actions";
 import { NovoBanco } from "@/components/bancos/novo-banco";
 import { buildAmortizationSchedule, AmortizationSystemValue } from "@/lib/amortization";
-import { Plus, Search, Pencil, Trash2, Table2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Table2, Check, X } from "lucide-react";
 
 type Bank = { id: string; name: string; color: string };
 type StatusValue = "ATIVO" | "LIQUIDADO" | "EM_ATRASO";
@@ -101,12 +109,94 @@ export function EmprestimosView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm(banks[0]?.id ?? ""));
-  const [amortizacaoLoan, setAmortizacaoLoan] = useState<LoanRow | null>(null);
+  const [amortizacaoLoanId, setAmortizacaoLoanId] = useState<string | null>(null);
+  const [editingPagamento, setEditingPagamento] = useState<number | null>(null);
+  const [pagamentoDraft, setPagamentoDraft] = useState({ paidAt: "", paidValue: "" });
+  const [editingVencimento, setEditingVencimento] = useState<number | null>(null);
+  const [vencimentoDraft, setVencimentoDraft] = useState("");
+
+  const amortizacaoLoan = useMemo(
+    () => initialLoans.find((l) => l.id === amortizacaoLoanId) ?? null,
+    [initialLoans, amortizacaoLoanId]
+  );
+
+  const parcelasPorNumero = useMemo(() => {
+    const map = new Map<number, { vencimento: string | null; paidAt: string | null; paidValue: number | null }>();
+    amortizacaoLoan?.parcelas.forEach((p) => map.set(p.numero, p));
+    return map;
+  }, [amortizacaoLoan]);
+
+  const vencimentoOverrides = useMemo(() => {
+    const overrides: Record<number, string> = {};
+    parcelasPorNumero.forEach((p, numero) => {
+      if (p.vencimento) overrides[numero] = p.vencimento;
+    });
+    return overrides;
+  }, [parcelasPorNumero]);
 
   const amortizacaoSchedule = useMemo(
-    () => (amortizacaoLoan ? buildAmortizationSchedule(amortizacaoLoan) : []),
-    [amortizacaoLoan]
+    () => (amortizacaoLoan ? buildAmortizationSchedule(amortizacaoLoan, vencimentoOverrides) : []),
+    [amortizacaoLoan, vencimentoOverrides]
   );
+
+  function openAmortizacao(loan: LoanRow) {
+    setAmortizacaoLoanId(loan.id);
+    setEditingPagamento(null);
+    setEditingVencimento(null);
+  }
+
+  function startEditPagamento(numero: number, valorSugerido: number) {
+    const existing = parcelasPorNumero.get(numero);
+    setEditingPagamento(numero);
+    setPagamentoDraft({
+      paidAt: existing?.paidAt ?? new Date().toISOString().slice(0, 10),
+      paidValue: String(existing?.paidValue ?? valorSugerido),
+    });
+  }
+
+  function handleSavePagamento(numero: number) {
+    if (!amortizacaoLoanId) return;
+    if (!pagamentoDraft.paidAt || !(Number(pagamentoDraft.paidValue) > 0)) return;
+    startTransition(async () => {
+      await setLoanPayment(amortizacaoLoanId, numero, {
+        paidAt: pagamentoDraft.paidAt,
+        paidValue: Number(pagamentoDraft.paidValue),
+      });
+      setEditingPagamento(null);
+      router.refresh();
+    });
+  }
+
+  function handleDeletePagamento(numero: number) {
+    if (!amortizacaoLoanId) return;
+    startTransition(async () => {
+      await deleteLoanPayment(amortizacaoLoanId, numero);
+      router.refresh();
+    });
+  }
+
+  function startEditVencimento(numero: number, vencimentoAtual: string) {
+    setEditingVencimento(numero);
+    setVencimentoDraft(vencimentoAtual);
+  }
+
+  function handleSaveVencimento(numero: number) {
+    if (!amortizacaoLoanId || !vencimentoDraft) return;
+    startTransition(async () => {
+      await setLoanInstallmentDueDate(amortizacaoLoanId, numero, vencimentoDraft);
+      setEditingVencimento(null);
+      router.refresh();
+    });
+  }
+
+  function handleClearVencimento(numero: number) {
+    if (!amortizacaoLoanId) return;
+    startTransition(async () => {
+      await clearLoanInstallmentDueDate(amortizacaoLoanId, numero);
+      setEditingVencimento(null);
+      router.refresh();
+    });
+  }
 
   const formPreviewSchedule = useMemo(() => {
     const contractedValue = Number(form.contractedValue);
@@ -557,7 +647,7 @@ export function EmprestimosView({
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1">
                       <button
-                        onClick={() => setAmortizacaoLoan(loan)}
+                        onClick={() => openAmortizacao(loan)}
                         className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
                         title="Ver amortizacao"
                       >
@@ -593,10 +683,10 @@ export function EmprestimosView({
         </CardContent>
       </Card>
 
-      <Dialog open={amortizacaoLoan !== null} onOpenChange={(next) => !next && setAmortizacaoLoan(null)}>
+      <Dialog open={amortizacaoLoanId !== null} onOpenChange={(next) => !next && setAmortizacaoLoanId(null)}>
         <DialogContent
           title={amortizacaoLoan ? `Amortizacao - ${amortizacaoLoan.contractNumber}` : "Amortizacao"}
-          className="max-w-3xl"
+          className="max-w-4xl"
         >
           <div className="max-h-[65vh] overflow-y-auto">
             <table className="w-full whitespace-nowrap text-xs">
@@ -609,20 +699,144 @@ export function EmprestimosView({
                   <th className="px-3 py-2 font-medium">Valor da parcela</th>
                   <th className="px-3 py-2 font-medium">Pago acumulado</th>
                   <th className="px-3 py-2 font-medium">Saldo devedor</th>
+                  <th className="px-3 py-2 font-medium">Pagamento</th>
                 </tr>
               </thead>
               <tbody>
-                {amortizacaoSchedule.map((row) => (
-                  <tr key={row.numero} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2">{row.numero}</td>
-                    <td className="px-3 py-2">{formatDate(row.vencimento)}</td>
-                    <td className="px-3 py-2">{formatCurrencyPrecise(row.amortizacao)}</td>
-                    <td className="px-3 py-2">{formatCurrencyPrecise(row.juros)}</td>
-                    <td className="px-3 py-2 font-medium">{formatCurrencyPrecise(row.valorParcela)}</td>
-                    <td className="px-3 py-2">{formatCurrencyPrecise(row.pagoAcumulado)}</td>
-                    <td className="px-3 py-2">{formatCurrencyPrecise(row.saldoDevedor)}</td>
-                  </tr>
-                ))}
+                {amortizacaoSchedule.map((row) => {
+                  const parcela = parcelasPorNumero.get(row.numero);
+                  const pago = parcela?.paidAt ? parcela : null;
+                  const isEditing = editingPagamento === row.numero;
+                  const isEditingVencimento = editingVencimento === row.numero;
+                  const vencimentoCorrigido = Boolean(parcela?.vencimento);
+                  return (
+                    <tr key={row.numero} className="border-b border-border last:border-0">
+                      <td className="px-3 py-2">{row.numero}</td>
+                      <td className="px-3 py-2">
+                        {isEditingVencimento ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="date"
+                              value={vencimentoDraft}
+                              onChange={(e) => setVencimentoDraft(e.target.value)}
+                              className="h-7 w-32 rounded border border-border bg-background px-1.5 text-xs"
+                            />
+                            <button
+                              onClick={() => handleSaveVencimento(row.numero)}
+                              disabled={isPending}
+                              className="rounded p-1 text-success hover:bg-success/10"
+                              title="Salvar"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => setEditingVencimento(null)}
+                              className="rounded p-1 text-muted hover:bg-border/60"
+                              title="Cancelar"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            {formatDate(row.vencimento)}
+                            {vencimentoCorrigido && (
+                              <span className="text-muted" title="Data corrigida manualmente">
+                                *
+                              </span>
+                            )}
+                            <button
+                              onClick={() => startEditVencimento(row.numero, row.vencimento)}
+                              className="rounded p-1 text-muted hover:bg-border/60 hover:text-foreground"
+                              title="Corrigir vencimento"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            {vencimentoCorrigido && (
+                              <button
+                                onClick={() => handleClearVencimento(row.numero)}
+                                className="rounded p-1 text-muted hover:bg-danger/10 hover:text-danger"
+                                title="Voltar para a data calculada"
+                              >
+                                <X size={12} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">{formatCurrencyPrecise(row.amortizacao)}</td>
+                      <td className="px-3 py-2">{formatCurrencyPrecise(row.juros)}</td>
+                      <td className="px-3 py-2 font-medium">{formatCurrencyPrecise(row.valorParcela)}</td>
+                      <td className="px-3 py-2">{formatCurrencyPrecise(row.pagoAcumulado)}</td>
+                      <td className="px-3 py-2">{formatCurrencyPrecise(row.saldoDevedor)}</td>
+                      <td className="px-3 py-2">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="date"
+                              value={pagamentoDraft.paidAt}
+                              onChange={(e) =>
+                                setPagamentoDraft({ ...pagamentoDraft, paidAt: e.target.value })
+                              }
+                              className="h-7 w-32 rounded border border-border bg-background px-1.5 text-xs"
+                            />
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={pagamentoDraft.paidValue}
+                              onChange={(e) =>
+                                setPagamentoDraft({ ...pagamentoDraft, paidValue: e.target.value })
+                              }
+                              className="h-7 w-24 rounded border border-border bg-background px-1.5 text-xs"
+                            />
+                            <button
+                              onClick={() => handleSavePagamento(row.numero)}
+                              disabled={isPending}
+                              className="rounded p-1 text-success hover:bg-success/10"
+                              title="Salvar"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => setEditingPagamento(null)}
+                              className="rounded p-1 text-muted hover:bg-border/60"
+                              title="Cancelar"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : pago && pago.paidAt && pago.paidValue != null ? (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="success">
+                              {formatDate(pago.paidAt)} - {formatCurrencyPrecise(pago.paidValue)}
+                            </Badge>
+                            <button
+                              onClick={() => startEditPagamento(row.numero, row.valorParcela)}
+                              className="rounded p-1 text-muted hover:bg-border/60 hover:text-foreground"
+                              title="Editar pagamento"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePagamento(row.numero)}
+                              className="rounded p-1 text-muted hover:bg-danger/10 hover:text-danger"
+                              title="Remover pagamento"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startEditPagamento(row.numero, row.valorParcela)}
+                            className="text-primary hover:underline"
+                          >
+                            Marcar pago
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

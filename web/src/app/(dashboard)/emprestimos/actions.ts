@@ -94,3 +94,67 @@ export async function deleteLoan(id: string) {
   await prisma.loan.delete({ where: { id } });
   revalidateAll();
 }
+
+export async function setLoanPayment(
+  loanId: string,
+  numero: number,
+  input: { paidAt: string; paidValue: number }
+) {
+  await prisma.loanInstallment.upsert({
+    where: { loanId_numero: { loanId, numero } },
+    create: {
+      loanId,
+      numero,
+      paidAt: parseLocalDate(input.paidAt),
+      paidValue: input.paidValue,
+    },
+    update: {
+      paidAt: parseLocalDate(input.paidAt),
+      paidValue: input.paidValue,
+    },
+  });
+
+  revalidateAll();
+}
+
+export async function deleteLoanPayment(loanId: string, numero: number) {
+  const existing = await prisma.loanInstallment.findUnique({ where: { loanId_numero: { loanId, numero } } });
+  if (!existing) return;
+
+  if (existing.vencimento) {
+    await prisma.loanInstallment.update({
+      where: { loanId_numero: { loanId, numero } },
+      data: { paidAt: null, paidValue: null },
+    });
+  } else {
+    await prisma.loanInstallment.delete({ where: { loanId_numero: { loanId, numero } } });
+  }
+
+  revalidateAll();
+}
+
+export async function setLoanInstallmentDueDate(loanId: string, numero: number, vencimento: string) {
+  await prisma.loanInstallment.upsert({
+    where: { loanId_numero: { loanId, numero } },
+    create: { loanId, numero, vencimento: parseLocalDate(vencimento) },
+    update: { vencimento: parseLocalDate(vencimento) },
+  });
+
+  revalidateAll();
+}
+
+export async function clearLoanInstallmentDueDate(loanId: string, numero: number) {
+  const existing = await prisma.loanInstallment.findUnique({ where: { loanId_numero: { loanId, numero } } });
+  if (!existing) return;
+
+  if (existing.paidAt) {
+    await prisma.loanInstallment.update({
+      where: { loanId_numero: { loanId, numero } },
+      data: { vencimento: null },
+    });
+  } else {
+    await prisma.loanInstallment.delete({ where: { loanId_numero: { loanId, numero } } });
+  }
+
+  revalidateAll();
+}

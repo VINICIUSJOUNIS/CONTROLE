@@ -91,12 +91,32 @@ model Loan {
   insuranceCost      Decimal            @default(0) @db.Decimal(18, 2)
   otherCosts         Decimal            @default(0) @db.Decimal(18, 2)
   status             LoanStatus         @default(ATIVO)
+  installmentRecords LoanInstallment[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
   @@index([bankId])
   @@index([status])
   @@map("loans")
+}
+
+// Dados reais de uma parcela do emprestimo: vencimento corrigido (quando difere
+// do calculado) e/ou pagamento efetuado (data e valor pago). Ambos opcionais e
+// independentes - uma parcela pode ter so o vencimento corrigido, so o pagamento,
+// ou os dois.
+model LoanInstallment {
+  id         String    @id @default(uuid())
+  loan       Loan      @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  loanId     String
+  numero     Int
+  vencimento DateTime? @db.Date
+  paidAt     DateTime? @db.Date
+  paidValue  Decimal?  @db.Decimal(18, 2)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([loanId, numero])
+  @@map("loan_installments")
 }
 
 model AccOperation {

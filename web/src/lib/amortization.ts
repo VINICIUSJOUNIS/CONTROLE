@@ -41,10 +41,16 @@ function installmentDates(firstDueDate: string, lastDueDate: string, installment
   return dates;
 }
 
-export function buildAmortizationSchedule(loan: LoanForAmortization): AmortizationInstallment[] {
+export function buildAmortizationSchedule(
+  loan: LoanForAmortization,
+  vencimentoOverrides?: Record<number, string>
+): AmortizationInstallment[] {
   const { contractedValue, installments } = loan;
   const rate = loan.interestRate / 100;
-  const dates = installmentDates(loan.firstDueDate, loan.lastDueDate, installments);
+  const dates = installmentDates(loan.firstDueDate, loan.lastDueDate, installments).map((date, idx) => {
+    const override = vencimentoOverrides?.[idx + 1];
+    return override ? new Date(override) : date;
+  });
 
   let saldo = contractedValue;
   let pagoAcumulado = 0;

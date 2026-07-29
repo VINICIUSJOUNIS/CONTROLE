@@ -49,7 +49,7 @@ export async function getBanks() {
 
 export async function getLoans() {
   const loans = await prisma.loan.findMany({
-    include: { bank: true },
+    include: { bank: true, installmentRecords: true },
     orderBy: { contractDate: "desc" },
   });
   return loans.map((l) => {
@@ -94,6 +94,12 @@ export async function getLoans() {
       jurosValor,
       custoTotal,
       status: l.status,
+      parcelas: l.installmentRecords.map((r) => ({
+        numero: r.numero,
+        vencimento: r.vencimento ? r.vencimento.toISOString().slice(0, 10) : null,
+        paidAt: r.paidAt ? r.paidAt.toISOString().slice(0, 10) : null,
+        paidValue: r.paidValue != null ? n(r.paidValue) : null,
+      })),
     };
   });
 }
