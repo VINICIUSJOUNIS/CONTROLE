@@ -2,6 +2,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { NovoBanco } from "@/components/bancos/novo-banco";
+import { EditBanco } from "@/components/bancos/edit-banco";
 import { DeleteBankButton } from "@/components/bancos/delete-bank-button";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { getAvailableYears, getBankComparison } from "@/lib/data";
@@ -114,7 +115,10 @@ export default async function BancosPage({
                     <td className="py-2.5 pr-4">R$ {b.fechamentoMedio.toFixed(4)}</td>
                     <td className="py-2.5 pr-4">{formatPercent(b.custoMedio)}</td>
                     <td className="py-2.5">
-                      <DeleteBankButton id={b.bankId} name={b.bankName} />
+                      <span className="inline-flex items-center gap-3">
+                        <EditBanco id={b.bankId} name={b.bankName} color={b.bankColor} />
+                        <DeleteBankButton id={b.bankId} name={b.bankName} />
+                      </span>
                     </td>
                   </tr>
                 ))}

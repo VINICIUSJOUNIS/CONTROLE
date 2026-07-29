@@ -22,6 +22,21 @@ export async function createBank(input: CreateBankInput) {
   revalidatePath("/");
 }
 
+export async function updateBank(id: string, input: CreateBankInput) {
+  await prisma.bank.update({
+    where: { id },
+    data: {
+      name: input.name,
+      color: input.color,
+    },
+  });
+
+  revalidatePath("/bancos");
+  revalidatePath("/emprestimos");
+  revalidatePath("/acc");
+  revalidatePath("/");
+}
+
 export async function deleteBank(id: string) {
   const [loanCount, accCount] = await Promise.all([
     prisma.loan.count({ where: { bankId: id } }),

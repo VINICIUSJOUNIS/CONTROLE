@@ -520,6 +520,7 @@ export async function getBankComparison(range?: PeriodRange) {
     return {
       bankId: bank.id,
       bankName: bank.name,
+      bankColor: bank.color,
       qtdAcc: ops.length,
       valorCaptado,
       taxaMedia: Number((ops.reduce((s, a) => s + a.interestRate, 0) / qtd).toFixed(2)),
