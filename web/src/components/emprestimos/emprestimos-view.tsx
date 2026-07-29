@@ -17,7 +17,8 @@ import {
 import { LoanRow } from "@/lib/data";
 import { createLoan, deleteLoan, updateLoan } from "@/app/(dashboard)/emprestimos/actions";
 import { NovoBanco } from "@/components/bancos/novo-banco";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { buildAmortizationSchedule } from "@/lib/amortization";
+import { Plus, Search, Pencil, Trash2, Table2 } from "lucide-react";
 
 type Bank = { id: string; name: string; color: string };
 type StatusValue = "ATIVO" | "LIQUIDADO" | "EM_ATRASO";
@@ -91,6 +92,12 @@ export function EmprestimosView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm(banks[0]?.id ?? ""));
+  const [amortizacaoLoan, setAmortizacaoLoan] = useState<LoanRow | null>(null);
+
+  const amortizacaoSchedule = useMemo(
+    () => (amortizacaoLoan ? buildAmortizationSchedule(amortizacaoLoan) : []),
+    [amortizacaoLoan]
+  );
 
   const years = useMemo(
     () => Array.from(new Set(initialLoans.map((l) => l.contractDate.slice(0, 4)))).sort(),
@@ -461,6 +468,13 @@ export function EmprestimosView({
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1">
                       <button
+                        onClick={() => setAmortizacaoLoan(loan)}
+                        className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
+                        title="Ver amortizacao"
+                      >
+                        <Table2 size={14} />
+                      </button>
+                      <button
                         onClick={() => openEdit(loan)}
                         className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
                         title="Editar"
@@ -489,6 +503,42 @@ export function EmprestimosView({
           </table>
         </CardContent>
       </Card>
+
+      <Dialog open={amortizacaoLoan !== null} onOpenChange={(next) => !next && setAmortizacaoLoan(null)}>
+        <DialogContent
+          title={amortizacaoLoan ? `Amortizacao - ${amortizacaoLoan.contractNumber}` : "Amortizacao"}
+          className="max-w-3xl"
+        >
+          <div className="max-h-[65vh] overflow-y-auto">
+            <table className="w-full whitespace-nowrap text-xs">
+              <thead className="sticky top-0 bg-card">
+                <tr className="border-b border-border text-left text-xs text-muted">
+                  <th className="px-3 py-2 font-medium">Parcela</th>
+                  <th className="px-3 py-2 font-medium">Vencimento</th>
+                  <th className="px-3 py-2 font-medium">Amortizacao</th>
+                  <th className="px-3 py-2 font-medium">Juros</th>
+                  <th className="px-3 py-2 font-medium">Valor da parcela</th>
+                  <th className="px-3 py-2 font-medium">Pago acumulado</th>
+                  <th className="px-3 py-2 font-medium">Saldo devedor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {amortizacaoSchedule.map((row) => (
+                  <tr key={row.numero} className="border-b border-border last:border-0">
+                    <td className="px-3 py-2">{row.numero}</td>
+                    <td className="px-3 py-2">{formatDate(row.vencimento)}</td>
+                    <td className="px-3 py-2">{formatCurrencyPrecise(row.amortizacao)}</td>
+                    <td className="px-3 py-2">{formatCurrencyPrecise(row.juros)}</td>
+                    <td className="px-3 py-2 font-medium">{formatCurrencyPrecise(row.valorParcela)}</td>
+                    <td className="px-3 py-2">{formatCurrencyPrecise(row.pagoAcumulado)}</td>
+                    <td className="px-3 py-2">{formatCurrencyPrecise(row.saldoDevedor)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
