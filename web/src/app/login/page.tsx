@@ -34,7 +34,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen">
       <div className="relative hidden w-1/2 lg:block">
         <Image
           src="/nayme-watermark.jpg"
