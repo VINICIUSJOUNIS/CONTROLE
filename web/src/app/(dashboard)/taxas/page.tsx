@@ -118,7 +118,7 @@ export default async function TaxasPage({
             xKey="month"
             series={[
               { key: "cambialSpread", name: "Spread cambial", color: "#7a5af8" },
-              { key: "financialCost", name: "Custo financeiro (%)", color: "#101828" },
+              { key: "financialCost", name: "Custo financeiro (%)", color: "var(--warning)" },
             ]}
           />
         </div>
