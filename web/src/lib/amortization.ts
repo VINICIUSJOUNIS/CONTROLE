@@ -31,21 +31,45 @@ export type LoanForAmortization = {
   amortizationSystem: AmortizationSystemValue | string;
 };
 
+// Parseia "YYYY-MM-DD" como data local ao meio-dia, evitando o shift de fuso
+// horario de `new Date("YYYY-MM-DD")` (interpretado como UTC). Mesma abordagem
+// de lib/date.ts, duplicada aqui porque este arquivo tambem roda no cliente.
+function parseLocalDate(value: string): Date {
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0);
+}
+
+function toISODate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 function daysBetween(from: Date, to: Date) {
   return Math.max(0, Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
-// Distribui as parcelas uniformemente entre a 1a e a ultima data de vencimento.
+// Soma meses a uma data mantendo o dia do mes (com "clamp" para meses mais curtos,
+// ex: 31/01 + 1 mes = 28 ou 29/02).
+function addMonthsClamped(date: Date, months: number) {
+  const day = date.getDate();
+  const base = new Date(date.getFullYear(), date.getMonth() + months, 1, 12, 0, 0);
+  const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  base.setDate(Math.min(day, daysInMonth));
+  return base;
+}
+
+// Repete o dia do mes do 1o vencimento a cada parcela (ex: 1o vencimento dia 30 ->
+// todas as parcelas caem no dia 30, exceto a ultima, que e sempre a data de
+// vencimento final do contrato).
 function installmentDates(firstDueDate: string, lastDueDate: string, installments: number) {
-  const first = new Date(firstDueDate);
-  const last = new Date(lastDueDate);
+  const first = parseLocalDate(firstDueDate);
+  const last = parseLocalDate(lastDueDate);
   if (installments <= 1) return [last];
 
-  const totalMs = last.getTime() - first.getTime();
-  const dates: Date[] = [];
-  for (let i = 0; i < installments; i++) {
-    dates.push(new Date(first.getTime() + (totalMs * i) / (installments - 1)));
+  const dates: Date[] = [first];
+  for (let i = 1; i < installments - 1; i++) {
+    dates.push(addMonthsClamped(first, i));
   }
+  dates.push(last);
   return dates;
 }
 
@@ -58,16 +82,16 @@ export function buildAmortizationSchedule(
   const basisDays = RATE_BASIS_DAYS[loan.rateBasis as RateBasisValue] ?? RATE_BASIS_DAYS.ANUAL;
   const dates = installmentDates(loan.firstDueDate, loan.lastDueDate, installments).map((date, idx) => {
     const override = vencimentoOverrides?.[idx + 1];
-    return override ? new Date(override) : date;
+    return override ? parseLocalDate(override) : date;
   });
 
   let saldo = contractedValue;
   let pagoAcumulado = 0;
-  let prevDate = new Date(loan.contractDate);
+  let prevDate = parseLocalDate(loan.contractDate);
 
   const amortizacaoFixaSAC = Number((contractedValue / installments).toFixed(2));
 
-  const prazoTotalDias = daysBetween(new Date(loan.contractDate), new Date(loan.lastDueDate));
+  const prazoTotalDias = daysBetween(parseLocalDate(loan.contractDate), parseLocalDate(loan.lastDueDate));
   const taxaPeriodicaPrice = rate * (prazoTotalDias / installments / basisDays);
   const parcelaFixaPrice =
     taxaPeriodicaPrice > 0
@@ -95,7 +119,7 @@ export function buildAmortizationSchedule(
 
     return {
       numero: idx + 1,
-      vencimento: date.toISOString().slice(0, 10),
+      vencimento: toISODate(date),
       amortizacao,
       juros,
       valorParcela,

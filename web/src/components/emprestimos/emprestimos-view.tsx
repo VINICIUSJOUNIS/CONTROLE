@@ -49,13 +49,6 @@ const rateBasisSuffix: Record<string, string> = {
   ANUAL: "a.a.",
 };
 
-// Mesma regra do backend (actions.ts): 1o vencimento no dia 5 do mes seguinte a contratacao.
-function previewFirstDueDate(contractDate: string) {
-  if (!contractDate) return "";
-  const d = new Date(contractDate);
-  return new Date(d.getFullYear(), d.getMonth() + 1, 5).toISOString().slice(0, 10);
-}
-
 function emptyForm(defaultBankId: string) {
   return {
     bankId: defaultBankId,
@@ -67,6 +60,7 @@ function emptyForm(defaultBankId: string) {
     indexer: "CDI" as "CDI" | "SOFR" | "PRE_FIXADO" | "SELIC",
     installments: "12",
     contractDate: new Date().toISOString().slice(0, 10),
+    primeiroVencimento: "",
     vencimento: "",
     status: "ATIVO" as StatusValue,
     iof: "",
@@ -88,6 +82,7 @@ function formFromRow(loan: LoanRow) {
     indexer: loan.indexer as "CDI" | "SOFR" | "PRE_FIXADO" | "SELIC",
     installments: String(loan.installments),
     contractDate: loan.contractDate,
+    primeiroVencimento: loan.firstDueDate,
     vencimento: loan.lastDueDate,
     status: loan.status as StatusValue,
     iof: String(loan.iof),
@@ -211,14 +206,14 @@ export function EmprestimosView({
     const interestRate = Number(form.interestRate);
     const installments = Number(form.installments);
     if (!(contractedValue > 0) || !(interestRate > 0) || !(installments > 0)) return [];
-    if (!form.contractDate || !form.vencimento) return [];
+    if (!form.contractDate || !form.primeiroVencimento || !form.vencimento) return [];
     return buildAmortizationSchedule({
       contractedValue,
       interestRate,
       rateBasis: form.rateBasis,
       installments,
       contractDate: form.contractDate,
-      firstDueDate: previewFirstDueDate(form.contractDate),
+      firstDueDate: form.primeiroVencimento,
       lastDueDate: form.vencimento,
       amortizationSystem: form.amortizationSystem,
     });
@@ -228,6 +223,7 @@ export function EmprestimosView({
     form.rateBasis,
     form.installments,
     form.contractDate,
+    form.primeiroVencimento,
     form.vencimento,
     form.amortizationSystem,
   ]);
@@ -289,6 +285,10 @@ export function EmprestimosView({
       setError("Informe o numero do contrato.");
       return;
     }
+    if (!form.primeiroVencimento) {
+      setError("Informe o 1o vencimento.");
+      return;
+    }
     if (!form.vencimento) {
       setError("Informe o vencimento.");
       return;
@@ -312,6 +312,7 @@ export function EmprestimosView({
       indexer: form.indexer,
       installments: Number(form.installments) || 12,
       contractDate: form.contractDate,
+      primeiroVencimento: form.primeiroVencimento,
       vencimento: form.vencimento,
       status: form.status,
       amortizationSystem: form.amortizationSystem,
@@ -519,7 +520,7 @@ export function EmprestimosView({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Data da contratacao</Label>
                   <Input
@@ -529,7 +530,20 @@ export function EmprestimosView({
                   />
                 </div>
                 <div>
-                  <Label>Vencimento</Label>
+                  <Label>1o vencimento</Label>
+                  <Input
+                    type="date"
+                    value={form.primeiroVencimento}
+                    onChange={(e) => setForm({ ...form, primeiroVencimento: e.target.value })}
+                  />
+                  <p className="mt-1 text-xs text-muted">
+                    As proximas parcelas repetem esse dia do mes.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Vencimento final</Label>
                   <Input
                     type="date"
                     value={form.vencimento}

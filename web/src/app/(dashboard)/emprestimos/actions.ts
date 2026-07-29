@@ -14,6 +14,7 @@ export type LoanFormInput = {
   indexer: "CDI" | "SOFR" | "PRE_FIXADO" | "SELIC";
   installments: number;
   contractDate: string;
+  primeiroVencimento: string;
   vencimento: string;
   status: "ATIVO" | "LIQUIDADO" | "EM_ATRASO";
   amortizationSystem: "PRICE" | "SAC" | "BULLET";
@@ -34,6 +35,7 @@ function revalidateAll() {
 export async function createLoan(input: LoanFormInput) {
   const contractDate = parseLocalDate(input.contractDate);
   const lastDueDate = parseLocalDate(input.vencimento);
+  const firstDueDate = parseLocalDate(input.primeiroVencimento);
 
   await prisma.loan.create({
     data: {
@@ -48,7 +50,7 @@ export async function createLoan(input: LoanFormInput) {
       spread: 2.5,
       amortizationSystem: input.amortizationSystem,
       contractDate,
-      firstDueDate: new Date(contractDate.getFullYear(), contractDate.getMonth() + 1, 5),
+      firstDueDate,
       lastDueDate,
       installments: input.installments,
       periodicity: "Mensal",
@@ -67,6 +69,7 @@ export async function createLoan(input: LoanFormInput) {
 export async function updateLoan(id: string, input: LoanFormInput) {
   const contractDate = parseLocalDate(input.contractDate);
   const lastDueDate = parseLocalDate(input.vencimento);
+  const firstDueDate = parseLocalDate(input.primeiroVencimento);
 
   await prisma.loan.update({
     where: { id },
@@ -80,6 +83,7 @@ export async function updateLoan(id: string, input: LoanFormInput) {
       indexer: input.indexer,
       amortizationSystem: input.amortizationSystem,
       contractDate,
+      firstDueDate,
       lastDueDate,
       installments: input.installments,
       iof: input.iof,
