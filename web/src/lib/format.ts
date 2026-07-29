@@ -17,12 +17,7 @@ export function formatCurrencyPrecise(value: number, currency: string = "BRL") {
 }
 
 export function formatCompactCurrency(value: number, currency: string = "BRL") {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency,
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
+  return formatCurrency(value, currency);
 }
 
 export function formatPercent(value: number, digits: number = 2) {
