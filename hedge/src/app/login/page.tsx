@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
@@ -33,39 +34,61 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-sm">
-        <div className="mb-6">
-          <p className="text-sm font-semibold">Hedge</p>
-          <p className="text-xs text-muted">Operacoes de hedge cambial</p>
-        </div>
+    <div className="flex min-h-screen bg-background">
+      <div className="relative hidden w-1/2 lg:block">
+        <Image
+          src="/nayme-watermark.jpg"
+          alt="Nayme"
+          fill
+          priority
+          sizes="50vw"
+          className="object-cover"
+        />
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label>E-mail</Label>
-            <Input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="voce@empresa.com"
+      <div className="flex flex-1 items-center justify-center px-4">
+        <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-sm">
+          <div className="mb-6 flex items-center gap-3">
+            <Image
+              src="/nayme-logo.png"
+              alt="Nayme"
+              width={36}
+              height={36}
+              className="rounded-full"
             />
+            <div>
+              <p className="text-sm font-semibold">Hedge</p>
+              <p className="text-xs text-muted">Operacoes de hedge cambial</p>
+            </div>
           </div>
-          <div>
-            <Label>Senha</Label>
-            <Input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="********"
-            />
-          </div>
-          {error && <p className="text-sm text-danger">{error}</p>}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
-          </Button>
-        </form>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label>E-mail</Label>
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="voce@empresa.com"
+              />
+            </div>
+            <div>
+              <Label>Senha</Label>
+              <Input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="********"
+              />
+            </div>
+            {error && <p className="text-sm text-danger">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar"}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );

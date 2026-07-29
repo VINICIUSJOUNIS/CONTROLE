@@ -14,8 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hedge",
+  title: "Hedge | Nayme",
   description: "Controle de operacoes de hedge cambial (NDF/TRAVA)",
+  icons: {
+    icon: "/nayme-logo.png",
+  },
 };
 
 export default function RootLayout({
