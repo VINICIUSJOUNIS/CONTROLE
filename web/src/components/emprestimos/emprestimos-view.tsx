@@ -17,7 +17,7 @@ import {
 import { LoanRow } from "@/lib/data";
 import { createLoan, deleteLoan, updateLoan } from "@/app/(dashboard)/emprestimos/actions";
 import { NovoBanco } from "@/components/bancos/novo-banco";
-import { buildAmortizationSchedule } from "@/lib/amortization";
+import { buildAmortizationSchedule, AmortizationSystemValue } from "@/lib/amortization";
 import { Plus, Search, Pencil, Trash2, Table2 } from "lucide-react";
 
 type Bank = { id: string; name: string; color: string };
@@ -35,6 +35,13 @@ const statusLabels: Record<string, string> = {
   EM_ATRASO: "Em atraso",
 };
 
+// Mesma regra do backend (actions.ts): 1o vencimento no dia 5 do mes seguinte a contratacao.
+function previewFirstDueDate(contractDate: string) {
+  if (!contractDate) return "";
+  const d = new Date(contractDate);
+  return new Date(d.getFullYear(), d.getMonth() + 1, 5).toISOString().slice(0, 10);
+}
+
 function emptyForm(defaultBankId: string) {
   return {
     bankId: defaultBankId,
@@ -51,6 +58,7 @@ function emptyForm(defaultBankId: string) {
     hasInsurance: false,
     insuranceCost: "",
     otherCosts: "",
+    amortizationSystem: "PRICE" as AmortizationSystemValue,
   };
 }
 
@@ -70,6 +78,7 @@ function formFromRow(loan: LoanRow) {
     hasInsurance: loan.hasInsurance,
     insuranceCost: String(loan.insuranceCost),
     otherCosts: String(loan.otherCosts),
+    amortizationSystem: loan.amortizationSystem as AmortizationSystemValue,
   };
 }
 
@@ -98,6 +107,30 @@ export function EmprestimosView({
     () => (amortizacaoLoan ? buildAmortizationSchedule(amortizacaoLoan) : []),
     [amortizacaoLoan]
   );
+
+  const formPreviewSchedule = useMemo(() => {
+    const contractedValue = Number(form.contractedValue);
+    const interestRate = Number(form.interestRate);
+    const installments = Number(form.installments);
+    if (!(contractedValue > 0) || !(interestRate > 0) || !(installments > 0)) return [];
+    if (!form.contractDate || !form.vencimento) return [];
+    return buildAmortizationSchedule({
+      contractedValue,
+      interestRate,
+      installments,
+      contractDate: form.contractDate,
+      firstDueDate: previewFirstDueDate(form.contractDate),
+      lastDueDate: form.vencimento,
+      amortizationSystem: form.amortizationSystem,
+    });
+  }, [
+    form.contractedValue,
+    form.interestRate,
+    form.installments,
+    form.contractDate,
+    form.vencimento,
+    form.amortizationSystem,
+  ]);
 
   const years = useMemo(
     () => Array.from(new Set(initialLoans.map((l) => l.contractDate.slice(0, 4)))).sort(),
@@ -180,6 +213,7 @@ export function EmprestimosView({
       contractDate: form.contractDate,
       vencimento: form.vencimento,
       status: form.status,
+      amortizationSystem: form.amortizationSystem,
       iof: Number(form.iof) || 0,
       hasInsurance: form.hasInsurance,
       insuranceCost: Number(form.insuranceCost) || 0,
@@ -265,7 +299,10 @@ export function EmprestimosView({
               Novo emprestimo
             </Button>
           </DialogTrigger>
-          <DialogContent title={editingId ? "Editar emprestimo" : "Cadastrar novo emprestimo"}>
+          <DialogContent
+            title={editingId ? "Editar emprestimo" : "Cadastrar novo emprestimo"}
+            className="max-w-2xl"
+          >
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -317,7 +354,7 @@ export function EmprestimosView({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Indexador</Label>
                   <Select
@@ -332,6 +369,24 @@ export function EmprestimosView({
                     <option value="SELIC">SELIC</option>
                   </Select>
                 </div>
+                <div>
+                  <Label>Sistema de amortizacao</Label>
+                  <Select
+                    value={form.amortizationSystem}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        amortizationSystem: e.target.value as AmortizationSystemValue,
+                      })
+                    }
+                  >
+                    <option value="PRICE">PRICE (parcela fixa)</option>
+                    <option value="SAC">SAC (amortizacao fixa)</option>
+                    <option value="BULLET">BULLET (so juros + principal no final)</option>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Parcelas</Label>
                   <Input
@@ -412,6 +467,40 @@ export function EmprestimosView({
                   </div>
                 </div>
               </div>
+
+              {formPreviewSchedule.length > 0 && (
+                <div className="rounded-lg border border-border p-3">
+                  <p className="mb-2 text-sm font-medium">Previa da amortizacao</p>
+                  <div className="max-h-52 overflow-y-auto">
+                    <table className="w-full whitespace-nowrap text-xs">
+                      <thead className="sticky top-0 bg-card">
+                        <tr className="border-b border-border text-left text-muted">
+                          <th className="py-1.5 pr-3 font-medium">Parcela</th>
+                          <th className="py-1.5 pr-3 font-medium">Vencimento</th>
+                          <th className="py-1.5 pr-3 font-medium">Amortizacao</th>
+                          <th className="py-1.5 pr-3 font-medium">Juros</th>
+                          <th className="py-1.5 pr-3 font-medium">Parcela</th>
+                          <th className="py-1.5 font-medium">Saldo devedor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {formPreviewSchedule.map((row) => (
+                          <tr key={row.numero} className="border-b border-border last:border-0">
+                            <td className="py-1.5 pr-3">{row.numero}</td>
+                            <td className="py-1.5 pr-3">{formatDate(row.vencimento)}</td>
+                            <td className="py-1.5 pr-3">{formatCurrencyPrecise(row.amortizacao)}</td>
+                            <td className="py-1.5 pr-3">{formatCurrencyPrecise(row.juros)}</td>
+                            <td className="py-1.5 pr-3 font-medium">
+                              {formatCurrencyPrecise(row.valorParcela)}
+                            </td>
+                            <td className="py-1.5">{formatCurrencyPrecise(row.saldoDevedor)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {error && <p className="text-sm text-danger">{error}</p>}
               <Button className="w-full" onClick={handleSave} disabled={isPending}>

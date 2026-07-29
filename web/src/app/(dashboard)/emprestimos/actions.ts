@@ -15,6 +15,7 @@ export type LoanFormInput = {
   contractDate: string;
   vencimento: string;
   status: "ATIVO" | "LIQUIDADO" | "EM_ATRASO";
+  amortizationSystem: "PRICE" | "SAC" | "BULLET";
   iof: number;
   hasInsurance: boolean;
   insuranceCost: number;
@@ -43,7 +44,7 @@ export async function createLoan(input: LoanFormInput) {
       interestRate: input.interestRate,
       indexer: input.indexer,
       spread: 2.5,
-      amortizationSystem: "PRICE",
+      amortizationSystem: input.amortizationSystem,
       contractDate,
       firstDueDate: new Date(contractDate.getFullYear(), contractDate.getMonth() + 1, 5),
       lastDueDate,
@@ -74,6 +75,7 @@ export async function updateLoan(id: string, input: LoanFormInput) {
       contractedValue: input.contractedValue,
       interestRate: input.interestRate,
       indexer: input.indexer,
+      amortizationSystem: input.amortizationSystem,
       contractDate,
       lastDueDate,
       installments: input.installments,
