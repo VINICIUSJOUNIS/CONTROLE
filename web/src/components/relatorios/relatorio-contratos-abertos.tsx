@@ -73,7 +73,19 @@ export function RelatorioContratosAbertos({
         </div>
       </CardHeader>
       <CardContent className="relative overflow-x-auto">
-        <h2 className="mb-3 hidden text-base font-semibold print:block">{title}</h2>
+        <div className="mb-6 hidden items-end justify-between border-b-2 border-primary pb-4 print:flex">
+          <div className="flex items-center gap-3">
+            <Image src="/nayme-logo.png" alt="Nayme" width={48} height={48} className="rounded-full" />
+            <div>
+              <p className="text-lg font-semibold tracking-wide">NAYME</p>
+              <p className="text-xs text-muted">Tesouraria Corporativa</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-base font-semibold">{title}</p>
+            <p className="text-xs text-muted">Emitido em {formatDate(new Date().toISOString().slice(0, 10))}</p>
+          </div>
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-muted">
@@ -127,6 +139,10 @@ export function RelatorioContratosAbertos({
           <div className="text-center text-xs">
             <div className="mb-1 border-t border-foreground pt-2">Data</div>
           </div>
+        </div>
+
+        <div className="mt-12 hidden border-t border-border pt-2 text-center text-[10px] text-muted print:block">
+          NAYME - Tesouraria Corporativa
         </div>
       </CardContent>
     </Card>
