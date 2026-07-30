@@ -60,11 +60,14 @@ export async function getLoans() {
     const insuranceCost = n(l.insuranceCost);
     const otherCosts = n(l.otherCosts);
 
-    const prazoMeses = monthsBetween(l.contractDate, l.lastDueDate);
-    const prazoDias = daysBetween(l.contractDate, l.lastDueDate);
+    // Se liquidado antecipadamente, os juros incidem so sobre o periodo realmente
+    // utilizado (contratacao ate a liquidacao), nao sobre o prazo total contratado.
+    const fimPeriodo = l.settlementDate ?? l.lastDueDate;
+    const prazoMeses = monthsBetween(l.contractDate, fimPeriodo);
+    const prazoDias = daysBetween(l.contractDate, fimPeriodo);
     const basisDays = RATE_BASIS_DAYS[l.rateBasis as RateBasisValue] ?? RATE_BASIS_DAYS.ANUAL;
     // Juros: valor contratado x taxa (na base informada - mes/semestre/ano), proporcional
-    // ao prazo em dias corridos (contratacao ate o vencimento).
+    // ao prazo em dias corridos efetivamente utilizado.
     const jurosValor = Number(
       (contractedValue * (interestRate / 100) * (prazoDias / basisDays)).toFixed(2)
     );
