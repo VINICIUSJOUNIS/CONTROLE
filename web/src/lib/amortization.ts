@@ -73,6 +73,27 @@ function installmentDates(firstDueDate: string, lastDueDate: string, installment
   return dates;
 }
 
+// Saldo devedor real de um emprestimo em uma data de referencia, usando o
+// cronograma de amortizacao (respeita PRICE/SAC/BULLET, nao um percentual fixo).
+// Liquidado (status + settlementDate), o saldo zera a partir da liquidacao.
+export function saldoDevedorEm(
+  loan: LoanForAmortization & { status?: string; settlementDate?: string | null },
+  dataRef: string
+): number {
+  if (loan.status === "LIQUIDADO" && loan.settlementDate && dataRef >= loan.settlementDate) {
+    return 0;
+  }
+  if (dataRef < loan.contractDate) return loan.contractedValue;
+
+  const schedule = buildAmortizationSchedule(loan);
+  let saldo = loan.contractedValue;
+  for (const row of schedule) {
+    if (row.vencimento <= dataRef) saldo = row.saldoDevedor;
+    else break;
+  }
+  return saldo;
+}
+
 export function buildAmortizationSchedule(
   loan: LoanForAmortization,
   vencimentoOverrides?: Record<number, string>

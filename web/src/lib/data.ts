@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { RATE_BASIS_DAYS, RateBasisValue } from "@/lib/amortization";
+import { RATE_BASIS_DAYS, RateBasisValue, saldoDevedorEm } from "@/lib/amortization";
 
 function n(value: unknown): number {
   return Number(value);
@@ -98,6 +98,30 @@ export async function getLoans() {
     );
     const custoAcumulado = Number((jurosAcumulado + iof + insuranceCost + otherCosts).toFixed(2));
 
+    const contractDateStr = l.contractDate.toISOString().slice(0, 10);
+    const firstDueDateStr = l.firstDueDate.toISOString().slice(0, 10);
+    const lastDueDateStr = l.lastDueDate.toISOString().slice(0, 10);
+    const settlementDateStr = l.settlementDate ? l.settlementDate.toISOString().slice(0, 10) : null;
+    const hojeStr = hoje.toISOString().slice(0, 10);
+
+    // Saldo devedor real (respeita o sistema de amortizacao - PRICE/SAC/BULLET -
+    // em vez de um percentual fixo). Zero se ja liquidado.
+    const saldoDevedorAtual = saldoDevedorEm(
+      {
+        contractedValue,
+        interestRate,
+        rateBasis: l.rateBasis,
+        installments: l.installments,
+        contractDate: contractDateStr,
+        firstDueDate: firstDueDateStr,
+        lastDueDate: lastDueDateStr,
+        amortizationSystem: l.amortizationSystem,
+        status: l.status,
+        settlementDate: settlementDateStr,
+      },
+      hojeStr
+    );
+
     return {
       id: l.id,
       bankId: l.bankId,
@@ -111,10 +135,10 @@ export async function getLoans() {
       indexer: l.indexer,
       spread: n(l.spread),
       amortizationSystem: l.amortizationSystem,
-      contractDate: l.contractDate.toISOString().slice(0, 10),
-      firstDueDate: l.firstDueDate.toISOString().slice(0, 10),
-      lastDueDate: l.lastDueDate.toISOString().slice(0, 10),
-      settlementDate: l.settlementDate ? l.settlementDate.toISOString().slice(0, 10) : null,
+      contractDate: contractDateStr,
+      firstDueDate: firstDueDateStr,
+      lastDueDate: lastDueDateStr,
+      settlementDate: settlementDateStr,
       installments: l.installments,
       periodicity: l.periodicity,
       guarantee: l.guarantee,
@@ -127,6 +151,7 @@ export async function getLoans() {
       custoTotal,
       jurosAcumulado,
       custoAcumulado,
+      saldoDevedorAtual,
       status: l.status,
       parcelas: l.installmentRecords.map((r) => ({
         numero: r.numero,
@@ -240,9 +265,9 @@ export async function getKpis(range?: PeriodRange, modalidade?: ModalidadeFilter
   const loans = filtered.loans;
   const accOperations = filtered.accOperations;
 
-  const saldoDevedorLoans = loans
-    .filter((l) => l.status !== "LIQUIDADO")
-    .reduce((sum, l) => sum + l.contractedValue * 0.62, 0);
+  // Saldo devedor real dos emprestimos: soma o saldo que a amortizacao (PRICE/SAC/
+  // BULLET) diz que ainda resta hoje, nao um percentual fixo do valor contratado.
+  const saldoDevedorLoans = loans.reduce((sum, l) => sum + l.saldoDevedorAtual, 0);
   const saldoDevedorAcc = accOperations
     .filter((a) => a.status !== "LIQUIDADO")
     .reduce((sum, a) => sum + a.receivedValueBRL, 0);
@@ -252,22 +277,31 @@ export async function getKpis(range?: PeriodRange, modalidade?: ModalidadeFilter
   const saldoDevedorTotal = saldoDevedorLoans + saldoDevedorAcc;
 
   const totalContratado = loans.reduce((sum, l) => sum + l.contractedValue, 0);
+  // Total contratado da carteira inteira (emprestimos + ACC), usado no KPI geral do
+  // dashboard - "totalContratado" sozinho e so emprestimos (usado no grafico de
+  // distribuicao por modalidade, onde precisa ficar separado do ACC).
+  const totalAccContratado = accOperations.reduce((sum, a) => sum + a.receivedValueBRL, 0);
+  const totalContratadoGeral = totalContratado + totalAccContratado;
 
   const jurosPagos =
     loans.filter((l) => l.status === "LIQUIDADO").reduce((sum, l) => sum + l.jurosValor, 0) +
     accOperations
       .filter((a) => a.status === "LIQUIDADO")
       .reduce((sum, a) => sum + a.jurosPagoValor, 0);
+  // Juros futuros: o que ainda falta pagar (projecao total menos o que ja correu ate
+  // hoje), nao a projecao inteira do contrato - senao dobraria os juros ja acumulados.
   const jurosFuturos =
-    loans.filter((l) => l.status !== "LIQUIDADO").reduce((sum, l) => sum + l.jurosValor, 0) +
+    loans
+      .filter((l) => l.status !== "LIQUIDADO")
+      .reduce((sum, l) => sum + Math.max(0, l.jurosValor - l.jurosAcumulado), 0) +
     accOperations
       .filter((a) => a.status !== "LIQUIDADO")
       .reduce((sum, a) => sum + a.jurosValor, 0);
 
-  const totalAccContratado = accOperations.reduce((sum, a) => sum + a.receivedValueBRL, 0);
+  // Exposicao cambial em US$ (moeda do risco), nao convertida para R$.
   const exposicaoCambial = accOperations
     .filter((a) => a.status === "EM_ABERTO")
-    .reduce((sum, a) => sum + a.contractedValueForeign * a.spotRate, 0);
+    .reduce((sum, a) => sum + a.contractedValueForeign, 0);
 
   // Custo medio ponderado da carteira: custo total / principal, ponderado pelo valor de
   // cada operacao (nao e uma media simples das taxas). Metrica-chave para o CFO.
@@ -298,6 +332,7 @@ export async function getKpis(range?: PeriodRange, modalidade?: ModalidadeFilter
     saldoDevedorAcc,
     saldoDevedorAccUsd,
     totalContratado,
+    totalContratadoGeral,
     custoMedioPonderado,
     concentracaoMaiorBanco,
     jurosPagos,
@@ -351,9 +386,12 @@ export async function getDebtEvolution(range?: PeriodRange, modalidade?: Modalid
   const months = monthsInRange(from, to);
 
   return months.map((month) => {
+    const dataRef = endOfMonthStr(month);
+    // Saldo real da amortizacao (PRICE/SAC declinam mes a mes, BULLET fica cheio ate
+    // o fim) - nao o valor contratado inteiro ate o vencimento.
     const saldoLoans = loans
-      .filter((l) => l.contractDate.slice(0, 7) <= month && l.lastDueDate.slice(0, 7) >= month)
-      .reduce((sum, l) => sum + l.contractedValue, 0);
+      .filter((l) => l.contractDate.slice(0, 7) <= month)
+      .reduce((sum, l) => sum + saldoDevedorEm(l, dataRef), 0);
     const saldoAcc = accOperations
       .filter((a) => {
         // Usa a data real de quitacao quando ja liquidado (pode ser antes ou depois do
@@ -426,6 +464,13 @@ export async function getRateSummary(range?: PeriodRange) {
     minRate: allRates.length ? Number(Math.min(...allRates).toFixed(2)) : 0,
     maxRate: allRates.length ? Number(Math.max(...allRates).toFixed(2)) : 0,
   };
+}
+
+// Ultimo dia de um mes "YYYY-MM", como "YYYY-MM-DD".
+function endOfMonthStr(month: string): string {
+  const [year, m] = month.split("-").map(Number);
+  const lastDay = new Date(year, m, 0).getDate();
+  return `${month}-${String(lastDay).padStart(2, "0")}`;
 }
 
 function monthsInRange(from: string, to: string) {

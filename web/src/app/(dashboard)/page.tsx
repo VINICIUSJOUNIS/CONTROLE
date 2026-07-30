@@ -156,7 +156,7 @@ export default async function DashboardPage({
           />
           <KpiCard
             label="Total contratado"
-            value={formatCompactCurrency(kpis.totalContratado)}
+            value={formatCompactCurrency(kpis.totalContratadoGeral)}
             icon={PiggyBank}
           />
           <KpiCard
@@ -182,7 +182,7 @@ export default async function DashboardPage({
           />
           <KpiCard
             label="Exposicao cambial (ACC aberto)"
-            value={formatCompactCurrency(kpis.exposicaoCambial)}
+            value={formatCompactCurrency(kpis.exposicaoCambial, "USD")}
             icon={TrendingUp}
           />
           <KpiCard
