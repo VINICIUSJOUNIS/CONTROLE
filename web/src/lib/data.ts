@@ -272,6 +272,8 @@ export async function getKpis(range?: PeriodRange) {
 
   return {
     saldoDevedorTotal,
+    saldoDevedorLoans,
+    saldoDevedorAcc,
     totalContratado,
     custoMedioPonderado,
     concentracaoMaiorBanco,

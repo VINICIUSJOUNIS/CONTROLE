@@ -132,6 +132,16 @@ export default async function DashboardPage({
             icon={Wallet}
           />
           <KpiCard
+            label="Emprestimos em aberto"
+            value={formatCompactCurrency(kpis.saldoDevedorLoans)}
+            icon={PiggyBank}
+          />
+          <KpiCard
+            label="ACC em aberto"
+            value={formatCompactCurrency(kpis.saldoDevedorAcc)}
+            icon={PiggyBank}
+          />
+          <KpiCard
             label="Total contratado"
             value={formatCompactCurrency(kpis.totalContratado)}
             icon={PiggyBank}
