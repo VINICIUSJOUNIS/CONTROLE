@@ -26,9 +26,11 @@ export function PeriodFilter({ years }: { years: string[] }) {
   const [customTo, setCustomTo] = useState(to);
 
   function apply(nextFrom?: string, nextTo?: string) {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams.toString());
     if (nextFrom) params.set("from", nextFrom);
+    else params.delete("from");
     if (nextTo) params.set("to", nextTo);
+    else params.delete("to");
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
     setCustomFrom(nextFrom ?? "");

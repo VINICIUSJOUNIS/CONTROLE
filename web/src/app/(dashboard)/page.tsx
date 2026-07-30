@@ -1,6 +1,7 @@
 import { Topbar } from "@/components/layout/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
+import { ModalidadeFilter } from "@/components/dashboard/modalidade-filter";
 import { LineChartCard } from "@/components/charts/line-chart-card";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { PieChartCard } from "@/components/charts/pie-chart-card";
@@ -15,6 +16,7 @@ import {
   getKpis,
   getLoans,
   getYearlyComparison,
+  ModalidadeFilter as ModalidadeFilterValue,
 } from "@/lib/data";
 import { formatCompactCurrency, formatDate, formatMonthLabel, formatPercent } from "@/lib/format";
 import {
@@ -38,20 +40,22 @@ const statusLabels: Record<string, string> = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; modalidade?: string }>;
 }) {
   const params = await searchParams;
   const range = params.from || params.to ? { from: params.from, to: params.to } : undefined;
+  const modalidade: ModalidadeFilterValue =
+    params.modalidade === "EMPRESTIMOS" || params.modalidade === "ACC" ? params.modalidade : "TODOS";
 
   const [allLoans, allAccOperations, banks, kpis, cashFlow, debtEvolutionRaw, yearlyComparison, years] =
     await Promise.all([
       getLoans(),
       getAccOperations(),
       getBanks(),
-      getKpis(range),
-      getCashFlow(range),
-      getDebtEvolution(range),
-      getYearlyComparison(),
+      getKpis(range, modalidade),
+      getCashFlow(range, modalidade),
+      getDebtEvolution(range, modalidade),
+      getYearlyComparison(modalidade),
       getAvailableYears(),
     ]);
 
@@ -60,8 +64,9 @@ export default async function DashboardPage({
     if (range?.to && contractDate.slice(0, 7) > range.to) return false;
     return true;
   };
-  const loans = allLoans.filter((l) => inPeriod(l.contractDate));
-  const accOperations = allAccOperations.filter((a) => inPeriod(a.contractDate));
+  const loans = modalidade === "ACC" ? [] : allLoans.filter((l) => inPeriod(l.contractDate));
+  const accOperations =
+    modalidade === "EMPRESTIMOS" ? [] : allAccOperations.filter((a) => inPeriod(a.contractDate));
 
   const debtEvolution = debtEvolutionRaw.map((d) => ({
     month: formatMonthLabel(d.month),
@@ -123,7 +128,10 @@ export default async function DashboardPage({
         subtitle="Visao geral da carteira de emprestimos e ACC"
       />
       <div className="space-y-6 p-6">
-        <PeriodFilter years={years} />
+        <div className="flex flex-wrap items-end gap-3">
+          <PeriodFilter years={years} />
+          <ModalidadeFilter />
+        </div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
           <KpiCard
@@ -137,8 +145,13 @@ export default async function DashboardPage({
             icon={PiggyBank}
           />
           <KpiCard
-            label="ACC em aberto"
+            label="ACC em aberto (R$)"
             value={formatCompactCurrency(kpis.saldoDevedorAcc)}
+            icon={PiggyBank}
+          />
+          <KpiCard
+            label="ACC em aberto (US$)"
+            value={formatCompactCurrency(kpis.saldoDevedorAccUsd, "USD")}
             icon={PiggyBank}
           />
           <KpiCard

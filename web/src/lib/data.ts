@@ -7,6 +7,20 @@ function n(value: unknown): number {
 
 export type PeriodRange = { from?: string; to?: string };
 
+export type ModalidadeFilter = "TODOS" | "EMPRESTIMOS" | "ACC";
+
+// Zera o lado (emprestimos ou ACC) que nao deve entrar na agregacao, conforme o
+// filtro de modalidade escolhido no dashboard.
+function applyModalidade<L, A>(
+  loans: L[],
+  accOperations: A[],
+  modalidade?: ModalidadeFilter
+): { loans: L[]; accOperations: A[] } {
+  if (modalidade === "EMPRESTIMOS") return { loans, accOperations: [] };
+  if (modalidade === "ACC") return { loans: [], accOperations };
+  return { loans, accOperations };
+}
+
 // Filtra registros pela data de contratacao (formato "YYYY-MM-DD"), usando o mes ("YYYY-MM")
 // como granularidade de comparacao. Sem range definido, retorna tudo.
 function filterByPeriod<T extends { contractDate: string }>(items: T[], range?: PeriodRange): T[] {
@@ -216,10 +230,15 @@ export async function getAccOperations() {
 export type LoanRow = Awaited<ReturnType<typeof getLoans>>[number];
 export type AccRow = Awaited<ReturnType<typeof getAccOperations>>[number];
 
-export async function getKpis(range?: PeriodRange) {
+export async function getKpis(range?: PeriodRange, modalidade?: ModalidadeFilter) {
   const [allLoans, allAccOperations] = await Promise.all([getLoans(), getAccOperations()]);
-  const loans = filterByPeriod(allLoans, range);
-  const accOperations = filterByPeriod(allAccOperations, range);
+  const filtered = applyModalidade(
+    filterByPeriod(allLoans, range),
+    filterByPeriod(allAccOperations, range),
+    modalidade
+  );
+  const loans = filtered.loans;
+  const accOperations = filtered.accOperations;
 
   const saldoDevedorLoans = loans
     .filter((l) => l.status !== "LIQUIDADO")
@@ -227,6 +246,9 @@ export async function getKpis(range?: PeriodRange) {
   const saldoDevedorAcc = accOperations
     .filter((a) => a.status !== "LIQUIDADO")
     .reduce((sum, a) => sum + a.receivedValueBRL, 0);
+  const saldoDevedorAccUsd = accOperations
+    .filter((a) => a.status !== "LIQUIDADO")
+    .reduce((sum, a) => sum + a.contractedValueForeign, 0);
   const saldoDevedorTotal = saldoDevedorLoans + saldoDevedorAcc;
 
   const totalContratado = loans.reduce((sum, l) => sum + l.contractedValue, 0);
@@ -274,6 +296,7 @@ export async function getKpis(range?: PeriodRange) {
     saldoDevedorTotal,
     saldoDevedorLoans,
     saldoDevedorAcc,
+    saldoDevedorAccUsd,
     totalContratado,
     custoMedioPonderado,
     concentracaoMaiorBanco,
@@ -316,8 +339,9 @@ function monthsSinceEarliest(dates: string[]) {
 
 // Saldo devedor real mes a mes: soma do principal de contratos ja assinados e ainda dentro
 // do prazo (contractDate <= mes <= vencimento), para emprestimos e ACC.
-export async function getDebtEvolution(range?: PeriodRange) {
-  const [loans, accOperations] = await Promise.all([getLoans(), getAccOperations()]);
+export async function getDebtEvolution(range?: PeriodRange, modalidade?: ModalidadeFilter) {
+  const [allLoans, allAccOperations] = await Promise.all([getLoans(), getAccOperations()]);
+  const { loans, accOperations } = applyModalidade(allLoans, allAccOperations, modalidade);
   const fullRange = monthsSinceEarliest([
     ...loans.map((l) => l.contractDate),
     ...accOperations.map((a) => a.contractDate),
@@ -343,8 +367,9 @@ export async function getDebtEvolution(range?: PeriodRange) {
   });
 }
 
-export async function getCashFlow(range?: PeriodRange) {
-  const [loans, accOperations] = await Promise.all([getLoans(), getAccOperations()]);
+export async function getCashFlow(range?: PeriodRange, modalidade?: ModalidadeFilter) {
+  const [allLoans, allAccOperations] = await Promise.all([getLoans(), getAccOperations()]);
+  const { loans, accOperations } = applyModalidade(allLoans, allAccOperations, modalidade);
   const fullRange = monthsSinceEarliest([
     ...loans.map((l) => l.contractDate),
     ...accOperations.map((a) => a.contractDate),
@@ -467,8 +492,9 @@ export async function getRateHistory(range?: PeriodRange) {
   });
 }
 
-export async function getYearlyComparison() {
-  const [loans, accOperations] = await Promise.all([getLoans(), getAccOperations()]);
+export async function getYearlyComparison(modalidade?: ModalidadeFilter) {
+  const [allLoans, allAccOperations] = await Promise.all([getLoans(), getAccOperations()]);
+  const { loans, accOperations } = applyModalidade(allLoans, allAccOperations, modalidade);
 
   const years = Array.from(
     new Set([
