@@ -71,6 +71,13 @@ option {
   text-transform: uppercase;
 }
 
+@media print {
+  @page {
+    size: landscape;
+    margin: 12mm;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
