@@ -16,6 +16,7 @@ export type LoanFormInput = {
   contractDate: string;
   primeiroVencimento: string;
   vencimento: string;
+  dataLiquidacao: string;
   status: "ATIVO" | "LIQUIDADO" | "EM_ATRASO";
   amortizationSystem: "PRICE" | "SAC" | "BULLET";
   iof: number;
@@ -52,6 +53,7 @@ export async function createLoan(input: LoanFormInput) {
       contractDate,
       firstDueDate,
       lastDueDate,
+      settlementDate: input.dataLiquidacao ? parseLocalDate(input.dataLiquidacao) : null,
       installments: input.installments,
       periodicity: "Mensal",
       guarantee: "A definir",
@@ -85,6 +87,7 @@ export async function updateLoan(id: string, input: LoanFormInput) {
       contractDate,
       firstDueDate,
       lastDueDate,
+      settlementDate: input.dataLiquidacao ? parseLocalDate(input.dataLiquidacao) : null,
       installments: input.installments,
       iof: input.iof,
       hasInsurance: input.hasInsurance,

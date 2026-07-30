@@ -86,6 +86,7 @@ export async function getLoans() {
       contractDate: l.contractDate.toISOString().slice(0, 10),
       firstDueDate: l.firstDueDate.toISOString().slice(0, 10),
       lastDueDate: l.lastDueDate.toISOString().slice(0, 10),
+      settlementDate: l.settlementDate ? l.settlementDate.toISOString().slice(0, 10) : null,
       installments: l.installments,
       periodicity: l.periodicity,
       guarantee: l.guarantee,

@@ -93,6 +93,7 @@ model Loan {
   contractDate       DateTime           @db.Date
   firstDueDate       DateTime           @db.Date
   lastDueDate        DateTime           @db.Date
+  settlementDate     DateTime?          @db.Date
   installments       Int
   periodicity        String
   guarantee          String

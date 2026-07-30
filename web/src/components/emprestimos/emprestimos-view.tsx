@@ -62,6 +62,7 @@ function emptyForm(defaultBankId: string) {
     contractDate: new Date().toISOString().slice(0, 10),
     primeiroVencimento: "",
     vencimento: "",
+    dataLiquidacao: "",
     status: "ATIVO" as StatusValue,
     iof: "",
     hasInsurance: false,
@@ -84,6 +85,7 @@ function formFromRow(loan: LoanRow) {
     contractDate: loan.contractDate,
     primeiroVencimento: loan.firstDueDate,
     vencimento: loan.lastDueDate,
+    dataLiquidacao: loan.settlementDate ?? "",
     status: loan.status as StatusValue,
     iof: String(loan.iof),
     hasInsurance: loan.hasInsurance,
@@ -314,6 +316,7 @@ export function EmprestimosView({
       contractDate: form.contractDate,
       primeiroVencimento: form.primeiroVencimento,
       vencimento: form.vencimento,
+      dataLiquidacao: form.dataLiquidacao,
       status: form.status,
       amortizationSystem: form.amortizationSystem,
       iof: Number(form.iof) || 0,
@@ -563,6 +566,20 @@ export function EmprestimosView({
                 </div>
               </div>
 
+              {form.status === "LIQUIDADO" && (
+                <div>
+                  <Label>Data da liquidacao</Label>
+                  <Input
+                    type="date"
+                    value={form.dataLiquidacao}
+                    onChange={(e) => setForm({ ...form, dataLiquidacao: e.target.value })}
+                  />
+                  <p className="mt-1 text-xs text-muted">
+                    Preencha se liquidou antecipadamente, antes do vencimento final.
+                  </p>
+                </div>
+              )}
+
               <div className="rounded-lg border border-border p-3">
                 <label className="flex items-center gap-2 text-sm font-medium">
                   <input
@@ -684,6 +701,9 @@ export function EmprestimosView({
                     <Badge variant={statusVariant[loan.status]}>
                       {statusLabels[loan.status] ?? loan.status}
                     </Badge>
+                    {loan.settlementDate && (
+                      <p className="mt-1 text-xs text-muted">{formatDate(loan.settlementDate)}</p>
+                    )}
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1">
