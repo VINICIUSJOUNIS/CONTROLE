@@ -64,7 +64,7 @@ function emptyForm(defaultBankId: string) {
     vencimento: "",
     dataLiquidacao: "",
     status: "ATIVO" as StatusValue,
-    iof: "",
+    iofPercent: "",
     hasInsurance: false,
     insuranceCost: "",
     otherCosts: "",
@@ -87,7 +87,8 @@ function formFromRow(loan: LoanRow) {
     vencimento: loan.lastDueDate,
     dataLiquidacao: loan.settlementDate ?? "",
     status: loan.status as StatusValue,
-    iof: String(loan.iof),
+    iofPercent:
+      loan.contractedValue > 0 ? String(Number(((loan.iof / loan.contractedValue) * 100).toFixed(4))) : "",
     hasInsurance: loan.hasInsurance,
     insuranceCost: String(loan.insuranceCost),
     otherCosts: String(loan.otherCosts),
@@ -304,11 +305,13 @@ export function EmprestimosView({
       return;
     }
     setError(null);
+    const contractedValueNum = Number(form.contractedValue) || 0;
+    const iofValor = Number((contractedValueNum * (Number(form.iofPercent) || 0)) / 100);
     const payload = {
       bankId: form.bankId,
       contractNumber: form.contractNumber.trim(),
       purpose: form.purpose,
-      contractedValue: Number(form.contractedValue) || 0,
+      contractedValue: contractedValueNum,
       interestRate: Number(form.interestRate) || 0,
       rateBasis: form.rateBasis,
       indexer: form.indexer,
@@ -319,7 +322,7 @@ export function EmprestimosView({
       dataLiquidacao: form.dataLiquidacao,
       status: form.status,
       amortizationSystem: form.amortizationSystem,
-      iof: Number(form.iof) || 0,
+      iof: Number(iofValor.toFixed(2)),
       hasInsurance: form.hasInsurance,
       insuranceCost: Number(form.insuranceCost) || 0,
       otherCosts: Number(form.otherCosts) || 0,
@@ -514,13 +517,19 @@ export function EmprestimosView({
                   />
                 </div>
                 <div>
-                  <Label>IOF (R$)</Label>
+                  <Label>IOF (%)</Label>
                   <Input
                     type="number"
-                    step="0.01"
-                    value={form.iof}
-                    onChange={(e) => setForm({ ...form, iof: e.target.value })}
+                    step="0.0001"
+                    value={form.iofPercent}
+                    onChange={(e) => setForm({ ...form, iofPercent: e.target.value })}
                   />
+                  <p className="mt-1 text-xs text-muted">
+                    ={" "}
+                    {formatCurrencyPrecise(
+                      ((Number(form.contractedValue) || 0) * (Number(form.iofPercent) || 0)) / 100
+                    )}
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
