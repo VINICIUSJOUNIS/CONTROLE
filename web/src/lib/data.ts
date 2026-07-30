@@ -53,6 +53,9 @@ export async function getLoans() {
     include: { bank: true, installmentRecords: true },
     orderBy: { contractDate: "desc" },
   });
+  const hoje = new Date();
+  hoje.setUTCHours(0, 0, 0, 0);
+
   return loans.map((l) => {
     const contractedValue = n(l.contractedValue);
     const interestRate = n(l.interestRate);
@@ -60,18 +63,26 @@ export async function getLoans() {
     const insuranceCost = n(l.insuranceCost);
     const otherCosts = n(l.otherCosts);
 
-    // Se liquidado antecipadamente, os juros incidem so sobre o periodo realmente
-    // utilizado (contratacao ate a liquidacao), nao sobre o prazo total contratado.
+    // Juros/custo projetados para a vida toda do contrato: se liquidado antecipadamente,
+    // usa o periodo real (contratacao ate a liquidacao); senao, usa o prazo contratado
+    // (usado no KPI "Juros futuros" do dashboard, uma projecao do contrato ativo).
     const fimPeriodo = l.settlementDate ?? l.lastDueDate;
     const prazoMeses = monthsBetween(l.contractDate, fimPeriodo);
     const prazoDias = daysBetween(l.contractDate, fimPeriodo);
     const basisDays = RATE_BASIS_DAYS[l.rateBasis as RateBasisValue] ?? RATE_BASIS_DAYS.ANUAL;
-    // Juros: valor contratado x taxa (na base informada - mes/semestre/ano), proporcional
-    // ao prazo em dias corridos efetivamente utilizado.
     const jurosValor = Number(
       (contractedValue * (interestRate / 100) * (prazoDias / basisDays)).toFixed(2)
     );
     const custoTotal = Number((jurosValor + iof + insuranceCost + otherCosts).toFixed(2));
+
+    // Juros/custo realmente acumulados ate hoje (ou ate a liquidacao, se ja liquidado).
+    // E o que aparece na tabela de Emprestimos - nao inclui juros que ainda nao correram.
+    const fimAcumulado = l.settlementDate ?? hoje;
+    const prazoDiasAcumulado = daysBetween(l.contractDate, fimAcumulado);
+    const jurosAcumulado = Number(
+      (contractedValue * (interestRate / 100) * (prazoDiasAcumulado / basisDays)).toFixed(2)
+    );
+    const custoAcumulado = Number((jurosAcumulado + iof + insuranceCost + otherCosts).toFixed(2));
 
     return {
       id: l.id,
@@ -100,6 +111,8 @@ export async function getLoans() {
       prazoMeses,
       jurosValor,
       custoTotal,
+      jurosAcumulado,
+      custoAcumulado,
       status: l.status,
       parcelas: l.installmentRecords.map((r) => ({
         numero: r.numero,

@@ -666,10 +666,10 @@ export function EmprestimosView({
                 <th className="px-4 py-3 font-medium">Valor contratado</th>
                 <th className="px-4 py-3 font-medium">Taxa</th>
                 <th className="px-4 py-3 font-medium">Prazo (meses)</th>
-                <th className="px-4 py-3 font-medium">Juros (R$)</th>
+                <th className="px-4 py-3 font-medium">Juros ate hoje</th>
                 <th className="px-4 py-3 font-medium">IOF</th>
                 <th className="px-4 py-3 font-medium">Seguro</th>
-                <th className="px-4 py-3 font-medium">Custo total</th>
+                <th className="px-4 py-3 font-medium">Custo ate hoje</th>
                 <th className="px-4 py-3 font-medium">Vencimento</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium" />
@@ -686,7 +686,7 @@ export function EmprestimosView({
                     <span className="text-muted">{rateBasisSuffix[loan.rateBasis] ?? ""}</span>
                   </td>
                   <td className="px-4 py-2.5">{loan.prazoMeses}</td>
-                  <td className="px-4 py-2.5">{formatCurrencyPrecise(loan.jurosValor)}</td>
+                  <td className="px-4 py-2.5">{formatCurrencyPrecise(loan.jurosAcumulado)}</td>
                   <td className="px-4 py-2.5">{formatCompactCurrency(loan.iof)}</td>
                   <td className="px-4 py-2.5">
                     {loan.hasInsurance ? (
@@ -695,7 +695,7 @@ export function EmprestimosView({
                       <span className="text-muted">Nao</span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 font-medium">{formatCurrency(loan.custoTotal)}</td>
+                  <td className="px-4 py-2.5 font-medium">{formatCurrency(loan.custoAcumulado)}</td>
                   <td className="px-4 py-2.5">{formatDate(loan.lastDueDate)}</td>
                   <td className="px-4 py-2.5">
                     <Badge variant={statusVariant[loan.status]}>
