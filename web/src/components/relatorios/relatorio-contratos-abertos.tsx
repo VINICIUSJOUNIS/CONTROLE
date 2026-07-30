@@ -3,11 +3,13 @@
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { formatCompactCurrency, formatDate } from "@/lib/format";
 import { Download, Printer } from "lucide-react";
 
 type ReportRow = {
   id: string;
+  tipo: "Emprestimo" | "ACC";
   bankName: string;
   contractDate: string;
   valorTomado: number;
@@ -25,9 +27,10 @@ export function RelatorioContratosAbertos({
   rows: ReportRow[];
 }) {
   function handleExportCsv() {
-    const header = ["Banco", "Data da contratacao", "Valor tomado", "Valor em aberto", "Vencimento"];
+    const header = ["Tipo", "Banco", "Data da contratacao", "Valor tomado", "Valor em aberto", "Vencimento"];
     const lines = rows.map((r) =>
       [
+        r.tipo,
         r.bankName,
         formatDate(r.contractDate),
         r.valorTomado.toFixed(2).replace(".", ","),
@@ -74,6 +77,7 @@ export function RelatorioContratosAbertos({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-muted">
+              <th className="pb-2 pr-4 font-medium">Tipo</th>
               <th className="pb-2 pr-4 font-medium">Banco</th>
               <th className="pb-2 pr-4 font-medium">Data da contratacao</th>
               <th className="pb-2 pr-4 font-medium">Valor tomado</th>
@@ -83,7 +87,10 @@ export function RelatorioContratosAbertos({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-b border-border last:border-0">
+              <tr key={`${r.tipo}-${r.id}`} className="border-b border-border last:border-0">
+                <td className="py-2.5 pr-4">
+                  <Badge variant="neutral">{r.tipo}</Badge>
+                </td>
                 <td className="py-2.5 pr-4 font-medium">{r.bankName}</td>
                 <td className="py-2.5 pr-4">{formatDate(r.contractDate)}</td>
                 <td className="py-2.5 pr-4">{formatCompactCurrency(r.valorTomado)}</td>
@@ -93,7 +100,7 @@ export function RelatorioContratosAbertos({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-muted">
+                <td colSpan={6} className="py-8 text-center text-muted">
                   Nenhum registro em aberto no momento.
                 </td>
               </tr>
@@ -102,7 +109,7 @@ export function RelatorioContratosAbertos({
           {rows.length > 0 && (
             <tfoot>
               <tr className="border-t border-border font-semibold">
-                <td className="py-2.5 pr-4" colSpan={2}>
+                <td className="py-2.5 pr-4" colSpan={3}>
                   Total
                 </td>
                 <td className="py-2.5 pr-4">{formatCompactCurrency(totalTomado)}</td>
