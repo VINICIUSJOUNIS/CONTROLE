@@ -686,30 +686,21 @@ export async function getBankComparison(range?: PeriodRange) {
 
 export async function getOpenLoansReport() {
   const loans = await getLoans();
-  const today = new Date();
 
+  // valorEmAberto usa o mesmo saldoDevedorAtual (saldo real da amortizacao) usado no
+  // dashboard, para os dois lugares baterem sempre com o mesmo numero.
   return loans
     .filter((l) => l.status !== "LIQUIDADO")
-    .map((l) => {
-      const contractDate = new Date(l.contractDate);
-      const elapsedMonths = Math.max(
-        0,
-        Math.min(l.installments, monthsBetween(contractDate, today))
-      );
-      const valorPago = (l.contractedValue / l.installments) * elapsedMonths;
-      const valorEmAberto = Number(Math.max(l.contractedValue - valorPago, 0).toFixed(2));
-
-      return {
-        id: l.id,
-        bankName: l.bankName,
-        contractNumber: l.contractNumber,
-        contractDate: l.contractDate,
-        valorTomado: l.contractedValue,
-        valorEmAberto,
-        vencimento: l.lastDueDate,
-        status: l.status,
-      };
-    })
+    .map((l) => ({
+      id: l.id,
+      bankName: l.bankName,
+      contractNumber: l.contractNumber,
+      contractDate: l.contractDate,
+      valorTomado: l.contractedValue,
+      valorEmAberto: l.saldoDevedorAtual,
+      vencimento: l.lastDueDate,
+      status: l.status,
+    }))
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
 }
 
