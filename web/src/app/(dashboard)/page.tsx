@@ -19,6 +19,7 @@ import {
   ModalidadeFilter as ModalidadeFilterValue,
 } from "@/lib/data";
 import { formatCompactCurrency, formatDate, formatMonthLabel, formatPercent } from "@/lib/format";
+import { buildAmortizationSchedule } from "@/lib/amortization";
 import {
   Wallet,
   TrendingDown,
@@ -36,6 +37,24 @@ const statusLabels: Record<string, string> = {
   LIQUIDADO: "Liquidado",
   EM_ATRASO: "Em atraso",
 };
+
+// Proxima parcela ainda nao paga de um emprestimo (data e valor reais dela, nao a
+// data final do contrato nem o valor total contratado).
+function proximaParcela(
+  loan: Parameters<typeof buildAmortizationSchedule>[0] & {
+    parcelas: { numero: number; vencimento: string | null; paidAt: string | null }[];
+  },
+  hojeStr: string
+) {
+  const overrides: Record<number, string> = {};
+  const pagas = new Set<number>();
+  loan.parcelas.forEach((p) => {
+    if (p.vencimento) overrides[p.numero] = p.vencimento;
+    if (p.paidAt) pagas.add(p.numero);
+  });
+  const schedule = buildAmortizationSchedule(loan, overrides);
+  return schedule.find((row) => !pagas.has(row.numero) && row.vencimento >= hojeStr) ?? null;
+}
 
 export default async function DashboardPage({
   searchParams,
@@ -94,18 +113,23 @@ export default async function DashboardPage({
     { name: "ACC", value: kpis.totalAccContratado, color: "#12b76a" },
   ];
 
+  const hojeStr = new Date().toISOString().slice(0, 10);
+
   const upcoming = [
     ...loans
       .filter((l) => l.status !== "LIQUIDADO")
-      .map((l) => ({
-        id: l.id,
-        tipo: "Emprestimo" as const,
-        contractNumber: l.contractNumber,
-        bankName: l.bankName,
-        valor: l.contractedValue,
-        vencimento: l.lastDueDate,
-        status: l.status,
-      })),
+      .map((l) => {
+        const parcela = proximaParcela(l, hojeStr);
+        return {
+          id: l.id,
+          tipo: "Emprestimo" as const,
+          contractNumber: l.contractNumber,
+          bankName: l.bankName,
+          valor: parcela ? parcela.valorParcela : l.contractedValue,
+          vencimento: parcela ? parcela.vencimento : l.lastDueDate,
+          status: l.status,
+        };
+      }),
     ...accOperations
       .filter((a) => a.status !== "LIQUIDADO")
       .map((a) => ({
