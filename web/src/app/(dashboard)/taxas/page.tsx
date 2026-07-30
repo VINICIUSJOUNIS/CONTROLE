@@ -44,12 +44,12 @@ export default async function TaxasPage({
   const lastAcc = withAccRate[withAccRate.length - 1] ?? rateHistory[rateHistory.length - 1];
 
   const insights = [
-    `A taxa media dos ACC ${lastAcc.accAvgRate < firstAcc.accAvgRate ? "caiu" : "subiu"} de ${formatPercent(
+    `A taxa media ponderada dos ACC ${lastAcc.accAvgRate < firstAcc.accAvgRate ? "caiu" : "subiu"} de ${formatPercent(
       firstAcc.accAvgRate
     )} (primeiro mes com contrato no periodo) para ${formatPercent(
       lastAcc.accAvgRate
     )} (ultimo mes com contrato).`,
-    `A taxa media dos emprestimos ${
+    `A taxa media ponderada dos emprestimos ${
       last.loanAvgRate < first.loanAvgRate ? "reduziu" : "aumentou"
     } de ${formatPercent(first.loanAvgRate)} para ${formatPercent(last.loanAvgRate)} no periodo analisado.`,
     `O spread cambial medio esta em ${formatPercent(lastAcc.cambialSpread, 3)}.`,
@@ -69,12 +69,12 @@ export default async function TaxasPage({
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <KpiCard
-            label="Taxa media emprestimos"
+            label="Taxa media ponderada emprestimos"
             value={formatPercent(summary.loanAvgRate)}
             icon={Percent}
           />
           <KpiCard
-            label="Taxa media ACC"
+            label="Taxa media ponderada ACC"
             value={formatPercent(summary.accAvgRate)}
             icon={Percent}
           />
@@ -91,7 +91,7 @@ export default async function TaxasPage({
         </div>
 
         <LineChartCard
-          title="Evolucao das taxas - Emprestimos x ACC"
+          title="Evolucao das taxas (media ponderada) - Emprestimos x ACC"
           data={chartData}
           xKey="month"
           series={[

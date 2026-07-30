@@ -21,6 +21,23 @@ function applyModalidade<L, A>(
   return { loans, accOperations };
 }
 
+// Taxa anualizada (linear, mesma convencao de dias corridos usada no resto do app),
+// para poder comparar/ponderar taxas de emprestimos com bases diferentes (mensal,
+// semestral, anual) e as taxas de ACC (sempre anuais) na mesma unidade.
+function annualizedRate(rate: number, rateBasis: string): number {
+  const basisDays = RATE_BASIS_DAYS[rateBasis as RateBasisValue] ?? RATE_BASIS_DAYS.ANUAL;
+  return rate * (365 / basisDays);
+}
+
+// Media ponderada pelo valor de cada operacao - uma taxa media simples mistura
+// contratos pequenos e grandes com o mesmo peso, o que nao reflete o custo real
+// da carteira. Peso zero (sem contratos) retorna 0.
+function weightedAvg(items: { rate: number; weight: number }[]): number {
+  const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+  if (totalWeight <= 0) return 0;
+  return items.reduce((s, i) => s + i.rate * i.weight, 0) / totalWeight;
+}
+
 // Filtra registros pela data de contratacao (formato "YYYY-MM-DD"), usando o mes ("YYYY-MM")
 // como granularidade de comparacao. Sem range definido, retorna tudo.
 function filterByPeriod<T extends { contractDate: string }>(items: T[], range?: PeriodRange): T[] {
@@ -448,19 +465,25 @@ export async function getCashFlow(range?: PeriodRange, modalidade?: ModalidadeFi
   });
 }
 
-// Media/min/max calculados sobre os contratos individuais do periodo (nao sobre a media
-// mensal ja agregada), para nao mascarar o real valor medio nem o menor/maior contratado.
+// Medias ponderadas pelo valor de cada contrato (nao uma media simples das taxas),
+// calculadas sobre os contratos individuais do periodo (nao sobre a media mensal ja
+// agregada). Taxas anualizadas para poder comparar/misturar bases diferentes.
 export async function getRateSummary(range?: PeriodRange) {
   const [loans, accOperations] = await Promise.all([getLoans(), getAccOperations()]);
 
-  const loanRates = filterByPeriod(loans, range).map((l) => l.interestRate);
-  const accRates = filterByPeriod(accOperations, range).map((a) => a.interestRate);
-  const allRates = [...loanRates, ...accRates];
-  const avg = (arr: number[]) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0);
+  const loansInPeriod = filterByPeriod(loans, range);
+  const accInPeriod = filterByPeriod(accOperations, range);
+  const loanRatesAnual = loansInPeriod.map((l) => annualizedRate(l.interestRate, l.rateBasis));
+  const accRates = accInPeriod.map((a) => a.interestRate);
+  const allRates = [...loanRatesAnual, ...accRates];
 
   return {
-    loanAvgRate: Number(avg(loanRates).toFixed(2)),
-    accAvgRate: Number(avg(accRates).toFixed(2)),
+    loanAvgRate: Number(
+      weightedAvg(loansInPeriod.map((l, i) => ({ rate: loanRatesAnual[i], weight: l.contractedValue }))).toFixed(2)
+    ),
+    accAvgRate: Number(
+      weightedAvg(accInPeriod.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))).toFixed(2)
+    ),
     minRate: allRates.length ? Number(Math.min(...allRates).toFixed(2)) : 0,
     maxRate: allRates.length ? Number(Math.max(...allRates).toFixed(2)) : 0,
   };
@@ -507,8 +530,17 @@ export async function getRateHistory(range?: PeriodRange) {
     const avg = (arr: number[]) =>
       arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
 
-    const loanAvgRate = avg(loansInMonth.map((l) => l.interestRate));
-    const accAvgRate = avg(accInMonth.map((a) => a.interestRate));
+    // Taxa media ponderada pelo valor de cada contrato (nao uma media simples), com
+    // a taxa dos emprestimos anualizada para poder misturar bases diferentes.
+    const loanAvgRate = weightedAvg(
+      loansInMonth.map((l) => ({
+        rate: annualizedRate(l.interestRate, l.rateBasis),
+        weight: l.contractedValue,
+      }))
+    );
+    const accAvgRate = weightedAvg(
+      accInMonth.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))
+    );
     const spotAvg = avg(accInMonth.map((a) => a.spotRate));
     const closingAvg = avg(accInMonth.map((a) => a.closingRate));
     const ptax = avg(accInMonth.map((a) => a.ptaxContracting));
@@ -564,8 +596,17 @@ export async function getYearlyComparison(modalidade?: ModalidadeFilter) {
 
     return {
       year,
-      loanAvgRate: Number(avg(loansInYear.map((l) => l.interestRate)).toFixed(2)),
-      accAvgRate: Number(avg(accInYear.map((a) => a.interestRate)).toFixed(2)),
+      loanAvgRate: Number(
+        weightedAvg(
+          loansInYear.map((l) => ({
+            rate: annualizedRate(l.interestRate, l.rateBasis),
+            weight: l.contractedValue,
+          }))
+        ).toFixed(2)
+      ),
+      accAvgRate: Number(
+        weightedAvg(accInYear.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))).toFixed(2)
+      ),
       totalCaptado: Math.round(totalCaptado),
       custoMedio: Number(custoMedio.toFixed(2)),
       qtdOperacoes: loansInYear.length + accInYear.length,
