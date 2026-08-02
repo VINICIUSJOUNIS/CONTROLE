@@ -119,6 +119,15 @@ export default async function BalancoPage({
 
   const totalAtivo = ativoTotal(statement);
   const totalPassivo = passivoTotal(statement);
+  // Identidade contabil fundamental do balanco patrimonial: Ativo = Passivo
+  // (+ Patrimonio Liquido, ja somado dentro de passivoTotal aqui). Diferente
+  // de tolerancia de arredondamento (centavos), diverge quando o lancamento
+  // manual ou a extracao por IA tem um erro real.
+  const diferencaBalanco = totalAtivo - totalPassivo;
+  // Tolerancia de R$1 para arredondamento de centavos entre os totais - o
+  // proprio exercicio 2025 da planilha real do banco tem essa diferenca de
+  // R$1 nos totais informados.
+  const balancoFechado = Math.abs(diferencaBalanco) <= 1;
 
   const ativoCircLinhas: Linha[] = [
     "caixaEquivalentes",
@@ -175,6 +184,17 @@ export default async function BalancoPage({
             AH % {anterior ? `comparado a ${anterior.periodLabel}` : "— sem período anterior lançado"}
           </p>
         </div>
+
+        {!balancoFechado && (
+          <Card className="border-danger/40 bg-danger/5">
+            <CardContent className="p-4 text-sm text-danger">
+              <span className="font-semibold">Balanço não fecha:</span> Total do Ativo (
+              {formatBRL(totalAtivo)}) difere do Total do Passivo ({formatBRL(totalPassivo)}) em{" "}
+              {formatBRL(Math.abs(diferencaBalanco))}. Revise os valores lançados neste período — em um
+              balanço patrimonial correto, Ativo e Passivo (com Patrimônio Líquido) sempre se igualam.
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-6">
