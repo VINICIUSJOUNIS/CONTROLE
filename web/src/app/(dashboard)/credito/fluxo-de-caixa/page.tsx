@@ -139,6 +139,8 @@ export default async function FluxoDeCaixaPage({
                         <Linha label="EBITDA" valor={dfc.ebitda} bold />
                         <Linha label="(-) Imposto de Renda" valor={-dfc.impostoRenda} />
                         <Linha label="Geração Interna de Caixa" valor={dfc.geracaoInternaCaixa} bold />
+                        <Linha label="(+/-) Resultado Financeiro (juros, variação cambial)" valor={dfc.resultadoFinanceiro} />
+                        <Linha label="(+/-) Resultado Não Operacional e Participações" valor={dfc.outrosItensResultado} />
                       </tbody>
                       <Secao
                         titulo="Variação de Capital de Giro"

@@ -1,4 +1,4 @@
-import { ebitda } from "./indicators";
+import { ebitda, resultadoFinanceiro } from "./indicators";
 import type { StatementInput } from "./indicators";
 
 export type FluxoCaixaLinha = { label: string; valor: number };
@@ -7,6 +7,8 @@ export type FluxoCaixaEbitda = {
   ebitda: number;
   impostoRenda: number;
   geracaoInternaCaixa: number;
+  resultadoFinanceiro: number;
+  outrosItensResultado: number;
   variacaoCapitalGiro: FluxoCaixaLinha[];
   totalVariacaoCapitalGiro: number;
   fluxoCaixaOperacional: number;
@@ -48,6 +50,23 @@ export function fluxoCaixaEbitda(atual: StatementInput, anterior: StatementInput
   const impostoRenda = atual.impostoRenda;
   const geracaoInternaCaixa = ebitda(atual) - impostoRenda;
 
+  // EBITDA nao inclui o resultado financeiro (juros pagos/recebidos, variacao
+  // cambial) - ele para no EBIT. Numa empresa endividada isso e um valor
+  // relevante em caixa (nao ha saldo de "juros a pagar" separado neste
+  // schema, entao o valor do periodo e tratado como caixa). Omitir esta
+  // linha subestima bastante o uso de caixa em empresas com divida - foi
+  // exatamente o que fechou quase 100% da divergencia (R$1 de diferenca)
+  // ao reconciliar contra o caixa final real dos exercicios 2024/2025 da
+  // planilha do banco.
+  const resFinanceiro = resultadoFinanceiro(atual);
+
+  // Fecha a ponte com o metodo indireto padrao: geracaoInternaCaixa +
+  // resFinanceiro + outrosItens = Lucro Liquido + Depreciacao/Amortizacao
+  // (o ponto de partida classico de uma DFC pelo metodo indireto). Sem isso,
+  // resultados nao operacionais (ex: venda de imobilizado) e participacoes
+  // de administradores/debentures no lucro ficariam de fora do fluxo.
+  const outrosItensResultado = atual.resultadoNaoOperacional - atual.participacoes;
+
   const variacaoCapitalGiro: FluxoCaixaLinha[] = [
     {
       label: "Contas a Receber de Clientes",
@@ -81,7 +100,8 @@ export function fluxoCaixaEbitda(atual: StatementInput, anterior: StatementInput
   ];
   const totalVariacaoCapitalGiro = variacaoCapitalGiro.reduce((s, l) => s + l.valor, 0);
 
-  const fluxoCaixaOperacional = geracaoInternaCaixa + totalVariacaoCapitalGiro;
+  const fluxoCaixaOperacional =
+    geracaoInternaCaixa + resFinanceiro + outrosItensResultado + totalVariacaoCapitalGiro;
 
   const fluxoCaixaInvestimento: FluxoCaixaLinha[] = [
     { label: "Investimentos", valor: deltaAtivo(atual.investimentos, anterior.investimentos) },
@@ -140,6 +160,15 @@ export function fluxoCaixaEbitda(atual: StatementInput, anterior: StatementInput
       label: "Dividendos Pagos / Distribuídos",
       valor: -dividendosPagos,
     },
+    // Capital Social e conta de Patrimonio Liquido - segue a convencao de
+    // passivo (aumento = entrada de caixa, ex: aporte dos socios). Reservas
+    // e Outros Resultados Abrangentes ficam de fora de proposito: sao
+    // normalmente reclassificacoes internas do lucro ou ajustes nao caixa
+    // (ex: variacao cambial de investida no exterior), nao aportes novos.
+    {
+      label: "Aumento de Capital",
+      valor: deltaPassivo(atual.capitalSocial, anterior.capitalSocial),
+    },
   ];
   const totalFluxoCaixaFinanciamento = fluxoCaixaFinanciamento.reduce((s, l) => s + l.valor, 0);
 
@@ -153,6 +182,8 @@ export function fluxoCaixaEbitda(atual: StatementInput, anterior: StatementInput
     ebitda: ebitda(atual),
     impostoRenda,
     geracaoInternaCaixa,
+    resultadoFinanceiro: resFinanceiro,
+    outrosItensResultado,
     variacaoCapitalGiro,
     totalVariacaoCapitalGiro,
     fluxoCaixaOperacional,
