@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { LabelHTMLAttributes, SelectHTMLAttributes, InputHTMLAttributes } from "react";
+import { LabelHTMLAttributes, SelectHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
   return <label className={cn("mb-1 block text-xs font-medium text-muted", className)} {...props} />;
@@ -10,6 +10,18 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
     <input
       className={cn(
         "h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      className={cn(
+        "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary",
         className
       )}
       {...props}

@@ -130,6 +130,91 @@ model LoanInstallment {
   @@map("loan_installments")
 }
 
+// Um registro por periodo de balanco/balancete importado (modulo Analise de
+// Credito, em /credito). Guarda os campos ja normalizados de DRE e Balanco
+// Patrimonial usados pelo motor de indicadores (src/lib/financial/indicators.ts),
+// mais o payload bruto da IA para auditoria. Espelha as abas Ativo/Passivo/DRE
+// da planilha "Analise de Balanco para Credito" linha a linha, para permitir
+// Analise Vertical (AV) e Horizontal (AH) fieis ao modelo usado pelo banco.
+model FinancialStatement {
+  id             String   @id @default(uuid())
+  periodLabel    String
+  referenceDate  DateTime @db.Date
+  periodDays     Int
+  sourceFileName String
+
+  // DRE
+  receitaBruta                    Decimal @db.Decimal(18, 2)
+  deducoes                        Decimal @db.Decimal(18, 2)
+  receitaLiquida                  Decimal @db.Decimal(18, 2)
+  cmv                             Decimal @db.Decimal(18, 2)
+  lucroBruto                      Decimal @db.Decimal(18, 2)
+  outrasReceitasOperacionais      Decimal @default(0) @db.Decimal(18, 2)
+  despesasGerais                  Decimal @default(0) @db.Decimal(18, 2)
+  despesasComerciais              Decimal @default(0) @db.Decimal(18, 2)
+  despesasTributarias             Decimal @default(0) @db.Decimal(18, 2)
+  depreciacaoAmortizacao          Decimal @db.Decimal(18, 2)
+  outrasDespesasOperacionais      Decimal @default(0) @db.Decimal(18, 2)
+  resultadoAtividade              Decimal @db.Decimal(18, 2) // EBIT
+  receitasFinanceiras             Decimal @default(0) @db.Decimal(18, 2)
+  despesasFinanceiras             Decimal @default(0) @db.Decimal(18, 2)
+  variacaoCambial                 Decimal @default(0) @db.Decimal(18, 2)
+  resultadoNaoOperacional         Decimal @default(0) @db.Decimal(18, 2)
+  impostoRenda                    Decimal @db.Decimal(18, 2)
+  participacoes                   Decimal @default(0) @db.Decimal(18, 2)
+  lucroLiquido                    Decimal @db.Decimal(18, 2)
+
+  // Ativo Circulante
+  caixaEquivalentes               Decimal @db.Decimal(18, 2)
+  titulosValoresMobiliarios       Decimal @default(0) @db.Decimal(18, 2)
+  contasReceberClientes           Decimal @db.Decimal(18, 2)
+  estoques                        Decimal @db.Decimal(18, 2)
+  adiantamentoFornecedores        Decimal @default(0) @db.Decimal(18, 2)
+  outrosAtivosOperacionaisCirc    Decimal @default(0) @db.Decimal(18, 2)
+  outrosAtivosNaoOperacionaisCirc Decimal @default(0) @db.Decimal(18, 2)
+
+  // Ativo Nao Circulante
+  contasReceberColigadas          Decimal @default(0) @db.Decimal(18, 2)
+  investimentos                   Decimal @default(0) @db.Decimal(18, 2)
+  imobilizado                     Decimal @default(0) @db.Decimal(18, 2)
+  intangivel                      Decimal @default(0) @db.Decimal(18, 2)
+  outrosAtivosNaoCirculantes      Decimal @default(0) @db.Decimal(18, 2)
+
+  // Passivo Circulante
+  fornecedores                    Decimal @db.Decimal(18, 2)
+  salariosEncargos                Decimal @default(0) @db.Decimal(18, 2)
+  impostosContribuicoes           Decimal @default(0) @db.Decimal(18, 2)
+  emprestimosCurtoPrazo           Decimal @db.Decimal(18, 2)
+  irAPagar                        Decimal @default(0) @db.Decimal(18, 2)
+  emprestimosColigadasCP          Decimal @default(0) @db.Decimal(18, 2)
+  dividendosAPagar                Decimal @default(0) @db.Decimal(18, 2)
+  adiantamentosClientes           Decimal @default(0) @db.Decimal(18, 2)
+  outrosPassivosCirc              Decimal @default(0) @db.Decimal(18, 2)
+
+  // Passivo Nao Circulante
+  emprestimosLongoPrazo           Decimal @db.Decimal(18, 2)
+  outrosPassivosNaoCirc           Decimal @default(0) @db.Decimal(18, 2)
+
+  // Patrimonio Liquido
+  capitalSocial                   Decimal @default(0) @db.Decimal(18, 2)
+  reservas                        Decimal @default(0) @db.Decimal(18, 2)
+  lucrosPrejuizosAcumulados       Decimal @default(0) @db.Decimal(18, 2)
+  outrosResultadosAbrangentes     Decimal @default(0) @db.Decimal(18, 2)
+
+  // Exposicao cambial - nem todo balancete discrimina moeda estrangeira separadamente
+  ativosMoedaEstrangeira   Decimal? @db.Decimal(18, 2)
+  passivosMoedaEstrangeira Decimal? @db.Decimal(18, 2)
+
+  extractedRaw Json
+  aiInsights   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([referenceDate])
+  @@map("financial_statements")
+}
+
 model AccOperation {
   id                     String    @id @default(uuid())
   bank                   Bank      @relation(fields: [bankId], references: [id])

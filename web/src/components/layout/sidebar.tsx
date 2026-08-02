@@ -11,6 +11,10 @@ import {
   Building2,
   FileText,
   LogOut,
+  Scale,
+  FileBarChart,
+  Waves,
+  FileStack,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -23,6 +27,15 @@ const navItems = [
   { href: "/taxas", label: "Evolucao das Taxas", icon: LineChart },
   { href: "/bancos", label: "Comparativo de Bancos", icon: Building2 },
   { href: "/relatorios", label: "Relatorios", icon: FileText },
+];
+
+const creditoNavItems = [
+  { href: "/credito", label: "Dashboard de Credito", icon: LayoutDashboard },
+  { href: "/credito/balanco", label: "Balanco Patrimonial", icon: Scale },
+  { href: "/credito/dre", label: "DRE", icon: FileBarChart },
+  { href: "/credito/fluxo-de-caixa", label: "Fluxo de Caixa", icon: Waves },
+  { href: "/credito/indicadores", label: "Indicadores", icon: LineChart },
+  { href: "/credito/balancetes", label: "Balancetes", icon: FileStack },
 ];
 
 const roleLabels: Record<string, string> = {
@@ -51,9 +64,34 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
           <p className="text-xs text-sidebar-foreground/70">Emprestimos &amp; ACC</p>
         </div>
       </div>
-      <nav className="flex-1 space-y-1 px-3 py-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
         {navItems.map((item) => {
           const active = pathname === item.href;
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                active
+                  ? "bg-sidebar-active text-white"
+                  : "hover:bg-sidebar-active/60 hover:text-white"
+              )}
+            >
+              <Icon size={17} />
+              {item.label}
+            </Link>
+          );
+        })}
+
+        <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-foreground/50">
+          Analise de Credito
+        </p>
+        {creditoNavItems.map((item) => {
+          const active =
+            pathname === item.href ||
+            (item.href !== "/credito" && pathname.startsWith(item.href + "/"));
           const Icon = item.icon;
           return (
             <Link
