@@ -74,7 +74,7 @@ option {
 @media print {
   @page {
     size: landscape;
-    margin: 12mm;
+    margin: 8mm;
   }
 }
 

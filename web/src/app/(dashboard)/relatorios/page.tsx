@@ -13,7 +13,7 @@ export default async function RelatoriosPage() {
   return (
     <div className="flex flex-col">
       <Topbar title="Relatorios" subtitle="Relatorios da carteira de emprestimos e ACC" />
-      <div className="space-y-6 p-6 print:space-y-12 print:p-0">
+      <div className="space-y-6 p-6 print:p-0">
         <RelatorioContratosAbertos
           title="Emprestimos e ACC em aberto"
           filePrefix="emprestimos-e-acc-em-aberto"

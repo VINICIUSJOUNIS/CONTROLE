@@ -56,7 +56,7 @@ export function RelatorioContratosAbertos({
   return (
     <Card className="relative overflow-hidden print:break-inside-avoid print:border-0 print:shadow-none">
       <div className="pointer-events-none absolute inset-0 hidden items-center justify-center print:flex">
-        <Image src="/nayme-logo.png" alt="" width={320} height={320} className="opacity-[0.08]" />
+        <Image src="/nayme-logo.png" alt="" width={320} height={320} className="opacity-[0.06] print:h-[160px] print:w-[160px]" />
       </div>
 
       <CardHeader className="relative flex flex-row items-center justify-between print:hidden">
@@ -72,42 +72,44 @@ export function RelatorioContratosAbertos({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="relative overflow-x-auto">
-        <div className="mb-6 hidden items-end justify-between border-b-2 border-primary pb-4 print:flex">
+      <CardContent className="relative overflow-x-auto print:p-0">
+        <div className="mb-6 hidden items-end justify-between border-b-2 border-primary pb-4 print:mb-2 print:flex print:pb-1.5">
           <div className="flex items-center gap-3">
-            <Image src="/nayme-logo.png" alt="Nayme" width={48} height={48} className="rounded-full" />
+            <Image src="/nayme-logo.png" alt="Nayme" width={48} height={48} className="rounded-full print:h-8 print:w-8" />
             <div>
-              <p className="text-lg font-semibold tracking-wide">NAYME</p>
-              <p className="text-xs text-muted">Tesouraria Corporativa</p>
+              <p className="text-lg font-semibold tracking-wide print:text-sm">NAYME</p>
+              <p className="text-xs text-muted print:text-[9px]">Tesouraria Corporativa</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-base font-semibold">{title}</p>
-            <p className="text-xs text-muted">Emitido em {formatDate(new Date().toISOString().slice(0, 10))}</p>
+            <p className="text-base font-semibold print:text-xs">{title}</p>
+            <p className="text-xs text-muted print:text-[9px]">
+              Emitido em {formatDate(new Date().toISOString().slice(0, 10))}
+            </p>
           </div>
         </div>
-        <table className="w-full text-sm">
+        <table className="w-full text-sm print:text-[10px]">
           <thead>
-            <tr className="border-b border-border text-left text-xs text-muted">
-              <th className="pb-2 pr-4 font-medium">Tipo</th>
-              <th className="pb-2 pr-4 font-medium">Banco</th>
-              <th className="pb-2 pr-4 font-medium">Data da contratacao</th>
-              <th className="pb-2 pr-4 font-medium">Valor tomado</th>
-              <th className="pb-2 pr-4 font-medium">Valor em aberto</th>
-              <th className="pb-2 font-medium">Vencimento</th>
+            <tr className="border-b border-border text-left text-xs text-muted print:text-[9px]">
+              <th className="pb-2 pr-4 font-medium print:pb-1">Tipo</th>
+              <th className="pb-2 pr-4 font-medium print:pb-1">Banco</th>
+              <th className="pb-2 pr-4 font-medium print:pb-1">Data da contratacao</th>
+              <th className="pb-2 pr-4 font-medium print:pb-1">Valor tomado</th>
+              <th className="pb-2 pr-4 font-medium print:pb-1">Valor em aberto</th>
+              <th className="pb-2 font-medium print:pb-1">Vencimento</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={`${r.tipo}-${r.id}`} className="border-b border-border last:border-0">
-                <td className="py-2.5 pr-4">
+                <td className="py-2.5 pr-4 print:py-0.5">
                   <Badge variant="neutral">{r.tipo}</Badge>
                 </td>
-                <td className="py-2.5 pr-4 font-medium">{r.bankName}</td>
-                <td className="py-2.5 pr-4">{formatDate(r.contractDate)}</td>
-                <td className="py-2.5 pr-4">{formatCompactCurrency(r.valorTomado)}</td>
-                <td className="py-2.5 pr-4">{formatCompactCurrency(r.valorEmAberto)}</td>
-                <td className="py-2.5">{formatDate(r.vencimento)}</td>
+                <td className="py-2.5 pr-4 font-medium print:py-0.5">{r.bankName}</td>
+                <td className="py-2.5 pr-4 print:py-0.5">{formatDate(r.contractDate)}</td>
+                <td className="py-2.5 pr-4 print:py-0.5">{formatCompactCurrency(r.valorTomado)}</td>
+                <td className="py-2.5 pr-4 print:py-0.5">{formatCompactCurrency(r.valorEmAberto)}</td>
+                <td className="py-2.5 print:py-0.5">{formatDate(r.vencimento)}</td>
               </tr>
             ))}
             {rows.length === 0 && (
@@ -121,27 +123,27 @@ export function RelatorioContratosAbertos({
           {rows.length > 0 && (
             <tfoot>
               <tr className="border-t border-border font-semibold">
-                <td className="py-2.5 pr-4" colSpan={3}>
+                <td className="py-2.5 pr-4 print:py-1" colSpan={3}>
                   Total
                 </td>
-                <td className="py-2.5 pr-4">{formatCompactCurrency(totalTomado)}</td>
-                <td className="py-2.5 pr-4">{formatCompactCurrency(totalAberto)}</td>
+                <td className="py-2.5 pr-4 print:py-1">{formatCompactCurrency(totalTomado)}</td>
+                <td className="py-2.5 pr-4 print:py-1">{formatCompactCurrency(totalAberto)}</td>
                 <td />
               </tr>
             </tfoot>
           )}
         </table>
 
-        <div className="mt-12 hidden grid-cols-2 gap-12 print:grid">
-          <div className="text-center text-xs">
-            <div className="mb-1 border-t border-foreground pt-2">Assinatura do responsavel</div>
+        <div className="mt-12 hidden grid-cols-2 gap-12 print:mt-4 print:grid print:gap-8">
+          <div className="text-center text-xs print:text-[9px]">
+            <div className="mb-1 border-t border-foreground pt-2 print:pt-1">Assinatura do responsavel</div>
           </div>
-          <div className="text-center text-xs">
-            <div className="mb-1 border-t border-foreground pt-2">Data</div>
+          <div className="text-center text-xs print:text-[9px]">
+            <div className="mb-1 border-t border-foreground pt-2 print:pt-1">Data</div>
           </div>
         </div>
 
-        <div className="mt-12 hidden border-t border-border pt-2 text-center text-[10px] text-muted print:block">
+        <div className="mt-12 hidden border-t border-border pt-2 text-center text-[10px] text-muted print:mt-2 print:block print:pt-1 print:text-[8px]">
           NAYME - Tesouraria Corporativa
         </div>
       </CardContent>
