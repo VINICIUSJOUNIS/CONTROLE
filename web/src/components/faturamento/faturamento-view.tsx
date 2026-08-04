@@ -11,7 +11,6 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { SaleRow } from "@/lib/data";
 import { createSale, deleteSale, updateSale, SaleFormInput } from "@/app/(dashboard)/faturamento/actions";
 import { COUNTRIES, countryLabel } from "@/lib/countries";
-import { WorldMap } from "@/components/faturamento/world-map";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 type ClientTypeValue = "INTERNO" | "EXTERNO";
@@ -155,8 +154,6 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
           <p className="mt-1.5 text-xl font-semibold">{formatCurrency(totalBRL)}</p>
         </Card>
       </div>
-
-      <WorldMap sales={sales} />
 
       <div className="flex flex-wrap items-center gap-3">
         <Select value={clientTypeFilter} onChange={(e) => setClientTypeFilter(e.target.value)} className="w-auto">

@@ -16,6 +16,7 @@ import {
   Waves,
   FileStack,
   Receipt,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -30,7 +31,10 @@ const navItems = [
   { href: "/relatorios", label: "Relatorios", icon: FileText },
 ];
 
-const faturamentoNavItems = [{ href: "/faturamento", label: "Faturamento", icon: Receipt }];
+const faturamentoNavItems = [
+  { href: "/faturamento", label: "Faturamento", icon: Receipt },
+  { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
+];
 
 const creditoNavItems = [
   { href: "/credito", label: "Dashboard de Credito", icon: LayoutDashboard },
@@ -117,7 +121,9 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
           Faturamento
         </p>
         {faturamentoNavItems.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const active =
+            pathname === item.href ||
+            (item.href !== "/faturamento" && pathname.startsWith(item.href + "/"));
           const Icon = item.icon;
           return (
             <Link
