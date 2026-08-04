@@ -12,6 +12,7 @@ type CountryStat = {
   count: number;
   kg: number;
   sacas: number;
+  containers: number;
   valueBRL: number;
   valueUSD: number;
 };
@@ -23,10 +24,12 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
     const map = new Map<string, CountryStat>();
     for (const s of sales) {
       if (s.clientType !== "EXTERNO" || !s.country) continue;
-      const cur = map.get(s.country) ?? { count: 0, kg: 0, sacas: 0, valueBRL: 0, valueUSD: 0 };
+      const cur =
+        map.get(s.country) ?? { count: 0, kg: 0, sacas: 0, containers: 0, valueBRL: 0, valueUSD: 0 };
       cur.count += 1;
       cur.kg += s.quantityKg;
       cur.sacas += s.quantitySacas;
+      cur.containers += s.containerCount ?? 0;
       cur.valueBRL += s.valueBRL;
       cur.valueUSD += s.valueUSD ?? 0;
       map.set(s.country, cur);
@@ -110,6 +113,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                 <p className="mt-1 text-xs text-muted">{hoveredStat.count} venda(s)</p>
                 <p className="mt-2 text-sm">{hoveredStat.kg.toLocaleString("pt-BR")} kg</p>
                 <p className="text-sm">{hoveredStat.sacas.toLocaleString("pt-BR")} sacas (60kg)</p>
+                <p className="text-sm">{hoveredStat.containers.toLocaleString("pt-BR")} contêiner(es)</p>
                 <p className="mt-2 text-sm font-medium">{formatCurrency(hoveredStat.valueBRL)}</p>
                 {hoveredStat.valueUSD > 0 && (
                   <p className="text-sm">US$ {hoveredStat.valueUSD.toLocaleString("pt-BR")}</p>
@@ -129,7 +133,9 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                   .map(([id, stat]) => (
                     <li key={id} className="flex justify-between gap-2">
                       <span>{countryLabel(id)}</span>
-                      <span className="text-muted">{stat.sacas.toLocaleString("pt-BR")} sc</span>
+                      <span className="text-muted">
+                        {stat.sacas.toLocaleString("pt-BR")} sc · {stat.containers.toLocaleString("pt-BR")} cnt
+                      </span>
                     </li>
                   ))}
               </ul>
