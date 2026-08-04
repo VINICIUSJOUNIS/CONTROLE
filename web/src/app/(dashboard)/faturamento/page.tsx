@@ -1,6 +1,7 @@
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KpiCard } from "@/components/dashboard/kpi-card";
+import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { PieChartCard } from "@/components/charts/pie-chart-card";
 import { getSales, type SaleRow } from "@/lib/data";
@@ -31,8 +32,21 @@ function rankClients(rows: SaleRow[]) {
   return [...map.entries()].sort((a, b) => b[1].valueBRL - a[1].valueBRL);
 }
 
-export default async function FaturamentoDashboardPage() {
-  const sales = await getSales();
+export default async function FaturamentoDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
+  const { from, to } = await searchParams;
+  const allSales = await getSales();
+  const years = Array.from(new Set(allSales.map((s) => s.saleDate.slice(0, 4)))).sort();
+
+  const sales = allSales.filter((s) => {
+    const month = s.saleDate.slice(0, 7);
+    if (from && month < from) return false;
+    if (to && month > to) return false;
+    return true;
+  });
 
   const internos = sales.filter((s) => s.clientType === "INTERNO");
   const externos = sales.filter((s) => s.clientType === "EXTERNO");
@@ -73,6 +87,8 @@ export default async function FaturamentoDashboardPage() {
     <div className="flex flex-col">
       <Topbar title="Faturamento" subtitle="Visão geral de vendas, clientes e exportação" />
       <div className="space-y-6 p-6">
+        <PeriodFilter years={years} />
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} />
           <KpiCard label="Sacas — Mercado Interno" value={sacasInterno.toLocaleString("pt-BR")} icon={Package} />
