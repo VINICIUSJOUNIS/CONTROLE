@@ -23,6 +23,7 @@
     "@supabase/supabase-js": "^2.110.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "d3-geo": "^3.1.1",
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
     "lucide-react": "^1.26.0",
@@ -31,8 +32,10 @@
     "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-simple-maps": "^3.0.0",
     "recharts": "^3.10.0",
     "tailwind-merge": "^3.6.0",
+    "world-atlas": "^2.0.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -41,6 +44,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-simple-maps": "^3.0.6",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
     "prisma": "^7.9.0",

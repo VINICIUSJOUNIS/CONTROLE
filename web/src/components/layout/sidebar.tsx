@@ -24,12 +24,13 @@ const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
   { href: "/emprestimos", label: "Emprestimos", icon: Landmark },
   { href: "/acc", label: "ACC", icon: Ship },
-  { href: "/faturamento", label: "Faturamento", icon: Receipt },
   { href: "/cambial", label: "Dashboard Cambial", icon: Globe2 },
   { href: "/taxas", label: "Evolucao das Taxas", icon: LineChart },
   { href: "/bancos", label: "Comparativo de Bancos", icon: Building2 },
   { href: "/relatorios", label: "Relatorios", icon: FileText },
 ];
+
+const faturamentoNavItems = [{ href: "/faturamento", label: "Faturamento", icon: Receipt }];
 
 const creditoNavItems = [
   { href: "/credito", label: "Dashboard de Credito", icon: LayoutDashboard },
@@ -94,6 +95,29 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
           const active =
             pathname === item.href ||
             (item.href !== "/credito" && pathname.startsWith(item.href + "/"));
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                active
+                  ? "bg-sidebar-active text-white"
+                  : "hover:bg-sidebar-active/60 hover:text-white"
+              )}
+            >
+              <Icon size={17} />
+              {item.label}
+            </Link>
+          );
+        })}
+
+        <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-foreground/50">
+          Faturamento
+        </p>
+        {faturamentoNavItems.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           return (
             <Link

@@ -10,6 +10,8 @@ import { Input, Label, Select } from "@/components/ui/field";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { SaleRow } from "@/lib/data";
 import { createSale, deleteSale, updateSale, SaleFormInput } from "@/app/(dashboard)/faturamento/actions";
+import { COUNTRIES, countryLabel } from "@/lib/countries";
+import { WorldMap } from "@/components/faturamento/world-map";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 type ClientTypeValue = "INTERNO" | "EXTERNO";
@@ -154,6 +156,8 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
         </Card>
       </div>
 
+      <WorldMap sales={sales} />
+
       <div className="flex flex-wrap items-center gap-3">
         <Select value={clientTypeFilter} onChange={(e) => setClientTypeFilter(e.target.value)} className="w-auto">
           <option value="todos">Todos os clientes</option>
@@ -247,10 +251,17 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>País</Label>
-                      <Input
+                      <Select
                         value={form.country}
                         onChange={(e) => setForm({ ...form, country: e.target.value })}
-                      />
+                      >
+                        <option value="">Selecione...</option>
+                        {COUNTRIES.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.labelPt}
+                          </option>
+                        ))}
+                      </Select>
                     </div>
                     <div>
                       <Label>Quantidade de contêineres</Label>
@@ -311,7 +322,9 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
                   <td className="px-4 py-2.5">{formatDate(s.saleDate)}</td>
                   <td className="px-4 py-2.5">{s.quantityKg.toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-2.5">{s.quantitySacas.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-2.5">{s.country ?? <span className="text-muted">-</span>}</td>
+                  <td className="px-4 py-2.5">
+                    {s.country ? countryLabel(s.country) : <span className="text-muted">-</span>}
+                  </td>
                   <td className="px-4 py-2.5">{s.containerCount ?? <span className="text-muted">-</span>}</td>
                   <td className="px-4 py-2.5">{formatCurrency(s.valueBRL)}</td>
                   <td className="px-4 py-2.5">
