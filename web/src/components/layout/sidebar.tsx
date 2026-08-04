@@ -32,7 +32,8 @@ const navItems = [
 ];
 
 const faturamentoNavItems = [
-  { href: "/faturamento", label: "Faturamento", icon: Receipt },
+  { href: "/faturamento", label: "Dashboard de Faturamento", icon: LayoutDashboard },
+  { href: "/faturamento/vendas", label: "Vendas", icon: Receipt },
   { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
 ];
 

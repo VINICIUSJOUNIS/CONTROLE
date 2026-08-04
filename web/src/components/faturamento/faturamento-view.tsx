@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { SaleRow } from "@/lib/data";
-import { createSale, deleteSale, updateSale, SaleFormInput } from "@/app/(dashboard)/faturamento/actions";
+import { createSale, deleteSale, updateSale, SaleFormInput } from "@/app/(dashboard)/faturamento/vendas/actions";
 import { COUNTRIES, countryLabel } from "@/lib/countries";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 

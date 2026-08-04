@@ -17,6 +17,8 @@ export type SaleFormInput = {
 
 function revalidateAll() {
   revalidatePath("/faturamento");
+  revalidatePath("/faturamento/vendas");
+  revalidatePath("/faturamento/paises");
   revalidatePath("/");
 }
 
