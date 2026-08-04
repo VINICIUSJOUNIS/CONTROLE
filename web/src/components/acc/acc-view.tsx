@@ -15,9 +15,10 @@ import {
   formatPercent,
 } from "@/lib/format";
 import { AccRow } from "@/lib/data";
-import { createAcc, deleteAcc, updateAcc } from "@/app/(dashboard)/acc/actions";
+import { createAcc, deleteAcc, updateAcc, addAccBaixa, updateAccBaixa, deleteAccBaixa } from "@/app/(dashboard)/acc/actions";
+import { calcBaixaJuros } from "@/lib/acc-calc";
 import { NovoBanco } from "@/components/bancos/novo-banco";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Layers, Check, X } from "lucide-react";
 
 type Bank = { id: string; name: string; color: string };
 type StatusValue = "EM_ABERTO" | "LIQUIDADO" | "EM_ATRASO";
@@ -93,6 +94,76 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm(banks[0]?.id ?? ""));
+
+  const [baixasAccId, setBaixasAccId] = useState<string | null>(null);
+  const [editingBaixaId, setEditingBaixaId] = useState<string | null>(null);
+  const [baixaDraft, setBaixaDraft] = useState({ valorUSD: "", dataQuitacao: "", closingRate: "" });
+  const [novaBaixa, setNovaBaixa] = useState({ valorUSD: "", dataQuitacao: "", closingRate: "" });
+  const [baixaError, setBaixaError] = useState<string | null>(null);
+
+  const baixasAcc = useMemo(
+    () => accOperations.find((a) => a.id === baixasAccId) ?? null,
+    [accOperations, baixasAccId]
+  );
+
+  const novaBaixaPreview = useMemo(() => {
+    if (!baixasAcc || !novaBaixa.dataQuitacao || !(Number(novaBaixa.valorUSD) > 0)) return null;
+    return calcBaixaJuros(Number(novaBaixa.valorUSD), baixasAcc.interestRate, baixasAcc.contractDate, novaBaixa.dataQuitacao);
+  }, [baixasAcc, novaBaixa]);
+
+  function openBaixas(acc: AccRow) {
+    setBaixasAccId(acc.id);
+    setEditingBaixaId(null);
+    setBaixaError(null);
+    setNovaBaixa({ valorUSD: "", dataQuitacao: "", closingRate: String(acc.closingRate) });
+  }
+
+  function handleAddBaixa() {
+    if (!baixasAccId) return;
+    if (!novaBaixa.dataQuitacao || !(Number(novaBaixa.valorUSD) > 0) || !(Number(novaBaixa.closingRate) > 0)) {
+      setBaixaError("Informe valor (USD), data e câmbio da baixa.");
+      return;
+    }
+    setBaixaError(null);
+    startTransition(async () => {
+      await addAccBaixa(baixasAccId, {
+        valorUSD: Number(novaBaixa.valorUSD),
+        dataQuitacao: novaBaixa.dataQuitacao,
+        closingRate: Number(novaBaixa.closingRate),
+      });
+      setNovaBaixa({ valorUSD: "", dataQuitacao: "", closingRate: novaBaixa.closingRate });
+      router.refresh();
+    });
+  }
+
+  function startEditBaixa(baixa: { id: string; valorUSD: number; dataQuitacao: string; closingRate: number }) {
+    setEditingBaixaId(baixa.id);
+    setBaixaDraft({
+      valorUSD: String(baixa.valorUSD),
+      dataQuitacao: baixa.dataQuitacao,
+      closingRate: String(baixa.closingRate),
+    });
+  }
+
+  function handleSaveBaixa(baixaId: string) {
+    if (!baixaDraft.dataQuitacao || !(Number(baixaDraft.valorUSD) > 0) || !(Number(baixaDraft.closingRate) > 0)) return;
+    startTransition(async () => {
+      await updateAccBaixa(baixaId, {
+        valorUSD: Number(baixaDraft.valorUSD),
+        dataQuitacao: baixaDraft.dataQuitacao,
+        closingRate: Number(baixaDraft.closingRate),
+      });
+      setEditingBaixaId(null);
+      router.refresh();
+    });
+  }
+
+  function handleDeleteBaixa(baixaId: string) {
+    startTransition(async () => {
+      await deleteAccBaixa(baixaId);
+      router.refresh();
+    });
+  }
 
   const years = useMemo(
     () => Array.from(new Set(accOperations.map((a) => a.contractDate.slice(0, 4)))).sort(),
@@ -459,6 +530,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                 <th className="px-4 py-3 font-medium">Banco</th>
                 <th className="px-4 py-3 font-medium">Data contratacao</th>
                 <th className="px-4 py-3 font-medium">Valor contratado</th>
+                <th className="px-4 py-3 font-medium">Saldo em aberto (USD)</th>
                 <th className="px-4 py-3 font-medium">Recebido (R$)</th>
                 <th className="px-4 py-3 font-medium">Taxa ao ano</th>
                 <th className="px-4 py-3 font-medium">Taxa ao mes</th>
@@ -486,6 +558,15 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                   <td className="px-4 py-2.5">{formatDate(acc.contractDate)}</td>
                   <td className="px-4 py-2.5">
                     US$ {acc.contractedValueForeign.toLocaleString("pt-BR")}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    {acc.baixas.length > 0 ? (
+                      <Badge variant={acc.saldoAbertoUSD <= 0 ? "success" : "warning"}>
+                        US$ {acc.saldoAbertoUSD.toLocaleString("pt-BR")}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted">US$ {acc.contractedValueForeign.toLocaleString("pt-BR")}</span>
+                    )}
                   </td>
                   <td className="px-4 py-2.5">{formatCurrency(acc.receivedValueBRL)}</td>
                   <td className="px-4 py-2.5">{formatPercent(acc.interestRate)}</td>
@@ -524,6 +605,13 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1">
                       <button
+                        onClick={() => openBaixas(acc)}
+                        className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
+                        title="Baixas parciais"
+                      >
+                        <Layers size={14} />
+                      </button>
+                      <button
                         onClick={() => openEdit(acc)}
                         className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
                         title="Editar"
@@ -543,7 +631,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={21} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={22} className="px-4 py-8 text-center text-muted">
                     Nenhuma operacao de ACC encontrada com os filtros atuais.
                   </td>
                 </tr>
@@ -552,6 +640,176 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
           </table>
         </CardContent>
       </Card>
+
+      <Dialog open={baixasAccId !== null} onOpenChange={(v) => !v && setBaixasAccId(null)}>
+        <DialogContent title={baixasAcc ? `Baixas parciais - ACC ${baixasAcc.accNumber}` : "Baixas parciais"}>
+          {baixasAcc && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted">Valor contratado</p>
+                  <p className="mt-1 font-semibold">US$ {baixasAcc.contractedValueForeign.toLocaleString("pt-BR")}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted">Já liquidado</p>
+                  <p className="mt-1 font-semibold">US$ {baixasAcc.valorLiquidadoUSD.toLocaleString("pt-BR")}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted">Saldo em aberto</p>
+                  <p className="mt-1 font-semibold">US$ {baixasAcc.saldoAbertoUSD.toLocaleString("pt-BR")}</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted">
+                      <th className="px-3 py-2 font-medium">Valor USD</th>
+                      <th className="px-3 py-2 font-medium">Data</th>
+                      <th className="px-3 py-2 font-medium">Câmbio</th>
+                      <th className="px-3 py-2 font-medium">Dias</th>
+                      <th className="px-3 py-2 font-medium">Juros (US$)</th>
+                      <th className="px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {baixasAcc.baixas.map((b) => {
+                      const isEditing = editingBaixaId === b.id;
+                      return (
+                        <tr key={b.id} className="border-b border-border last:border-0">
+                          {isEditing ? (
+                            <>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={baixaDraft.valorUSD}
+                                  onChange={(e) => setBaixaDraft({ ...baixaDraft, valorUSD: e.target.value })}
+                                  className="h-7 w-24 rounded border border-border bg-background px-1.5 text-xs"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="date"
+                                  value={baixaDraft.dataQuitacao}
+                                  onChange={(e) => setBaixaDraft({ ...baixaDraft, dataQuitacao: e.target.value })}
+                                  className="h-7 w-32 rounded border border-border bg-background px-1.5 text-xs"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.0001"
+                                  value={baixaDraft.closingRate}
+                                  onChange={(e) => setBaixaDraft({ ...baixaDraft, closingRate: e.target.value })}
+                                  className="h-7 w-20 rounded border border-border bg-background px-1.5 text-xs"
+                                />
+                              </td>
+                              <td className="px-3 py-2 text-muted">-</td>
+                              <td className="px-3 py-2 text-muted">-</td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => handleSaveBaixa(b.id)}
+                                    disabled={isPending}
+                                    className="rounded p-1 text-success hover:bg-success/10"
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingBaixaId(null)}
+                                    className="rounded p-1 text-muted hover:bg-border/60"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="px-3 py-2">US$ {b.valorUSD.toLocaleString("pt-BR")}</td>
+                              <td className="px-3 py-2">{formatDate(b.dataQuitacao)}</td>
+                              <td className="px-3 py-2">{b.closingRate.toFixed(4)}</td>
+                              <td className="px-3 py-2">{b.dias}</td>
+                              <td className="px-3 py-2">US$ {b.jurosUSD.toLocaleString("pt-BR")}</td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => startEditBaixa(b)}
+                                    className="rounded p-1 text-muted hover:bg-border/60 hover:text-foreground"
+                                  >
+                                    <Pencil size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteBaixa(b.id)}
+                                    className="rounded p-1 text-muted hover:bg-danger/10 hover:text-danger"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      );
+                    })}
+                    {baixasAcc.baixas.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-3 py-4 text-center text-muted">
+                          Nenhuma baixa lançada ainda.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="rounded-lg border border-border p-3">
+                <p className="mb-2 text-sm font-medium">Lançar nova baixa</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Valor (USD)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={novaBaixa.valorUSD}
+                      onChange={(e) => setNovaBaixa({ ...novaBaixa, valorUSD: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Data da quitação</Label>
+                    <Input
+                      type="date"
+                      value={novaBaixa.dataQuitacao}
+                      onChange={(e) => setNovaBaixa({ ...novaBaixa, dataQuitacao: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Câmbio</Label>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      value={novaBaixa.closingRate}
+                      onChange={(e) => setNovaBaixa({ ...novaBaixa, closingRate: e.target.value })}
+                    />
+                  </div>
+                </div>
+                {novaBaixaPreview && (
+                  <p className="mt-2 text-xs text-muted">
+                    {novaBaixaPreview.dias} dias de {formatDate(baixasAcc.contractDate)} até{" "}
+                    {formatDate(novaBaixa.dataQuitacao)} → juros de US${" "}
+                    {novaBaixaPreview.jurosUSD.toLocaleString("pt-BR")}
+                  </p>
+                )}
+                {baixaError && <p className="mt-2 text-sm text-danger">{baixaError}</p>}
+                <Button className="mt-3 w-full" size="sm" onClick={handleAddBaixa} disabled={isPending}>
+                  Adicionar baixa
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

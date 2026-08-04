@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { RATE_BASIS_DAYS, RateBasisValue, saldoDevedorEm } from "@/lib/amortization";
+import { calcBaixaJuros } from "@/lib/acc-calc";
 
 function n(value: unknown): number {
   return Number(value);
@@ -71,8 +72,10 @@ function daysBetween(from: Date, to: Date) {
   return Math.max(0, Math.round(days));
 }
 
-// Base de calculo dos juros: ano de 365 dias.
-const DIAS_ANO_BASE = 365;
+// Base de calculo dos juros de ACC: convencao comercial de 360 dias (nao 365) -
+// conferido contra o calculo real do banco (deposito de deságio em USD), bate
+// exato: valorUSD x taxa x dias/360.
+const DIAS_ANO_BASE = 360;
 
 export async function getBanks() {
   const banks = await prisma.bank.findMany({ orderBy: { name: "asc" } });
@@ -182,7 +185,7 @@ export async function getLoans() {
 
 export async function getAccOperations() {
   const ops = await prisma.accOperation.findMany({
-    include: { bank: true },
+    include: { bank: true, baixas: { orderBy: { dataQuitacao: "asc" } } },
     orderBy: { contractDate: "desc" },
   });
   return ops.map((a) => {
@@ -198,6 +201,7 @@ export async function getAccOperations() {
 
     const closingRate = n(a.closingRate);
     const exchangeVariationValue = n(a.exchangeVariationValue);
+    const contractDateStr = a.contractDate.toISOString().slice(0, 10);
 
     // Prazo contratado: da contratacao ate o vencimento (estimativa fixa do contrato).
     // Juros comerciais em dias corridos, ano base de 360 dias.
@@ -208,16 +212,50 @@ export async function getAccOperations() {
     );
     const jurosValor = Number((jurosValorUSD * closingRate).toFixed(2));
 
-    // Juros pagos: prazo real entre a contratacao e a quitacao efetiva (ou o vencimento,
-    // enquanto nao quitado, como estimativa), em dias corridos / 360. Convertido para R$
-    // pela taxa de variacao cambial informada na quitacao (ou a taxa de fechamento, enquanto
-    // essa taxa nao for informada).
-    const prazoRealDias = daysBetween(a.contractDate, a.closingDate ?? a.settlementDate);
-    const jurosPagoUSD = Number(
-      (contractedValueForeign * (interestRate / 100) * (prazoRealDias / DIAS_ANO_BASE)).toFixed(2)
-    );
-    const taxaConversaoJurosPagos = exchangeVariationValue > 0 ? exchangeVariationValue : closingRate;
-    const jurosPagoValor = Number((jurosPagoUSD * taxaConversaoJurosPagos).toFixed(2));
+    // Baixas parciais: quitacao do ACC em tranches, cada uma com seu proprio
+    // valor/data/cambio - os juros de cada tranche sao calculados
+    // individualmente (mesma formula de jurosValorUSD, mas sobre o valor e o
+    // prazo real daquela tranche), em vez de um calculo unico sobre o saldo
+    // total. Ver lib/acc-calc.ts.
+    const baixas = a.baixas.map((b) => {
+      const valorUSD = n(b.valorUSD);
+      const dataQuitacaoStr = b.dataQuitacao.toISOString().slice(0, 10);
+      const baixaClosingRate = n(b.closingRate);
+      const { dias, jurosUSD } = calcBaixaJuros(valorUSD, interestRate, contractDateStr, dataQuitacaoStr);
+      return {
+        id: b.id,
+        valorUSD,
+        dataQuitacao: dataQuitacaoStr,
+        closingRate: baixaClosingRate,
+        dias,
+        jurosUSD,
+        jurosValor: Number((jurosUSD * baixaClosingRate).toFixed(2)),
+      };
+    });
+    const valorLiquidadoUSD = Number(baixas.reduce((s, b) => s + b.valorUSD, 0).toFixed(2));
+    const saldoAbertoUSD = Math.max(0, Number((contractedValueForeign - valorLiquidadoUSD).toFixed(2)));
+
+    // Juros pagos: se ha baixas registradas, e a soma dos juros de cada tranche
+    // (mais preciso - cada parte tem seu proprio prazo real). Sem baixas
+    // (comportamento de sempre, quitacao unica), usa o prazo entre a
+    // contratacao e a quitacao efetiva (ou o vencimento, enquanto nao quitado,
+    // como estimativa), convertido pela taxa de variacao cambial informada na
+    // quitacao (ou a taxa de fechamento, enquanto essa taxa nao for informada).
+    let jurosPagoUSD: number;
+    let jurosPagoValor: number;
+    let taxaConversaoJurosPagos: number;
+    if (baixas.length > 0) {
+      jurosPagoUSD = Number(baixas.reduce((s, b) => s + b.jurosUSD, 0).toFixed(2));
+      jurosPagoValor = Number(baixas.reduce((s, b) => s + b.jurosValor, 0).toFixed(2));
+      taxaConversaoJurosPagos = baixas[baixas.length - 1].closingRate;
+    } else {
+      const prazoRealDias = daysBetween(a.contractDate, a.closingDate ?? a.settlementDate);
+      jurosPagoUSD = Number(
+        (contractedValueForeign * (interestRate / 100) * (prazoRealDias / DIAS_ANO_BASE)).toFixed(2)
+      );
+      taxaConversaoJurosPagos = exchangeVariationValue > 0 ? exchangeVariationValue : closingRate;
+      jurosPagoValor = Number((jurosPagoUSD * taxaConversaoJurosPagos).toFixed(2));
+    }
 
     // Valor do spread: (valor contratado x taxa spot) - valor recebido.
     const spreadValor = Number((contractedValueForeign * spotRate - receivedValueBRL).toFixed(2));
@@ -261,10 +299,13 @@ export async function getAccOperations() {
       jurosPagoValor,
       custoTotal,
       percentualCustoTotal: Number(percentualCustoTotal.toFixed(2)),
-      contractDate: a.contractDate.toISOString().slice(0, 10),
+      contractDate: contractDateStr,
       settlementDate: a.settlementDate.toISOString().slice(0, 10),
       dataQuitacao: a.closingDate ? a.closingDate.toISOString().slice(0, 10) : null,
       status: a.status,
+      baixas,
+      valorLiquidadoUSD,
+      saldoAbertoUSD,
     };
   });
 }
@@ -307,6 +348,10 @@ export async function getKpis(range?: PeriodRange, modalidade?: ModalidadeFilter
       .reduce((sum, a) => sum + a.jurosPagoValor, 0);
   // Juros futuros: o que ainda falta pagar (projecao total menos o que ja correu ate
   // hoje), nao a projecao inteira do contrato - senao dobraria os juros ja acumulados.
+  // Do lado do ACC, jurosValor projeta sobre o valor contratado cheio e o prazo
+  // contratado inteiro (nao "ate hoje"), entao nao da pra subtrair jurosPagoValor
+  // aqui do mesmo jeito que do lado do emprestimo sem reduzir demais o numero pra
+  // contratos com baixa parcial - mantido como projecao cheia do contrato.
   const jurosFuturos =
     loans
       .filter((l) => l.status !== "LIQUIDADO")
@@ -315,10 +360,12 @@ export async function getKpis(range?: PeriodRange, modalidade?: ModalidadeFilter
       .filter((a) => a.status !== "LIQUIDADO")
       .reduce((sum, a) => sum + a.jurosValor, 0);
 
-  // Exposicao cambial em US$ (moeda do risco), nao convertida para R$.
+  // Exposicao cambial em US$ (moeda do risco), nao convertida para R$. Usa o
+  // saldo real em aberto (contratado - ja liquidado em baixas), nao o valor
+  // contratado cheio - senao superestima a exposicao apos quitacoes parciais.
   const exposicaoCambial = accOperations
     .filter((a) => a.status === "EM_ABERTO")
-    .reduce((sum, a) => sum + a.contractedValueForeign, 0);
+    .reduce((sum, a) => sum + a.saldoAbertoUSD, 0);
 
   // Custo medio ponderado da carteira: custo total / principal, ponderado pelo valor de
   // cada operacao (nao e uma media simples das taxas). Metrica-chave para o CFO.
@@ -707,6 +754,9 @@ export async function getOpenLoansReport() {
 export async function getOpenAccReport() {
   const accOperations = await getAccOperations();
 
+  // valorEmAberto usa o saldo real em aberto (saldoAbertoUSD convertido para R$ pela
+  // taxa de fechamento do contrato) - cai conforme baixas parciais sao registradas,
+  // em vez de mostrar sempre o valor recebido cheio.
   return accOperations
     .filter((a) => a.status !== "LIQUIDADO")
     .map((a) => ({
@@ -715,7 +765,7 @@ export async function getOpenAccReport() {
       contractNumber: a.accNumber,
       contractDate: a.contractDate,
       valorTomado: a.receivedValueBRL,
-      valorEmAberto: a.receivedValueBRL,
+      valorEmAberto: Number((a.saldoAbertoUSD * a.closingRate).toFixed(2)),
       vencimento: a.settlementDate,
       status: a.status,
     }))

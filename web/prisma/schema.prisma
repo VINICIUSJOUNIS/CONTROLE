@@ -245,10 +245,30 @@ model AccOperation {
   insuranceCost          Decimal   @default(0) @db.Decimal(18, 2)
   otherCosts             Decimal   @default(0) @db.Decimal(18, 2)
   status                 AccStatus @default(EM_ABERTO)
+  baixas                 AccBaixa[]
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
   @@index([bankId])
   @@index([status])
   @@map("acc_operations")
+}
+
+// Quitacao parcial de um ACC: o exportador liquida o adiantamento em tranches
+// (conforme recebe pagamentos do comprador estrangeiro). Cada tranche tem seu
+// proprio valor, data e cambio - os juros de cada uma sao calculados
+// individualmente (valorUSD x taxa x dias/360, da contratacao ate a data
+// daquela tranche), nao um calculo unico sobre o saldo total.
+model AccBaixa {
+  id             String       @id @default(uuid())
+  accOperation   AccOperation @relation(fields: [accOperationId], references: [id], onDelete: Cascade)
+  accOperationId String
+  valorUSD       Decimal      @db.Decimal(18, 2)
+  dataQuitacao   DateTime     @db.Date
+  closingRate    Decimal      @db.Decimal(10, 4)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([accOperationId])
+  @@map("acc_baixas")
 }

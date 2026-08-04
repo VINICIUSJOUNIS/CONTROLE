@@ -110,3 +110,73 @@ export async function deleteAcc(id: string) {
   await prisma.accOperation.delete({ where: { id } });
   revalidateAll();
 }
+
+export type AccBaixaInput = {
+  valorUSD: number;
+  dataQuitacao: string;
+  closingRate: number;
+};
+
+// Depois de adicionar/editar/excluir uma baixa, sincroniza o status do ACC com
+// a soma real das baixas: liquidado (com a data da baixa mais recente) quando
+// a soma cobre o valor contratado (tolerancia de US$0,01), ou em aberto caso
+// contrario. Nunca mexe em EM_ATRASO, que continua controlado manualmente.
+async function syncAccStatus(accOperationId: string) {
+  const acc = await prisma.accOperation.findUniqueOrThrow({
+    where: { id: accOperationId },
+    include: { baixas: true },
+  });
+  if (acc.status === "EM_ATRASO") return;
+
+  const contractedValueForeign = Number(acc.contractedValueForeign);
+  const valorLiquidado = acc.baixas.reduce((s, b) => s + Number(b.valorUSD), 0);
+  const totalmenteLiquidado = valorLiquidado >= contractedValueForeign - 0.01;
+
+  if (totalmenteLiquidado) {
+    const ultimaBaixa = acc.baixas.reduce(
+      (max: Date | null, b) => (!max || b.dataQuitacao > max ? b.dataQuitacao : max),
+      null as Date | null
+    )!;
+    await prisma.accOperation.update({
+      where: { id: accOperationId },
+      data: { status: "LIQUIDADO", closingDate: ultimaBaixa },
+    });
+  } else if (acc.status === "LIQUIDADO") {
+    await prisma.accOperation.update({
+      where: { id: accOperationId },
+      data: { status: "EM_ABERTO" },
+    });
+  }
+}
+
+export async function addAccBaixa(accOperationId: string, input: AccBaixaInput) {
+  await prisma.accBaixa.create({
+    data: {
+      accOperationId,
+      valorUSD: input.valorUSD,
+      dataQuitacao: parseLocalDate(input.dataQuitacao),
+      closingRate: input.closingRate,
+    },
+  });
+  await syncAccStatus(accOperationId);
+  revalidateAll();
+}
+
+export async function updateAccBaixa(baixaId: string, input: AccBaixaInput) {
+  const baixa = await prisma.accBaixa.update({
+    where: { id: baixaId },
+    data: {
+      valorUSD: input.valorUSD,
+      dataQuitacao: parseLocalDate(input.dataQuitacao),
+      closingRate: input.closingRate,
+    },
+  });
+  await syncAccStatus(baixa.accOperationId);
+  revalidateAll();
+}
+
+export async function deleteAccBaixa(baixaId: string) {
+  const baixa = await prisma.accBaixa.delete({ where: { id: baixaId } });
+  await syncAccStatus(baixa.accOperationId);
+  revalidateAll();
+}
