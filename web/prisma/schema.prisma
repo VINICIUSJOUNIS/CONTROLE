@@ -56,6 +56,11 @@ enum Currency {
   EUR
 }
 
+enum ClientType {
+  INTERNO
+  EXTERNO
+}
+
 model Profile {
   id        String   @id
   email     String   @unique
@@ -271,4 +276,27 @@ model AccBaixa {
 
   @@index([accOperationId])
   @@map("acc_baixas")
+}
+
+// Controle de faturamento (vendas de cafe): cliente interno (mercado nacional)
+// ou externo (exportacao). Quantidade sempre em kg - sacas (60kg) e calculado
+// na leitura, nao armazenado. Pais e quantidade de conteineres so fazem
+// sentido para cliente externo; valueUSD idem (cliente interno fatura so em
+// R$).
+model Sale {
+  id             String     @id @default(uuid())
+  clientName     String
+  clientType     ClientType
+  quantityKg     Decimal    @db.Decimal(18, 2)
+  country        String?
+  containerCount Int?
+  saleDate       DateTime   @db.Date
+  valueBRL       Decimal    @db.Decimal(18, 2)
+  valueUSD       Decimal?   @db.Decimal(18, 2)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([clientType])
+  @@index([saleDate])
+  @@map("sales")
 }

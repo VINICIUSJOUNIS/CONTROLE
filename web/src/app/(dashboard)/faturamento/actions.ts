@@ -1,0 +1,61 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { parseLocalDate } from "@/lib/date";
+
+export type SaleFormInput = {
+  clientName: string;
+  clientType: "INTERNO" | "EXTERNO";
+  quantityKg: number;
+  country: string;
+  containerCount: number | null;
+  saleDate: string;
+  valueBRL: number;
+  valueUSD: number | null;
+};
+
+function revalidateAll() {
+  revalidatePath("/faturamento");
+  revalidatePath("/");
+}
+
+export async function createSale(input: SaleFormInput) {
+  await prisma.sale.create({
+    data: {
+      clientName: input.clientName,
+      clientType: input.clientType,
+      quantityKg: input.quantityKg,
+      country: input.clientType === "EXTERNO" ? input.country || null : null,
+      containerCount: input.clientType === "EXTERNO" ? input.containerCount : null,
+      saleDate: parseLocalDate(input.saleDate),
+      valueBRL: input.valueBRL,
+      valueUSD: input.clientType === "EXTERNO" ? input.valueUSD : null,
+    },
+  });
+
+  revalidateAll();
+}
+
+export async function updateSale(id: string, input: SaleFormInput) {
+  await prisma.sale.update({
+    where: { id },
+    data: {
+      clientName: input.clientName,
+      clientType: input.clientType,
+      quantityKg: input.quantityKg,
+      country: input.clientType === "EXTERNO" ? input.country || null : null,
+      containerCount: input.clientType === "EXTERNO" ? input.containerCount : null,
+      saleDate: parseLocalDate(input.saleDate),
+      valueBRL: input.valueBRL,
+      valueUSD: input.clientType === "EXTERNO" ? input.valueUSD : null,
+    },
+  });
+
+  revalidateAll();
+}
+
+export async function deleteSale(id: string) {
+  await prisma.sale.delete({ where: { id } });
+  revalidateAll();
+}

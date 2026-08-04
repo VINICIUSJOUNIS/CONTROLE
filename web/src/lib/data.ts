@@ -771,3 +771,26 @@ export async function getOpenAccReport() {
     }))
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
 }
+
+const KG_POR_SACA = 60;
+
+export async function getSales() {
+  const sales = await prisma.sale.findMany({ orderBy: { saleDate: "desc" } });
+  return sales.map((s) => {
+    const quantityKg = n(s.quantityKg);
+    return {
+      id: s.id,
+      clientName: s.clientName,
+      clientType: s.clientType,
+      quantityKg,
+      quantitySacas: Number((quantityKg / KG_POR_SACA).toFixed(2)),
+      country: s.country,
+      containerCount: s.containerCount,
+      saleDate: s.saleDate.toISOString().slice(0, 10),
+      valueBRL: n(s.valueBRL),
+      valueUSD: s.valueUSD != null ? n(s.valueUSD) : null,
+    };
+  });
+}
+
+export type SaleRow = Awaited<ReturnType<typeof getSales>>[number];

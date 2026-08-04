@@ -15,6 +15,7 @@ import {
   FileBarChart,
   Waves,
   FileStack,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
   { href: "/emprestimos", label: "Emprestimos", icon: Landmark },
   { href: "/acc", label: "ACC", icon: Ship },
+  { href: "/faturamento", label: "Faturamento", icon: Receipt },
   { href: "/cambial", label: "Dashboard Cambial", icon: Globe2 },
   { href: "/taxas", label: "Evolucao das Taxas", icon: LineChart },
   { href: "/bancos", label: "Comparativo de Bancos", icon: Building2 },
