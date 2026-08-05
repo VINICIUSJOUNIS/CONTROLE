@@ -93,6 +93,38 @@ export default async function FaturamentoDashboardPage({
   const pctExterno = totalBRL > 0 ? (totalBRLExterno / totalBRL) * 100 : 0;
   const pctFmt = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 
+  // Evolução anual: sempre com todas as vendas (allSales), independente do filtro de
+  // período do topo — o objetivo aqui é comparar ano contra ano, não um recorte.
+  type YearAgg = {
+    totalBRL: number;
+    internoBRL: number;
+    externoBRL: number;
+    sacas: number;
+    containers: number;
+  };
+  const porAno = new Map<string, YearAgg>();
+  for (const s of allSales) {
+    const year = s.saleDate.slice(0, 4);
+    const cur = porAno.get(year) ?? { totalBRL: 0, internoBRL: 0, externoBRL: 0, sacas: 0, containers: 0 };
+    cur.totalBRL += s.valueBRL;
+    cur.sacas += s.quantitySacas;
+    if (s.clientType === "INTERNO") cur.internoBRL += s.valueBRL;
+    else {
+      cur.externoBRL += s.valueBRL;
+      cur.containers += (s.containers20 ?? 0) + (s.containers40 ?? 0);
+    }
+    porAno.set(year, cur);
+  }
+  const anos = [...porAno.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const chartAnual = anos.map(([year, v]) => ({ year, interno: v.internoBRL, externo: v.externoBRL }));
+
+  const anosDesc = [...anos].reverse();
+  const [ultimoAno, penultimoAno] = anos.slice(-2).reverse();
+  const yoyPct =
+    penultimoAno && penultimoAno[1].totalBRL > 0
+      ? ((ultimoAno[1].totalBRL - penultimoAno[1].totalBRL) / penultimoAno[1].totalBRL) * 100
+      : null;
+
   return (
     <div className="flex flex-col">
       <Topbar title="Faturamento" subtitle="Visão geral de vendas, clientes e exportação" />
@@ -132,6 +164,81 @@ export default async function FaturamentoDashboardPage({
               valueFormat="currency"
             />
             <PieChartCard title="Faturamento por Mercado" data={pieMercado} />
+          </div>
+        )}
+
+        {anos.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Evolução Anual</h2>
+              {yoyPct !== null && (
+                <KpiCard
+                  label={`Faturamento ${ultimoAno[0]} vs ${penultimoAno[0]}`}
+                  value={formatCurrency(ultimoAno[1].totalBRL)}
+                  icon={DollarSign}
+                  trend={pctFmt(Math.abs(yoyPct))}
+                  trendLabel={`vs ${penultimoAno[0]}`}
+                  trendPositive={yoyPct >= 0}
+                />
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
+              <BarChartCard
+                title="Faturamento por Ano"
+                data={chartAnual}
+                xKey="year"
+                series={[
+                  { key: "interno", name: "Interno", color: "#8b5a2b" },
+                  { key: "externo", name: "Externo", color: "#4c9a6a" },
+                ]}
+                valueFormat="currency"
+              />
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Comparativo por Ano</CardTitle>
+                </CardHeader>
+                <CardContent className="overflow-x-auto p-0">
+                  <table className="w-full whitespace-nowrap text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-xs text-muted">
+                        <th className="px-4 py-2.5 font-medium">Ano</th>
+                        <th className="px-4 py-2.5 font-medium">Faturado (R$)</th>
+                        <th className="px-4 py-2.5 font-medium">Sacas</th>
+                        <th className="px-4 py-2.5 font-medium">vs ano anterior</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {anosDesc.map(([year, v], i) => {
+                        const anterior = anosDesc[i + 1];
+                        const delta =
+                          anterior && anterior[1].totalBRL > 0
+                            ? ((v.totalBRL - anterior[1].totalBRL) / anterior[1].totalBRL) * 100
+                            : null;
+                        return (
+                          <tr key={year} className="border-b border-border last:border-0">
+                            <td className="px-4 py-2.5 font-medium">{year}</td>
+                            <td className="px-4 py-2.5">{formatCurrency(v.totalBRL)}</td>
+                            <td className="px-4 py-2.5">{v.sacas.toLocaleString("pt-BR")}</td>
+                            <td className="px-4 py-2.5">
+                              {delta === null ? (
+                                <span className="text-muted">-</span>
+                              ) : (
+                                <span className={delta >= 0 ? "text-success" : "text-danger"}>
+                                  {delta >= 0 ? "+" : ""}
+                                  {pctFmt(delta)}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
