@@ -133,8 +133,16 @@ export default async function FaturamentoDashboardPage({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
           <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} />
-          <KpiCard label="Sacas — Mercado Interno" value={sacasInterno.toLocaleString("pt-BR")} icon={Package} />
-          <KpiCard label="Sacas — Mercado Externo" value={sacasExterno.toLocaleString("pt-BR")} icon={Package} />
+          <KpiCard
+            label="Sacas — Mercado Interno"
+            value={sacasInterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+            icon={Package}
+          />
+          <KpiCard
+            label="Sacas — Mercado Externo"
+            value={sacasExterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+            icon={Package}
+          />
           <KpiCard label="Total de Contêineres" value={totalContainers.toLocaleString("pt-BR")} icon={Package} />
           <KpiCard label="Contêineres 20 pés" value={totalContainers20.toLocaleString("pt-BR")} icon={Package} />
           <KpiCard label="Contêineres 40 pés" value={totalContainers40.toLocaleString("pt-BR")} icon={Package} />
@@ -220,7 +228,9 @@ export default async function FaturamentoDashboardPage({
                           <tr key={year} className="border-b border-border last:border-0">
                             <td className="px-4 py-2.5 font-medium">{year}</td>
                             <td className="px-4 py-2.5">{formatCurrency(v.totalBRL)}</td>
-                            <td className="px-4 py-2.5">{v.sacas.toLocaleString("pt-BR")}</td>
+                            <td className="px-4 py-2.5">
+                              {v.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                            </td>
                             <td className="px-4 py-2.5">
                               {delta === null ? (
                                 <span className="text-muted">-</span>
@@ -263,7 +273,9 @@ export default async function FaturamentoDashboardPage({
                     <tr key={name} className="border-b border-border last:border-0">
                       <td className="px-4 py-2.5 align-top text-muted">{i + 1}</td>
                       <td className="px-4 py-2.5 align-top font-medium">{name}</td>
-                      <td className="px-4 py-2.5 align-top">{agg.sacas.toLocaleString("pt-BR")}</td>
+                      <td className="px-4 py-2.5 align-top">
+                        {agg.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                      </td>
                       <td className="px-4 py-2.5 align-top">{formatCurrency(agg.valueBRL)}</td>
                       <td className="px-4 py-2.5 align-top">
                         {pctFmt(totalBRLInterno > 0 ? (agg.valueBRL / totalBRLInterno) * 100 : 0)}
@@ -307,7 +319,9 @@ export default async function FaturamentoDashboardPage({
                       <td className="px-4 py-2.5 text-muted">{i + 1}</td>
                       <td className="px-4 py-2.5 font-medium">{name}</td>
                       <td className="px-4 py-2.5">{countryLabel(agg.country)}</td>
-                      <td className="px-4 py-2.5">{agg.sacas.toLocaleString("pt-BR")}</td>
+                      <td className="px-4 py-2.5">
+                        {agg.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                      </td>
                       <td className="px-4 py-2.5">{agg.containers20.toLocaleString("pt-BR")}</td>
                       <td className="px-4 py-2.5">{agg.containers40.toLocaleString("pt-BR")}</td>
                       <td className="px-4 py-2.5">{formatCurrency(agg.valueBRL)}</td>

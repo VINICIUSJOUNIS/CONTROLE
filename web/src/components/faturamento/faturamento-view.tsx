@@ -196,7 +196,9 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted">Total vendido (sacas de 60kg)</p>
-          <p className="mt-1.5 text-xl font-semibold">{totalSacas.toLocaleString("pt-BR")}</p>
+          <p className="mt-1.5 text-xl font-semibold">
+            {totalSacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+          </p>
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted">Total faturado (R$)</p>
@@ -400,7 +402,9 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
                   </td>
                   <td className="px-4 py-2.5">{formatDate(s.saleDate)}</td>
                   <td className="px-4 py-2.5">{s.quantityKg.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-2.5">{s.quantitySacas.toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-2.5">
+                    {s.quantitySacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                  </td>
                   <td className="px-4 py-2.5">
                     {s.country ? countryLabel(s.country) : <span className="text-muted">-</span>}
                   </td>

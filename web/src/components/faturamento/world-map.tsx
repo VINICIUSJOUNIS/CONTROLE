@@ -169,7 +169,9 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                 <p className="font-semibold">{countryLabel(hovered)}</p>
                 <p className="mt-1 text-xs text-muted">{hoveredStat.count} venda(s)</p>
                 <p className="mt-2 text-sm">{hoveredStat.kg.toLocaleString("pt-BR")} kg</p>
-                <p className="text-sm">{hoveredStat.sacas.toLocaleString("pt-BR")} sacas (60kg)</p>
+                <p className="text-sm">
+                  {hoveredStat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sacas (60kg)
+                </p>
                 <p className="text-sm">
                   {hoveredStat.containers20.toLocaleString("pt-BR")} cnt 20' ·{" "}
                   {hoveredStat.containers40.toLocaleString("pt-BR")} cnt 40'
@@ -207,7 +209,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                       </span>
                     </span>
                     <span className="shrink-0 whitespace-nowrap text-right text-muted">
-                      {stat.sacas.toLocaleString("pt-BR")} sc ·{" "}
+                      {stat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc ·{" "}
                       {totalValueBRL > 0 ? ((stat.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : 0}%
                     </span>
                   </li>
