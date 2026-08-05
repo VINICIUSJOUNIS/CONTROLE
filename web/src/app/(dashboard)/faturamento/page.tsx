@@ -261,11 +261,11 @@ export default async function FaturamentoDashboardPage({
                 <tbody>
                   {topInternos.map(([name, agg], i) => (
                     <tr key={name} className="border-b border-border last:border-0">
-                      <td className="px-4 py-2.5 text-muted">{i + 1}</td>
-                      <td className="px-4 py-2.5 font-medium">{name}</td>
-                      <td className="px-4 py-2.5">{agg.sacas.toLocaleString("pt-BR")}</td>
-                      <td className="px-4 py-2.5">{formatCurrency(agg.valueBRL)}</td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-4 py-2.5 align-top text-muted">{i + 1}</td>
+                      <td className="px-4 py-2.5 align-top font-medium">{name}</td>
+                      <td className="px-4 py-2.5 align-top">{agg.sacas.toLocaleString("pt-BR")}</td>
+                      <td className="px-4 py-2.5 align-top">{formatCurrency(agg.valueBRL)}</td>
+                      <td className="px-4 py-2.5 align-top">
                         {pctFmt(totalBRLInterno > 0 ? (agg.valueBRL / totalBRLInterno) * 100 : 0)}
                       </td>
                     </tr>
