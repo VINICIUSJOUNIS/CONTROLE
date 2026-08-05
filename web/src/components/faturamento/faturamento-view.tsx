@@ -26,7 +26,8 @@ function emptyForm() {
     clientType: "INTERNO" as ClientTypeValue,
     quantityKg: "",
     country: "",
-    containerCount: "",
+    containers20: "",
+    containers40: "",
     saleDate: new Date().toISOString().slice(0, 10),
     valueBRL: "",
     valueUSD: "",
@@ -39,7 +40,8 @@ function formFromRow(sale: SaleRow) {
     clientType: sale.clientType as ClientTypeValue,
     quantityKg: String(sale.quantityKg),
     country: sale.country ?? "",
-    containerCount: sale.containerCount != null ? String(sale.containerCount) : "",
+    containers20: sale.containers20 != null ? String(sale.containers20) : "",
+    containers40: sale.containers40 != null ? String(sale.containers40) : "",
     saleDate: sale.saleDate,
     valueBRL: String(sale.valueBRL),
     valueUSD: sale.valueUSD != null ? String(sale.valueUSD) : "",
@@ -50,12 +52,39 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [clientTypeFilter, setClientTypeFilter] = useState("todos");
+  const [yearFilter, setYearFilter] = useState("todos");
   const [fromFilter, setFromFilter] = useState("");
   const [toFilter, setToFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm());
+
+  const years = useMemo(
+    () => Array.from(new Set(sales.map((s) => s.saleDate.slice(0, 4)))).sort(),
+    [sales]
+  );
+
+  function applyYearFilter(year: string) {
+    setYearFilter(year);
+    if (year === "todos") {
+      setFromFilter("");
+      setToFilter("");
+    } else {
+      setFromFilter(`${year}-01`);
+      setToFilter(`${year}-12`);
+    }
+  }
+
+  function handleFromChange(value: string) {
+    setFromFilter(value);
+    setYearFilter("todos");
+  }
+
+  function handleToChange(value: string) {
+    setToFilter(value);
+    setYearFilter("todos");
+  }
 
   const filtered = useMemo(() => {
     return sales.filter((s) => {
@@ -108,7 +137,8 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
       clientType: form.clientType,
       quantityKg: Number(form.quantityKg) || 0,
       country: form.country.trim(),
-      containerCount: form.containerCount ? Number(form.containerCount) : null,
+      containers20: form.containers20 ? Number(form.containers20) : null,
+      containers40: form.containers40 ? Number(form.containers40) : null,
       saleDate: form.saleDate,
       valueBRL: Number(form.valueBRL) || 0,
       valueUSD: form.valueUSD ? Number(form.valueUSD) : null,
@@ -161,17 +191,25 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
           <option value="INTERNO">Interno</option>
           <option value="EXTERNO">Externo</option>
         </Select>
+        <Select value={yearFilter} onChange={(e) => applyYearFilter(e.target.value)} className="w-auto">
+          <option value="todos">Todos os anos</option>
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </Select>
         <Input
           type="month"
           value={fromFilter}
-          onChange={(e) => setFromFilter(e.target.value)}
+          onChange={(e) => handleFromChange(e.target.value)}
           className="w-auto"
           title="De"
         />
         <Input
           type="month"
           value={toFilter}
-          onChange={(e) => setToFilter(e.target.value)}
+          onChange={(e) => handleToChange(e.target.value)}
           className="w-auto"
           title="Ate"
         />
@@ -245,27 +283,35 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
               {isExterno && (
                 <div className="rounded-lg border border-border p-3">
                   <p className="mb-3 text-sm font-medium">Dados de exportação</p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>País</Label>
+                    <Select
+                      value={form.country}
+                      onChange={(e) => setForm({ ...form, country: e.target.value })}
+                    >
+                      <option value="">Selecione...</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.labelPt}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
                     <div>
-                      <Label>País</Label>
-                      <Select
-                        value={form.country}
-                        onChange={(e) => setForm({ ...form, country: e.target.value })}
-                      >
-                        <option value="">Selecione...</option>
-                        {COUNTRIES.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.labelPt}
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Quantidade de contêineres</Label>
+                      <Label>Contêineres de 20 pés</Label>
                       <Input
                         type="number"
-                        value={form.containerCount}
-                        onChange={(e) => setForm({ ...form, containerCount: e.target.value })}
+                        value={form.containers20}
+                        onChange={(e) => setForm({ ...form, containers20: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Contêineres de 40 pés</Label>
+                      <Input
+                        type="number"
+                        value={form.containers40}
+                        onChange={(e) => setForm({ ...form, containers40: e.target.value })}
                       />
                     </div>
                   </div>
@@ -301,7 +347,8 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
                 <th className="px-4 py-3 font-medium">Quantidade (kg)</th>
                 <th className="px-4 py-3 font-medium">Sacas (60kg)</th>
                 <th className="px-4 py-3 font-medium">País</th>
-                <th className="px-4 py-3 font-medium">Contêineres</th>
+                <th className="px-4 py-3 font-medium">Cnt 20'</th>
+                <th className="px-4 py-3 font-medium">Cnt 40'</th>
                 <th className="px-4 py-3 font-medium">Valor (R$)</th>
                 <th className="px-4 py-3 font-medium">Valor (US$)</th>
                 <th className="px-4 py-3 font-medium" />
@@ -322,7 +369,8 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
                   <td className="px-4 py-2.5">
                     {s.country ? countryLabel(s.country) : <span className="text-muted">-</span>}
                   </td>
-                  <td className="px-4 py-2.5">{s.containerCount ?? <span className="text-muted">-</span>}</td>
+                  <td className="px-4 py-2.5">{s.containers20 ?? <span className="text-muted">-</span>}</td>
+                  <td className="px-4 py-2.5">{s.containers40 ?? <span className="text-muted">-</span>}</td>
                   <td className="px-4 py-2.5">{formatCurrency(s.valueBRL)}</td>
                   <td className="px-4 py-2.5">
                     {s.valueUSD != null ? `US$ ${s.valueUSD.toLocaleString("pt-BR")}` : <span className="text-muted">-</span>}
@@ -349,7 +397,7 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={11} className="px-4 py-8 text-center text-muted">
                     Nenhuma venda encontrada com os filtros atuais.
                   </td>
                 </tr>

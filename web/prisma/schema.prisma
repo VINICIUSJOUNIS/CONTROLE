@@ -284,17 +284,18 @@ model AccBaixa {
 // sentido para cliente externo; valueUSD idem (cliente interno fatura so em
 // R$).
 model Sale {
-  id             String     @id @default(uuid())
-  clientName     String
-  clientType     ClientType
-  quantityKg     Decimal    @db.Decimal(18, 2)
-  country        String?
-  containerCount Int?
-  saleDate       DateTime   @db.Date
-  valueBRL       Decimal    @db.Decimal(18, 2)
-  valueUSD       Decimal?   @db.Decimal(18, 2)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  id            String     @id @default(uuid())
+  clientName    String
+  clientType    ClientType
+  quantityKg    Decimal    @db.Decimal(18, 2)
+  country       String?
+  containers20  Int?
+  containers40  Int?
+  saleDate      DateTime   @db.Date
+  valueBRL      Decimal    @db.Decimal(18, 2)
+  valueUSD      Decimal?   @db.Decimal(18, 2)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   @@index([clientType])
   @@index([saleDate])

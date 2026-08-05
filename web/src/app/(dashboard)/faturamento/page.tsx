@@ -14,19 +14,23 @@ type ClientAgg = {
   sacas: number;
   valueBRL: number;
   valueUSD: number;
-  containers: number;
+  containers20: number;
+  containers40: number;
   country: string | null;
 };
 
 function rankClients(rows: SaleRow[]) {
   const map = new Map<string, ClientAgg>();
   for (const s of rows) {
-    const cur = map.get(s.clientName) ?? { kg: 0, sacas: 0, valueBRL: 0, valueUSD: 0, containers: 0, country: s.country };
+    const cur =
+      map.get(s.clientName) ??
+      { kg: 0, sacas: 0, valueBRL: 0, valueUSD: 0, containers20: 0, containers40: 0, country: s.country };
     cur.kg += s.quantityKg;
     cur.sacas += s.quantitySacas;
     cur.valueBRL += s.valueBRL;
     cur.valueUSD += s.valueUSD ?? 0;
-    cur.containers += s.containerCount ?? 0;
+    cur.containers20 += s.containers20 ?? 0;
+    cur.containers40 += s.containers40 ?? 0;
     map.set(s.clientName, cur);
   }
   return [...map.entries()].sort((a, b) => b[1].valueBRL - a[1].valueBRL);
@@ -57,7 +61,8 @@ export default async function FaturamentoDashboardPage({
 
   const sacasInterno = internos.reduce((s, v) => s + v.quantitySacas, 0);
   const sacasExterno = externos.reduce((s, v) => s + v.quantitySacas, 0);
-  const totalContainers = externos.reduce((s, v) => s + (v.containerCount ?? 0), 0);
+  const totalContainers20 = externos.reduce((s, v) => s + (v.containers20 ?? 0), 0);
+  const totalContainers40 = externos.reduce((s, v) => s + (v.containers40 ?? 0), 0);
 
   const totalBRL = sales.reduce((s, v) => s + v.valueBRL, 0);
   const totalBRLInterno = internos.reduce((s, v) => s + v.valueBRL, 0);
@@ -89,11 +94,12 @@ export default async function FaturamentoDashboardPage({
       <div className="space-y-6 p-6">
         <PeriodFilter years={years} />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} />
           <KpiCard label="Sacas — Mercado Interno" value={sacasInterno.toLocaleString("pt-BR")} icon={Package} />
           <KpiCard label="Sacas — Mercado Externo" value={sacasExterno.toLocaleString("pt-BR")} icon={Package} />
-          <KpiCard label="Total de Contêineres" value={totalContainers.toLocaleString("pt-BR")} icon={Package} />
+          <KpiCard label="Contêineres 20 pés" value={totalContainers20.toLocaleString("pt-BR")} icon={Package} />
+          <KpiCard label="Contêineres 40 pés" value={totalContainers40.toLocaleString("pt-BR")} icon={Package} />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -163,7 +169,8 @@ export default async function FaturamentoDashboardPage({
                     <th className="px-4 py-2.5 font-medium">Cliente</th>
                     <th className="px-4 py-2.5 font-medium">País</th>
                     <th className="px-4 py-2.5 font-medium">Sacas</th>
-                    <th className="px-4 py-2.5 font-medium">Contêineres</th>
+                    <th className="px-4 py-2.5 font-medium">Cnt 20'</th>
+                    <th className="px-4 py-2.5 font-medium">Cnt 40'</th>
                     <th className="px-4 py-2.5 font-medium">Valor (R$)</th>
                     <th className="px-4 py-2.5 font-medium">Valor (US$)</th>
                   </tr>
@@ -174,7 +181,8 @@ export default async function FaturamentoDashboardPage({
                       <td className="px-4 py-2.5 font-medium">{name}</td>
                       <td className="px-4 py-2.5">{countryLabel(agg.country)}</td>
                       <td className="px-4 py-2.5">{agg.sacas.toLocaleString("pt-BR")}</td>
-                      <td className="px-4 py-2.5">{agg.containers.toLocaleString("pt-BR")}</td>
+                      <td className="px-4 py-2.5">{agg.containers20.toLocaleString("pt-BR")}</td>
+                      <td className="px-4 py-2.5">{agg.containers40.toLocaleString("pt-BR")}</td>
                       <td className="px-4 py-2.5">{formatCurrency(agg.valueBRL)}</td>
                       <td className="px-4 py-2.5">
                         {agg.valueUSD > 0 ? `US$ ${agg.valueUSD.toLocaleString("pt-BR")}` : "-"}
@@ -183,7 +191,7 @@ export default async function FaturamentoDashboardPage({
                   ))}
                   {topExternos.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-6 text-center text-muted">
+                      <td colSpan={7} className="px-4 py-6 text-center text-muted">
                         Nenhuma venda externa registrada ainda.
                       </td>
                     </tr>

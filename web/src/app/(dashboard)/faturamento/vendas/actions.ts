@@ -9,7 +9,8 @@ export type SaleFormInput = {
   clientType: "INTERNO" | "EXTERNO";
   quantityKg: number;
   country: string;
-  containerCount: number | null;
+  containers20: number | null;
+  containers40: number | null;
   saleDate: string;
   valueBRL: number;
   valueUSD: number | null;
@@ -29,7 +30,8 @@ export async function createSale(input: SaleFormInput) {
       clientType: input.clientType,
       quantityKg: input.quantityKg,
       country: input.clientType === "EXTERNO" ? input.country || null : null,
-      containerCount: input.clientType === "EXTERNO" ? input.containerCount : null,
+      containers20: input.clientType === "EXTERNO" ? input.containers20 : null,
+      containers40: input.clientType === "EXTERNO" ? input.containers40 : null,
       saleDate: parseLocalDate(input.saleDate),
       valueBRL: input.valueBRL,
       valueUSD: input.clientType === "EXTERNO" ? input.valueUSD : null,
@@ -47,7 +49,8 @@ export async function updateSale(id: string, input: SaleFormInput) {
       clientType: input.clientType,
       quantityKg: input.quantityKg,
       country: input.clientType === "EXTERNO" ? input.country || null : null,
-      containerCount: input.clientType === "EXTERNO" ? input.containerCount : null,
+      containers20: input.clientType === "EXTERNO" ? input.containers20 : null,
+      containers40: input.clientType === "EXTERNO" ? input.containers40 : null,
       saleDate: parseLocalDate(input.saleDate),
       valueBRL: input.valueBRL,
       valueUSD: input.clientType === "EXTERNO" ? input.valueUSD : null,
