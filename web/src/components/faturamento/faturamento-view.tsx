@@ -53,6 +53,7 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
   const [isPending, startTransition] = useTransition();
   const [clientTypeFilter, setClientTypeFilter] = useState("todos");
   const [clientFilter, setClientFilter] = useState("todos");
+  const [countryFilter, setCountryFilter] = useState("todos");
   const [yearFilter, setYearFilter] = useState("todos");
   const [fromFilter, setFromFilter] = useState("");
   const [toFilter, setToFilter] = useState("");
@@ -70,6 +71,11 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
     const scoped = clientTypeFilter === "todos" ? sales : sales.filter((s) => s.clientType === clientTypeFilter);
     return Array.from(new Set(scoped.map((s) => s.clientName))).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [sales, clientTypeFilter]);
+
+  const countries = useMemo(() => {
+    const ids = Array.from(new Set(sales.map((s) => s.country).filter((c): c is string => Boolean(c))));
+    return ids.sort((a, b) => countryLabel(a).localeCompare(countryLabel(b), "pt-BR"));
+  }, [sales]);
 
   function handleClientTypeFilterChange(value: string) {
     setClientTypeFilter(value);
@@ -101,12 +107,13 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
     return sales.filter((s) => {
       if (clientTypeFilter !== "todos" && s.clientType !== clientTypeFilter) return false;
       if (clientFilter !== "todos" && s.clientName !== clientFilter) return false;
+      if (countryFilter !== "todos" && s.country !== countryFilter) return false;
       const month = s.saleDate.slice(0, 7);
       if (fromFilter && month < fromFilter) return false;
       if (toFilter && month > toFilter) return false;
       return true;
     });
-  }, [sales, clientTypeFilter, clientFilter, fromFilter, toFilter]);
+  }, [sales, clientTypeFilter, clientFilter, countryFilter, fromFilter, toFilter]);
 
   const totalKg = filtered.reduce((s, v) => s + v.quantityKg, 0);
   const totalSacas = filtered.reduce((s, v) => s + v.quantitySacas, 0);
@@ -208,6 +215,14 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
           {clients.map((c) => (
             <option key={c} value={c}>
               {c}
+            </option>
+          ))}
+        </Select>
+        <Select value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)} className="w-auto">
+          <option value="todos">Todos os países</option>
+          {countries.map((c) => (
+            <option key={c} value={c}>
+              {countryLabel(c)}
             </option>
           ))}
         </Select>
