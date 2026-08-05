@@ -12,6 +12,8 @@ export function PieChartCard({
   data: { name: string; value: number; color: string }[];
   height?: number;
 }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+
   return (
     <Card>
       <CardHeader>
@@ -27,6 +29,10 @@ export function PieChartCard({
               innerRadius="55%"
               outerRadius="80%"
               paddingAngle={2}
+              label={({ value }) =>
+                total > 0 ? `${((value / total) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : ""
+              }
+              labelLine={false}
             >
               {data.map((entry) => (
                 <Cell key={entry.name} fill={entry.color} />
@@ -38,6 +44,11 @@ export function PieChartCard({
                 border: "1px solid var(--border)",
                 borderRadius: 8,
                 fontSize: 12,
+              }}
+              formatter={(value, name) => {
+                const v = Number(value);
+                const pct = total > 0 ? ((v / total) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : 0;
+                return [`${v.toLocaleString("pt-BR")} (${pct}%)`, name];
               }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />

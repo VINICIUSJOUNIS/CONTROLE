@@ -88,6 +88,10 @@ export default async function FaturamentoDashboardPage({
     { name: "Mercado Externo", value: totalBRLExterno, color: "#4c9a6a" },
   ];
 
+  const pctInterno = totalBRL > 0 ? (totalBRLInterno / totalBRL) * 100 : 0;
+  const pctExterno = totalBRL > 0 ? (totalBRLExterno / totalBRL) * 100 : 0;
+  const pctFmt = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+
   return (
     <div className="flex flex-col">
       <Topbar title="Faturamento" subtitle="Visão geral de vendas, clientes e exportação" />
@@ -106,6 +110,11 @@ export default async function FaturamentoDashboardPage({
           <KpiCard label="Clientes Internos" value={String(clientesInternos.size)} icon={Users} />
           <KpiCard label="Clientes Externos" value={String(clientesExternos.size)} icon={Users} />
           <KpiCard label="Países Exportados" value={String(paises.size)} icon={Globe2} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <KpiCard label="% Faturamento — Mercado Interno" value={pctFmt(pctInterno)} icon={Package} />
+          <KpiCard label="% Faturamento — Mercado Externo" value={pctFmt(pctExterno)} icon={Globe2} />
         </div>
 
         {chartMensal.length > 0 && (
@@ -133,22 +142,28 @@ export default async function FaturamentoDashboardPage({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted">
+                    <th className="px-4 py-2.5 font-medium">#</th>
                     <th className="px-4 py-2.5 font-medium">Cliente</th>
                     <th className="px-4 py-2.5 font-medium">Sacas</th>
                     <th className="px-4 py-2.5 font-medium">Valor (R$)</th>
+                    <th className="px-4 py-2.5 font-medium">% do Interno</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {topInternos.map(([name, agg]) => (
+                  {topInternos.map(([name, agg], i) => (
                     <tr key={name} className="border-b border-border last:border-0">
+                      <td className="px-4 py-2.5 text-muted">{i + 1}</td>
                       <td className="px-4 py-2.5 font-medium">{name}</td>
                       <td className="px-4 py-2.5">{agg.sacas.toLocaleString("pt-BR")}</td>
                       <td className="px-4 py-2.5">{formatCurrency(agg.valueBRL)}</td>
+                      <td className="px-4 py-2.5">
+                        {pctFmt(totalBRLInterno > 0 ? (agg.valueBRL / totalBRLInterno) * 100 : 0)}
+                      </td>
                     </tr>
                   ))}
                   {topInternos.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-4 py-6 text-center text-muted">
+                      <td colSpan={5} className="px-4 py-6 text-center text-muted">
                         Nenhuma venda interna registrada ainda.
                       </td>
                     </tr>
@@ -166,6 +181,7 @@ export default async function FaturamentoDashboardPage({
               <table className="w-full whitespace-nowrap text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted">
+                    <th className="px-4 py-2.5 font-medium">#</th>
                     <th className="px-4 py-2.5 font-medium">Cliente</th>
                     <th className="px-4 py-2.5 font-medium">País</th>
                     <th className="px-4 py-2.5 font-medium">Sacas</th>
@@ -173,11 +189,13 @@ export default async function FaturamentoDashboardPage({
                     <th className="px-4 py-2.5 font-medium">Cnt 40'</th>
                     <th className="px-4 py-2.5 font-medium">Valor (R$)</th>
                     <th className="px-4 py-2.5 font-medium">Valor (US$)</th>
+                    <th className="px-4 py-2.5 font-medium">% do Externo</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {topExternos.map(([name, agg]) => (
+                  {topExternos.map(([name, agg], i) => (
                     <tr key={name} className="border-b border-border last:border-0">
+                      <td className="px-4 py-2.5 text-muted">{i + 1}</td>
                       <td className="px-4 py-2.5 font-medium">{name}</td>
                       <td className="px-4 py-2.5">{countryLabel(agg.country)}</td>
                       <td className="px-4 py-2.5">{agg.sacas.toLocaleString("pt-BR")}</td>
@@ -187,11 +205,14 @@ export default async function FaturamentoDashboardPage({
                       <td className="px-4 py-2.5">
                         {agg.valueUSD > 0 ? `US$ ${agg.valueUSD.toLocaleString("pt-BR")}` : "-"}
                       </td>
+                      <td className="px-4 py-2.5">
+                        {pctFmt(totalBRLExterno > 0 ? (agg.valueBRL / totalBRLExterno) * 100 : 0)}
+                      </td>
                     </tr>
                   ))}
                   {topExternos.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-6 text-center text-muted">
+                      <td colSpan={9} className="px-4 py-6 text-center text-muted">
                         Nenhuma venda externa registrada ainda.
                       </td>
                     </tr>
