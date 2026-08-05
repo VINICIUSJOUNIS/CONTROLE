@@ -52,6 +52,7 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [clientTypeFilter, setClientTypeFilter] = useState("todos");
+  const [clientFilter, setClientFilter] = useState("todos");
   const [yearFilter, setYearFilter] = useState("todos");
   const [fromFilter, setFromFilter] = useState("");
   const [toFilter, setToFilter] = useState("");
@@ -64,6 +65,16 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
     () => Array.from(new Set(sales.map((s) => s.saleDate.slice(0, 4)))).sort(),
     [sales]
   );
+
+  const clients = useMemo(() => {
+    const scoped = clientTypeFilter === "todos" ? sales : sales.filter((s) => s.clientType === clientTypeFilter);
+    return Array.from(new Set(scoped.map((s) => s.clientName))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [sales, clientTypeFilter]);
+
+  function handleClientTypeFilterChange(value: string) {
+    setClientTypeFilter(value);
+    setClientFilter("todos");
+  }
 
   function applyYearFilter(year: string) {
     setYearFilter(year);
@@ -89,12 +100,13 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
   const filtered = useMemo(() => {
     return sales.filter((s) => {
       if (clientTypeFilter !== "todos" && s.clientType !== clientTypeFilter) return false;
+      if (clientFilter !== "todos" && s.clientName !== clientFilter) return false;
       const month = s.saleDate.slice(0, 7);
       if (fromFilter && month < fromFilter) return false;
       if (toFilter && month > toFilter) return false;
       return true;
     });
-  }, [sales, clientTypeFilter, fromFilter, toFilter]);
+  }, [sales, clientTypeFilter, clientFilter, fromFilter, toFilter]);
 
   const totalKg = filtered.reduce((s, v) => s + v.quantityKg, 0);
   const totalSacas = filtered.reduce((s, v) => s + v.quantitySacas, 0);
@@ -186,10 +198,18 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Select value={clientTypeFilter} onChange={(e) => setClientTypeFilter(e.target.value)} className="w-auto">
-          <option value="todos">Todos os clientes</option>
+        <Select value={clientTypeFilter} onChange={(e) => handleClientTypeFilterChange(e.target.value)} className="w-auto">
+          <option value="todos">Todos os tipos</option>
           <option value="INTERNO">Interno</option>
           <option value="EXTERNO">Externo</option>
+        </Select>
+        <Select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} className="w-auto">
+          <option value="todos">Todos os clientes</option>
+          {clients.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </Select>
         <Select value={yearFilter} onChange={(e) => applyYearFilter(e.target.value)} className="w-auto">
           <option value="todos">Todos os anos</option>
