@@ -63,6 +63,7 @@ export default async function FaturamentoDashboardPage({
   const sacasExterno = externos.reduce((s, v) => s + v.quantitySacas, 0);
   const totalContainers20 = externos.reduce((s, v) => s + (v.containers20 ?? 0), 0);
   const totalContainers40 = externos.reduce((s, v) => s + (v.containers40 ?? 0), 0);
+  const totalContainers = totalContainers20 + totalContainers40;
 
   const totalBRL = sales.reduce((s, v) => s + v.valueBRL, 0);
   const totalBRLInterno = internos.reduce((s, v) => s + v.valueBRL, 0);
@@ -98,10 +99,11 @@ export default async function FaturamentoDashboardPage({
       <div className="space-y-6 p-6">
         <PeriodFilter years={years} />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
           <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} />
           <KpiCard label="Sacas — Mercado Interno" value={sacasInterno.toLocaleString("pt-BR")} icon={Package} />
           <KpiCard label="Sacas — Mercado Externo" value={sacasExterno.toLocaleString("pt-BR")} icon={Package} />
+          <KpiCard label="Total de Contêineres" value={totalContainers.toLocaleString("pt-BR")} icon={Package} />
           <KpiCard label="Contêineres 20 pés" value={totalContainers20.toLocaleString("pt-BR")} icon={Package} />
           <KpiCard label="Contêineres 40 pés" value={totalContainers40.toLocaleString("pt-BR")} icon={Package} />
         </div>
