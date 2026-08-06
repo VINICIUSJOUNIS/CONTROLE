@@ -22,6 +22,7 @@ const SEQ_STEPS = 5;
 
 export function WorldMap({ sales }: { sales: SaleRow[] }) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [hoveredName, setHoveredName] = useState<string | null>(null);
 
   const statsByCountry = useMemo(() => {
     const map = new Map<string, CountryStat>();
@@ -113,8 +114,14 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                         <Geography
                           key={geo.rsmKey}
                           geography={geo}
-                          onMouseEnter={() => exported && setHovered(id)}
-                          onMouseLeave={() => setHovered(null)}
+                          onMouseEnter={() => {
+                            setHovered(id);
+                            setHoveredName(String(geo.properties?.name ?? id));
+                          }}
+                          onMouseLeave={() => {
+                            setHovered(null);
+                            setHoveredName(null);
+                          }}
                           style={{
                             default: {
                               fill,
@@ -124,8 +131,8 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                             },
                             hover: {
                               fill,
-                              stroke: exported ? "var(--hover-ring)" : "var(--map-stroke)",
-                              strokeWidth: exported ? 1.75 : 0.5,
+                              stroke: "var(--hover-ring)",
+                              strokeWidth: 1.75,
                               outline: "none",
                               cursor: exported ? "pointer" : "default",
                             },
@@ -136,7 +143,9 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                               outline: "none",
                             },
                           }}
-                        />
+                        >
+                          <title>{countryLabel(id) !== "-" ? countryLabel(id) : String(geo.properties?.name ?? id)}</title>
+                        </Geography>
                       );
                     })
                   }
@@ -164,31 +173,41 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
           </div>
 
           <div className="min-w-0 space-y-3">
-            {hoveredStat && hovered ? (
+            {hovered ? (
               <Card className="border-primary/40 bg-primary/5 p-3">
-                <p className="font-semibold">{countryLabel(hovered)}</p>
-                <p className="mt-1 text-xs text-muted">{hoveredStat.count} venda(s)</p>
-                <p className="mt-2 text-sm">{hoveredStat.kg.toLocaleString("pt-BR")} kg</p>
-                <p className="text-sm">
-                  {hoveredStat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sacas (60kg)
+                <p className="font-semibold">
+                  {countryLabel(hovered) !== "-" ? countryLabel(hovered) : hoveredName}
                 </p>
-                <p className="text-sm">
-                  {hoveredStat.containers20.toLocaleString("pt-BR")} cnt 20' ·{" "}
-                  {hoveredStat.containers40.toLocaleString("pt-BR")} cnt 40'
-                </p>
-                <p className="mt-2 text-sm font-medium">{formatCurrency(hoveredStat.valueBRL)}</p>
-                {hoveredStat.valueUSD > 0 && (
-                  <p className="text-sm">US$ {hoveredStat.valueUSD.toLocaleString("pt-BR")}</p>
-                )}
-                {totalValueBRL > 0 && (
-                  <p className="text-xs text-muted">
-                    {((hoveredStat.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% do
-                    faturamento externo
-                  </p>
+                {hoveredStat ? (
+                  <>
+                    <p className="mt-1 text-xs text-muted">{hoveredStat.count} venda(s)</p>
+                    <p className="mt-2 text-sm">{hoveredStat.kg.toLocaleString("pt-BR")} kg</p>
+                    <p className="text-sm">
+                      {hoveredStat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sacas (60kg)
+                    </p>
+                    <p className="text-sm">
+                      {hoveredStat.containers20.toLocaleString("pt-BR")} cnt 20' ·{" "}
+                      {hoveredStat.containers40.toLocaleString("pt-BR")} cnt 40'
+                    </p>
+                    <p className="mt-2 text-sm font-medium">{formatCurrency(hoveredStat.valueBRL)}</p>
+                    {hoveredStat.valueUSD > 0 && (
+                      <p className="text-sm">US$ {hoveredStat.valueUSD.toLocaleString("pt-BR")}</p>
+                    )}
+                    {totalValueBRL > 0 && (
+                      <p className="text-xs text-muted">
+                        {((hoveredStat.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
+                          maximumFractionDigits: 1,
+                        })}
+                        % do faturamento externo
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs text-muted">Ainda não exportamos para cá.</p>
                 )}
               </Card>
             ) : (
-              <p className="text-xs text-muted">Passe o mouse sobre um país destacado para ver o detalhe.</p>
+              <p className="text-xs text-muted">Passe o mouse sobre um país para ver o detalhe.</p>
             )}
 
             <div>
