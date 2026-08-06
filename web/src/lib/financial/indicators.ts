@@ -60,6 +60,66 @@ export function passivoTotal(s: StatementInput) {
   return passivoCirculante(s) + passivoNaoCirculante(s) + patrimonioLiquido(s);
 }
 
+// Realizavel a Longo Prazo = itens do Ativo Nao Circulante que ainda viram
+// caixa (recebiveis), excluindo os itens permanentes (Investimentos,
+// Imobilizado, Intangivel) - usado na Liquidez Geral.
+export function realizavelLongoPrazo(s: StatementInput) {
+  return s.contasReceberColigadas + s.outrosAtivosNaoCirculantes;
+}
+
+export function exigivelTotal(s: StatementInput) {
+  return passivoCirculante(s) + passivoNaoCirculante(s);
+}
+
+// --- Indices de Liquidez ---------------------------------------------------
+
+export function liquidezCorrente(s: StatementInput) {
+  return div(ativoCirculante(s), passivoCirculante(s));
+}
+
+export function liquidezSeca(s: StatementInput) {
+  return div(ativoCirculante(s) - s.estoques, passivoCirculante(s));
+}
+
+export function liquidezGeral(s: StatementInput) {
+  return div(ativoCirculante(s) + realizavelLongoPrazo(s), exigivelTotal(s));
+}
+
+// --- Indices de Estrutura ----------------------------------------------------
+
+export function participacaoCapitalTerceiros(s: StatementInput) {
+  return div(exigivelTotal(s), patrimonioLiquido(s));
+}
+
+// Composicao das Exigibilidades = PC / (PC+PNC) - quanto da divida total e
+// de curto prazo. O rotulo da planilha original diz "(PNC/PC+PNC)" mas a
+// formula de fato usada la e PC/(PC+PNC) (formula classica de "composicao
+// do endividamento") - seguimos a formula real, nao o rotulo.
+export function composicaoExigibilidades(s: StatementInput) {
+  return div(passivoCirculante(s), exigivelTotal(s));
+}
+
+// Participacao da Divida Financeira = Divida Financeira (emprestimos) sobre
+// o Exigivel Total.
+export function participacaoDividaFinanceira(s: StatementInput) {
+  return div(dividaBruta(s), exigivelTotal(s));
+}
+
+export function plSobreAtivo(s: StatementInput) {
+  return div(patrimonioLiquido(s), ativoTotal(s));
+}
+
+// Alavancagem Financeira (GAF - Grau de Alavancagem Financeira) = ROE /
+// (EBIT/Ativo Total) = (Lucro Liquido/PL) / (Lucro antes do resultado
+// financeiro/Ativo Total). Mede se o endividamento esta ampliando ou
+// reduzindo o retorno sobre o patrimonio em relacao ao retorno operacional.
+export function alavancagemFinanceira(s: StatementInput) {
+  const roe = div(s.lucroLiquido, patrimonioLiquido(s));
+  const roaOperacional = div(ebit(s), ativoTotal(s));
+  if (roe === null || roaOperacional === null || roaOperacional === 0) return null;
+  return roe / roaOperacional;
+}
+
 // --- DRE / rentabilidade -------------------------------------------------
 
 // EBIT = Resultado da Atividade (antes do resultado financeiro e do IR).
@@ -81,6 +141,28 @@ export function margemEbitda(s: StatementInput) {
 
 export function margemLiquida(s: StatementInput) {
   return div(s.lucroLiquido, s.receitaLiquida);
+}
+
+// --- Indices de Rentabilidade ------------------------------------------------
+
+export function giroDoAtivo(s: StatementInput) {
+  return div(s.receitaLiquida, ativoTotal(s));
+}
+
+// Lucratividade nas Vendas (LL/Receita) - mesmo indicador de margemLiquida
+// acima, mantido como alias para casar com o nome usado na planilha.
+export const lucratividadeNasVendas = margemLiquida;
+
+export function rentabilidadeDoAtivo(s: StatementInput) {
+  return div(s.lucroLiquido, ativoTotal(s));
+}
+
+// Media Mensal de Receita Liquida. A planilha original divide pelo digito do
+// mes de fechamento (so funciona quando o periodo comeca em janeiro); aqui
+// generalizamos para qualquer periodo usando a duracao real em dias.
+export function mediaMensalReceita(s: StatementInput) {
+  const meses = s.periodDays / 30;
+  return meses > 0 ? s.receitaLiquida / meses : null;
 }
 
 // --- Ciclo financeiro ------------------------------------------------------
@@ -130,18 +212,33 @@ export function capitalDeGiro(s: StatementInput) {
   return ativoCirculante(s) - passivoCirculante(s);
 }
 
-// NCG (Necessidade de Capital de Giro) = (Contas a Receber de Clientes +
-// Estoques) - (Fornecedores + Salarios e Encargos + Impostos e Contribuicoes
-// a Pagar). Formula conferida numero a numero contra os dois exercicios
-// reais da planilha do banco (2024 e 2025): bate exatamente, inclusive
-// confirmando que contas como Adiantamento a Fornecedores, Outros Ativos
-// Operacionais, Adiantamentos de Clientes e Outros Passivos NAO entram no
-// calculo do banco, mesmo aparecendo rotuladas como "operacionais" em outro
-// lugar da planilha - o metodo deles usa apenas este subconjunto estreito.
+// Total de Investimentos Operacionais (lado do Ativo na NCG) = Contas a
+// Receber de Clientes + Estoques + Outros Ativos Operacionais. Formula
+// conferida diretamente contra a planilha original (aba "Input Automatico",
+// linhas 172-176/D176). "Adiantamento a Fornecedores e Coligadas" aparece
+// como linha na planilha mas sem formula nenhuma associada (nao alimentada
+// por nenhuma conta) - por isso fica de fora tambem aqui.
+export function totalInvestimentosOperacionais(s: StatementInput) {
+  return s.contasReceberClientes + s.estoques + s.outrosAtivosOperacionaisCirc;
+}
+
+// Total de Financiamentos Operacionais Recebidos (lado do Passivo na NCG) =
+// Fornecedores + Salarios e Encargos/Impostos e Contribuicoes + Outros
+// Passivos Operacionais. Formula conferida diretamente contra a planilha
+// original (aba "Input Automatico", linhas 178-181/D181).
+export function totalFinanciamentosOperacionais(s: StatementInput) {
+  return s.fornecedores + s.salariosEncargos + s.impostosContribuicoes + s.outrosPassivosCirc;
+}
+
+// NCG (Necessidade de Capital de Giro) = Total de Investimentos Operacionais
+// - Total de Financiamentos Operacionais Recebidos.
 export function ncg(s: StatementInput) {
-  const ativoOperacional = s.contasReceberClientes + s.estoques;
-  const passivoOperacional = s.fornecedores + s.salariosEncargos + s.impostosContribuicoes;
-  return ativoOperacional - passivoOperacional;
+  return totalInvestimentosOperacionais(s) - totalFinanciamentosOperacionais(s);
+}
+
+// Variacao do N.C.G entre dois periodos consecutivos (atual - anterior).
+export function variacaoNcg(atual: StatementInput, anterior: StatementInput) {
+  return ncg(atual) - ncg(anterior);
 }
 
 // Ativo Erratico = Caixa e Equivalentes. Conferido contra a planilha real
@@ -159,14 +256,12 @@ export function passivoErratico(s: StatementInput) {
 }
 
 // Saldo de Tesouraria = Ativo Erratico - Passivo Erratico, calculado direto
-// (nao como CCL - NCG). Na planilha real do banco os dois DIVERGEM de
-// proposito: itens como Outros Ativos Operacionais, Adiantamento a
-// Fornecedores, Adiantamentos de Clientes e Outros Passivos entram no CCL
-// (via Ativo/Passivo Circulante totais) mas ficam de fora tanto da NCG
-// quanto do Ativo/Passivo Erratico - conferido com os numeros reais: a
-// diferenca entre CCL e (NCG + Saldo Tesouraria) bate exatamente com a soma
-// desses itens "orfaos". Isso nao e uma simplificacao nossa, e o metodo do
-// banco.
+// (nao como CCL - NCG). CCL != NCG + Saldo Tesouraria em geral: itens como
+// Titulos e Valores Mobiliarios, Adiantamento a Fornecedores, Adiantamentos
+// de Clientes, IR a Pagar, Emprestimos de Coligadas (CP) e Dividendos a
+// Pagar entram no CCL (via Ativo/Passivo Circulante totais) mas ficam de
+// fora tanto da NCG quanto do Ativo/Passivo Erratico - a diferenca entre CCL
+// e (NCG + Saldo Tesouraria) e a soma liquida desses itens "orfaos".
 export function saldoTesouraria(s: StatementInput) {
   return ativoErratico(s) - passivoErratico(s);
 }

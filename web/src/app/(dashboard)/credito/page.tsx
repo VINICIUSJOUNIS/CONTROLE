@@ -20,11 +20,26 @@ import {
   margemLiquida,
   capitalDeGiro,
   ncg,
+  totalInvestimentosOperacionais,
+  totalFinanciamentosOperacionais,
+  variacaoNcg,
   saldoTesouraria,
   cicloFinanceiro,
   pmrDias,
   pmeDias,
   pmpDias,
+  liquidezCorrente,
+  liquidezSeca,
+  liquidezGeral,
+  participacaoCapitalTerceiros,
+  composicaoExigibilidades,
+  participacaoDividaFinanceira,
+  plSobreAtivo,
+  alavancagemFinanceira,
+  giroDoAtivo,
+  lucratividadeNasVendas,
+  rentabilidadeDoAtivo,
+  mediaMensalReceita,
   analiseVertical,
   analiseHorizontal,
   type StatementInput,
@@ -63,6 +78,12 @@ const passivoCircKeys = [
 ] as const;
 
 const passivoNaoCircKeys = ["emprestimosLongoPrazo", "outrosPassivosNaoCirc"] as const;
+
+// Formata um indice/multiplicador simples (ex: Liquidez Corrente, Giro do
+// Ativo) com 2 casas decimais e sufixo "x", em vez de moeda ou percentual.
+function formatIndex(v: number) {
+  return `${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}x`;
+}
 
 const plKeys = ["capitalSocial", "reservas", "lucrosPrejuizosAcumulados", "outrosResultadosAbrangentes"] as const;
 
@@ -236,6 +257,47 @@ function IndiceRow({
         return (
           <td key={p.label} className="px-4 py-2 text-right [font-variant-numeric:tabular-nums]">
             {v != null ? formatter(v) : "—"}
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+// Linha de variacao (AH) entre periodos consecutivos - o Periodo I fica sem
+// valor (nao ha periodo anterior pra comparar), igual ao layout da planilha.
+function IndiceAHRow({
+  label,
+  periodos,
+  valorFn,
+}: {
+  label: string;
+  periodos: Periodo[];
+  valorFn: (s: StatementInput) => number | null;
+}) {
+  return (
+    <tr className="border-b border-border/60">
+      <td className="px-4 py-2 text-muted">{label}</td>
+      {periodos.map((p, i) => {
+        if (i === 0) {
+          return (
+            <td key={p.label} className="px-4 py-2 text-right text-muted">
+              —
+            </td>
+          );
+        }
+        const atual = valorFn(p.statement);
+        const anterior = valorFn(periodos[i - 1].statement);
+        const ah = atual != null && anterior != null ? analiseHorizontal(atual, anterior) : null;
+        return (
+          <td
+            key={p.label}
+            className={cn(
+              "px-4 py-2 text-right [font-variant-numeric:tabular-nums]",
+              ah == null ? "text-muted" : ah >= 0 ? "text-success" : "text-danger"
+            )}
+          >
+            {ah != null ? `${ah >= 0 ? "+" : ""}${formatPercent(ah * 100)}` : "—"}
           </td>
         );
       })}
@@ -441,6 +503,148 @@ export default async function CreditoAnalisePage({
                   <IndiceRow label="PME — Prazo Médio de Estocagem" periodos={periodos} valorFn={pmeDias} formatter={formatDays} />
                   <IndiceRow label="PMP — Prazo Médio de Pagamento" periodos={periodos} valorFn={pmpDias} formatter={formatDays} />
                   <IndiceRow label="CF — Ciclo Financeiro (PMR + PME − PMP)" periodos={periodos} valorFn={cicloFinanceiro} formatter={formatDays} />
+                  <tr>
+                    <td colSpan={1 + periodos.length} className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+                      Liquidez
+                    </td>
+                  </tr>
+                  <IndiceRow label="Liquidez Corrente (AC/PC)" periodos={periodos} valorFn={liquidezCorrente} formatter={formatIndex} />
+                  <IndiceRow label="Liquidez Seca ((AC−E)/PC)" periodos={periodos} valorFn={liquidezSeca} formatter={formatIndex} />
+                  <IndiceRow label="Liquidez Geral ((AC+RLP)/(PC+PNC))" periodos={periodos} valorFn={liquidezGeral} formatter={formatIndex} />
+                  <tr>
+                    <td colSpan={1 + periodos.length} className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+                      Estrutura
+                    </td>
+                  </tr>
+                  <IndiceRow
+                    label="Participação de Capital de Terceiros ((PC+PNC)/PL)"
+                    periodos={periodos}
+                    valorFn={participacaoCapitalTerceiros}
+                    formatter={formatIndex}
+                  />
+                  <IndiceRow
+                    label="Composição das Exigibilidades (PC/(PC+PNC))"
+                    periodos={periodos}
+                    valorFn={composicaoExigibilidades}
+                    formatter={(v) => formatPercent(v * 100)}
+                  />
+                  <IndiceRow
+                    label="Participação Dívida Financeira (DF/ET)"
+                    periodos={periodos}
+                    valorFn={participacaoDividaFinanceira}
+                    formatter={(v) => formatPercent(v * 100)}
+                  />
+                  <IndiceAHRow
+                    label="Variação da Dívida Bancária"
+                    periodos={periodos}
+                    valorFn={participacaoDividaFinanceira}
+                  />
+                  <IndiceRow label="PL / Total do Ativo" periodos={periodos} valorFn={plSobreAtivo} formatter={(v) => formatPercent(v * 100)} />
+                  <IndiceRow
+                    label="Alavancagem Financeira"
+                    periodos={periodos}
+                    valorFn={alavancagemFinanceira}
+                    formatter={formatIndex}
+                  />
+                  <tr>
+                    <td colSpan={1 + periodos.length} className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+                      Rentabilidade
+                    </td>
+                  </tr>
+                  <IndiceRow label="Giro do Ativo (Rec. Líq./AT)" periodos={periodos} valorFn={giroDoAtivo} formatter={formatIndex} />
+                  <IndiceRow
+                    label="Lucratividade nas Vendas (LL/Rec.)"
+                    periodos={periodos}
+                    valorFn={lucratividadeNasVendas}
+                    formatter={(v) => formatPercent(v * 100)}
+                  />
+                  <IndiceRow
+                    label="Rentabilidade do Ativo (LL/AT)"
+                    periodos={periodos}
+                    valorFn={rentabilidadeDoAtivo}
+                    formatter={(v) => formatPercent(v * 100)}
+                  />
+                  <IndiceAHRow
+                    label="Evolução das Vendas Líquidas"
+                    periodos={periodos}
+                    valorFn={(s) => s.receitaLiquida}
+                  />
+                  <IndiceRow label="Média Mensal (Receita Líquida)" periodos={periodos} valorFn={mediaMensalReceita} formatter={formatBRL} />
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Necessidade de Capital de Giro — detalhe</CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-x-auto p-0">
+              <table className="w-full whitespace-nowrap text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs text-muted">
+                    <th className="px-4 py-2 font-medium">Item</th>
+                    {periodos.map((p) => (
+                      <th key={p.label} className="px-4 py-2 text-right font-medium">
+                        {p.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <IndiceRow
+                    label="Contas a Receber de Clientes"
+                    periodos={periodos}
+                    valorFn={(s) => s.contasReceberClientes}
+                    formatter={formatBRL}
+                  />
+                  <IndiceRow label="Estoques" periodos={periodos} valorFn={(s) => s.estoques} formatter={formatBRL} />
+                  <IndiceRow
+                    label="Outros Ativos Operacionais"
+                    periodos={periodos}
+                    valorFn={(s) => s.outrosAtivosOperacionaisCirc}
+                    formatter={formatBRL}
+                  />
+                  <IndiceRow
+                    label="Total de Investimentos Operacionais"
+                    periodos={periodos}
+                    valorFn={totalInvestimentosOperacionais}
+                    formatter={formatBRL}
+                  />
+                  <tr>
+                    <td colSpan={1 + periodos.length} className="h-2" />
+                  </tr>
+                  <IndiceRow label="Fornecedores" periodos={periodos} valorFn={(s) => s.fornecedores} formatter={formatBRL} />
+                  <IndiceRow
+                    label="Salários e Benefícios / Impostos e Contribuições"
+                    periodos={periodos}
+                    valorFn={(s) => s.salariosEncargos + s.impostosContribuicoes}
+                    formatter={formatBRL}
+                  />
+                  <IndiceRow
+                    label="Outros Passivos Operacionais"
+                    periodos={periodos}
+                    valorFn={(s) => s.outrosPassivosCirc}
+                    formatter={formatBRL}
+                  />
+                  <IndiceRow
+                    label="Total de Financiamentos Recebidos"
+                    periodos={periodos}
+                    valorFn={totalFinanciamentosOperacionais}
+                    formatter={formatBRL}
+                  />
+                  <tr>
+                    <td colSpan={1 + periodos.length} className="h-2" />
+                  </tr>
+                  <IndiceRow label="Necessidade de Capital de Giro" periodos={periodos} valorFn={ncg} formatter={formatBRL} />
+                  <tr className="border-b border-border/60">
+                    <td className="px-4 py-2 text-muted">Variação do N.C.G</td>
+                    {periodos.map((p, i) => (
+                      <td key={p.label} className="px-4 py-2 text-right [font-variant-numeric:tabular-nums]">
+                        {i === 0 ? <span className="text-muted">—</span> : formatBRL(variacaoNcg(p.statement, periodos[i - 1].statement))}
+                      </td>
+                    ))}
+                  </tr>
                 </tbody>
               </table>
             </CardContent>
