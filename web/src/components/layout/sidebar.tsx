@@ -53,9 +53,19 @@ const roleLabels: Record<string, string> = {
   CONSULTA: "Consulta",
 };
 
+const modules = [
+  { match: (p: string) => p.startsWith("/credito"), label: "Analise de Credito", items: creditoNavItems },
+  { match: (p: string) => p.startsWith("/faturamento"), label: "Faturamento", items: faturamentoNavItems },
+];
+
+function getActiveModule(pathname: string) {
+  return modules.find((m) => m.match(pathname)) ?? { label: "Controle de Emprestimos", items: navItems };
+}
+
 export function Sidebar({ profile }: { profile: { email: string; role: string } }) {
   const pathname = usePathname();
   const router = useRouter();
+  const activeModule = getActiveModule(pathname);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -69,62 +79,14 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
       <Link href="/inicio" className="flex items-center gap-2 px-5 py-5">
         <div>
           <p className="text-sm font-semibold text-white">Controle</p>
-          <p className="text-xs text-sidebar-foreground/70">Central de Tesouraria</p>
+          <p className="text-xs text-sidebar-foreground/70">{activeModule.label}</p>
         </div>
       </Link>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-        {navItems.map((item) => {
-          const active = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                active
-                  ? "bg-sidebar-active text-white"
-                  : "hover:bg-sidebar-active/60 hover:text-white"
-              )}
-            >
-              <Icon size={17} />
-              {item.label}
-            </Link>
-          );
-        })}
-
-        <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-foreground/50">
-          Analise de Credito
-        </p>
-        {creditoNavItems.map((item) => {
+        {activeModule.items.map((item) => {
           const active =
             pathname === item.href ||
-            (item.href !== "/credito" && pathname.startsWith(item.href + "/"));
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                active
-                  ? "bg-sidebar-active text-white"
-                  : "hover:bg-sidebar-active/60 hover:text-white"
-              )}
-            >
-              <Icon size={17} />
-              {item.label}
-            </Link>
-          );
-        })}
-
-        <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-sidebar-foreground/50">
-          Faturamento
-        </p>
-        {faturamentoNavItems.map((item) => {
-          const active =
-            pathname === item.href ||
-            (item.href !== "/faturamento" && pathname.startsWith(item.href + "/"));
+            (item.href !== "/" && pathname.startsWith(item.href + "/"));
           const Icon = item.icon;
           return (
             <Link
