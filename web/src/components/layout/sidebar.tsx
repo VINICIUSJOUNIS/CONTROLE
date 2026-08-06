@@ -11,9 +11,6 @@ import {
   Building2,
   FileText,
   LogOut,
-  Scale,
-  FileBarChart,
-  Waves,
   FileStack,
   Receipt,
   MapPin,
@@ -40,11 +37,7 @@ const faturamentoNavItems = [
 ];
 
 const creditoNavItems = [
-  { href: "/credito", label: "Dashboard de Credito", icon: LayoutDashboard },
-  { href: "/credito/balanco", label: "Balanco Patrimonial", icon: Scale },
-  { href: "/credito/dre", label: "DRE", icon: FileBarChart },
-  { href: "/credito/fluxo-de-caixa", label: "Fluxo de Caixa", icon: Waves },
-  { href: "/credito/indicadores", label: "Indicadores", icon: LineChart },
+  { href: "/credito", label: "Analise de Balanco", icon: LayoutDashboard },
   { href: "/credito/balancetes", label: "Balancetes", icon: FileStack },
 ];
 
