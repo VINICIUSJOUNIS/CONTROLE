@@ -26,7 +26,7 @@ const modules = [
 ];
 
 export default async function InicioPage() {
-  const profile = await getCurrentProfile();
+  await getCurrentProfile();
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -39,20 +39,12 @@ export default async function InicioPage() {
             height={32}
             className="rounded-full"
           />
-          <div>
-            <p className="text-sm font-semibold">Controle</p>
-            <p className="text-xs text-muted">Central de Tesouraria</p>
-          </div>
+          <p className="text-sm font-semibold">Controle</p>
         </div>
         <ThemeToggle />
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold">Selecione um modulo</h1>
-          <p className="mt-1 text-sm text-muted">{profile.email}</p>
-        </div>
-
         <div className="grid w-full max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {modules.map((m) => {
             const Icon = m.icon;
