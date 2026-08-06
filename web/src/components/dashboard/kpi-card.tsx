@@ -1,9 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
-import type { ComponentType } from "react";
-
-type IconComponent = ComponentType<{ size?: number; className?: string }>;
+import { ArrowDownRight, ArrowUpRight, LucideIcon } from "lucide-react";
 
 export function KpiCard({
   label,
@@ -15,7 +12,7 @@ export function KpiCard({
 }: {
   label: string;
   value: string;
-  icon: IconComponent;
+  icon: LucideIcon;
   trend?: string;
   trendLabel?: string;
   trendPositive?: boolean;
