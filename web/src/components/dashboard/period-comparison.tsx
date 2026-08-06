@@ -20,25 +20,33 @@ export function PeriodComparison() {
   const [toA, setToA] = useState(searchParams.get("cmpToA") ?? "");
   const [fromB, setFromB] = useState(searchParams.get("cmpFromB") ?? "");
   const [toB, setToB] = useState(searchParams.get("cmpToB") ?? "");
+  const [fromC, setFromC] = useState(searchParams.get("cmpFromC") ?? "");
+  const [toC, setToC] = useState(searchParams.get("cmpToC") ?? "");
 
   const active = Boolean(
-    searchParams.get("cmpFromA") &&
-      searchParams.get("cmpToA") &&
-      searchParams.get("cmpFromB") &&
-      searchParams.get("cmpToB")
+    searchParams.get("cmpFromA") && searchParams.get("cmpToA") && searchParams.get("cmpFromB") && searchParams.get("cmpToB")
   );
 
-  function apply(a: { from: string; to: string }, b: { from: string; to: string }) {
+  function apply(a: { from: string; to: string }, b: { from: string; to: string }, c?: { from: string; to: string }) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("cmpFromA", a.from);
     params.set("cmpToA", a.to);
     params.set("cmpFromB", b.from);
     params.set("cmpToB", b.to);
+    if (c?.from && c?.to) {
+      params.set("cmpFromC", c.from);
+      params.set("cmpToC", c.to);
+    } else {
+      params.delete("cmpFromC");
+      params.delete("cmpToC");
+    }
     router.push(`${pathname}?${params.toString()}`);
     setFromA(a.from);
     setToA(a.to);
     setFromB(b.from);
     setToB(b.to);
+    setFromC(c?.from ?? "");
+    setToC(c?.to ?? "");
   }
 
   function clear() {
@@ -47,12 +55,16 @@ export function PeriodComparison() {
     params.delete("cmpToA");
     params.delete("cmpFromB");
     params.delete("cmpToB");
+    params.delete("cmpFromC");
+    params.delete("cmpToC");
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
     setFromA("");
     setToA("");
     setFromB("");
     setToB("");
+    setFromC("");
+    setToC("");
   }
 
   return (
@@ -79,24 +91,51 @@ export function PeriodComparison() {
         </div>
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={!fromA || !toA}
-        onClick={() => {
-          setFromB(shiftYear(fromA, -1));
-          setToB(shiftYear(toA, -1));
-        }}
-      >
-        Período B = mesmo período, ano anterior
-      </Button>
+      <div className="flex items-end gap-2">
+        <div>
+          <Label>Período C — de (opcional)</Label>
+          <Input type="month" value={fromC} onChange={(e) => setFromC(e.target.value)} className="w-auto" />
+        </div>
+        <div>
+          <Label>Período C — até (opcional)</Label>
+          <Input type="month" value={toC} onChange={(e) => setToC(e.target.value)} className="w-auto" />
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!fromA || !toA}
+          onClick={() => {
+            setFromB(shiftYear(fromA, -1));
+            setToB(shiftYear(toA, -1));
+          }}
+        >
+          B = ano anterior
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!fromA || !toA}
+          onClick={() => {
+            setFromC(shiftYear(fromA, -2));
+            setToC(shiftYear(toA, -2));
+          }}
+        >
+          C = 2 anos atrás
+        </Button>
+      </div>
 
       <Button
         type="button"
         size="sm"
         disabled={!fromA || !toA || !fromB || !toB}
-        onClick={() => apply({ from: fromA, to: toA }, { from: fromB, to: toB })}
+        onClick={() =>
+          apply({ from: fromA, to: toA }, { from: fromB, to: toB }, fromC && toC ? { from: fromC, to: toC } : undefined)
+        }
       >
         Comparar
       </Button>
