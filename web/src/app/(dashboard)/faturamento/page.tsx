@@ -5,7 +5,7 @@ import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { PeriodComparison } from "@/components/dashboard/period-comparison";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { PieChartCard } from "@/components/charts/pie-chart-card";
-import { getSales, type SaleRow } from "@/lib/data";
+import { getSales, getSaleReturnTotals, type SaleRow } from "@/lib/data";
 import { countryLabel } from "@/lib/countries";
 import { formatCurrency } from "@/lib/format";
 import { Users, Globe2, Package, DollarSign } from "lucide-react";
@@ -67,6 +67,11 @@ export default async function FaturamentoDashboardPage({
   const allSales = await getSales();
   const years = Array.from(new Set(allSales.map((s) => s.saleDate.slice(0, 4)))).sort();
 
+  // Devolucoes do periodo filtrado (mesmo from/to do topo), abatidas do faturamento
+  // total abaixo. Sem tipo de cliente/pais na devolucao, so o KPI agregado (nao a
+  // quebra interno/externo, rankings ou grafico mensal/anual) reflete o valor liquido.
+  const returnTotals = await getSaleReturnTotals({ from, to });
+
   const comparison =
     cmpFromA && cmpToA && cmpFromB && cmpToB
       ? {
@@ -96,7 +101,8 @@ export default async function FaturamentoDashboardPage({
   const totalContainers40 = externos.reduce((s, v) => s + (v.containers40 ?? 0), 0);
   const totalContainers = totalContainers20 + totalContainers40;
 
-  const totalBRL = sales.reduce((s, v) => s + v.valueBRL, 0);
+  const totalBRLBruto = sales.reduce((s, v) => s + v.valueBRL, 0);
+  const totalBRL = totalBRLBruto - returnTotals.valueBRL;
   const totalBRLInterno = internos.reduce((s, v) => s + v.valueBRL, 0);
   const totalBRLExterno = externos.reduce((s, v) => s + v.valueBRL, 0);
 
@@ -120,8 +126,10 @@ export default async function FaturamentoDashboardPage({
     { name: "Mercado Externo", value: totalBRLExterno, color: "#12b76a" },
   ];
 
-  const pctInterno = totalBRL > 0 ? (totalBRLInterno / totalBRL) * 100 : 0;
-  const pctExterno = totalBRL > 0 ? (totalBRLExterno / totalBRL) * 100 : 0;
+  // Quebra interno/externo usa o bruto (sem devolucao) - devolucao nao tem tipo de
+  // cliente, entao abater so do total agregado manteria interno% + externo% != 100%.
+  const pctInterno = totalBRLBruto > 0 ? (totalBRLInterno / totalBRLBruto) * 100 : 0;
+  const pctExterno = totalBRLBruto > 0 ? (totalBRLExterno / totalBRLBruto) * 100 : 0;
   const pctFmt = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 
   // Evolução anual: sempre com todas as vendas (allSales), independente do filtro de
@@ -257,7 +265,16 @@ export default async function FaturamentoDashboardPage({
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} tone="teal" />
+          <KpiCard
+            label={
+              returnTotals.valueBRL > 0
+                ? `Total Faturado (R$) — líquido de ${formatCurrency(returnTotals.valueBRL)} em devolução`
+                : "Total Faturado (R$)"
+            }
+            value={formatCurrency(totalBRL)}
+            icon={DollarSign}
+            tone="teal"
+          />
           <KpiCard
             label="Sacas — Mercado Interno"
             value={sacasInterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}

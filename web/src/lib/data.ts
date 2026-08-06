@@ -795,3 +795,37 @@ export async function getSales() {
 }
 
 export type SaleRow = Awaited<ReturnType<typeof getSales>>[number];
+
+export async function getSaleReturns() {
+  const returns = await prisma.saleReturn.findMany({ orderBy: { returnDate: "desc" } });
+  return returns.map((r) => {
+    const quantityKg = n(r.quantityKg);
+    return {
+      id: r.id,
+      clientName: r.clientName,
+      quantityKg,
+      quantitySacas: Number((quantityKg / KG_POR_SACA).toFixed(2)),
+      returnDate: r.returnDate.toISOString().slice(0, 10),
+      valueBRL: n(r.valueBRL),
+    };
+  });
+}
+
+export type SaleReturnRow = Awaited<ReturnType<typeof getSaleReturns>>[number];
+
+// Totais de devolucao dentro de um periodo (mes "YYYY-MM"), para abater dos KPIs
+// de faturamento respeitando o mesmo filtro de periodo usado nas vendas.
+export async function getSaleReturnTotals(range?: PeriodRange) {
+  const returns = await getSaleReturns();
+  const inRange = returns.filter((r) => {
+    const month = r.returnDate.slice(0, 7);
+    if (range?.from && month < range.from) return false;
+    if (range?.to && month > range.to) return false;
+    return true;
+  });
+  return {
+    quantityKg: inRange.reduce((s, r) => s + r.quantityKg, 0),
+    quantitySacas: inRange.reduce((s, r) => s + r.quantitySacas, 0),
+    valueBRL: inRange.reduce((s, r) => s + r.valueBRL, 0),
+  };
+}

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { SaleRow } from "@/lib/data";
+import { SaleRow, SaleReturnRow } from "@/lib/data";
 import { createSale, deleteSale, updateSale, SaleFormInput } from "@/app/(dashboard)/faturamento/vendas/actions";
 import { COUNTRIES, countryLabel } from "@/lib/countries";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -48,7 +48,7 @@ function formFromRow(sale: SaleRow) {
   };
 }
 
-export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
+export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns: SaleReturnRow[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [clientTypeFilter, setClientTypeFilter] = useState("todos");
@@ -115,9 +115,25 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
     });
   }, [sales, clientTypeFilter, clientFilter, countryFilter, fromFilter, toFilter]);
 
-  const totalKg = filtered.reduce((s, v) => s + v.quantityKg, 0);
-  const totalSacas = filtered.reduce((s, v) => s + v.quantitySacas, 0);
-  const totalBRL = filtered.reduce((s, v) => s + v.valueBRL, 0);
+  // Devolucoes no mesmo periodo (from/to) selecionado para as vendas, abatidas dos
+  // totais abaixo. Devolucao nao tem tipo de cliente/pais, entao so o filtro de
+  // data se aplica aqui (os demais filtros de venda nao tem equivalente nela).
+  const returnsInPeriod = useMemo(() => {
+    return returns.filter((r) => {
+      const month = r.returnDate.slice(0, 7);
+      if (fromFilter && month < fromFilter) return false;
+      if (toFilter && month > toFilter) return false;
+      return true;
+    });
+  }, [returns, fromFilter, toFilter]);
+
+  const devolucaoKg = returnsInPeriod.reduce((s, r) => s + r.quantityKg, 0);
+  const devolucaoSacas = returnsInPeriod.reduce((s, r) => s + r.quantitySacas, 0);
+  const devolucaoBRL = returnsInPeriod.reduce((s, r) => s + r.valueBRL, 0);
+
+  const totalKg = filtered.reduce((s, v) => s + v.quantityKg, 0) - devolucaoKg;
+  const totalSacas = filtered.reduce((s, v) => s + v.quantitySacas, 0) - devolucaoSacas;
+  const totalBRL = filtered.reduce((s, v) => s + v.valueBRL, 0) - devolucaoBRL;
 
   function openCreate() {
     setEditingId(null);
@@ -193,16 +209,29 @@ export function FaturamentoView({ sales }: { sales: SaleRow[] }) {
         <Card className="p-4">
           <p className="text-xs font-medium text-muted">Total vendido (kg)</p>
           <p className="mt-1.5 text-xl font-semibold">{totalKg.toLocaleString("pt-BR")}</p>
+          {devolucaoKg > 0 && (
+            <p className="mt-1 text-xs text-muted">
+              já descontado {devolucaoKg.toLocaleString("pt-BR")} kg de devolução
+            </p>
+          )}
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted">Total vendido (sacas de 60kg)</p>
           <p className="mt-1.5 text-xl font-semibold">
             {totalSacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
           </p>
+          {devolucaoSacas > 0 && (
+            <p className="mt-1 text-xs text-muted">
+              já descontado {devolucaoSacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sacas de devolução
+            </p>
+          )}
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted">Total faturado (R$)</p>
           <p className="mt-1.5 text-xl font-semibold">{formatCurrency(totalBRL)}</p>
+          {devolucaoBRL > 0 && (
+            <p className="mt-1 text-xs text-muted">já descontado {formatCurrency(devolucaoBRL)} de devolução</p>
+          )}
         </Card>
       </div>
 

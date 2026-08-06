@@ -17,6 +17,7 @@ import {
   FileStack,
   Receipt,
   MapPin,
+  Undo2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -34,6 +35,7 @@ const navItems = [
 const faturamentoNavItems = [
   { href: "/faturamento", label: "Dashboard de Faturamento", icon: LayoutDashboard },
   { href: "/faturamento/vendas", label: "Vendas", icon: Receipt },
+  { href: "/faturamento/devolucoes", label: "Devoluções", icon: Undo2 },
   { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
 ];
 

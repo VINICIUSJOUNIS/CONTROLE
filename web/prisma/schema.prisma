@@ -301,3 +301,21 @@ model Sale {
   @@index([saleDate])
   @@map("sales")
 }
+
+// Devolucao de venda: registrada separada da venda original (nao um estorno
+// vinculado a uma Sale especifica), pois as notas fiscais de devolucao do
+// relatorio de origem nao referenciam a venda que as gerou. Quantidade em kg
+// (sacas de 60kg calculadas na leitura, como em Sale) e valor em R$ entram
+// como abatimento dos totais de faturamento do periodo correspondente.
+model SaleReturn {
+  id          String   @id @default(uuid())
+  clientName  String
+  quantityKg  Decimal  @db.Decimal(18, 2)
+  returnDate  DateTime @db.Date
+  valueBRL    Decimal  @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([returnDate])
+  @@map("sale_returns")
+}
