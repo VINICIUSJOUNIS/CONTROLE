@@ -85,7 +85,7 @@ export default async function FaturamentoDashboardPage({
     .map(([month, v]) => ({ month, ...v }));
 
   const pieMercado = [
-    { name: "Mercado Interno", value: totalBRLInterno, color: "#1d7882" },
+    { name: "Mercado Interno", value: totalBRLInterno, color: "#469099" },
     { name: "Mercado Externo", value: totalBRLExterno, color: "#12b76a" },
   ];
 
@@ -166,7 +166,7 @@ export default async function FaturamentoDashboardPage({
               data={chartMensal}
               xKey="month"
               series={[
-                { key: "interno", name: "Interno", color: "#1d7882" },
+                { key: "interno", name: "Interno", color: "#469099" },
                 { key: "externo", name: "Externo", color: "#12b76a" },
               ]}
               valueFormat="currency"
@@ -197,7 +197,7 @@ export default async function FaturamentoDashboardPage({
                 data={chartAnual}
                 xKey="year"
                 series={[
-                  { key: "interno", name: "Interno", color: "#1d7882" },
+                  { key: "interno", name: "Interno", color: "#469099" },
                   { key: "externo", name: "Externo", color: "#12b76a" },
                 ]}
                 valueFormat="currency"
