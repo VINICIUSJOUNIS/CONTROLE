@@ -66,12 +66,12 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
 
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden">
-      <div className="flex items-center gap-2 px-5 py-5">
+      <Link href="/inicio" className="flex items-center gap-2 px-5 py-5">
         <div>
           <p className="text-sm font-semibold text-white">Controle</p>
-          <p className="text-xs text-sidebar-foreground/70">Emprestimos &amp; ACC</p>
+          <p className="text-xs text-sidebar-foreground/70">Central de Tesouraria</p>
         </div>
-      </div>
+      </Link>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
         {navItems.map((item) => {
           const active = pathname === item.href;
