@@ -7,7 +7,7 @@ import { PieChartCard } from "@/components/charts/pie-chart-card";
 import { getSales, type SaleRow } from "@/lib/data";
 import { countryLabel } from "@/lib/countries";
 import { formatCurrency } from "@/lib/format";
-import { Users, Globe2, Package, DollarSign } from "lucide-react";
+import { Users, Globe2, Package, DollarSign, Coffee, Container } from "lucide-react";
 
 type ClientAgg = {
   kg: number;
@@ -136,16 +136,16 @@ export default async function FaturamentoDashboardPage({
           <KpiCard
             label="Sacas — Mercado Interno"
             value={sacasInterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
-            icon={Package}
+            icon={Coffee}
           />
           <KpiCard
             label="Sacas — Mercado Externo"
             value={sacasExterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
-            icon={Package}
+            icon={Coffee}
           />
-          <KpiCard label="Total de Contêineres" value={totalContainers.toLocaleString("pt-BR")} icon={Package} />
-          <KpiCard label="Contêineres 20 pés" value={totalContainers20.toLocaleString("pt-BR")} icon={Package} />
-          <KpiCard label="Contêineres 40 pés" value={totalContainers40.toLocaleString("pt-BR")} icon={Package} />
+          <KpiCard label="Total de Contêineres" value={totalContainers.toLocaleString("pt-BR")} icon={Container} />
+          <KpiCard label="Contêineres 20 pés" value={totalContainers20.toLocaleString("pt-BR")} icon={Container} />
+          <KpiCard label="Contêineres 40 pés" value={totalContainers40.toLocaleString("pt-BR")} icon={Container} />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
