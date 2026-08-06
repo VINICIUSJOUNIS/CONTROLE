@@ -15,6 +15,9 @@
   --primary: #74acb3;
   --primary-foreground: #08191b;
   --success: #4c9a6a;
+  --success-foreground: #f2fbf5;
+  --accent-soft: #d7ecec;
+  --accent-soft-foreground: #10262a;
   --danger: #c1443a;
   --warning: #d68c2b;
 }
@@ -32,6 +35,9 @@
   --primary: #86c8ce;
   --primary-foreground: #04181a;
   --success: #6fbd8c;
+  --success-foreground: #042e12;
+  --accent-soft: #163235;
+  --accent-soft-foreground: #d9eef0;
   --danger: #e5776b;
   --warning: #f0ac4c;
 }
@@ -49,6 +55,9 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-foreground: var(--accent-soft-foreground);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
   --font-sans: var(--font-geist-sans);

@@ -162,67 +162,80 @@ export default async function DashboardPage({
             label="Saldo devedor total"
             value={formatCompactCurrency(kpis.saldoDevedorTotal)}
             icon={Wallet}
+            tone="teal"
           />
           <KpiCard
             label="Emprestimos em aberto"
             value={formatCompactCurrency(kpis.saldoDevedorLoans)}
             icon={PiggyBank}
+            tone="green"
           />
           <KpiCard
             label="ACC em aberto (R$)"
             value={formatCompactCurrency(kpis.saldoDevedorAcc)}
             icon={PiggyBank}
+            tone="soft"
           />
           <KpiCard
             label="ACC em aberto (US$)"
             value={formatCompactCurrency(kpis.saldoDevedorAccUsd, "USD")}
             icon={PiggyBank}
+            tone="teal"
           />
           <KpiCard
             label="Total contratado"
             value={formatCompactCurrency(kpis.totalContratadoGeral)}
             icon={PiggyBank}
+            tone="green"
           />
           <KpiCard
             label="Juros pagos"
             value={formatCompactCurrency(kpis.jurosPagos)}
             icon={TrendingDown}
+            tone="soft"
           />
           <KpiCard
             label="Juros futuros"
             value={formatCompactCurrency(kpis.jurosFuturos)}
             icon={TrendingUp}
+            tone="teal"
           />
           <KpiCard
             label="Operacoes ativas"
             value={String(kpis.operacoesAtivas)}
             icon={PiggyBank}
+            tone="green"
           />
           <KpiCard
             label="Operacoes em atraso"
             value={String(kpis.operacoesAtraso)}
             icon={AlertTriangle}
             trendPositive={false}
+            tone="soft"
           />
           <KpiCard
             label="Exposicao cambial (ACC aberto)"
             value={formatCompactCurrency(kpis.exposicaoCambial, "USD")}
             icon={TrendingUp}
+            tone="teal"
           />
           <KpiCard
             label="Proximo vencimento"
             value={upcoming[0] ? formatDate(upcoming[0].vencimento) : "-"}
             icon={CalendarClock}
+            tone="green"
           />
           <KpiCard
             label="Custo medio ponderado da carteira"
             value={formatPercent(kpis.custoMedioPonderado)}
             icon={Percent}
+            tone="soft"
           />
           <KpiCard
             label="Concentracao no maior banco"
             value={formatPercent(kpis.concentracaoMaiorBanco, 1)}
             icon={PieChart}
+            tone="teal"
           />
         </div>
 

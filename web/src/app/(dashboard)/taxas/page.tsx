@@ -72,21 +72,25 @@ export default async function TaxasPage({
             label="Taxa media ponderada emprestimos"
             value={formatPercent(summary.loanAvgRate)}
             icon={Percent}
+            tone="teal"
           />
           <KpiCard
             label="Taxa media ponderada ACC"
             value={formatPercent(summary.accAvgRate)}
             icon={Percent}
+            tone="green"
           />
           <KpiCard
             label="Menor taxa contratada"
             value={formatPercent(summary.minRate)}
             icon={TrendingDown}
+            tone="soft"
           />
           <KpiCard
             label="Maior taxa contratada"
             value={formatPercent(summary.maxRate)}
             icon={TrendingUp}
+            tone="teal"
           />
         </div>
 

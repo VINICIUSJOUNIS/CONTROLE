@@ -74,17 +74,38 @@ export default async function CambialPage({
         <PeriodFilter years={years} />
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <KpiCard label="Total contratado USD" value={`US$ ${totalUsd.toLocaleString("pt-BR")}`} icon={Globe2} />
-          <KpiCard label="Total convertido em reais" value={formatCompactCurrency(totalBRL)} icon={Landmark} />
-          <KpiCard label="Exposicao cambial (aberto)" value={formatCompactCurrency(exposicaoAberta)} icon={Scale} />
-          <KpiCard label="Taxa Spot media" value={`R$ ${spotAvg.toFixed(4)}`} icon={TrendingDown} />
-          <KpiCard label="Taxa de fechamento media" value={`R$ ${closingAvg.toFixed(4)}`} icon={TrendingUp} />
-          <KpiCard label="Spread medio" value={`R$ ${spreadAvg.toFixed(4)}`} icon={Scale} />
+          <KpiCard
+            label="Total contratado USD"
+            value={`US$ ${totalUsd.toLocaleString("pt-BR")}`}
+            icon={Globe2}
+            tone="teal"
+          />
+          <KpiCard
+            label="Total convertido em reais"
+            value={formatCompactCurrency(totalBRL)}
+            icon={Landmark}
+            tone="green"
+          />
+          <KpiCard
+            label="Exposicao cambial (aberto)"
+            value={formatCompactCurrency(exposicaoAberta)}
+            icon={Scale}
+            tone="soft"
+          />
+          <KpiCard label="Taxa Spot media" value={`R$ ${spotAvg.toFixed(4)}`} icon={TrendingDown} tone="teal" />
+          <KpiCard
+            label="Taxa de fechamento media"
+            value={`R$ ${closingAvg.toFixed(4)}`}
+            icon={TrendingUp}
+            tone="green"
+          />
+          <KpiCard label="Spread medio" value={`R$ ${spreadAvg.toFixed(4)}`} icon={Scale} tone="soft" />
           <KpiCard
             label="Resultado cambial acumulado"
             value={formatCompactCurrency(resultadoCambial)}
             icon={resultadoCambial >= 0 ? TrendingUp : TrendingDown}
             trendPositive={resultadoCambial >= 0}
+            tone="teal"
           />
         </div>
 

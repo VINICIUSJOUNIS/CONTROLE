@@ -132,31 +132,48 @@ export default async function FaturamentoDashboardPage({
         <PeriodFilter years={years} />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} />
+          <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} tone="teal" />
           <KpiCard
             label="Sacas — Mercado Interno"
             value={sacasInterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
             icon={Package}
+            tone="green"
           />
           <KpiCard
             label="Sacas — Mercado Externo"
             value={sacasExterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
             icon={Package}
+            tone="soft"
           />
-          <KpiCard label="Total de Contêineres" value={totalContainers.toLocaleString("pt-BR")} icon={Package} />
-          <KpiCard label="Contêineres 20 pés" value={totalContainers20.toLocaleString("pt-BR")} icon={Package} />
-          <KpiCard label="Contêineres 40 pés" value={totalContainers40.toLocaleString("pt-BR")} icon={Package} />
+          <KpiCard
+            label="Total de Contêineres"
+            value={totalContainers.toLocaleString("pt-BR")}
+            icon={Package}
+            tone="teal"
+          />
+          <KpiCard
+            label="Contêineres 20 pés"
+            value={totalContainers20.toLocaleString("pt-BR")}
+            icon={Package}
+            tone="green"
+          />
+          <KpiCard
+            label="Contêineres 40 pés"
+            value={totalContainers40.toLocaleString("pt-BR")}
+            icon={Package}
+            tone="soft"
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <KpiCard label="Clientes Internos" value={String(clientesInternos.size)} icon={Users} />
-          <KpiCard label="Clientes Externos" value={String(clientesExternos.size)} icon={Users} />
-          <KpiCard label="Países Exportados" value={String(paises.size)} icon={Globe2} />
+          <KpiCard label="Clientes Internos" value={String(clientesInternos.size)} icon={Users} tone="teal" />
+          <KpiCard label="Clientes Externos" value={String(clientesExternos.size)} icon={Users} tone="green" />
+          <KpiCard label="Países Exportados" value={String(paises.size)} icon={Globe2} tone="soft" />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <KpiCard label="% Faturamento — Mercado Interno" value={pctFmt(pctInterno)} icon={Package} />
-          <KpiCard label="% Faturamento — Mercado Externo" value={pctFmt(pctExterno)} icon={Globe2} />
+          <KpiCard label="% Faturamento — Mercado Interno" value={pctFmt(pctInterno)} icon={Package} tone="teal" />
+          <KpiCard label="% Faturamento — Mercado Externo" value={pctFmt(pctExterno)} icon={Globe2} tone="green" />
         </div>
 
         {chartMensal.length > 0 && (
@@ -187,6 +204,7 @@ export default async function FaturamentoDashboardPage({
                   trend={pctFmt(Math.abs(yoyPct))}
                   trendLabel={`vs ${penultimoAno[0]}`}
                   trendPositive={yoyPct >= 0}
+                  tone="teal"
                 />
               )}
             </div>
@@ -252,13 +270,13 @@ export default async function FaturamentoDashboardPage({
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Maiores Clientes — Mercado Interno</CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto p-0">
-              <table className="w-full text-sm">
+              <table className="w-full whitespace-nowrap text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs text-muted">
                     <th className="px-4 py-2.5 font-medium">#</th>

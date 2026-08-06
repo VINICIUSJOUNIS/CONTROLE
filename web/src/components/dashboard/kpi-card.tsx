@@ -2,6 +2,14 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight, LucideIcon } from "lucide-react";
 
+export type KpiTone = "teal" | "green" | "soft";
+
+const toneVariants: Record<KpiTone, { border: string; icon: string }> = {
+  teal: { border: "border-l-primary", icon: "bg-primary text-primary-foreground" },
+  green: { border: "border-l-success", icon: "bg-success text-success-foreground" },
+  soft: { border: "border-l-accent-soft", icon: "bg-accent-soft text-accent-soft-foreground" },
+};
+
 export function KpiCard({
   label,
   value,
@@ -9,6 +17,7 @@ export function KpiCard({
   trend,
   trendLabel,
   trendPositive = true,
+  tone = "teal",
 }: {
   label: string;
   value: string;
@@ -16,15 +25,17 @@ export function KpiCard({
   trend?: string;
   trendLabel?: string;
   trendPositive?: boolean;
+  tone?: KpiTone;
 }) {
+  const variant = toneVariants[tone];
   return (
-    <Card className="p-4">
+    <Card className={cn("border-l-4 p-4", variant.border)}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-muted">{label}</p>
           <p className="mt-1.5 text-xl font-semibold tracking-tight">{value}</p>
         </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", variant.icon)}>
           <Icon size={18} />
         </div>
       </div>

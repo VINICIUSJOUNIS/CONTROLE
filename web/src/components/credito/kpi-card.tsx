@@ -2,21 +2,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+export type KpiTone = "teal" | "green" | "soft";
+
+const toneBorder: Record<KpiTone, string> = {
+  teal: "border-l-primary",
+  green: "border-l-success",
+  soft: "border-l-accent-soft",
+};
+
 export function KpiCard({
   title,
   value,
   hint,
   variacaoPct,
   disponivel = true,
+  tone = "teal",
 }: {
   title: string;
   value: string;
   hint?: string;
   variacaoPct?: number | null;
   disponivel?: boolean;
+  tone?: KpiTone;
 }) {
   return (
-    <Card>
+    <Card className={cn("border-l-4", toneBorder[tone])}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>

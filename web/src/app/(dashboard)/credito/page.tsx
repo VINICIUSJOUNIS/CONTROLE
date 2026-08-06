@@ -84,38 +84,48 @@ export default async function DashboardPage({
             title="Receita Líquida"
             value={formatBRL(statement.receitaLiquida)}
             variacaoPct={yoy?.receita.variacaoPct}
+            tone="teal"
           />
           <KpiCard
             title="EBITDA"
             value={formatBRL(ebitda(statement))}
             hint={`Margem ${formatPercent((margemEbitda(statement) ?? 0) * 100)}`}
             variacaoPct={yoy?.ebitda.variacaoPct}
+            tone="green"
           />
           <KpiCard
             title="Lucro Líquido"
             value={formatBRL(statement.lucroLiquido)}
             variacaoPct={yoy?.lucroLiquido.variacaoPct}
+            tone="soft"
           />
-          <KpiCard title="Caixa Disponível" value={formatBRL(statement.caixaEquivalentes)} />
-          <KpiCard title="Dívida Líquida" value={formatBRL(dividaLiquida(statement))} />
-          <KpiCard title="Capital de Giro (CCL)" value={formatBRL(capitalDeGiro(statement))} />
-          <KpiCard title="Necessidade de Capital de Giro (NCG)" value={formatBRL(ncg(statement))} />
+          <KpiCard title="Caixa Disponível" value={formatBRL(statement.caixaEquivalentes)} tone="teal" />
+          <KpiCard title="Dívida Líquida" value={formatBRL(dividaLiquida(statement))} tone="green" />
+          <KpiCard title="Capital de Giro (CCL)" value={formatBRL(capitalDeGiro(statement))} tone="soft" />
+          <KpiCard
+            title="Necessidade de Capital de Giro (NCG)"
+            value={formatBRL(ncg(statement))}
+            tone="teal"
+          />
           <KpiCard
             title="Saldo de Tesouraria"
             value={formatBRL(saldoTesouraria(statement))}
             hint={saldoTesouraria(statement) < 0 ? "Dependência de capital de terceiros de curto prazo" : undefined}
+            tone="green"
           />
           <KpiCard
             title="Fluxo de Caixa Projetado"
             value={fluxo.estimativa != null ? formatBRL(fluxo.estimativa) : ""}
             hint="Estimativa por tendência histórica, não extraída do PDF"
             disponivel={fluxo.disponivel}
+            tone="soft"
           />
           <KpiCard
             title="Exposição Cambial Líquida"
             value={exposicao != null ? formatBRL(exposicao) : ""}
             hint="Estimada a partir do balanço, quando discriminado"
             disponivel={exposicao != null}
+            tone="teal"
           />
         </div>
 
