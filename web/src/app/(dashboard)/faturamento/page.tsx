@@ -131,7 +131,7 @@ export default async function FaturamentoDashboardPage({
       <div className="space-y-6 p-6">
         <PeriodFilter years={years} />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} />
           <KpiCard
             label="Sacas — Mercado Interno"
