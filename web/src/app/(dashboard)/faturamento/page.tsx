@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KpiCard } from "@/components/dashboard/kpi-card";
@@ -130,6 +131,43 @@ export default async function FaturamentoDashboardPage({
       <Topbar title="Faturamento" subtitle="Visão geral de vendas, clientes e exportação" />
       <div className="space-y-6 p-6">
         <PeriodFilter years={years} />
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="relative h-44 overflow-hidden rounded-xl border border-border sm:h-52">
+            <Image
+              src="/coffee-sack-hero.jpg"
+              alt="Sacas de café"
+              fill
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+            <div className="absolute bottom-0 left-0 p-4">
+              <p className="text-xs font-medium tracking-wide text-white/80">Sacas exportadas (60kg)</p>
+              <p className="mt-1 text-2xl font-semibold text-white">
+                {(sacasInterno + sacasExterno).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+              </p>
+            </div>
+          </div>
+          <div className="relative h-44 overflow-hidden rounded-xl border border-border sm:h-52">
+            <Image
+              src="/container-hero.jpg"
+              alt="Contêineres"
+              fill
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+            <div className="absolute bottom-0 left-0 p-4">
+              <p className="text-xs font-medium tracking-wide text-white/80">Contêineres exportados</p>
+              <p className="mt-1 text-2xl font-semibold text-white">
+                {totalContainers.toLocaleString("pt-BR")}
+              </p>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} />
