@@ -5,10 +5,20 @@ import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { PeriodComparison } from "@/components/dashboard/period-comparison";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { PieChartCard } from "@/components/charts/pie-chart-card";
-import { getSales, getSaleReturnTotals, type SaleRow } from "@/lib/data";
+import { getSales, getSaleReturns, type SaleRow, type SaleReturnRow } from "@/lib/data";
 import { countryLabel } from "@/lib/countries";
 import { formatCurrency } from "@/lib/format";
 import { Users, Globe2, Package, DollarSign } from "lucide-react";
+
+// Devolucao nao tem tipo de cliente (interno/externo), entao para abater das
+// quebras por segmento/mes/ano/cliente usamos um fator proporcional: a
+// devolucao do periodo reduz cada parte na mesma proporcao que ela representa
+// do total bruto daquele periodo, mantendo a soma das partes = o total liquido.
+// Sacas e R$ tem fatores independentes (preco medio da devolucao pode diferir
+// da media geral).
+function proportionalFactor(devol: number, gross: number) {
+  return gross > 0 ? Math.max(0, 1 - devol / gross) : 1;
+}
 
 type ClientAgg = {
   kg: number;
@@ -20,14 +30,21 @@ type ClientAgg = {
   country: string | null;
 };
 
-function aggregatePeriod(rows: SaleRow[], from: string, to: string) {
+// Abate as devolucoes do mesmo intervalo de meses (sacas e R$ - devolucao nao tem
+// conteineres) dos totais de venda, para que as comparacoes de periodo reflitam o
+// valor liquido, igual ao KPI "Total Faturado" do topo da pagina.
+function aggregatePeriod(rows: SaleRow[], returns: SaleReturnRow[], from: string, to: string) {
   const inRange = rows.filter((s) => {
     const month = s.saleDate.slice(0, 7);
     return month >= from && month <= to;
   });
+  const returnsInRange = returns.filter((r) => {
+    const month = r.returnDate.slice(0, 7);
+    return month >= from && month <= to;
+  });
   return {
-    totalBRL: inRange.reduce((s, v) => s + v.valueBRL, 0),
-    sacas: inRange.reduce((s, v) => s + v.quantitySacas, 0),
+    totalBRL: inRange.reduce((s, v) => s + v.valueBRL, 0) - returnsInRange.reduce((s, r) => s + r.valueBRL, 0),
+    sacas: inRange.reduce((s, v) => s + v.quantitySacas, 0) - returnsInRange.reduce((s, r) => s + r.quantitySacas, 0),
     containers: inRange.reduce((s, v) => s + (v.containers20 ?? 0) + (v.containers40 ?? 0), 0),
   };
 }
@@ -64,20 +81,28 @@ export default async function FaturamentoDashboardPage({
   }>;
 }) {
   const { from, to, cmpFromA, cmpToA, cmpFromB, cmpToB, cmpFromC, cmpToC } = await searchParams;
-  const allSales = await getSales();
+  const [allSales, allReturns] = await Promise.all([getSales(), getSaleReturns()]);
   const years = Array.from(new Set(allSales.map((s) => s.saleDate.slice(0, 4)))).sort();
 
   // Devolucoes do periodo filtrado (mesmo from/to do topo), abatidas do faturamento
   // total abaixo. Sem tipo de cliente/pais na devolucao, so o KPI agregado (nao a
   // quebra interno/externo, rankings ou grafico mensal/anual) reflete o valor liquido.
-  const returnTotals = await getSaleReturnTotals({ from, to });
+  const returnsInPeriod = allReturns.filter((r) => {
+    const month = r.returnDate.slice(0, 7);
+    if (from && month < from) return false;
+    if (to && month > to) return false;
+    return true;
+  });
+  const returnTotals = {
+    valueBRL: returnsInPeriod.reduce((s, r) => s + r.valueBRL, 0),
+  };
 
   const comparison =
     cmpFromA && cmpToA && cmpFromB && cmpToB
       ? {
-          a: aggregatePeriod(allSales, cmpFromA, cmpToA),
-          b: aggregatePeriod(allSales, cmpFromB, cmpToB),
-          c: cmpFromC && cmpToC ? aggregatePeriod(allSales, cmpFromC, cmpToC) : null,
+          a: aggregatePeriod(allSales, allReturns, cmpFromA, cmpToA),
+          b: aggregatePeriod(allSales, allReturns, cmpFromB, cmpToB),
+          c: cmpFromC && cmpToC ? aggregatePeriod(allSales, allReturns, cmpFromC, cmpToC) : null,
         }
       : null;
 
@@ -95,19 +120,36 @@ export default async function FaturamentoDashboardPage({
   const clientesExternos = new Set(externos.map((s) => s.clientName));
   const paises = new Set(externos.map((s) => s.country).filter((c): c is string => Boolean(c)));
 
-  const sacasInterno = internos.reduce((s, v) => s + v.quantitySacas, 0);
-  const sacasExterno = externos.reduce((s, v) => s + v.quantitySacas, 0);
+  const returnsSacasInPeriod = returnsInPeriod.reduce((s, r) => s + r.quantitySacas, 0);
+
+  const grossSacasInterno = internos.reduce((s, v) => s + v.quantitySacas, 0);
+  const grossSacasExterno = externos.reduce((s, v) => s + v.quantitySacas, 0);
+  const sacasFactorPeriodo = proportionalFactor(returnsSacasInPeriod, grossSacasInterno + grossSacasExterno);
+  const sacasInterno = grossSacasInterno * sacasFactorPeriodo;
+  const sacasExterno = grossSacasExterno * sacasFactorPeriodo;
+
   const totalContainers20 = externos.reduce((s, v) => s + (v.containers20 ?? 0), 0);
   const totalContainers40 = externos.reduce((s, v) => s + (v.containers40 ?? 0), 0);
   const totalContainers = totalContainers20 + totalContainers40;
 
   const totalBRLBruto = sales.reduce((s, v) => s + v.valueBRL, 0);
   const totalBRL = totalBRLBruto - returnTotals.valueBRL;
-  const totalBRLInterno = internos.reduce((s, v) => s + v.valueBRL, 0);
-  const totalBRLExterno = externos.reduce((s, v) => s + v.valueBRL, 0);
+  const brlFactorPeriodo = proportionalFactor(returnTotals.valueBRL, totalBRLBruto);
+  const totalBRLInterno = internos.reduce((s, v) => s + v.valueBRL, 0) * brlFactorPeriodo;
+  const totalBRLExterno = externos.reduce((s, v) => s + v.valueBRL, 0) * brlFactorPeriodo;
 
-  const topInternos = rankClients(internos).slice(0, 10);
-  const topExternos = rankClients(externos).slice(0, 10);
+  const topInternos = rankClients(internos)
+    .slice(0, 10)
+    .map(([name, agg]) => [
+      name,
+      { ...agg, sacas: agg.sacas * sacasFactorPeriodo, valueBRL: agg.valueBRL * brlFactorPeriodo },
+    ] as [string, ClientAgg]);
+  const topExternos = rankClients(externos)
+    .slice(0, 10)
+    .map(([name, agg]) => [
+      name,
+      { ...agg, sacas: agg.sacas * sacasFactorPeriodo, valueBRL: agg.valueBRL * brlFactorPeriodo },
+    ] as [string, ClientAgg]);
 
   const porMes = new Map<string, { interno: number; externo: number }>();
   for (const s of sales) {
@@ -117,19 +159,27 @@ export default async function FaturamentoDashboardPage({
     else cur.externo += s.valueBRL;
     porMes.set(month, cur);
   }
+  const returnsBRLPorMes = new Map<string, number>();
+  for (const r of returnsInPeriod) {
+    const month = r.returnDate.slice(0, 7);
+    returnsBRLPorMes.set(month, (returnsBRLPorMes.get(month) ?? 0) + r.valueBRL);
+  }
   const chartMensal = [...porMes.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([month, v]) => ({ month, ...v }));
+    .map(([month, v]) => {
+      const factor = proportionalFactor(returnsBRLPorMes.get(month) ?? 0, v.interno + v.externo);
+      return { month, interno: v.interno * factor, externo: v.externo * factor };
+    });
 
   const pieMercado = [
     { name: "Mercado Interno", value: totalBRLInterno, color: "#74acb3" },
     { name: "Mercado Externo", value: totalBRLExterno, color: "#12b76a" },
   ];
 
-  // Quebra interno/externo usa o bruto (sem devolucao) - devolucao nao tem tipo de
-  // cliente, entao abater so do total agregado manteria interno% + externo% != 100%.
-  const pctInterno = totalBRLBruto > 0 ? (totalBRLInterno / totalBRLBruto) * 100 : 0;
-  const pctExterno = totalBRLBruto > 0 ? (totalBRLExterno / totalBRLBruto) * 100 : 0;
+  // Devolucao ja abatida proporcionalmente de totalBRLInterno/Externo acima, entao a
+  // razao entre eles e o total liquido continua a mesma (o fator se cancela).
+  const pctInterno = totalBRL > 0 ? (totalBRLInterno / totalBRL) * 100 : 0;
+  const pctExterno = totalBRL > 0 ? (totalBRLExterno / totalBRL) * 100 : 0;
   const pctFmt = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 
   // Evolução anual: sempre com todas as vendas (allSales), independente do filtro de
@@ -153,6 +203,25 @@ export default async function FaturamentoDashboardPage({
       cur.containers += (s.containers20 ?? 0) + (s.containers40 ?? 0);
     }
     porAno.set(year, cur);
+  }
+  // Devolucoes por ano (allReturns, sem filtro de periodo do topo - mesmo criterio
+  // usado para agregar allSales aqui), abatidas proporcionalmente de cada ano.
+  const returnsPorAno = new Map<string, { sacas: number; valueBRL: number }>();
+  for (const r of allReturns) {
+    const year = r.returnDate.slice(0, 4);
+    const cur = returnsPorAno.get(year) ?? { sacas: 0, valueBRL: 0 };
+    cur.sacas += r.quantitySacas;
+    cur.valueBRL += r.valueBRL;
+    returnsPorAno.set(year, cur);
+  }
+  for (const [year, v] of porAno) {
+    const devol = returnsPorAno.get(year) ?? { sacas: 0, valueBRL: 0 };
+    const brlFactor = proportionalFactor(devol.valueBRL, v.totalBRL);
+    const sacasFactor = proportionalFactor(devol.sacas, v.sacas);
+    v.totalBRL *= brlFactor;
+    v.internoBRL *= brlFactor;
+    v.externoBRL *= brlFactor;
+    v.sacas *= sacasFactor;
   }
   const anos = [...porAno.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   const chartAnual = anos.map(([year, v]) => ({ year, interno: v.internoBRL, externo: v.externoBRL }));
