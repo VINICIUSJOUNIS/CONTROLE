@@ -31,6 +31,7 @@ function emptyForm() {
     saleDate: new Date().toISOString().slice(0, 10),
     valueBRL: "",
     valueUSD: "",
+    diferencial: "",
   };
 }
 
@@ -45,6 +46,7 @@ function formFromRow(sale: SaleRow) {
     saleDate: sale.saleDate,
     valueBRL: String(sale.valueBRL),
     valueUSD: sale.valueUSD != null ? String(sale.valueUSD) : "",
+    diferencial: sale.diferencial ?? "",
   };
 }
 
@@ -177,6 +179,7 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
       saleDate: form.saleDate,
       valueBRL: Number(form.valueBRL) || 0,
       valueUSD: form.valueUSD ? Number(form.valueUSD) : null,
+      diferencial: form.diferencial.trim(),
     };
     startTransition(async () => {
       try {
@@ -346,6 +349,15 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
                 />
               </div>
 
+              <div>
+                <Label>Diferencial</Label>
+                <Input
+                  type="text"
+                  value={form.diferencial}
+                  onChange={(e) => setForm({ ...form, diferencial: e.target.value })}
+                />
+              </div>
+
               {isExterno && (
                 <div className="rounded-lg border border-border p-3">
                   <p className="mb-3 text-sm font-medium">Dados de exportação</p>
@@ -417,6 +429,7 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
                 <th className="px-4 py-3 font-medium">Cnt 40'</th>
                 <th className="px-4 py-3 font-medium">Valor (R$)</th>
                 <th className="px-4 py-3 font-medium">Valor (US$)</th>
+                <th className="px-4 py-3 font-medium">Diferencial</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
@@ -444,6 +457,9 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
                     {s.valueUSD != null ? `US$ ${s.valueUSD.toLocaleString("pt-BR")}` : <span className="text-muted">-</span>}
                   </td>
                   <td className="px-4 py-2.5">
+                    {s.diferencial ? s.diferencial : <span className="text-muted">-</span>}
+                  </td>
+                  <td className="px-4 py-2.5">
                     <div className="flex gap-1">
                       <button
                         onClick={() => openEdit(s)}
@@ -465,7 +481,7 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={12} className="px-4 py-8 text-center text-muted">
                     Nenhuma venda encontrada com os filtros atuais.
                   </td>
                 </tr>

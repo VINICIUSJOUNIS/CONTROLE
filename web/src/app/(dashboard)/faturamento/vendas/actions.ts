@@ -14,6 +14,7 @@ export type SaleFormInput = {
   saleDate: string;
   valueBRL: number;
   valueUSD: number | null;
+  diferencial: string;
 };
 
 function revalidateAll() {
@@ -35,6 +36,7 @@ export async function createSale(input: SaleFormInput) {
       saleDate: parseLocalDate(input.saleDate),
       valueBRL: input.valueBRL,
       valueUSD: input.clientType === "EXTERNO" ? input.valueUSD : null,
+      diferencial: input.diferencial || null,
     },
   });
 
@@ -54,6 +56,7 @@ export async function updateSale(id: string, input: SaleFormInput) {
       saleDate: parseLocalDate(input.saleDate),
       valueBRL: input.valueBRL,
       valueUSD: input.clientType === "EXTERNO" ? input.valueUSD : null,
+      diferencial: input.diferencial || null,
     },
   });
 

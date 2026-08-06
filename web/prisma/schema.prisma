@@ -294,6 +294,7 @@ model Sale {
   saleDate      DateTime   @db.Date
   valueBRL      Decimal    @db.Decimal(18, 2)
   valueUSD      Decimal?   @db.Decimal(18, 2)
+  diferencial   String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
