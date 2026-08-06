@@ -2,6 +2,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
+import { PeriodComparison } from "@/components/dashboard/period-comparison";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { PieChartCard } from "@/components/charts/pie-chart-card";
 import { getSales, type SaleRow } from "@/lib/data";
@@ -18,6 +19,18 @@ type ClientAgg = {
   containers40: number;
   country: string | null;
 };
+
+function aggregatePeriod(rows: SaleRow[], from: string, to: string) {
+  const inRange = rows.filter((s) => {
+    const month = s.saleDate.slice(0, 7);
+    return month >= from && month <= to;
+  });
+  return {
+    totalBRL: inRange.reduce((s, v) => s + v.valueBRL, 0),
+    sacas: inRange.reduce((s, v) => s + v.quantitySacas, 0),
+    containers: inRange.reduce((s, v) => s + (v.containers20 ?? 0) + (v.containers40 ?? 0), 0),
+  };
+}
 
 function rankClients(rows: SaleRow[]) {
   const map = new Map<string, ClientAgg>();
@@ -39,11 +52,26 @@ function rankClients(rows: SaleRow[]) {
 export default async function FaturamentoDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    cmpFromA?: string;
+    cmpToA?: string;
+    cmpFromB?: string;
+    cmpToB?: string;
+  }>;
 }) {
-  const { from, to } = await searchParams;
+  const { from, to, cmpFromA, cmpToA, cmpFromB, cmpToB } = await searchParams;
   const allSales = await getSales();
   const years = Array.from(new Set(allSales.map((s) => s.saleDate.slice(0, 4)))).sort();
+
+  const comparison =
+    cmpFromA && cmpToA && cmpFromB && cmpToB
+      ? {
+          a: aggregatePeriod(allSales, cmpFromA, cmpToA),
+          b: aggregatePeriod(allSales, cmpFromB, cmpToB),
+        }
+      : null;
 
   const sales = allSales.filter((s) => {
     const month = s.saleDate.slice(0, 7);
@@ -130,6 +158,73 @@ export default async function FaturamentoDashboardPage({
       <Topbar title="Faturamento" subtitle="Visão geral de vendas, clientes e exportação" />
       <div className="space-y-6 p-6">
         <PeriodFilter years={years} />
+
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Comparação de Períodos</h2>
+          <PeriodComparison />
+
+          {comparison && (
+            <Card>
+              <CardContent className="overflow-x-auto p-0">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-xs text-muted">
+                      <th className="px-4 py-2.5 font-medium">Métrica</th>
+                      <th className="px-4 py-2.5 font-medium">
+                        Período A ({cmpFromA} a {cmpToA})
+                      </th>
+                      <th className="px-4 py-2.5 font-medium">
+                        Período B ({cmpFromB} a {cmpToB})
+                      </th>
+                      <th className="px-4 py-2.5 font-medium">Variação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      {
+                        label: "Faturamento (R$)",
+                        a: comparison.a.totalBRL,
+                        b: comparison.b.totalBRL,
+                        format: formatCurrency,
+                      },
+                      {
+                        label: "Sacas (60kg)",
+                        a: comparison.a.sacas,
+                        b: comparison.b.sacas,
+                        format: (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 }),
+                      },
+                      {
+                        label: "Contêineres",
+                        a: comparison.a.containers,
+                        b: comparison.b.containers,
+                        format: (v: number) => v.toLocaleString("pt-BR"),
+                      },
+                    ].map((row) => {
+                      const delta = row.b !== 0 ? ((row.a - row.b) / row.b) * 100 : null;
+                      return (
+                        <tr key={row.label} className="border-b border-border last:border-0">
+                          <td className="px-4 py-2.5 font-medium">{row.label}</td>
+                          <td className="px-4 py-2.5">{row.format(row.a)}</td>
+                          <td className="px-4 py-2.5">{row.format(row.b)}</td>
+                          <td className="px-4 py-2.5">
+                            {delta === null ? (
+                              <span className="text-muted">-</span>
+                            ) : (
+                              <span className={delta >= 0 ? "text-success" : "text-danger"}>
+                                {delta >= 0 ? "+" : ""}
+                                {pctFmt(delta)}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <KpiCard label="Total Faturado (R$)" value={formatCurrency(totalBRL)} icon={DollarSign} tone="teal" />
