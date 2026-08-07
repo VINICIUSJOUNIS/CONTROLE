@@ -7,6 +7,7 @@ import { DeleteBankButton } from "@/components/bancos/delete-bank-button";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { getAvailableYears, getBankComparison } from "@/lib/data";
 import { formatCompactCurrency, formatPercent } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Trophy } from "lucide-react";
 
 export default async function BancosPage({
@@ -151,7 +152,9 @@ export default async function BancosPage({
                   .map((b) => (
                     <tr key={b.bankId} className="border-b border-border last:border-0">
                       <td className="py-2.5 pr-4 font-medium">{b.bankName}</td>
-                      <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalSpread)}</td>
+                      <td className={cn("py-2.5 pr-4", b.totalSpread < 0 && "text-danger")}>
+                        {formatCompactCurrency(b.totalSpread)}
+                      </td>
                       <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalJuros)}</td>
                       <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalIOF)}</td>
                       <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalTarifas)}</td>

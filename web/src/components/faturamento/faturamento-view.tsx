@@ -11,6 +11,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { SaleRow, SaleReturnRow } from "@/lib/data";
 import { createSale, deleteSale, updateSale, SaleFormInput } from "@/app/(dashboard)/faturamento/vendas/actions";
 import { COUNTRIES, countryLabel } from "@/lib/countries";
+import { cn } from "@/lib/utils";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 type ClientTypeValue = "INTERNO" | "EXTERNO";
@@ -231,7 +232,9 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
         </Card>
         <Card className="p-4">
           <p className="text-xs font-medium text-muted">Total faturado (R$)</p>
-          <p className="mt-1.5 text-xl font-semibold">{formatCurrency(totalBRL)}</p>
+          <p className={cn("mt-1.5 text-xl font-semibold", totalBRL < 0 && "text-danger")}>
+            {formatCurrency(totalBRL)}
+          </p>
           {devolucaoBRL > 0 && (
             <p className="mt-1 text-xs text-muted">já descontado {formatCurrency(devolucaoBRL)} de devolução</p>
           )}

@@ -83,7 +83,13 @@ export function LineChartCard({
                 name={s.name}
                 stroke={s.color}
                 strokeWidth={2}
-                dot={false}
+                dot={(dotProps: { cx?: number; cy?: number; index?: number; value?: number }) => {
+                  const { cx, cy, index, value } = dotProps;
+                  if (typeof value === "number" && value < 0 && cx != null && cy != null) {
+                    return <circle key={`${s.key}-${index}`} cx={cx} cy={cy} r={3} fill="var(--color-danger)" />;
+                  }
+                  return <circle key={`${s.key}-${index}`} cx={cx} cy={cy} r={0} fill="none" />;
+                }}
               />
             ))}
           </LineChart>

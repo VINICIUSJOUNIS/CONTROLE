@@ -6,6 +6,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   ResponsiveContainer,
   Tooltip,
@@ -74,10 +75,13 @@ export function BarChartCard({
                 key={s.key}
                 dataKey={s.key}
                 name={s.name}
-                fill={s.color}
                 radius={[4, 4, 0, 0]}
                 stackId={stacked ? "stack" : undefined}
-              />
+              >
+                {data.map((d, i) => (
+                  <Cell key={i} fill={Number(d[s.key]) < 0 ? "var(--color-danger)" : s.color} />
+                ))}
+              </Bar>
             ))}
           </BarChart>
         </ResponsiveContainer>

@@ -8,6 +8,7 @@ import { PieChartCard } from "@/components/charts/pie-chart-card";
 import { getSales, getSaleReturns, type SaleRow, type SaleReturnRow } from "@/lib/data";
 import { countryLabel } from "@/lib/countries";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Users, Globe2, Package, DollarSign, Hash } from "lucide-react";
 
 // Devolucao nao tem tipo de cliente (interno/externo), entao para abater das
@@ -347,12 +348,14 @@ export default async function FaturamentoDashboardPage({
                         {rows.map((row) => (
                           <tr key={row.label} className="border-b border-border last:border-0">
                             <td className="px-4 py-2.5 font-medium">{row.label}</td>
-                            <td className="px-4 py-2.5">{row.format(row.a)}</td>
-                            <td className="px-4 py-2.5">{row.format(row.b)}</td>
+                            <td className={cn("px-4 py-2.5", row.a < 0 && "text-danger")}>{row.format(row.a)}</td>
+                            <td className={cn("px-4 py-2.5", row.b < 0 && "text-danger")}>{row.format(row.b)}</td>
                             <td className="px-4 py-2.5">{deltaCell(row.b, row.a)}</td>
                             {comparison.c && (
                               <>
-                                <td className="px-4 py-2.5">{row.c !== null ? row.format(row.c) : "-"}</td>
+                                <td className={cn("px-4 py-2.5", row.c != null && row.c < 0 && "text-danger")}>
+                                  {row.c !== null ? row.format(row.c) : "-"}
+                                </td>
                                 <td className="px-4 py-2.5">
                                   {row.c !== null ? deltaCell(row.c, row.a) : <span className="text-muted">-</span>}
                                 </td>
@@ -492,7 +495,9 @@ export default async function FaturamentoDashboardPage({
                         return (
                           <tr key={year} className="border-b border-border last:border-0">
                             <td className="px-4 py-2.5 font-medium">{year}</td>
-                            <td className="px-4 py-2.5">{formatCurrency(v.totalBRL)}</td>
+                            <td className={cn("px-4 py-2.5", v.totalBRL < 0 && "text-danger")}>
+                              {formatCurrency(v.totalBRL)}
+                            </td>
                             <td className="px-4 py-2.5">
                               {v.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
                             </td>
@@ -542,7 +547,9 @@ export default async function FaturamentoDashboardPage({
                       <td className="px-4 py-2.5 align-top">
                         {agg.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
                       </td>
-                      <td className="px-4 py-2.5 align-top">{formatCurrency(agg.valueBRL)}</td>
+                      <td className={cn("px-4 py-2.5 align-top", agg.valueBRL < 0 && "text-danger")}>
+                        {formatCurrency(agg.valueBRL)}
+                      </td>
                       <td className="px-4 py-2.5 align-top">
                         {pctFmt(totalBRLInterno > 0 ? (agg.valueBRL / totalBRLInterno) * 100 : 0)}
                       </td>
@@ -594,7 +601,9 @@ export default async function FaturamentoDashboardPage({
                       </td>
                       <td className="px-4 py-2.5">{agg.containers20.toLocaleString("pt-BR")}</td>
                       <td className="px-4 py-2.5">{agg.containers40.toLocaleString("pt-BR")}</td>
-                      <td className="px-4 py-2.5">{formatCurrency(agg.valueBRL)}</td>
+                      <td className={cn("px-4 py-2.5", agg.valueBRL < 0 && "text-danger")}>
+                        {formatCurrency(agg.valueBRL)}
+                      </td>
                       <td className="px-4 py-2.5">
                         {agg.valueUSD > 0 ? `US$ ${agg.valueUSD.toLocaleString("pt-BR")}` : "-"}
                       </td>

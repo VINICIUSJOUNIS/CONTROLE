@@ -429,13 +429,20 @@ export default async function CreditoAnalisePage({
               <Card key={p.label}>
                 <CardContent className="p-4">
                   <p className="text-xs font-medium text-muted">{p.label}</p>
-                  <p className="mt-1.5 text-xl font-semibold [font-variant-numeric:tabular-nums]">
+                  <p
+                    className={cn(
+                      "mt-1.5 text-xl font-semibold [font-variant-numeric:tabular-nums]",
+                      ebitda(p.statement) < 0 && "text-danger"
+                    )}
+                  >
                     {formatBRL(ebitda(p.statement))}
                   </p>
                   <p className="mt-1 text-xs text-muted">
                     EBITDA · margem {formatPercent((margemEbitda(p.statement) ?? 0) * 100)} · EBIT{" "}
-                    {formatBRL(ebit(p.statement))} · margem líq.{" "}
-                    {formatPercent((margemLiquida(p.statement) ?? 0) * 100)}
+                    <span className={ebit(p.statement) < 0 ? "text-danger" : undefined}>
+                      {formatBRL(ebit(p.statement))}
+                    </span>{" "}
+                    · margem líq. {formatPercent((margemLiquida(p.statement) ?? 0) * 100)}
                   </p>
                 </CardContent>
               </Card>
@@ -647,11 +654,20 @@ export default async function CreditoAnalisePage({
                   <IndiceRow label="Necessidade de Capital de Giro" periodos={periodos} valorFn={ncg} formatter={formatBRL} />
                   <tr className="border-b border-border/60">
                     <td className="px-4 py-2 text-muted">Variação do N.C.G</td>
-                    {periodos.map((p, i) => (
-                      <td key={p.label} className="px-4 py-2 text-right [font-variant-numeric:tabular-nums]">
-                        {i === 0 ? <span className="text-muted">—</span> : formatBRL(variacaoNcg(p.statement, periodos[i - 1].statement))}
-                      </td>
-                    ))}
+                    {periodos.map((p, i) => {
+                      const variacao = i > 0 ? variacaoNcg(p.statement, periodos[i - 1].statement) : null;
+                      return (
+                        <td
+                          key={p.label}
+                          className={cn(
+                            "px-4 py-2 text-right [font-variant-numeric:tabular-nums]",
+                            variacao != null && variacao < 0 && "text-danger"
+                          )}
+                        >
+                          {variacao == null ? <span className="text-muted">—</span> : formatBRL(variacao)}
+                        </td>
+                      );
+                    })}
                   </tr>
                 </tbody>
               </table>
