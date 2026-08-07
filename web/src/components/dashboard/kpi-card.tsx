@@ -30,11 +30,12 @@ export function KpiCard({
   tone?: KpiTone;
 }) {
   const variant = toneVariants[tone];
-  // Detecta valor negativo pelo "-" antes de um digito, em qualquer posicao
-  // (ex: "-R$ 1.234,56", "-5,2%", "R$ -0,0500" quando o prefixo de moeda vem
-  // antes do sinal) pra colorir de vermelho automaticamente, sem precisar de
+  // Detecta valor negativo pelo "-" que antecede um digito, permitindo
+  // simbolos de moeda/espacos entre os dois (ex: "-R$ 1.234,56" do
+  // Intl.NumberFormat, "R$ -0,0500" quando o prefixo vem antes do sinal,
+  // "-5,2%") pra colorir de vermelho automaticamente, sem precisar de
   // valueClassName em cada tela que usa o card.
-  const isNegative = /-\d/.test(value);
+  const isNegative = /-[^\d]*\d/.test(value);
   return (
     <Card className={cn("border-l-4 p-4", variant.border)}>
       <div className="flex items-start justify-between">
