@@ -46,7 +46,7 @@ function formFromRow(sale: SaleRow) {
     saleDate: sale.saleDate,
     valueBRL: String(sale.valueBRL),
     valueUSD: sale.valueUSD != null ? String(sale.valueUSD) : "",
-    diferencial: sale.diferencial ?? "",
+    diferencial: sale.diferencial != null ? String(sale.diferencial) : "",
   };
 }
 
@@ -179,7 +179,7 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
       saleDate: form.saleDate,
       valueBRL: Number(form.valueBRL) || 0,
       valueUSD: form.valueUSD ? Number(form.valueUSD) : null,
-      diferencial: form.diferencial.trim(),
+      diferencial: form.diferencial.trim() ? Number(form.diferencial) : null,
     };
     startTransition(async () => {
       try {
@@ -352,7 +352,8 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
               <div>
                 <Label>Diferencial</Label>
                 <Input
-                  type="text"
+                  type="number"
+                  step="0.01"
                   value={form.diferencial}
                   onChange={(e) => setForm({ ...form, diferencial: e.target.value })}
                 />
@@ -457,7 +458,11 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
                     {s.valueUSD != null ? `US$ ${s.valueUSD.toLocaleString("pt-BR")}` : <span className="text-muted">-</span>}
                   </td>
                   <td className="px-4 py-2.5">
-                    {s.diferencial ? s.diferencial : <span className="text-muted">-</span>}
+                    {s.diferencial != null ? (
+                      `${s.diferencial >= 0 ? "+" : ""}${s.diferencial.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    ) : (
+                      <span className="text-muted">-</span>
+                    )}
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1">

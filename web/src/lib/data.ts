@@ -790,7 +790,7 @@ export async function getSales() {
       saleDate: s.saleDate.toISOString().slice(0, 10),
       valueBRL: n(s.valueBRL),
       valueUSD: s.valueUSD != null ? n(s.valueUSD) : null,
-      diferencial: s.diferencial,
+      diferencial: s.diferencial != null ? n(s.diferencial) : null,
     };
   });
 }

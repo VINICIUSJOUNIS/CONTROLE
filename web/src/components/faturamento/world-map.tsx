@@ -16,7 +16,18 @@ type CountryStat = {
   containers40: number;
   valueBRL: number;
   valueUSD: number;
+  diferencialSoma: number;
+  diferencialQtd: number;
 };
+
+function diferencialMedio(stat: { diferencialSoma: number; diferencialQtd: number }) {
+  return stat.diferencialQtd > 0 ? stat.diferencialSoma / stat.diferencialQtd : null;
+}
+
+function formatDiferencial(v: number | null) {
+  if (v == null) return "-";
+  return `${v >= 0 ? "+" : ""}${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 const SEQ_STEPS = 5;
 
@@ -30,7 +41,17 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
       if (s.clientType !== "EXTERNO" || !s.country) continue;
       const cur =
         map.get(s.country) ??
-        { count: 0, kg: 0, sacas: 0, containers20: 0, containers40: 0, valueBRL: 0, valueUSD: 0 };
+        {
+          count: 0,
+          kg: 0,
+          sacas: 0,
+          containers20: 0,
+          containers40: 0,
+          valueBRL: 0,
+          valueUSD: 0,
+          diferencialSoma: 0,
+          diferencialQtd: 0,
+        };
       cur.count += 1;
       cur.kg += s.quantityKg;
       cur.sacas += s.quantitySacas;
@@ -38,6 +59,10 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
       cur.containers40 += s.containers40 ?? 0;
       cur.valueBRL += s.valueBRL;
       cur.valueUSD += s.valueUSD ?? 0;
+      if (s.diferencial != null) {
+        cur.diferencialSoma += s.diferencial;
+        cur.diferencialQtd += 1;
+      }
       map.set(s.country, cur);
     }
     return map;
@@ -201,6 +226,9 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                         % do faturamento externo
                       </p>
                     )}
+                    <p className="text-xs text-muted">
+                      Diferencial médio: {formatDiferencial(diferencialMedio(hoveredStat))}
+                    </p>
                   </>
                 ) : (
                   <p className="mt-1 text-xs text-muted">Ainda não exportamos para cá.</p>

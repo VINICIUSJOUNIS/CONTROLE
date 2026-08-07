@@ -28,7 +28,18 @@ type ClientAgg = {
   containers20: number;
   containers40: number;
   country: string | null;
+  diferencialSoma: number;
+  diferencialQtd: number;
 };
+
+function diferencialMedio(agg: { diferencialSoma: number; diferencialQtd: number }) {
+  return agg.diferencialQtd > 0 ? agg.diferencialSoma / agg.diferencialQtd : null;
+}
+
+function formatDiferencial(v: number | null) {
+  if (v == null) return "-";
+  return `${v >= 0 ? "+" : ""}${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 // Abate as devolucoes do mesmo intervalo de meses (sacas e R$ - devolucao nao tem
 // conteineres) dos totais de venda, para que as comparacoes de periodo reflitam o
@@ -54,13 +65,27 @@ function rankClients(rows: SaleRow[]) {
   for (const s of rows) {
     const cur =
       map.get(s.clientName) ??
-      { kg: 0, sacas: 0, valueBRL: 0, valueUSD: 0, containers20: 0, containers40: 0, country: s.country };
+      {
+        kg: 0,
+        sacas: 0,
+        valueBRL: 0,
+        valueUSD: 0,
+        containers20: 0,
+        containers40: 0,
+        country: s.country,
+        diferencialSoma: 0,
+        diferencialQtd: 0,
+      };
     cur.kg += s.quantityKg;
     cur.sacas += s.quantitySacas;
     cur.valueBRL += s.valueBRL;
     cur.valueUSD += s.valueUSD ?? 0;
     cur.containers20 += s.containers20 ?? 0;
     cur.containers40 += s.containers40 ?? 0;
+    if (s.diferencial != null) {
+      cur.diferencialSoma += s.diferencial;
+      cur.diferencialQtd += 1;
+    }
     map.set(s.clientName, cur);
   }
   return [...map.entries()].sort((a, b) => b[1].valueBRL - a[1].valueBRL);
@@ -119,6 +144,12 @@ export default async function FaturamentoDashboardPage({
   const clientesInternos = new Set(internos.map((s) => s.clientName));
   const clientesExternos = new Set(externos.map((s) => s.clientName));
   const paises = new Set(externos.map((s) => s.country).filter((c): c is string => Boolean(c)));
+
+  const comDiferencial = sales.filter((s) => s.diferencial != null);
+  const diferencialMedioGeral =
+    comDiferencial.length > 0
+      ? comDiferencial.reduce((sum, s) => sum + (s.diferencial as number), 0) / comDiferencial.length
+      : null;
 
   const returnsSacasInPeriod = returnsInPeriod.reduce((s, r) => s + r.quantitySacas, 0);
 
@@ -376,10 +407,11 @@ export default async function FaturamentoDashboardPage({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard label="Clientes Internos" value={String(clientesInternos.size)} icon={Users} tone="teal" />
           <KpiCard label="Clientes Externos" value={String(clientesExternos.size)} icon={Users} tone="green" />
           <KpiCard label="Países Exportados" value={String(paises.size)} icon={Globe2} tone="soft" />
+          <KpiCard label="Diferencial Médio Geral" value={formatDiferencial(diferencialMedioGeral)} icon={DollarSign} tone="teal" />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -495,6 +527,7 @@ export default async function FaturamentoDashboardPage({
                     <th className="px-4 py-2.5 font-medium">Sacas</th>
                     <th className="px-4 py-2.5 font-medium">Valor (R$)</th>
                     <th className="px-4 py-2.5 font-medium">% do Interno</th>
+                    <th className="px-4 py-2.5 font-medium">Diferencial Médio</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -509,11 +542,12 @@ export default async function FaturamentoDashboardPage({
                       <td className="px-4 py-2.5 align-top">
                         {pctFmt(totalBRLInterno > 0 ? (agg.valueBRL / totalBRLInterno) * 100 : 0)}
                       </td>
+                      <td className="px-4 py-2.5 align-top">{formatDiferencial(diferencialMedio(agg))}</td>
                     </tr>
                   ))}
                   {topInternos.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-muted">
+                      <td colSpan={6} className="px-4 py-6 text-center text-muted">
                         Nenhuma venda interna registrada ainda.
                       </td>
                     </tr>
@@ -540,6 +574,7 @@ export default async function FaturamentoDashboardPage({
                     <th className="px-4 py-2.5 font-medium">Valor (R$)</th>
                     <th className="px-4 py-2.5 font-medium">Valor (US$)</th>
                     <th className="px-4 py-2.5 font-medium">% do Externo</th>
+                    <th className="px-4 py-2.5 font-medium">Diferencial Médio</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -560,11 +595,12 @@ export default async function FaturamentoDashboardPage({
                       <td className="px-4 py-2.5">
                         {pctFmt(totalBRLExterno > 0 ? (agg.valueBRL / totalBRLExterno) * 100 : 0)}
                       </td>
+                      <td className="px-4 py-2.5">{formatDiferencial(diferencialMedio(agg))}</td>
                     </tr>
                   ))}
                   {topExternos.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-4 py-6 text-center text-muted">
+                      <td colSpan={10} className="px-4 py-6 text-center text-muted">
                         Nenhuma venda externa registrada ainda.
                       </td>
                     </tr>
