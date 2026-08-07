@@ -70,7 +70,7 @@ export default async function BancosPage({
                 {r.label}
               </div>
               <p className="mt-2 text-lg font-semibold">{r.bank.bankName}</p>
-              <p className="text-sm text-muted">{r.value}</p>
+              <p className={cn("text-sm text-muted", /-\d/.test(r.value) && "text-danger")}>{r.value}</p>
             </Card>
           ))}
         </div>
@@ -111,10 +111,14 @@ export default async function BancosPage({
                     <td className="py-2.5 pr-4">{b.qtdAcc}</td>
                     <td className="py-2.5 pr-4">{formatCompactCurrency(b.valorCaptado)}</td>
                     <td className="py-2.5 pr-4">{formatPercent(b.taxaMedia)}</td>
-                    <td className="py-2.5 pr-4">{formatPercent(b.spreadMedio, 4)}</td>
+                    <td className={cn("py-2.5 pr-4", b.spreadMedio < 0 && "text-danger")}>
+                      {formatPercent(b.spreadMedio, 4)}
+                    </td>
                     <td className="py-2.5 pr-4">R$ {b.spotMedio.toFixed(4)}</td>
                     <td className="py-2.5 pr-4">R$ {b.fechamentoMedio.toFixed(4)}</td>
-                    <td className="py-2.5 pr-4">{formatPercent(b.custoMedio)}</td>
+                    <td className={cn("py-2.5 pr-4", b.custoMedio < 0 && "text-danger")}>
+                      {formatPercent(b.custoMedio)}
+                    </td>
                     <td className="py-2.5">
                       <span className="inline-flex items-center gap-3">
                         <EditBanco id={b.bankId} name={b.bankName} color={b.bankColor} />
