@@ -459,7 +459,10 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
                   </td>
                   <td className="px-4 py-2.5">
                     {s.diferencial != null ? (
-                      `${s.diferencial >= 0 ? "+" : ""}${s.diferencial.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      <span className={s.diferencial < 0 ? "text-danger" : undefined}>
+                        {s.diferencial >= 0 ? "+" : ""}
+                        {s.diferencial.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
                     ) : (
                       <span className="text-muted">-</span>
                     )}

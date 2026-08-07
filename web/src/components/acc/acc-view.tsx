@@ -15,6 +15,7 @@ import {
   formatPercent,
 } from "@/lib/format";
 import { AccRow } from "@/lib/data";
+import { cn } from "@/lib/utils";
 import { createAcc, deleteAcc, updateAcc, addAccBaixa, updateAccBaixa, deleteAccBaixa } from "@/app/(dashboard)/acc/actions";
 import { calcBaixaJuros } from "@/lib/acc-calc";
 import { NovoBanco } from "@/components/bancos/novo-banco";
@@ -571,7 +572,9 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                   <td className="px-4 py-2.5">{formatCurrency(acc.receivedValueBRL)}</td>
                   <td className="px-4 py-2.5">{formatPercent(acc.interestRate)}</td>
                   <td className="px-4 py-2.5">{formatPercent(annualToMonthly(acc.interestRate), 3)}</td>
-                  <td className="px-4 py-2.5">{formatCurrency(acc.spreadValor)}</td>
+                  <td className={cn("px-4 py-2.5", acc.spreadValor < 0 && "text-danger")}>
+                    {formatCurrency(acc.spreadValor)}
+                  </td>
                   <td className="px-4 py-2.5">US$ {acc.jurosValorUSD.toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-2.5">US$ {acc.jurosPagoUSD.toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-2.5">

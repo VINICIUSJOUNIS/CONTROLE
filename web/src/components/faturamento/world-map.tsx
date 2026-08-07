@@ -227,7 +227,10 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                       </p>
                     )}
                     <p className="text-xs text-muted">
-                      Diferencial médio: {formatDiferencial(diferencialMedio(hoveredStat))}
+                      Diferencial médio:{" "}
+                      <span className={(diferencialMedio(hoveredStat) ?? 0) < 0 ? "text-danger" : undefined}>
+                        {formatDiferencial(diferencialMedio(hoveredStat))}
+                      </span>
                     </p>
                   </>
                 ) : (

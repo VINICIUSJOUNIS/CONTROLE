@@ -13,6 +13,7 @@ const toneVariants: Record<KpiTone, { border: string; icon: string }> = {
 export function KpiCard({
   label,
   value,
+  valueClassName,
   icon: Icon,
   trend,
   trendLabel,
@@ -21,6 +22,7 @@ export function KpiCard({
 }: {
   label: string;
   value: string;
+  valueClassName?: string;
   icon: LucideIcon;
   trend?: string;
   trendLabel?: string;
@@ -28,12 +30,24 @@ export function KpiCard({
   tone?: KpiTone;
 }) {
   const variant = toneVariants[tone];
+  // Detecta valor negativo pelo "-" a frente (ex: "-R$ 1.234,56", "-5,2%") pra
+  // colorir de vermelho automaticamente, sem precisar de valueClassName em
+  // cada tela que usa o card.
+  const isNegative = value.trim().startsWith("-");
   return (
     <Card className={cn("border-l-4 p-4", variant.border)}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-muted">{label}</p>
-          <p className="mt-1.5 text-xl font-semibold tracking-tight">{value}</p>
+          <p
+            className={cn(
+              "mt-1.5 text-xl font-semibold tracking-tight",
+              isNegative && "text-danger",
+              valueClassName
+            )}
+          >
+            {value}
+          </p>
         </div>
         <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", variant.icon)}>
           <Icon size={18} />

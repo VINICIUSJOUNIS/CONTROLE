@@ -158,7 +158,9 @@ function ValorCells({
         const ah = i > 0 ? analiseHorizontal(valores[i], valores[i - 1]) : null;
         return (
           <Fragment key={p.label}>
-            <td className="px-4 py-2 text-right">{formatBRL(valores[i])}</td>
+            <td className={cn("px-4 py-2 text-right", valores[i] < 0 && "text-danger")}>
+              {formatBRL(valores[i])}
+            </td>
             <td className="px-4 py-2 text-right text-muted">
               {av != null ? formatPercent(av * 100) : "—"}
             </td>
@@ -255,7 +257,13 @@ function IndiceRow({
       {periodos.map((p) => {
         const v = valorFn(p.statement);
         return (
-          <td key={p.label} className="px-4 py-2 text-right [font-variant-numeric:tabular-nums]">
+          <td
+            key={p.label}
+            className={cn(
+              "px-4 py-2 text-right [font-variant-numeric:tabular-nums]",
+              v != null && v < 0 && "text-danger"
+            )}
+          >
             {v != null ? formatter(v) : "—"}
           </td>
         );

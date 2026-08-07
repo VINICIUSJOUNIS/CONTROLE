@@ -8,7 +8,7 @@ import { PieChartCard } from "@/components/charts/pie-chart-card";
 import { getSales, getSaleReturns, type SaleRow, type SaleReturnRow } from "@/lib/data";
 import { countryLabel } from "@/lib/countries";
 import { formatCurrency } from "@/lib/format";
-import { Users, Globe2, Package, DollarSign } from "lucide-react";
+import { Users, Globe2, Package, DollarSign, Hash } from "lucide-react";
 
 // Devolucao nao tem tipo de cliente (interno/externo), entao para abater das
 // quebras por segmento/mes/ano/cliente usamos um fator proporcional: a
@@ -39,6 +39,10 @@ function diferencialMedio(agg: { diferencialSoma: number; diferencialQtd: number
 function formatDiferencial(v: number | null) {
   if (v == null) return "-";
   return `${v >= 0 ? "+" : ""}${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function DiferencialCell({ v }: { v: number | null }) {
+  return <span className={v != null && v < 0 ? "text-danger" : undefined}>{formatDiferencial(v)}</span>;
 }
 
 // Abate as devolucoes do mesmo intervalo de meses (sacas e R$ - devolucao nao tem
@@ -411,7 +415,7 @@ export default async function FaturamentoDashboardPage({
           <KpiCard label="Clientes Internos" value={String(clientesInternos.size)} icon={Users} tone="teal" />
           <KpiCard label="Clientes Externos" value={String(clientesExternos.size)} icon={Users} tone="green" />
           <KpiCard label="Países Exportados" value={String(paises.size)} icon={Globe2} tone="soft" />
-          <KpiCard label="Diferencial Médio Geral" value={formatDiferencial(diferencialMedioGeral)} icon={DollarSign} tone="teal" />
+          <KpiCard label="Diferencial Médio Geral" value={formatDiferencial(diferencialMedioGeral)} icon={Hash} tone="teal" />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -542,7 +546,9 @@ export default async function FaturamentoDashboardPage({
                       <td className="px-4 py-2.5 align-top">
                         {pctFmt(totalBRLInterno > 0 ? (agg.valueBRL / totalBRLInterno) * 100 : 0)}
                       </td>
-                      <td className="px-4 py-2.5 align-top">{formatDiferencial(diferencialMedio(agg))}</td>
+                      <td className="px-4 py-2.5 align-top">
+                        <DiferencialCell v={diferencialMedio(agg)} />
+                      </td>
                     </tr>
                   ))}
                   {topInternos.length === 0 && (
@@ -595,7 +601,9 @@ export default async function FaturamentoDashboardPage({
                       <td className="px-4 py-2.5">
                         {pctFmt(totalBRLExterno > 0 ? (agg.valueBRL / totalBRLExterno) * 100 : 0)}
                       </td>
-                      <td className="px-4 py-2.5">{formatDiferencial(diferencialMedio(agg))}</td>
+                      <td className="px-4 py-2.5">
+                        <DiferencialCell v={diferencialMedio(agg)} />
+                      </td>
                     </tr>
                   ))}
                   {topExternos.length === 0 && (
