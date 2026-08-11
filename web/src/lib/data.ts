@@ -233,7 +233,10 @@ export async function getAccOperations() {
       };
     });
     const valorLiquidadoUSD = Number(baixas.reduce((s, b) => s + b.valorUSD, 0).toFixed(2));
-    const saldoAbertoUSD = Math.max(0, Number((contractedValueForeign - valorLiquidadoUSD).toFixed(2)));
+    const saldoAbertoUSD =
+      a.status === "LIQUIDADO"
+        ? 0
+        : Math.max(0, Number((contractedValueForeign - valorLiquidadoUSD).toFixed(2)));
 
     // Juros pagos: se ha baixas registradas, e a soma dos juros de cada tranche
     // (mais preciso - cada parte tem seu proprio prazo real). Sem baixas

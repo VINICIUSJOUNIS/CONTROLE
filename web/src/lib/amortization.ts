@@ -80,7 +80,7 @@ export function saldoDevedorEm(
   loan: LoanForAmortization & { status?: string; settlementDate?: string | null },
   dataRef: string
 ): number {
-  if (loan.status === "LIQUIDADO" && loan.settlementDate && dataRef >= loan.settlementDate) {
+  if (loan.status === "LIQUIDADO" && (!loan.settlementDate || dataRef >= loan.settlementDate)) {
     return 0;
   }
   if (dataRef < loan.contractDate) return loan.contractedValue;

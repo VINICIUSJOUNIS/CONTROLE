@@ -561,7 +561,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                     US$ {acc.contractedValueForeign.toLocaleString("pt-BR")}
                   </td>
                   <td className="px-4 py-2.5">
-                    {acc.baixas.length > 0 ? (
+                    {acc.baixas.length > 0 || acc.status === "LIQUIDADO" ? (
                       <Badge variant={acc.saldoAbertoUSD <= 0 ? "success" : "warning"}>
                         US$ {acc.saldoAbertoUSD.toLocaleString("pt-BR")}
                       </Badge>
