@@ -15,6 +15,7 @@ import {
   Receipt,
   MapPin,
   Undo2,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -34,6 +35,7 @@ const faturamentoNavItems = [
   { href: "/faturamento/vendas", label: "Vendas", icon: Receipt },
   { href: "/faturamento/devolucoes", label: "Devoluções", icon: Undo2 },
   { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
+  { href: "/faturamento/curva-abc", label: "Curva ABC", icon: BarChart3 },
 ];
 
 const creditoNavItems = [
