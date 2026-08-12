@@ -55,8 +55,14 @@ export function RelatorioContratosAbertos({
 
   return (
     <Card className="relative overflow-hidden print:break-inside-avoid print:border-0 print:shadow-none">
-      <div className="pointer-events-none absolute inset-0 hidden items-center justify-center print:flex">
-        <Image src="/nayme-logo.png" alt="" width={320} height={320} className="opacity-[0.06] print:h-[160px] print:w-[160px]" />
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <Image
+          src="/nayme-logo.png"
+          alt=""
+          width={320}
+          height={320}
+          className="h-[220px] w-[220px] opacity-[0.06] print:h-[160px] print:w-[160px]"
+        />
       </div>
 
       <CardHeader className="relative flex flex-row items-center justify-between print:hidden">
