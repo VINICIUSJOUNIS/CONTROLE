@@ -128,7 +128,15 @@ function ClienteTable({
   );
 }
 
-export function CurvaAbcView({ internos, externos }: { internos: SaleRow[]; externos: SaleRow[] }) {
+export function CurvaAbcView({
+  internos,
+  externos,
+  periodLabel,
+}: {
+  internos: SaleRow[];
+  externos: SaleRow[];
+  periodLabel: string;
+}) {
   const { ranked: rankedInternos, total: totalInterno } = classifyAbc(internos);
   const { ranked: rankedExternos, total: totalExterno } = classifyAbc(externos);
   const topInternos = rankedInternos.slice(0, 10);
@@ -152,7 +160,10 @@ export function CurvaAbcView({ internos, externos }: { internos: SaleRow[]; exte
       </div>
 
       <div className="relative z-10 space-y-6">
-        <div className="flex items-center justify-end print:hidden">
+        <div className="flex items-center justify-between print:hidden">
+          <p className="text-sm text-muted">
+            Período: <span className="font-medium text-foreground">{periodLabel}</span>
+          </p>
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer size={14} />
             Imprimir / PDF
@@ -169,6 +180,7 @@ export function CurvaAbcView({ internos, externos }: { internos: SaleRow[]; exte
           </div>
           <div className="text-right">
             <p className="text-base font-semibold print:text-xs">Curva ABC — 10 Maiores Clientes</p>
+            <p className="text-xs text-muted print:text-[9px]">Período: {periodLabel}</p>
             <p className="text-xs text-muted print:text-[9px]">
               Emitido em {formatDate(new Date().toISOString().slice(0, 10))}
             </p>
