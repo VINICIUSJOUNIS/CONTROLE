@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ import {
 } from "@/app/(dashboard)/emprestimos/actions";
 import { NovoBanco } from "@/components/bancos/novo-banco";
 import { buildAmortizationSchedule, AmortizationSystemValue, RateBasisValue } from "@/lib/amortization";
-import { Plus, Search, Pencil, Trash2, Table2, Check, X } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Table2, Check, X, Printer } from "lucide-react";
 
 type Bank = { id: string; name: string; color: string };
 type StatusValue = "ATIVO" | "LIQUIDADO" | "EM_ATRASO";
@@ -723,6 +724,14 @@ export function EmprestimosView({
                       >
                         <Table2 size={14} />
                       </button>
+                      <Link
+                        href={`/emprestimos/${loan.id}`}
+                        target="_blank"
+                        className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
+                        title="Relatorio para imprimir"
+                      >
+                        <Printer size={14} />
+                      </Link>
                       <button
                         onClick={() => openEdit(loan)}
                         className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"

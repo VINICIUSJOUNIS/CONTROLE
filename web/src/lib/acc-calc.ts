@@ -31,3 +31,61 @@ export function calcBaixaJuros(
   const jurosUSD = Number((valorUSD * (taxaAnualPercent / 100) * (dias / 360)).toFixed(2));
   return { dias, jurosUSD };
 }
+
+export type AccMonthlyInterest = {
+  month: string; // "AAAA-MM"
+  dias: number;
+  saldoBaseUSD: number;
+  jurosUSD: number;
+  jurosValor: number;
+};
+
+// Quebra o juros do ACC mes a mes (calendario), para o relatorio individual.
+// O saldo base de cada mes e o valor contratado menos as baixas com data
+// anterior ao inicio daquele mes - se uma baixa cair no meio do mes, o juros
+// daquele mes fica levemente superestimado (usa o saldo do inicio do mes
+// inteiro), por simplicidade; o total oficial pago continua sendo
+// jurosPagoValor (soma exata por tranche, ver calcBaixaJuros acima).
+export function buildAccMonthlySchedule(params: {
+  contractDate: string;
+  fimAcumulado: string;
+  interestRate: number;
+  contractedValueForeign: number;
+  closingRate: number;
+  baixas: { valorUSD: number; dataQuitacao: string }[];
+}): AccMonthlyInterest[] {
+  const { contractDate, fimAcumulado, interestRate, contractedValueForeign, closingRate, baixas } = params;
+  const start = parseLocalDate(contractDate);
+  const end = parseLocalDate(fimAcumulado);
+  if (end <= start) return [];
+
+  const sortedBaixas = [...baixas].sort((a, b) => a.dataQuitacao.localeCompare(b.dataQuitacao));
+
+  const rows: AccMonthlyInterest[] = [];
+  let cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 12, 0, 0);
+  while (cursor < end) {
+    const monthStart = cursor;
+    const nextMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1, 12, 0, 0);
+    const segEnd = nextMonth < end ? nextMonth : end;
+    const dias = daysBetween(monthStart, segEnd);
+    if (dias > 0) {
+      const monthStartStr = `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, "0")}-${String(
+        monthStart.getDate()
+      ).padStart(2, "0")}`;
+      const liquidadoAteInicio = sortedBaixas
+        .filter((b) => b.dataQuitacao < monthStartStr)
+        .reduce((s, b) => s + b.valorUSD, 0);
+      const saldoBaseUSD = Math.max(0, Number((contractedValueForeign - liquidadoAteInicio).toFixed(2)));
+      const jurosUSD = Number((saldoBaseUSD * (interestRate / 100) * (dias / 360)).toFixed(2));
+      rows.push({
+        month: `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, "0")}`,
+        dias,
+        saldoBaseUSD,
+        jurosUSD,
+        jurosValor: Number((jurosUSD * closingRate).toFixed(2)),
+      });
+    }
+    cursor = nextMonth;
+  }
+  return rows;
+}

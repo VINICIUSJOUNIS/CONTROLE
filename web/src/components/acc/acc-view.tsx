@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { createAcc, deleteAcc, updateAcc, addAccBaixa, updateAccBaixa, deleteAccBaixa } from "@/app/(dashboard)/acc/actions";
 import { calcBaixaJuros } from "@/lib/acc-calc";
 import { NovoBanco } from "@/components/bancos/novo-banco";
-import { Plus, Pencil, Trash2, Layers, Check, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Layers, Check, X, Printer } from "lucide-react";
 
 type Bank = { id: string; name: string; color: string };
 type StatusValue = "EM_ABERTO" | "LIQUIDADO" | "EM_ATRASO";
@@ -614,6 +615,14 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                       >
                         <Layers size={14} />
                       </button>
+                      <Link
+                        href={`/acc/${acc.id}`}
+                        target="_blank"
+                        className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
+                        title="Relatorio para imprimir"
+                      >
+                        <Printer size={14} />
+                      </Link>
                       <button
                         onClick={() => openEdit(acc)}
                         className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
