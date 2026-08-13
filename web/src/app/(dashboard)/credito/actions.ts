@@ -20,7 +20,7 @@ export type RegenerateResult = { ok: true } | { ok: false; error: string };
 
 export async function regenerateRiskInsightsAction(statementId: string): Promise<RegenerateResult> {
   const record = await prisma.financialStatement.findUnique({ where: { id: statementId } });
-  if (!record) return { ok: false, error: "Balancete não encontrado." };
+  if (!record) return { ok: false, error: "Balanço/DRE não encontrado." };
 
   const statement = statementRecordToInput(record);
 

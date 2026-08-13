@@ -23,14 +23,14 @@ export default function ImportarPage() {
 
   return (
     <>
-      <Topbar title="Novo Balancete" subtitle="Digite os valores do balanço/balancete manualmente" />
+      <Topbar title="Novo Balanço e DRE" subtitle="Digite os valores do balanço e da DRE manualmente" />
       <div className="space-y-6 p-6">
         <Card>
           <CardContent className="p-5">
             <Label htmlFor="sourceFileName">Documento de referência (opcional)</Label>
             <Input
               id="sourceFileName"
-              placeholder="ex: Balancete 2º Trimestre.pdf"
+              placeholder="ex: Balanço 2º Trimestre.pdf"
               value={sourceFileName}
               onChange={(e) => setSourceFileName(e.target.value)}
             />
@@ -39,7 +39,7 @@ export default function ImportarPage() {
 
         <StatementForm
           initial={emptyFinancialStatementFields()}
-          submitLabel="Salvar Balancete"
+          submitLabel="Salvar Balanço e DRE"
           onSubmit={handleSave}
         />
       </div>

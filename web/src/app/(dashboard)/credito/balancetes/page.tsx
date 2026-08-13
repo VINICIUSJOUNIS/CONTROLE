@@ -11,20 +11,20 @@ export default async function BalancetesPage() {
 
   return (
     <>
-      <Topbar title="Balancetes" subtitle="Períodos importados" />
+      <Topbar title="Balanço e DRE" subtitle="Períodos lançados" />
       <div className="space-y-4 p-6">
         <div className="flex justify-end">
           <Link
             href="/credito/importar"
             className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            Novo Balancete
+            Novo Balanço e DRE
           </Link>
         </div>
         <Card>
           <CardContent className="overflow-x-auto p-0">
             {records.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted">Nenhum balancete importado ainda.</p>
+              <p className="p-6 text-center text-sm text-muted">Nenhum balanço/DRE lançado ainda.</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>

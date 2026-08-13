@@ -330,13 +330,13 @@ export default async function CreditoAnalisePage({
           <Card>
             <CardContent className="flex flex-col items-center gap-4 p-10 text-center">
               <p className="text-sm text-muted">
-                Nenhum balancete lançado ainda. Cadastre os valores do balanço/balancete para ver a análise.
+                Nenhum balanço/DRE lançado ainda. Cadastre os valores do balanço e da DRE para ver a análise.
               </p>
               <Link
                 href="/credito/importar"
                 className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
-                Novo Balancete
+                Novo Balanço e DRE
               </Link>
             </CardContent>
           </Card>
@@ -708,7 +708,7 @@ export default async function CreditoAnalisePage({
                   { label: "Fluxo de Caixa Gerado", valor: dfc.fluxoCaixaGerado, bold: true },
                   { label: "Caixa Inicial", valor: dfc.caixaInicial },
                   { label: "Caixa Final (calculado)", valor: dfc.caixaFinalCalculado, bold: true },
-                  { label: "Caixa Final (balancete)", valor: dfc.caixaFinal },
+                  { label: "Caixa Final (lançado)", valor: dfc.caixaFinal },
                 ];
                 return (
                   <Card key={atual.label}>
@@ -740,7 +740,7 @@ export default async function CreditoAnalisePage({
                       </table>
                       {Math.abs(dfc.caixaFinalCalculado - dfc.caixaFinal) > 1 && (
                         <p className="px-4 py-3 text-xs text-warning">
-                          Caixa final calculado diverge do balancete em{" "}
+                          Caixa final calculado diverge do valor lançado em{" "}
                           {formatBRL(dfc.caixaFinalCalculado - dfc.caixaFinal)}.
                         </p>
                       )}

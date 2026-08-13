@@ -9,7 +9,7 @@ export function DeleteStatementButton({ id, periodLabel }: { id: string; periodL
   const [isPending, startTransition] = useTransition();
 
   function handleClick() {
-    if (!confirm(`Excluir o balancete "${periodLabel}"? Essa ação não pode ser desfeita.`)) return;
+    if (!confirm(`Excluir o balanço/DRE "${periodLabel}"? Essa ação não pode ser desfeita.`)) return;
     startTransition(async () => {
       await deleteStatementAction(id);
     });

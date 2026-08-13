@@ -19,7 +19,7 @@ export default async function EditBalancetePage({
 
   return (
     <>
-      <Topbar title="Editar Balancete" subtitle={record.periodLabel} />
+      <Topbar title="Editar Balanço e DRE" subtitle={record.periodLabel} />
       <div className="space-y-6 p-6">
         <EditStatementClient id={id} initial={fields} />
         <RiskPanel statementId={id} riscos={aiInsights?.riscos ?? []} geradoEm={aiInsights?.geradoEm ?? null} />

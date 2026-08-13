@@ -40,7 +40,7 @@ const faturamentoNavItems = [
 
 const creditoNavItems = [
   { href: "/credito", label: "Analise de Balanco", icon: LayoutDashboard },
-  { href: "/credito/balancetes", label: "Balancetes", icon: FileStack },
+  { href: "/credito/balancetes", label: "Balanço e DRE", icon: FileStack },
 ];
 
 const roleLabels: Record<string, string> = {

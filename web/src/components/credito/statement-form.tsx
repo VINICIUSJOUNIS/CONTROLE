@@ -239,7 +239,7 @@ export function StatementForm({
 
             <TabsContent value="cambio">
               <p className="text-xs text-muted">
-                Opcional — deixe em branco se o balancete não discriminar moeda estrangeira.
+                Opcional — deixe em branco se o balanço não discriminar moeda estrangeira.
               </p>
               <FieldGroup title="Exposição Cambial" fields={cambialFields} form={form} update={update} />
             </TabsContent>

@@ -52,6 +52,6 @@ export async function deleteStatementAction(id: string): Promise<SaveResult> {
     revalidateCredito();
     return { ok: true };
   } catch {
-    return { ok: false, error: "Falha ao excluir o balancete." };
+    return { ok: false, error: "Falha ao excluir o balanço/DRE." };
   }
 }
