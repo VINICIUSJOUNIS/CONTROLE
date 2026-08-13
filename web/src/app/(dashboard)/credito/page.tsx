@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MultiPeriodPicker } from "@/components/credito/multi-period-picker";
+import { CreditoPrintWrapper } from "@/components/credito/credito-print-wrapper";
 import { prisma } from "@/lib/prisma";
 import { statementRecordToInput } from "@/lib/financial/convert";
 import { ativoFieldLabels, passivoFieldLabels, dreFieldLabels } from "@/lib/financial/schema";
@@ -369,8 +370,11 @@ export default async function CreditoAnalisePage({
     <>
       <Topbar title="Análise de Crédito" subtitle="Balanço, DRE, índices e fluxo de caixa por período" />
       <div className="space-y-8 p-6">
-        <MultiPeriodPicker periods={allPeriods} selectedIds={selectedIds} />
+        <div className="print:hidden">
+          <MultiPeriodPicker periods={allPeriods} selectedIds={selectedIds} />
+        </div>
 
+        <CreditoPrintWrapper periodLabels={periodos.map((p) => p.label)}>
         {periodos.map((p, i) => {
           const totalAtivo = ativoTotal(p.statement);
           const totalPassivo = passivoTotal(p.statement);
@@ -751,6 +755,7 @@ export default async function CreditoAnalisePage({
             </div>
           )}
         </section>
+        </CreditoPrintWrapper>
       </div>
     </>
   );
