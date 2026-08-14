@@ -383,6 +383,12 @@ export default async function FaturamentoDashboardPage({
             tone="teal"
           />
           <KpiCard
+            label="Total de Sacas"
+            value={(sacasInterno + sacasExterno).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+            icon={Package}
+            tone="teal"
+          />
+          <KpiCard
             label="Sacas — Mercado Interno"
             value={sacasInterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
             icon={Package}
