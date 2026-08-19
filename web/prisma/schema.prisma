@@ -320,3 +320,132 @@ model SaleReturn {
   @@index([returnDate])
   @@map("sale_returns")
 }
+
+enum Side {
+  COMPRA
+  VENDA
+}
+
+enum ContractType {
+  NDF
+  TRAVA
+}
+
+enum HedgeStatus {
+  A_LIQUIDAR
+  LIQUIDADA
+}
+
+enum StatusContrato {
+  CONTRATO_ASSINADO
+  PRE_EMBARQUE
+  ESTUFAGEM_PORTO
+  EMBARCADO
+  CARGA_DESTINO
+  CONTRATO_FINALIZADO
+}
+
+model Corretora {
+  id              String               @id @default(uuid())
+  name            String               @unique
+  color           String
+  hedgeOperations HedgeOperation[]
+  contratos       ContratoExportacao[]
+  createdAt       DateTime             @default(now())
+
+  @@map("corretoras")
+}
+
+model HedgeOperation {
+  id                    String       @id @default(uuid())
+  corretora             Corretora    @relation(fields: [corretoraId], references: [id])
+  corretoraId           String
+  contractType          ContractType @default(NDF)
+  side                  Side?
+  contractDate          DateTime     @db.Date
+  vencimento            DateTime     @db.Date
+  valorUsd              Decimal      @db.Decimal(18, 2)
+  liquidacaoParcialUsd  Decimal      @default(0) @db.Decimal(18, 2)
+  saldoUsd              Decimal      @default(0) @db.Decimal(18, 2)
+  nivelCompra           Decimal      @default(0) @db.Decimal(10, 4)
+  nivelVenda            Decimal      @default(0) @db.Decimal(10, 4)
+  desagioValor          Decimal      @default(0) @db.Decimal(18, 2)
+  totalReais            Decimal      @default(0) @db.Decimal(18, 2)
+  status                HedgeStatus  @default(A_LIQUIDAR)
+  observacao            String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@index([corretoraId])
+  @@index([status])
+  @@map("hedge_operations")
+}
+
+model Cliente {
+  id        String              @id @default(uuid())
+  name      String              @unique
+  city      String?
+  country   String
+  email     String?
+  phone     String?
+  contratos ContratoExportacao[]
+  createdAt DateTime            @default(now())
+
+  @@map("clientes")
+}
+
+model ContratoExportacao {
+  id             String          @id @default(uuid())
+  contractNumber String          @unique
+  cliente        Cliente         @relation(fields: [clienteId], references: [id])
+  clienteId      String
+  corretora      Corretora?      @relation(fields: [corretoraId], references: [id])
+  corretoraId    String?
+  country        String          @default("")
+  valorUsd       Decimal         @default(0) @db.Decimal(18, 2)
+  dataEstufagem  DateTime?       @db.Date
+  dataEmbarque   DateTime?       @db.Date
+  dataChegada    DateTime?       @db.Date
+  status         StatusContrato  @default(CONTRATO_ASSINADO)
+
+  // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
+  quantSacas                    Int?
+  adiantamentoUsd                Decimal   @default(0) @db.Decimal(18, 2)
+  dataAdiantamento                DateTime? @db.Date
+  financiadoPelaRts              Boolean   @default(false)
+  valorFinanciadoRtsUsd          Decimal   @default(0) @db.Decimal(18, 2)
+  dataLiberacaoFinanciamentoRts DateTime? @db.Date
+  previsaoPagamentoCliente      DateTime? @db.Date
+  saldoAReceberRtsUsd            Decimal   @default(0) @db.Decimal(18, 2)
+  valorRecebidoRtsUsd            Decimal   @default(0) @db.Decimal(18, 2)
+  dataRecebimentoRts              DateTime? @db.Date
+  obsRecebimento                 String?
+
+  // Despesas do contrato (R$) — compoe o custo final da operacao de exportacao.
+  despachante              Decimal @default(0) @db.Decimal(18, 2)
+  certificados             Decimal @default(0) @db.Decimal(18, 2)
+  freteTerrestre           Decimal @default(0) @db.Decimal(18, 2)
+  freteMaritimo            Decimal @default(0) @db.Decimal(18, 2)
+  taxasLocaisArmador       Decimal @default(0) @db.Decimal(18, 2)
+  fumigacao                Decimal @default(0) @db.Decimal(18, 2)
+  embalagens               Decimal @default(0) @db.Decimal(18, 2)
+  inspecao                 Decimal @default(0) @db.Decimal(18, 2)
+  despesasPortuarias       Decimal @default(0) @db.Decimal(18, 2)
+  armazem                  Decimal @default(0) @db.Decimal(18, 2)
+  envioAmostra             Decimal @default(0) @db.Decimal(18, 2)
+  marcacaoSacaria          Decimal @default(0) @db.Decimal(18, 2)
+  envioDocumentacao        Decimal @default(0) @db.Decimal(18, 2)
+  telexRelease             Decimal @default(0) @db.Decimal(18, 2)
+  legalizacao              Decimal @default(0) @db.Decimal(18, 2)
+  financiamentoRts         Decimal @default(0) @db.Decimal(18, 2)
+  diariaContainerDetention Decimal @default(0) @db.Decimal(18, 2)
+  despesasRedex            Decimal @default(0) @db.Decimal(18, 2)
+  estadiaContainer         Decimal @default(0) @db.Decimal(18, 2)
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([clienteId])
+  @@index([status])
+  @@map("contratos_exportacao")
+}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Landmark, Scale, Receipt, ArrowRight } from "lucide-react";
+import { Landmark, Scale, Receipt, ShieldCheck, ArrowRight } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -22,6 +22,12 @@ const modules = [
     label: "Faturamento",
     description: "Vendas, paises exportados e evolucao do faturamento.",
     icon: Receipt,
+  },
+  {
+    href: "/hedge",
+    label: "Controle de Hedge",
+    description: "Contratos de exportacao, operacoes cambiais e vencimentos.",
+    icon: ShieldCheck,
   },
 ];
 
