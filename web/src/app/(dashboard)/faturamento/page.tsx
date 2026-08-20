@@ -18,7 +18,7 @@ import { Users, Globe2, Package, DollarSign, Hash } from "lucide-react";
 // Sacas e R$ tem fatores independentes (preco medio da devolucao pode diferir
 // da media geral).
 function proportionalFactor(devol: number, gross: number) {
-  return gross > 0 ? Math.max(0, 1 - devol / gross) : 1;
+  return gross > 0 ? 1 - devol / gross : 1;
 }
 
 type ClientAgg = {
