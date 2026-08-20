@@ -105,7 +105,11 @@ export async function getContasGarantidas() {
     const diasUtilizado = c.dataUtilizacao ? daysBetween(c.dataUtilizacao, hoje) : 0;
 
     const valorDisponivel = Number((limiteContratado - valorUtilizado).toFixed(2));
-    const jurosPeriodo = Number((valorUtilizado * (taxaJurosPercent / 100)).toFixed(2));
+    // Taxa e "% ao mes" (mesma convencao do mes comercial de 30 dias usada nos
+    // Emprestimos - RATE_BASIS_DAYS.MENSAL), entao os juros do periodo sao
+    // proporcionais aos dias em que o valor esteve de fato utilizado, nao a
+    // taxa mensal cheia.
+    const jurosPeriodo = Number((valorUtilizado * (taxaJurosPercent / 100) * (diasUtilizado / 30)).toFixed(2));
     const iofPeriodo = Number((valorUtilizado * (IOF_DIARIO_PERCENT / 100) * diasUtilizado).toFixed(2));
     const iofAdicionalPeriodo = Number((valorUtilizado * (IOF_ADICIONAL_PERCENT / 100)).toFixed(2));
     const valorAPagarPeriodo = Number((jurosPeriodo + iofPeriodo + iofAdicionalPeriodo).toFixed(2));
