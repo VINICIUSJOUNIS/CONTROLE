@@ -120,15 +120,22 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
 
   // Devolucoes no mesmo periodo (from/to) selecionado para as vendas, abatidas dos
   // totais abaixo. Devolucao nao tem tipo de cliente/pais, entao so o filtro de
-  // data se aplica aqui (os demais filtros de venda nao tem equivalente nela).
+  // data se aplica aqui (os demais filtros de venda nao tem equivalente nela) — e
+  // por isso so descontamos quando nenhum desses filtros de segmento esta ativo:
+  // descontar a devolucao inteira de um subconjunto (ex: so "Externo") daria um
+  // total incorreto (ou ate negativo), pois nao sabemos quanto da devolucao
+  // pertence aquele segmento.
+  const noSegmentFilter = clientTypeFilter === "todos" && clientFilter === "todos" && countryFilter === "todos";
+
   const returnsInPeriod = useMemo(() => {
+    if (!noSegmentFilter) return [];
     return returns.filter((r) => {
       const month = r.returnDate.slice(0, 7);
       if (fromFilter && month < fromFilter) return false;
       if (toFilter && month > toFilter) return false;
       return true;
     });
-  }, [returns, fromFilter, toFilter]);
+  }, [returns, fromFilter, toFilter, noSegmentFilter]);
 
   const devolucaoKg = returnsInPeriod.reduce((s, r) => s + r.quantityKg, 0);
   const devolucaoSacas = returnsInPeriod.reduce((s, r) => s + r.quantitySacas, 0);
