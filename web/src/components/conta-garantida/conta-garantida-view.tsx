@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
 import { KpiCard } from "@/components/dashboard/kpi-card";
+import { LineChartCard } from "@/components/charts/line-chart-card";
+import { BarChartCard } from "@/components/charts/bar-chart-card";
+import { PieChartCard } from "@/components/charts/pie-chart-card";
 import { formatCompactCurrency, formatCurrency, formatPercent } from "@/lib/format";
 import { ContaGarantidaRow, ContaGarantidaUsoRow } from "@/lib/data";
 import {
@@ -66,16 +69,33 @@ function formFromUso(contaGarantidaId: string, uso: ContaGarantidaUsoRow) {
   };
 }
 
+type EvolucaoSerie = { key: string; name: string; color: string };
+type Evolucao = { data: Record<string, unknown>[]; series: EvolucaoSerie[] };
+
+const statusUsoOptions = [
+  { value: "todos", label: "Todas as utilizações" },
+  { value: "aberto", label: "Em aberto" },
+  { value: "encerrado", label: "Encerradas" },
+] as const;
+
 export function ContaGarantidaView({
   banks,
   initialContas,
+  evolucao,
 }: {
   banks: Bank[];
   initialContas: ContaGarantidaRow[];
+  evolucao: Evolucao;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const [bankFilter, setBankFilter] = useState("todos");
+  const [statusFilter, setStatusFilter] = useState<(typeof statusUsoOptions)[number]["value"]>("todos");
+  const [fromFilter, setFromFilter] = useState("");
+  const [toFilter, setToFilter] = useState("");
+  const filtersActive = bankFilter !== "todos" || statusFilter !== "todos" || !!fromFilter || !!toFilter;
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -87,8 +107,32 @@ export function ContaGarantidaView({
   const [errorUso, setErrorUso] = useState<string | null>(null);
   const [formUso, setFormUso] = useState(emptyUsoForm(""));
 
+  // Banco filtra quais contas aparecem (KPIs, tabela e graficos). Status e
+  // periodo filtram quais utilizacoes de cada conta contam - valorUtilizado e
+  // valorDisponivel continuam refletindo o saldo real em aberto hoje, so o
+  // custo (juros/IOF) do periodo e recalculado com base nas utilizacoes
+  // filtradas.
+  const filteredContas = useMemo(() => {
+    return initialContas
+      .filter((c) => bankFilter === "todos" || c.bankId === bankFilter)
+      .map((c) => {
+        const usos = c.usos.filter((u) => {
+          if (statusFilter === "aberto" && !u.emAberto) return false;
+          if (statusFilter === "encerrado" && u.emAberto) return false;
+          if (fromFilter && u.dataInicio < fromFilter) return false;
+          if (toFilter && u.dataInicio > toFilter) return false;
+          return true;
+        });
+        const jurosPeriodo = Number(usos.reduce((s, u) => s + u.juros, 0).toFixed(2));
+        const iofPeriodo = Number(usos.reduce((s, u) => s + u.iof, 0).toFixed(2));
+        const iofAdicionalPeriodo = Number(usos.reduce((s, u) => s + u.iofAdicional, 0).toFixed(2));
+        const valorAPagarPeriodo = Number(usos.reduce((s, u) => s + u.valorAPagar, 0).toFixed(2));
+        return { ...c, usos, jurosPeriodo, iofPeriodo, iofAdicionalPeriodo, valorAPagarPeriodo };
+      });
+  }, [initialContas, bankFilter, statusFilter, fromFilter, toFilter]);
+
   const totais = useMemo(() => {
-    return initialContas.reduce(
+    return filteredContas.reduce(
       (acc, c) => ({
         limite: acc.limite + c.limiteContratado,
         utilizado: acc.utilizado + c.valorUtilizado,
@@ -97,7 +141,33 @@ export function ContaGarantidaView({
       }),
       { limite: 0, utilizado: 0, disponivel: 0, aPagar: 0 }
     );
-  }, [initialContas]);
+  }, [filteredContas]);
+
+  const bankChartData = useMemo(
+    () =>
+      filteredContas.map((c) => ({
+        banco: c.bankName,
+        limiteContratado: c.limiteContratado,
+        valorUtilizado: c.valorUtilizado,
+      })),
+    [filteredContas]
+  );
+
+  const custoChartData = useMemo(() => {
+    const juros = filteredContas.reduce((s, c) => s + c.jurosPeriodo, 0);
+    const iof = filteredContas.reduce((s, c) => s + c.iofPeriodo, 0);
+    const iofAdicional = filteredContas.reduce((s, c) => s + c.iofAdicionalPeriodo, 0);
+    return [
+      { name: "Juros", value: Number(juros.toFixed(2)), color: "#1c8388" },
+      { name: "IOF", value: Number(iof.toFixed(2)), color: "#d68c2b" },
+      { name: "IOF Adicional", value: Number(iofAdicional.toFixed(2)), color: "#f04438" },
+    ].filter((d) => d.value > 0);
+  }, [filteredContas]);
+
+  const evolucaoSeries = useMemo(
+    () => (bankFilter === "todos" ? evolucao.series : evolucao.series.filter((s) => s.key === bankFilter)),
+    [evolucao.series, bankFilter]
+  );
 
   function openCreate() {
     setEditingId(null);
@@ -215,6 +285,13 @@ export function ContaGarantidaView({
     });
   }
 
+  function clearFilters() {
+    setBankFilter("todos");
+    setStatusFilter("todos");
+    setFromFilter("");
+    setToFilter("");
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -244,7 +321,75 @@ export function ContaGarantidaView({
         />
       </div>
 
-      <div className="flex justify-end">
+      {initialContas.length > 0 && (
+        <>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <LineChartCard
+                title="Evolução do valor utilizado"
+                data={evolucao.data}
+                xKey="month"
+                series={evolucaoSeries}
+                valueFormat="currency"
+              />
+            </div>
+            <PieChartCard title="Composição do custo (juros x IOF)" data={custoChartData} />
+          </div>
+
+          <BarChartCard
+            title="Limite Contratado x Valor Utilizado por Banco"
+            data={bankChartData}
+            xKey="banco"
+            series={[
+              { key: "limiteContratado", name: "Limite Contratado", color: "#a8c5c8" },
+              { key: "valorUtilizado", name: "Valor Utilizado", color: "#1c8388" },
+            ]}
+            valueFormat="currency"
+          />
+        </>
+      )}
+
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <Select value={bankFilter} onChange={(e) => setBankFilter(e.target.value)} className="w-auto">
+            <option value="todos">Todos os bancos</option>
+            {banks.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as (typeof statusUsoOptions)[number]["value"])}
+            className="w-auto"
+          >
+            {statusUsoOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+          <div>
+            <Label>Início de</Label>
+            <Input
+              type="date"
+              value={fromFilter}
+              onChange={(e) => setFromFilter(e.target.value)}
+              className="w-auto"
+            />
+          </div>
+          <div>
+            <Label>Início até</Label>
+            <Input type="date" value={toFilter} onChange={(e) => setToFilter(e.target.value)} className="w-auto" />
+          </div>
+          {filtersActive && (
+            <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
+              Limpar filtros
+            </Button>
+          )}
+        </div>
+
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreate}>
@@ -329,7 +474,7 @@ export function ContaGarantidaView({
               </tr>
             </thead>
             <tbody>
-              {initialContas.map((c) => {
+              {filteredContas.map((c) => {
                 const isExpanded = expandedId === c.id;
                 return (
                   <Fragment key={c.id}>
@@ -381,7 +526,9 @@ export function ContaGarantidaView({
                         <td colSpan={7} className="px-4 py-3">
                           {c.usos.length === 0 ? (
                             <p className="py-2 text-xs text-muted">
-                              Nenhuma utilização registrada ainda para este banco.
+                              {filtersActive
+                                ? "Nenhuma utilização encontrada com os filtros atuais."
+                                : "Nenhuma utilização registrada ainda para este banco."}
                             </p>
                           ) : (
                             <table className="w-full whitespace-nowrap text-xs">
@@ -454,10 +601,12 @@ export function ContaGarantidaView({
                   </Fragment>
                 );
               })}
-              {initialContas.length === 0 && (
+              {filteredContas.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-muted">
-                    Nenhuma conta garantida cadastrada ainda.
+                    {initialContas.length === 0
+                      ? "Nenhuma conta garantida cadastrada ainda."
+                      : "Nenhuma conta garantida encontrada com os filtros atuais."}
                   </td>
                 </tr>
               )}

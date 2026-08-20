@@ -177,6 +177,37 @@ export async function getContasGarantidas() {
 export type ContaGarantidaRow = Awaited<ReturnType<typeof getContasGarantidas>>[number];
 export type ContaGarantidaUsoRow = ContaGarantidaRow["usos"][number];
 
+// Saldo utilizado (soma dos usos abertos naquele mes) mes a mes, por banco -
+// mesma lógica de "saldo devedor mes a mes" usada em getDebtEvolution, mas
+// aplicada aos usos da conta garantida (dataInicio/dataFim de cada saque).
+export async function getContaGarantidaEvolucao() {
+  const contas = await getContasGarantidas();
+  const allDataInicio = contas.flatMap((c) => c.usos.map((u) => u.dataInicio));
+
+  if (allDataInicio.length === 0) {
+    return {
+      data: [] as Record<string, unknown>[],
+      series: [] as { key: string; name: string; color: string }[],
+    };
+  }
+
+  const months = monthsSinceEarliest(allDataInicio);
+  const series = contas.map((c) => ({ key: c.id, name: c.bankName, color: c.bankColor }));
+
+  const data = months.map((month) => {
+    const row: Record<string, unknown> = { month };
+    contas.forEach((c) => {
+      const saldo = c.usos
+        .filter((u) => u.dataInicio.slice(0, 7) <= month && (!u.dataFim || u.dataFim.slice(0, 7) >= month))
+        .reduce((s, u) => s + u.valorUtilizado, 0);
+      row[c.id] = Number(saldo.toFixed(2));
+    });
+    return row;
+  });
+
+  return { data, series };
+}
+
 export async function getLoans() {
   const loans = await prisma.loan.findMany({
     include: { bank: true, installmentRecords: true },
