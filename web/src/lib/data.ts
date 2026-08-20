@@ -90,9 +90,26 @@ export async function getBanks() {
 const IOF_DIARIO_PERCENT = 0.0082;
 const IOF_ADICIONAL_PERCENT = 0.38;
 
+// Calcula dias/IOF/juros de uma unica utilizacao (uso). Usos ainda abertos
+// (dataFim nula) contam os dias ate hoje; usos encerrados contam apenas ate a
+// dataFim, entao quitar uma utilizacao trava o custo dela no periodo em que o
+// valor esteve de fato utilizado.
+function calcUso(valorUtilizado: number, taxaJurosPercent: number, dataInicio: Date, dataFim: Date | null, hoje: Date) {
+  const fim = dataFim ?? hoje;
+  const dias = daysBetween(dataInicio, fim);
+  // Taxa e "% ao mes" (mesma convencao do mes comercial de 30 dias usada nos
+  // Emprestimos - RATE_BASIS_DAYS.MENSAL), entao os juros sao proporcionais
+  // aos dias em que o valor esteve de fato utilizado, nao a taxa mensal cheia.
+  const juros = Number((valorUtilizado * (taxaJurosPercent / 100) * (dias / 30)).toFixed(2));
+  const iof = Number((valorUtilizado * (IOF_DIARIO_PERCENT / 100) * dias).toFixed(2));
+  const iofAdicional = Number((valorUtilizado * (IOF_ADICIONAL_PERCENT / 100)).toFixed(2));
+  const valorAPagar = Number((juros + iof + iofAdicional).toFixed(2));
+  return { dias, juros, iof, iofAdicional, valorAPagar };
+}
+
 export async function getContasGarantidas() {
   const contas = await prisma.contaGarantida.findMany({
-    include: { bank: true },
+    include: { bank: true, usos: { orderBy: { dataInicio: "desc" } } },
     orderBy: { createdAt: "desc" },
   });
   const hoje = new Date();
@@ -100,19 +117,42 @@ export async function getContasGarantidas() {
 
   return contas.map((c) => {
     const limiteContratado = n(c.limiteContratado);
-    const valorUtilizado = n(c.valorUtilizado);
     const taxaJurosPercent = n(c.taxaJurosPercent);
-    const diasUtilizado = c.dataUtilizacao ? daysBetween(c.dataUtilizacao, hoje) : 0;
 
+    const usos = c.usos.map((u) => {
+      const valorUtilizado = n(u.valorUtilizado);
+      const dataInicio = u.dataInicio;
+      const dataFim = u.dataFim;
+      const { dias, juros, iof, iofAdicional, valorAPagar } = calcUso(
+        valorUtilizado,
+        taxaJurosPercent,
+        dataInicio,
+        dataFim,
+        hoje
+      );
+      return {
+        id: u.id,
+        valorUtilizado,
+        dataInicio: dataInicio.toISOString().slice(0, 10),
+        dataFim: dataFim ? dataFim.toISOString().slice(0, 10) : null,
+        emAberto: dataFim === null,
+        dias,
+        juros,
+        iof,
+        iofAdicional,
+        valorAPagar,
+        observacao: u.observacao,
+      };
+    });
+
+    // So usos ainda em aberto (sem data de fim) consomem o limite disponivel
+    // hoje - um uso ja encerrado significa que o valor foi devolvido.
+    const valorUtilizado = Number(usos.filter((u) => u.emAberto).reduce((s, u) => s + u.valorUtilizado, 0).toFixed(2));
     const valorDisponivel = Number((limiteContratado - valorUtilizado).toFixed(2));
-    // Taxa e "% ao mes" (mesma convencao do mes comercial de 30 dias usada nos
-    // Emprestimos - RATE_BASIS_DAYS.MENSAL), entao os juros do periodo sao
-    // proporcionais aos dias em que o valor esteve de fato utilizado, nao a
-    // taxa mensal cheia.
-    const jurosPeriodo = Number((valorUtilizado * (taxaJurosPercent / 100) * (diasUtilizado / 30)).toFixed(2));
-    const iofPeriodo = Number((valorUtilizado * (IOF_DIARIO_PERCENT / 100) * diasUtilizado).toFixed(2));
-    const iofAdicionalPeriodo = Number((valorUtilizado * (IOF_ADICIONAL_PERCENT / 100)).toFixed(2));
-    const valorAPagarPeriodo = Number((jurosPeriodo + iofPeriodo + iofAdicionalPeriodo).toFixed(2));
+    const jurosPeriodo = Number(usos.reduce((s, u) => s + u.juros, 0).toFixed(2));
+    const iofPeriodo = Number(usos.reduce((s, u) => s + u.iof, 0).toFixed(2));
+    const iofAdicionalPeriodo = Number(usos.reduce((s, u) => s + u.iofAdicional, 0).toFixed(2));
+    const valorAPagarPeriodo = Number(usos.reduce((s, u) => s + u.valorAPagar, 0).toFixed(2));
 
     return {
       id: c.id,
@@ -122,8 +162,6 @@ export async function getContasGarantidas() {
       limiteContratado,
       valorUtilizado,
       valorDisponivel,
-      dataUtilizacao: c.dataUtilizacao ? c.dataUtilizacao.toISOString().slice(0, 10) : null,
-      diasUtilizado,
       taxaJurosPercent,
       jurosPeriodo,
       iofPeriodo,
@@ -131,11 +169,13 @@ export async function getContasGarantidas() {
       valorAPagarPeriodo,
       observacao: c.observacao,
       updatedAt: c.updatedAt.toISOString(),
+      usos,
     };
   });
 }
 
 export type ContaGarantidaRow = Awaited<ReturnType<typeof getContasGarantidas>>[number];
+export type ContaGarantidaUsoRow = ContaGarantidaRow["usos"][number];
 
 export async function getLoans() {
   const loans = await prisma.loan.findMany({
