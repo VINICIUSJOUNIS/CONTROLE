@@ -801,12 +801,26 @@ export async function getSales() {
 export type SaleRow = Awaited<ReturnType<typeof getSales>>[number];
 
 export async function getSaleReturns() {
-  const returns = await prisma.saleReturn.findMany({ orderBy: { returnDate: "desc" } });
+  // Devolucao nao guarda tipo de cliente/pais (a tabela so tem clientName), mas
+  // como o nome de um cliente nao muda de interno pra externo, resolvemos isso
+  // aqui cruzando com o cadastro de Sale — assim toda tela que consome devolucao
+  // ja recebe o segmento certo, sem precisar aproximar por proporcao.
+  const [returns, salesClients] = await Promise.all([
+    prisma.saleReturn.findMany({ orderBy: { returnDate: "desc" } }),
+    prisma.sale.findMany({ select: { clientName: true, clientType: true, country: true } }),
+  ]);
+  const clientInfo = new Map<string, { clientType: (typeof salesClients)[number]["clientType"]; country: string | null }>();
+  for (const s of salesClients) {
+    if (!clientInfo.has(s.clientName)) clientInfo.set(s.clientName, { clientType: s.clientType, country: s.country });
+  }
   return returns.map((r) => {
     const quantityKg = n(r.quantityKg);
+    const info = clientInfo.get(r.clientName);
     return {
       id: r.id,
       clientName: r.clientName,
+      clientType: info?.clientType ?? null,
+      country: info?.country ?? null,
       quantityKg,
       quantitySacas: Number((quantityKg / KG_POR_SACA).toFixed(2)),
       returnDate: r.returnDate.toISOString().slice(0, 10),

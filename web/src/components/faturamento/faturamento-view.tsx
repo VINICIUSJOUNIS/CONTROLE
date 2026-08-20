@@ -118,24 +118,22 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
     });
   }, [sales, clientTypeFilter, clientFilter, countryFilter, fromFilter, toFilter]);
 
-  // Devolucoes no mesmo periodo (from/to) selecionado para as vendas, abatidas dos
-  // totais abaixo. Devolucao nao tem tipo de cliente/pais, entao so o filtro de
-  // data se aplica aqui (os demais filtros de venda nao tem equivalente nela) — e
-  // por isso so descontamos quando nenhum desses filtros de segmento esta ativo:
-  // descontar a devolucao inteira de um subconjunto (ex: so "Externo") daria um
-  // total incorreto (ou ate negativo), pois nao sabemos quanto da devolucao
-  // pertence aquele segmento.
-  const noSegmentFilter = clientTypeFilter === "todos" && clientFilter === "todos" && countryFilter === "todos";
-
+  // Devolucoes no mesmo periodo (from/to) e nos mesmos filtros de segmento
+  // selecionados para as vendas. getSaleReturns ja resolve o clientType/country de
+  // cada devolucao cruzando com o cadastro de Sale (nome de cliente nao muda de
+  // segmento), entao os mesmos filtros de tipo/cliente/pais da tela se aplicam
+  // aqui tambem, dando um total exato (nao aproximado).
   const returnsInPeriod = useMemo(() => {
-    if (!noSegmentFilter) return [];
     return returns.filter((r) => {
+      if (clientTypeFilter !== "todos" && r.clientType !== clientTypeFilter) return false;
+      if (clientFilter !== "todos" && r.clientName !== clientFilter) return false;
+      if (countryFilter !== "todos" && r.country !== countryFilter) return false;
       const month = r.returnDate.slice(0, 7);
       if (fromFilter && month < fromFilter) return false;
       if (toFilter && month > toFilter) return false;
       return true;
     });
-  }, [returns, fromFilter, toFilter, noSegmentFilter]);
+  }, [returns, clientTypeFilter, clientFilter, countryFilter, fromFilter, toFilter]);
 
   const devolucaoKg = returnsInPeriod.reduce((s, r) => s + r.quantityKg, 0);
   const devolucaoSacas = returnsInPeriod.reduce((s, r) => s + r.quantitySacas, 0);

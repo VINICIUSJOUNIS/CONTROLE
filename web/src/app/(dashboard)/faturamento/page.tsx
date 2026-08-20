@@ -11,16 +11,6 @@ import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Users, Globe2, Package, DollarSign, Hash } from "lucide-react";
 
-// Devolucao nao tem tipo de cliente (interno/externo), entao para abater das
-// quebras por segmento/mes/ano/cliente usamos um fator proporcional: a
-// devolucao do periodo reduz cada parte na mesma proporcao que ela representa
-// do total bruto daquele periodo, mantendo a soma das partes = o total liquido.
-// Sacas e R$ tem fatores independentes (preco medio da devolucao pode diferir
-// da media geral).
-function proportionalFactor(devol: number, gross: number) {
-  return gross > 0 ? 1 - devol / gross : 1;
-}
-
 type ClientAgg = {
   kg: number;
   sacas: number;
@@ -65,7 +55,7 @@ function aggregatePeriod(rows: SaleRow[], returns: SaleReturnRow[], from: string
   };
 }
 
-function rankClients(rows: SaleRow[]) {
+function rankClients(rows: SaleRow[], returnsByClient: SaleReturnRow[]) {
   const map = new Map<string, ClientAgg>();
   for (const s of rows) {
     const cur =
@@ -93,6 +83,15 @@ function rankClients(rows: SaleRow[]) {
     }
     map.set(s.clientName, cur);
   }
+  // Abate a devolucao de cada cliente especificamente (nao proporcional) - a
+  // devolucao ja vem com o clientName exato, entao a atribuicao e exata.
+  for (const r of returnsByClient) {
+    const cur = map.get(r.clientName);
+    if (!cur) continue;
+    cur.kg -= r.quantityKg;
+    cur.sacas -= r.quantitySacas;
+    cur.valueBRL -= r.valueBRL;
+  }
   return [...map.entries()].sort((a, b) => b[1].valueBRL - a[1].valueBRL);
 }
 
@@ -115,8 +114,10 @@ export default async function FaturamentoDashboardPage({
   const years = Array.from(new Set(allSales.map((s) => s.saleDate.slice(0, 4)))).sort();
 
   // Devolucoes do periodo filtrado (mesmo from/to do topo), abatidas do faturamento
-  // total abaixo. Sem tipo de cliente/pais na devolucao, so o KPI agregado (nao a
-  // quebra interno/externo, rankings ou grafico mensal/anual) reflete o valor liquido.
+  // total e de cada quebra abaixo. getSaleReturns ja resolve o clientType/country de
+  // cada devolucao cruzando com o cadastro de Sale (nome de cliente nao muda de
+  // segmento), entao a atribuicao a Interno/Externo/mes/ano/cliente e exata, nao
+  // proporcional.
   const returnsInPeriod = allReturns.filter((r) => {
     const month = r.returnDate.slice(0, 7);
     if (from && month < from) return false;
@@ -126,6 +127,8 @@ export default async function FaturamentoDashboardPage({
   const returnTotals = {
     valueBRL: returnsInPeriod.reduce((s, r) => s + r.valueBRL, 0),
   };
+  const returnsInternos = returnsInPeriod.filter((r) => r.clientType === "INTERNO");
+  const returnsExternos = returnsInPeriod.filter((r) => r.clientType === "EXTERNO");
 
   const comparison =
     cmpFromA && cmpToA && cmpFromB && cmpToB
@@ -156,13 +159,10 @@ export default async function FaturamentoDashboardPage({
       ? comDiferencial.reduce((sum, s) => sum + (s.diferencial as number), 0) / comDiferencial.length
       : null;
 
-  const returnsSacasInPeriod = returnsInPeriod.reduce((s, r) => s + r.quantitySacas, 0);
-
   const grossSacasInterno = internos.reduce((s, v) => s + v.quantitySacas, 0);
   const grossSacasExterno = externos.reduce((s, v) => s + v.quantitySacas, 0);
-  const sacasFactorPeriodo = proportionalFactor(returnsSacasInPeriod, grossSacasInterno + grossSacasExterno);
-  const sacasInterno = grossSacasInterno * sacasFactorPeriodo;
-  const sacasExterno = grossSacasExterno * sacasFactorPeriodo;
+  const sacasInterno = grossSacasInterno - returnsInternos.reduce((s, r) => s + r.quantitySacas, 0);
+  const sacasExterno = grossSacasExterno - returnsExternos.reduce((s, r) => s + r.quantitySacas, 0);
 
   const totalContainers20 = externos.reduce((s, v) => s + (v.containers20 ?? 0), 0);
   const totalContainers40 = externos.reduce((s, v) => s + (v.containers40 ?? 0), 0);
@@ -170,22 +170,11 @@ export default async function FaturamentoDashboardPage({
 
   const totalBRLBruto = sales.reduce((s, v) => s + v.valueBRL, 0);
   const totalBRL = totalBRLBruto - returnTotals.valueBRL;
-  const brlFactorPeriodo = proportionalFactor(returnTotals.valueBRL, totalBRLBruto);
-  const totalBRLInterno = internos.reduce((s, v) => s + v.valueBRL, 0) * brlFactorPeriodo;
-  const totalBRLExterno = externos.reduce((s, v) => s + v.valueBRL, 0) * brlFactorPeriodo;
+  const totalBRLInterno = internos.reduce((s, v) => s + v.valueBRL, 0) - returnsInternos.reduce((s, r) => s + r.valueBRL, 0);
+  const totalBRLExterno = externos.reduce((s, v) => s + v.valueBRL, 0) - returnsExternos.reduce((s, r) => s + r.valueBRL, 0);
 
-  const topInternos = rankClients(internos)
-    .slice(0, 10)
-    .map(([name, agg]) => [
-      name,
-      { ...agg, sacas: agg.sacas * sacasFactorPeriodo, valueBRL: agg.valueBRL * brlFactorPeriodo },
-    ] as [string, ClientAgg]);
-  const topExternos = rankClients(externos)
-    .slice(0, 10)
-    .map(([name, agg]) => [
-      name,
-      { ...agg, sacas: agg.sacas * sacasFactorPeriodo, valueBRL: agg.valueBRL * brlFactorPeriodo },
-    ] as [string, ClientAgg]);
+  const topInternos = rankClients(internos, returnsInternos).slice(0, 10);
+  const topExternos = rankClients(externos, returnsExternos).slice(0, 10);
 
   const porMes = new Map<string, { interno: number; externo: number }>();
   for (const s of sales) {
@@ -195,25 +184,24 @@ export default async function FaturamentoDashboardPage({
     else cur.externo += s.valueBRL;
     porMes.set(month, cur);
   }
-  const returnsBRLPorMes = new Map<string, number>();
   for (const r of returnsInPeriod) {
     const month = r.returnDate.slice(0, 7);
-    returnsBRLPorMes.set(month, (returnsBRLPorMes.get(month) ?? 0) + r.valueBRL);
+    const cur = porMes.get(month) ?? { interno: 0, externo: 0 };
+    if (r.clientType === "INTERNO") cur.interno -= r.valueBRL;
+    else if (r.clientType === "EXTERNO") cur.externo -= r.valueBRL;
+    porMes.set(month, cur);
   }
   const chartMensal = [...porMes.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([month, v]) => {
-      const factor = proportionalFactor(returnsBRLPorMes.get(month) ?? 0, v.interno + v.externo);
-      return { month, interno: v.interno * factor, externo: v.externo * factor };
-    });
+    .map(([month, v]) => ({ month, interno: v.interno, externo: v.externo }));
 
   const pieMercado = [
     { name: "Mercado Interno", value: totalBRLInterno, color: "#74acb3" },
     { name: "Mercado Externo", value: totalBRLExterno, color: "#12b76a" },
   ];
 
-  // Devolucao ja abatida proporcionalmente de totalBRLInterno/Externo acima, entao a
-  // razao entre eles e o total liquido continua a mesma (o fator se cancela).
+  // Devolucao ja abatida exatamente de totalBRLInterno/Externo acima, entao a soma
+  // das duas partes bate com totalBRL.
   const pctInterno = totalBRL > 0 ? (totalBRLInterno / totalBRL) * 100 : 0;
   const pctExterno = totalBRL > 0 ? (totalBRLExterno / totalBRL) * 100 : 0;
   const pctFmt = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
@@ -241,23 +229,24 @@ export default async function FaturamentoDashboardPage({
     porAno.set(year, cur);
   }
   // Devolucoes por ano (allReturns, sem filtro de periodo do topo - mesmo criterio
-  // usado para agregar allSales aqui), abatidas proporcionalmente de cada ano.
-  const returnsPorAno = new Map<string, { sacas: number; valueBRL: number }>();
+  // usado para agregar allSales aqui), abatidas exatamente por segmento (clientType
+  // ja resolvido em getSaleReturns via o nome do cliente).
+  const returnsPorAno = new Map<string, { sacas: number; valueBRL: number; internoBRL: number; externoBRL: number }>();
   for (const r of allReturns) {
     const year = r.returnDate.slice(0, 4);
-    const cur = returnsPorAno.get(year) ?? { sacas: 0, valueBRL: 0 };
+    const cur = returnsPorAno.get(year) ?? { sacas: 0, valueBRL: 0, internoBRL: 0, externoBRL: 0 };
     cur.sacas += r.quantitySacas;
     cur.valueBRL += r.valueBRL;
+    if (r.clientType === "INTERNO") cur.internoBRL += r.valueBRL;
+    else if (r.clientType === "EXTERNO") cur.externoBRL += r.valueBRL;
     returnsPorAno.set(year, cur);
   }
   for (const [year, v] of porAno) {
-    const devol = returnsPorAno.get(year) ?? { sacas: 0, valueBRL: 0 };
-    const brlFactor = proportionalFactor(devol.valueBRL, v.totalBRL);
-    const sacasFactor = proportionalFactor(devol.sacas, v.sacas);
-    v.totalBRL *= brlFactor;
-    v.internoBRL *= brlFactor;
-    v.externoBRL *= brlFactor;
-    v.sacas *= sacasFactor;
+    const devol = returnsPorAno.get(year) ?? { sacas: 0, valueBRL: 0, internoBRL: 0, externoBRL: 0 };
+    v.totalBRL -= devol.valueBRL;
+    v.internoBRL -= devol.internoBRL;
+    v.externoBRL -= devol.externoBRL;
+    v.sacas -= devol.sacas;
   }
   const anos = [...porAno.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   const chartAnual = anos.map(([year, v]) => ({ year, interno: v.internoBRL, externo: v.externoBRL }));
