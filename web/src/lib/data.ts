@@ -82,6 +82,48 @@ export async function getBanks() {
   return banks.map((b) => ({ id: b.id, name: b.name, color: b.color }));
 }
 
+export async function getContasGarantidas() {
+  const contas = await prisma.contaGarantida.findMany({
+    include: { bank: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return contas.map((c) => {
+    const limiteContratado = n(c.limiteContratado);
+    const valorUtilizado = n(c.valorUtilizado);
+    const taxaJurosPercent = n(c.taxaJurosPercent);
+    const iofPercent = n(c.iofPercent);
+    const iofAdicionalPercent = n(c.iofAdicionalPercent);
+
+    const valorDisponivel = Number((limiteContratado - valorUtilizado).toFixed(2));
+    const jurosPeriodo = Number((valorUtilizado * (taxaJurosPercent / 100)).toFixed(2));
+    const iofPeriodo = Number((valorUtilizado * (iofPercent / 100)).toFixed(2));
+    const iofAdicionalPeriodo = Number((valorUtilizado * (iofAdicionalPercent / 100)).toFixed(2));
+    const valorAPagarPeriodo = Number((jurosPeriodo + iofPeriodo + iofAdicionalPeriodo).toFixed(2));
+
+    return {
+      id: c.id,
+      bankId: c.bankId,
+      bankName: c.bank.name,
+      bankColor: c.bank.color,
+      limiteContratado,
+      valorUtilizado,
+      valorDisponivel,
+      taxaJurosPercent,
+      iofPercent,
+      iofAdicionalPercent,
+      jurosPeriodo,
+      iofPeriodo,
+      iofAdicionalPeriodo,
+      valorAPagarPeriodo,
+      observacao: c.observacao,
+      updatedAt: c.updatedAt.toISOString(),
+    };
+  });
+}
+
+export type ContaGarantidaRow = Awaited<ReturnType<typeof getContasGarantidas>>[number];
+
 export async function getLoans() {
   const loans = await prisma.loan.findMany({
     include: { bank: true, installmentRecords: true },

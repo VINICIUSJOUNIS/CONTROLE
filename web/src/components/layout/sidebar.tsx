@@ -18,6 +18,7 @@ import {
   BarChart3,
   TrendingUp,
   ShieldCheck,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -25,6 +26,7 @@ import { createClient } from "@/lib/supabase/client";
 const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
   { href: "/emprestimos", label: "Emprestimos", icon: Landmark },
+  { href: "/conta-garantida", label: "Conta Garantida", icon: Wallet },
   { href: "/acc", label: "ACC", icon: Ship },
   { href: "/cambial", label: "Dashboard Cambial", icon: Globe2 },
   { href: "/taxas", label: "Evolucao das Taxas", icon: LineChart },

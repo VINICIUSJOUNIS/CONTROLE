@@ -72,12 +72,13 @@ model Profile {
 }
 
 model Bank {
-  id            String         @id @default(uuid())
-  name          String         @unique
-  color         String
-  loans         Loan[]
-  accOperations AccOperation[]
-  createdAt     DateTime       @default(now())
+  id              String           @id @default(uuid())
+  name            String           @unique
+  color           String
+  loans           Loan[]
+  accOperations   AccOperation[]
+  contasGarantidas ContaGarantida[]
+  createdAt       DateTime         @default(now())
 
   @@map("banks")
 }
@@ -319,6 +320,29 @@ model SaleReturn {
 
   @@index([returnDate])
   @@map("sale_returns")
+}
+
+// Conta Garantida - limite rotativo de credito (usa/paga quando quiser, juros
+// sobre o saldo usado). Diferente de Loan, que tem parcelas com data e valor
+// fixos: aqui so guardamos o limite contratado e o valor utilizado hoje,
+// atualizados manualmente (sem historico de cada movimentacao). IOF e IOF
+// adicional ficam em % porque incidem sobre o valor utilizado, que muda a
+// cada atualizacao.
+model ContaGarantida {
+  id                  String   @id @default(uuid())
+  bank                Bank     @relation(fields: [bankId], references: [id])
+  bankId              String
+  limiteContratado    Decimal  @db.Decimal(18, 2)
+  valorUtilizado      Decimal  @default(0) @db.Decimal(18, 2)
+  taxaJurosPercent    Decimal  @default(0) @db.Decimal(6, 2)
+  iofPercent          Decimal  @default(0) @db.Decimal(6, 4)
+  iofAdicionalPercent Decimal  @default(0) @db.Decimal(6, 4)
+  observacao          String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([bankId])
+  @@map("contas_garantidas")
 }
 
 enum Side {
