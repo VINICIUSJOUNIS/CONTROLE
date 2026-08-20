@@ -427,7 +427,19 @@ export default async function FaturamentoDashboardPage({
           <KpiCard label="Diferencial Médio Geral" value={formatDiferencial(diferencialMedioGeral)} icon={Hash} tone="teal" />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            label="Faturamento (R$) — Mercado Interno"
+            value={formatCurrency(totalBRLInterno)}
+            icon={DollarSign}
+            tone="teal"
+          />
+          <KpiCard
+            label="Faturamento (R$) — Mercado Externo"
+            value={formatCurrency(totalBRLExterno)}
+            icon={DollarSign}
+            tone="green"
+          />
           <KpiCard label="% Faturamento — Mercado Interno" value={pctFmt(pctInterno)} icon={Package} tone="teal" />
           <KpiCard label="% Faturamento — Mercado Externo" value={pctFmt(pctExterno)} icon={Globe2} tone="green" />
         </div>
