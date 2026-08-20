@@ -2,14 +2,14 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { parseLocalDate } from "@/lib/date";
 
 export type ContaGarantidaFormInput = {
   bankId: string;
   limiteContratado: number;
   valorUtilizado: number;
+  dataUtilizacao: string;
   taxaJurosPercent: number;
-  iofPercent: number;
-  iofAdicionalPercent: number;
   observacao: string;
 };
 
@@ -23,9 +23,8 @@ export async function createContaGarantida(input: ContaGarantidaFormInput) {
       bankId: input.bankId,
       limiteContratado: input.limiteContratado,
       valorUtilizado: input.valorUtilizado,
+      dataUtilizacao: input.dataUtilizacao ? parseLocalDate(input.dataUtilizacao) : null,
       taxaJurosPercent: input.taxaJurosPercent,
-      iofPercent: input.iofPercent,
-      iofAdicionalPercent: input.iofAdicionalPercent,
       observacao: input.observacao || null,
     },
   });
@@ -40,9 +39,8 @@ export async function updateContaGarantida(id: string, input: ContaGarantidaForm
       bankId: input.bankId,
       limiteContratado: input.limiteContratado,
       valorUtilizado: input.valorUtilizado,
+      dataUtilizacao: input.dataUtilizacao ? parseLocalDate(input.dataUtilizacao) : null,
       taxaJurosPercent: input.taxaJurosPercent,
-      iofPercent: input.iofPercent,
-      iofAdicionalPercent: input.iofAdicionalPercent,
       observacao: input.observacao || null,
     },
   });

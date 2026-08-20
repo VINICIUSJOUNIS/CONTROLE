@@ -25,9 +25,8 @@ function emptyForm(defaultBankId: string) {
     bankId: defaultBankId,
     limiteContratado: "",
     valorUtilizado: "",
+    dataUtilizacao: new Date().toISOString().slice(0, 10),
     taxaJurosPercent: "",
-    iofPercent: "",
-    iofAdicionalPercent: "",
     observacao: "",
   };
 }
@@ -37,9 +36,8 @@ function formFromRow(conta: ContaGarantidaRow) {
     bankId: conta.bankId,
     limiteContratado: String(conta.limiteContratado),
     valorUtilizado: String(conta.valorUtilizado),
+    dataUtilizacao: conta.dataUtilizacao ?? new Date().toISOString().slice(0, 10),
     taxaJurosPercent: String(conta.taxaJurosPercent),
-    iofPercent: String(conta.iofPercent),
-    iofAdicionalPercent: String(conta.iofAdicionalPercent),
     observacao: conta.observacao ?? "",
   };
 }
@@ -98,9 +96,8 @@ export function ContaGarantidaView({
       bankId: form.bankId,
       limiteContratado: Number(form.limiteContratado) || 0,
       valorUtilizado: Number(form.valorUtilizado) || 0,
+      dataUtilizacao: form.dataUtilizacao,
       taxaJurosPercent: Number(form.taxaJurosPercent) || 0,
-      iofPercent: Number(form.iofPercent) || 0,
-      iofAdicionalPercent: Number(form.iofAdicionalPercent) || 0,
       observacao: form.observacao.trim(),
     };
     startTransition(async () => {
@@ -202,7 +199,18 @@ export function ContaGarantidaView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Utilizado desde</Label>
+                  <Input
+                    type="date"
+                    value={form.dataUtilizacao}
+                    onChange={(e) => setForm({ ...form, dataUtilizacao: e.target.value })}
+                  />
+                  <p className="mt-1 text-xs text-muted">
+                    Usada para calcular o IOF diário automaticamente
+                  </p>
+                </div>
                 <div>
                   <Label>Taxa de Juros (% a.m.)</Label>
                   <Input
@@ -212,25 +220,12 @@ export function ContaGarantidaView({
                     onChange={(e) => setForm({ ...form, taxaJurosPercent: e.target.value })}
                   />
                 </div>
-                <div>
-                  <Label>IOF (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.0001"
-                    value={form.iofPercent}
-                    onChange={(e) => setForm({ ...form, iofPercent: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>IOF Adicional (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.0001"
-                    value={form.iofAdicionalPercent}
-                    onChange={(e) => setForm({ ...form, iofAdicionalPercent: e.target.value })}
-                  />
-                </div>
               </div>
+
+              <p className="text-xs text-muted">
+                IOF calculado automaticamente conforme regra do Bacen para PJ: 0,0082% ao dia sobre o valor
+                utilizado + 0,38% adicional fixo.
+              </p>
 
               <div>
                 <Label>Observação</Label>
@@ -259,9 +254,10 @@ export function ContaGarantidaView({
                 <th className="px-4 py-3 font-medium">Limite Contratado</th>
                 <th className="px-4 py-3 font-medium">Valor Utilizado</th>
                 <th className="px-4 py-3 font-medium">Valor Disponível</th>
+                <th className="px-4 py-3 font-medium">Dias Utilizado</th>
                 <th className="px-4 py-3 font-medium">Taxa</th>
-                <th className="px-4 py-3 font-medium">IOF</th>
-                <th className="px-4 py-3 font-medium">IOF Adicional</th>
+                <th className="px-4 py-3 font-medium">IOF (R$)</th>
+                <th className="px-4 py-3 font-medium">IOF Adicional (R$)</th>
                 <th className="px-4 py-3 font-medium">Valor a Pagar no Período</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
@@ -273,9 +269,10 @@ export function ContaGarantidaView({
                   <td className="px-4 py-2.5">{formatCurrency(c.limiteContratado)}</td>
                   <td className="px-4 py-2.5">{formatCurrency(c.valorUtilizado)}</td>
                   <td className="px-4 py-2.5">{formatCurrency(c.valorDisponivel)}</td>
+                  <td className="px-4 py-2.5">{c.diasUtilizado}</td>
                   <td className="px-4 py-2.5">{formatPercent(c.taxaJurosPercent)} a.m.</td>
-                  <td className="px-4 py-2.5">{formatPercent(c.iofPercent, 4)}</td>
-                  <td className="px-4 py-2.5">{formatPercent(c.iofAdicionalPercent, 4)}</td>
+                  <td className="px-4 py-2.5">{formatCurrency(c.iofPeriodo)}</td>
+                  <td className="px-4 py-2.5">{formatCurrency(c.iofAdicionalPeriodo)}</td>
                   <td className="px-4 py-2.5 font-medium">{formatCurrency(c.valorAPagarPeriodo)}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1">
@@ -299,7 +296,7 @@ export function ContaGarantidaView({
               ))}
               {initialContas.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={10} className="px-4 py-8 text-center text-muted">
                     Nenhuma conta garantida cadastrada ainda.
                   </td>
                 </tr>

@@ -325,21 +325,22 @@ model SaleReturn {
 // Conta Garantida - limite rotativo de credito (usa/paga quando quiser, juros
 // sobre o saldo usado). Diferente de Loan, que tem parcelas com data e valor
 // fixos: aqui so guardamos o limite contratado e o valor utilizado hoje,
-// atualizados manualmente (sem historico de cada movimentacao). IOF e IOF
-// adicional ficam em % porque incidem sobre o valor utilizado, que muda a
-// cada atualizacao.
+// atualizados manualmente (sem historico de cada movimentacao). IOF nao e
+// digitado - e calculado automaticamente (ver src/lib/data.ts) a partir das
+// aliquotas oficiais do Bacen/Receita Federal para credito PJ (0,0082% ao dia
+// + 0,38% fixo, retomadas em 17/07/2025 apos decisao do STF) aplicadas sobre
+// valorUtilizado, usando os dias corridos desde dataUtilizacao.
 model ContaGarantida {
-  id                  String   @id @default(uuid())
-  bank                Bank     @relation(fields: [bankId], references: [id])
-  bankId              String
-  limiteContratado    Decimal  @db.Decimal(18, 2)
-  valorUtilizado      Decimal  @default(0) @db.Decimal(18, 2)
-  taxaJurosPercent    Decimal  @default(0) @db.Decimal(6, 2)
-  iofPercent          Decimal  @default(0) @db.Decimal(6, 4)
-  iofAdicionalPercent Decimal  @default(0) @db.Decimal(6, 4)
-  observacao          String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id               String    @id @default(uuid())
+  bank             Bank      @relation(fields: [bankId], references: [id])
+  bankId           String
+  limiteContratado Decimal   @db.Decimal(18, 2)
+  valorUtilizado   Decimal   @default(0) @db.Decimal(18, 2)
+  dataUtilizacao   DateTime? @db.Date
+  taxaJurosPercent Decimal   @default(0) @db.Decimal(6, 2)
+  observacao       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([bankId])
   @@map("contas_garantidas")
