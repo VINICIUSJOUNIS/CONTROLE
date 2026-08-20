@@ -19,12 +19,14 @@ import {
   TrendingUp,
   ShieldCheck,
   Wallet,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
+  { href: "/planejamento-orcamentario", label: "Planejamento Orçamentário", icon: Target },
   { href: "/emprestimos", label: "Emprestimos", icon: Landmark },
   { href: "/conta-garantida", label: "Conta Garantida", icon: Wallet },
   { href: "/acc", label: "ACC", icon: Ship },
