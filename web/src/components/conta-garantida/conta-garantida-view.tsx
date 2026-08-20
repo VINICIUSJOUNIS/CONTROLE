@@ -23,7 +23,7 @@ import {
   ContaGarantidaUsoFormInput,
 } from "@/app/(dashboard)/conta-garantida/actions";
 import { NovoBanco } from "@/components/bancos/novo-banco";
-import { Plus, Pencil, Trash2, Wallet, PiggyBank, TrendingUp, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Wallet, PiggyBank, TrendingUp, ChevronDown, ChevronRight, Percent } from "lucide-react";
 
 type Bank = { id: string; name: string; color: string };
 
@@ -141,6 +141,17 @@ export function ContaGarantidaView({
       }),
       { limite: 0, utilizado: 0, disponivel: 0, aPagar: 0 }
     );
+  }, [filteredContas]);
+
+  // Media simples mistura contas com valor utilizado pequeno e grande no mesmo
+  // peso; a taxa media ponderada pesa cada conta pelo valor efetivamente
+  // utilizado (e o que de fato acumula juros), a mesma convencao de
+  // weightedAvg usada para o custo medio da carteira de emprestimos.
+  const taxaMediaPonderada = useMemo(() => {
+    const pesoTotal = filteredContas.reduce((s, c) => s + c.valorUtilizado, 0);
+    if (pesoTotal <= 0) return 0;
+    const soma = filteredContas.reduce((s, c) => s + c.taxaJurosPercent * c.valorUtilizado, 0);
+    return Number((soma / pesoTotal).toFixed(2));
   }, [filteredContas]);
 
   const bankChartData = useMemo(
@@ -318,6 +329,12 @@ export function ContaGarantidaView({
           value={formatCompactCurrency(totais.aPagar)}
           icon={Wallet}
           tone="teal"
+        />
+        <KpiCard
+          label="Taxa Média Ponderada"
+          value={`${formatPercent(taxaMediaPonderada)} a.m.`}
+          icon={Percent}
+          tone="soft"
         />
       </div>
 
