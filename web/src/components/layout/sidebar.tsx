@@ -26,7 +26,6 @@ import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
-  { href: "/planejamento-orcamentario", label: "Planejamento Orçamentário", icon: Target },
   { href: "/emprestimos", label: "Emprestimos", icon: Landmark },
   { href: "/conta-garantida", label: "Conta Garantida", icon: Wallet },
   { href: "/acc", label: "ACC", icon: Ship },
@@ -57,6 +56,10 @@ const hedgeNavItems = [
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
 ];
 
+const planejamentoNavItems = [
+  { href: "/planejamento-orcamentario", label: "Planejamento Orçamentário", icon: Target },
+];
+
 const roleLabels: Record<string, string> = {
   ADMINISTRADOR: "Administrador",
   TESOURARIA: "Tesouraria",
@@ -68,6 +71,11 @@ const modules = [
   { match: (p: string) => p.startsWith("/credito"), label: "Analise de Credito", items: creditoNavItems },
   { match: (p: string) => p.startsWith("/faturamento"), label: "Faturamento", items: faturamentoNavItems },
   { match: (p: string) => p.startsWith("/hedge"), label: "Controle de Hedge", items: hedgeNavItems },
+  {
+    match: (p: string) => p.startsWith("/planejamento-orcamentario"),
+    label: "Planejamento Orçamentário",
+    items: planejamentoNavItems,
+  },
 ];
 
 function getActiveModule(pathname: string) {
