@@ -137,6 +137,71 @@ export async function getContasGarantidas() {
 
 export type ContaGarantidaRow = Awaited<ReturnType<typeof getContasGarantidas>>[number];
 
+function firstOfMonthUTC(d: Date) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+function endOfMonthUTC(d: Date) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
+}
+
+function monthKeyUTC(d: Date) {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+// Decompoe o custo total de cada conta garantida (calculado em getContasGarantidas
+// sobre todos os dias desde dataUtilizacao) em fatias por mes calendario, dividindo
+// os dias acumulados mes a mes. O IOF adicional e um encargo unico cobrado na
+// utilizacao (nao diario), entao entra inteiro no mes de dataUtilizacao.
+export async function getContaGarantidaMensal() {
+  const contas = await prisma.contaGarantida.findMany({ include: { bank: true } });
+  const hoje = new Date();
+  hoje.setUTCHours(0, 0, 0, 0);
+
+  const porMes = new Map<string, { juros: number; iof: number; iofAdicional: number }>();
+
+  for (const c of contas) {
+    const valorUtilizado = n(c.valorUtilizado);
+    if (!c.dataUtilizacao || valorUtilizado <= 0 || c.dataUtilizacao > hoje) continue;
+    const taxaJurosPercent = n(c.taxaJurosPercent);
+    const inicio = c.dataUtilizacao;
+
+    let diasAcumulados = 0;
+    let primeiroMes = true;
+    let cursor = firstOfMonthUTC(inicio);
+    while (cursor <= hoje) {
+      const fimMes = endOfMonthUTC(cursor);
+      const ateData = fimMes < hoje ? fimMes : hoje;
+      const totalAteFim = daysBetween(inicio, ateData);
+      const diasNoMes = Math.max(0, totalAteFim - diasAcumulados);
+      diasAcumulados = totalAteFim;
+
+      const key = monthKeyUTC(cursor);
+      const cur = porMes.get(key) ?? { juros: 0, iof: 0, iofAdicional: 0 };
+      cur.juros += valorUtilizado * (taxaJurosPercent / 100) * (diasNoMes / 30);
+      cur.iof += valorUtilizado * (IOF_DIARIO_PERCENT / 100) * diasNoMes;
+      if (primeiroMes) {
+        cur.iofAdicional += valorUtilizado * (IOF_ADICIONAL_PERCENT / 100);
+        primeiroMes = false;
+      }
+      porMes.set(key, cur);
+
+      cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
+    }
+  }
+
+  return [...porMes.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([month, v]) => {
+      const juros = Number(v.juros.toFixed(2));
+      const iof = Number(v.iof.toFixed(2));
+      const iofAdicional = Number(v.iofAdicional.toFixed(2));
+      return { month, juros, iof, iofAdicional, total: Number((juros + iof + iofAdicional).toFixed(2)) };
+    });
+}
+
+export type ContaGarantidaMensalRow = Awaited<ReturnType<typeof getContaGarantidaMensal>>[number];
+
 export async function getLoans() {
   const loans = await prisma.loan.findMany({
     include: { bank: true, installmentRecords: true },

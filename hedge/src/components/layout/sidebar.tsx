@@ -1,15 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ShieldHalf, LogOut, LayoutDashboard, FileText, Globe2, Workflow } from "lucide-react";
+import {
+  ShieldHalf,
+  LogOut,
+  LayoutDashboard,
+  FileText,
+  Globe2,
+  Workflow,
+  ChevronDown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { statusOrder, statusLabels } from "@/lib/contrato-shared";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/contratos", label: "Contratos", icon: FileText },
-  { href: "/mesa-operacao", label: "Mesa de Operacao", icon: Workflow },
+  {
+    href: "/mesa-operacao",
+    label: "Mesa de Operacao",
+    icon: Workflow,
+    subItems: statusOrder.map((status) => statusLabels[status]),
+  },
   { href: "/mapa", label: "Mapa de Exportacao", icon: Globe2 },
   { href: "/operacoes-hedge", label: "Operacoes de Hedge", icon: ShieldHalf },
 ];
@@ -24,6 +39,7 @@ const roleLabels: Record<string, string> = {
 export function Sidebar({ profile }: { profile: { email: string; role: string } }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -40,24 +56,53 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
           <p className="text-xs text-sidebar-foreground/70">Hedge Cambial</p>
         </div>
       </div>
-      <nav className="flex-1 space-y-1 px-3 py-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
         {navItems.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
+          const isExpanded = expanded === item.href;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                active
-                  ? "bg-sidebar-active text-white"
-                  : "hover:bg-sidebar-active/60 hover:text-white"
+            <div key={item.href}>
+              <div
+                className={cn(
+                  "flex items-center gap-3 rounded-lg pr-2 text-sm transition-colors",
+                  active
+                    ? "bg-sidebar-active text-white"
+                    : "hover:bg-sidebar-active/60 hover:text-white"
+                )}
+              >
+                <Link href={item.href} className="flex flex-1 items-center gap-3 px-3 py-2.5">
+                  <Icon size={17} />
+                  {item.label}
+                </Link>
+                {item.subItems && (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(isExpanded ? null : item.href)}
+                    aria-label={isExpanded ? "Recolher etapas" : "Expandir etapas"}
+                    className="rounded p-1 hover:bg-white/10"
+                  >
+                    <ChevronDown
+                      size={15}
+                      className={cn("transition-transform", isExpanded && "rotate-180")}
+                    />
+                  </button>
+                )}
+              </div>
+              {item.subItems && isExpanded && (
+                <ul className="mt-1 space-y-0.5 border-l border-white/10 pl-6">
+                  {item.subItems.map((label) => (
+                    <li
+                      key={label}
+                      className="truncate py-1 text-xs text-sidebar-foreground/70"
+                      title={label}
+                    >
+                      {label}
+                    </li>
+                  ))}
+                </ul>
               )}
-            >
-              <Icon size={17} />
-              {item.label}
-            </Link>
+            </div>
           );
         })}
       </nav>

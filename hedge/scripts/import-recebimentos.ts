@@ -31,9 +31,9 @@ function normalizeCountry(raw: string): string {
 
 function inferStatus(dataEmbarque: string | null, previsaoChegada: string | null) {
   const today = new Date().toISOString().slice(0, 10);
-  if (!dataEmbarque) return "CONTRATO_ASSINADO" as const;
-  if (previsaoChegada && previsaoChegada < today) return "CARGA_DESTINO" as const;
-  return "EMBARCADO" as const;
+  if (!dataEmbarque) return "ASSINATURA_CONTRATO" as const;
+  if (previsaoChegada && previsaoChegada < today) return "ENVIO_BL_ORIGINAL_TELEX" as const;
+  return "RECEBIMENTO_BL" as const;
 }
 
 async function main() {
