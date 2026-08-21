@@ -110,6 +110,11 @@ export async function getContratosExportacaoCount() {
   return prisma.contratoExportacao.count();
 }
 
+export async function getContratosExportacaoCountByStatus() {
+  const rows = await prisma.contratoExportacao.groupBy({ by: ["status"], _count: true });
+  return Object.fromEntries(rows.map((r) => [r.status, r._count])) as Record<string, number>;
+}
+
 export async function getContratosExportacao() {
   const contratos = await prisma.contratoExportacao.findMany({
     include: { cliente: true, corretora: true },

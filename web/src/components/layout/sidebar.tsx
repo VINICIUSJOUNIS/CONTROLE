@@ -60,6 +60,7 @@ const hedgeNavItems = [
     icon: Ship,
     subItems: statusOrder.map((status) => ({
       label: statusLabels[status],
+      status,
       href: `/hedge/mesa-operacao/${statusToSlug(status)}`,
     })),
   },
@@ -96,9 +97,11 @@ function getActiveModule(pathname: string) {
 export function Sidebar({
   profile,
   mesaOperacaoCount,
+  mesaOperacaoCountByStatus,
 }: {
   profile: { email: string; role: string };
   mesaOperacaoCount?: number;
+  mesaOperacaoCountByStatus?: Record<string, number>;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -126,7 +129,8 @@ export function Sidebar({
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(item.href + "/"));
           const Icon = item.icon;
-          const subItems = (item as { subItems?: { label: string; href: string }[] }).subItems;
+          const subItems = (item as { subItems?: { label: string; href: string; status: string }[] })
+            .subItems;
           const isExpanded = expanded === item.href;
           return (
             <div key={item.href}>
@@ -165,19 +169,23 @@ export function Sidebar({
                 <ul className="mt-1 space-y-0.5 border-l border-white/10 pl-6">
                   {subItems.map((sub) => {
                     const subActive = pathname === sub.href;
+                    const count = mesaOperacaoCountByStatus?.[sub.status] ?? 0;
                     return (
                       <li key={sub.href}>
                         <Link
                           href={sub.href}
                           title={sub.label}
                           className={cn(
-                            "block truncate rounded py-1 px-1 text-xs transition-colors",
+                            "flex items-center gap-2 rounded py-1 px-1 text-xs transition-colors",
                             subActive
                               ? "text-white"
                               : "text-sidebar-foreground/70 hover:text-white"
                           )}
                         >
-                          {sub.label}
+                          <span className="min-w-0 flex-1 truncate">{sub.label}</span>
+                          <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-medium">
+                            {count}
+                          </span>
                         </Link>
                       </li>
                     );
