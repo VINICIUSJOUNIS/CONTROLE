@@ -44,7 +44,7 @@ function emptyForm(defaultClienteId: string, defaultCountry: string) {
     dataEstufagem: "",
     dataEmbarque: "",
     dataChegada: "",
-    status: "CONTRATO_ASSINADO" as StatusContratoValue,
+    status: "CONFIRMACAO_NEGOCIO" as StatusContratoValue,
     despesas: emptyDespesasForm(),
     recebimento: emptyRecebimentoForm(),
   };
@@ -473,7 +473,7 @@ export function ContratosTable({
                     )}
                   </td>
                   <td className="px-4 py-2.5">
-                    <Badge variant={row.status === "CONTRATO_FINALIZADO" ? "success" : "neutral"}>
+                    <Badge variant={row.status === "LIBERACAO_CARGA" ? "success" : "neutral"}>
                       {statusLabels[row.status]}
                     </Badge>
                   </td>

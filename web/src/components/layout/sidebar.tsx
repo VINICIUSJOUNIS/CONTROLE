@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -20,9 +21,11 @@ import {
   ShieldCheck,
   Wallet,
   Target,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { statusOrder, statusLabels } from "@/lib/contrato-shared";
 
 const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
@@ -51,7 +54,12 @@ const creditoNavItems = [
 const hedgeNavItems = [
   { href: "/hedge", label: "Dashboard", icon: ShieldCheck },
   { href: "/hedge/contratos", label: "Contratos", icon: FileStack },
-  { href: "/hedge/mesa-operacao", label: "Mesa de Operacao", icon: Ship },
+  {
+    href: "/hedge/mesa-operacao",
+    label: "Mesa de Operacao",
+    icon: Ship,
+    subItems: statusOrder.map((status) => statusLabels[status]),
+  },
   { href: "/hedge/mapa", label: "Mapa de Exportacao", icon: Globe2 },
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
 ];
@@ -86,6 +94,7 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
   const pathname = usePathname();
   const router = useRouter();
   const activeModule = getActiveModule(pathname);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -108,20 +117,50 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(item.href + "/"));
           const Icon = item.icon;
+          const subItems = (item as { subItems?: string[] }).subItems;
+          const isExpanded = expanded === item.href;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                active
-                  ? "bg-sidebar-active text-white"
-                  : "hover:bg-sidebar-active/60 hover:text-white"
+            <div key={item.href}>
+              <div
+                className={cn(
+                  "flex items-center gap-3 rounded-lg pr-2 text-sm transition-colors",
+                  active
+                    ? "bg-sidebar-active text-white"
+                    : "hover:bg-sidebar-active/60 hover:text-white"
+                )}
+              >
+                <Link href={item.href} className="flex flex-1 items-center gap-3 px-3 py-2.5">
+                  <Icon size={17} />
+                  {item.label}
+                </Link>
+                {subItems && (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(isExpanded ? null : item.href)}
+                    aria-label={isExpanded ? "Recolher etapas" : "Expandir etapas"}
+                    className="rounded p-1 hover:bg-white/10"
+                  >
+                    <ChevronDown
+                      size={15}
+                      className={cn("transition-transform", isExpanded && "rotate-180")}
+                    />
+                  </button>
+                )}
+              </div>
+              {subItems && isExpanded && (
+                <ul className="mt-1 space-y-0.5 border-l border-white/10 pl-6">
+                  {subItems.map((label) => (
+                    <li
+                      key={label}
+                      className="truncate py-1 text-xs text-sidebar-foreground/70"
+                      title={label}
+                    >
+                      {label}
+                    </li>
+                  ))}
+                </ul>
               )}
-            >
-              <Icon size={17} />
-              {item.label}
-            </Link>
+            </div>
           );
         })}
       </nav>

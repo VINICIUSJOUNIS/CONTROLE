@@ -377,13 +377,29 @@ enum HedgeStatus {
   LIQUIDADA
 }
 
+// As 20 etapas operacionais da Mesa de Operacao, na ordem em que sao cumpridas
+// no processo de exportacao (lista fornecida pela area de operacoes).
 enum StatusContrato {
-  CONTRATO_ASSINADO
-  PRE_EMBARQUE
-  ESTUFAGEM_PORTO
-  EMBARCADO
-  CARGA_DESTINO
-  CONTRATO_FINALIZADO
+  CONFIRMACAO_NEGOCIO
+  ASSINATURA_CONTRATO
+  ENVIO_AMOSTRA_PSS
+  APROVACAO_AMOSTRA_PSS
+  ENVIO_ARTE_SACARIA
+  APROVACAO_ARTE_SACARIA
+  ENVIO_INSTRUCAO_EMBARQUE
+  BOOKING
+  MARCACAO_EMBARQUE_TRANSPORTADORA
+  ESTUFAGEM_CARREGAMENTO
+  RECEBIMENTO_BL
+  ENVIO_DOCUMENTOS_APROVACAO
+  APROVACAO_DOCUMENTOS
+  ENVIO_FINANCIAMENTO_RTS
+  TRADUCAO_PEDIDO_LEGALIZACAO
+  EMISSAO_CARTA_BORDERO
+  ENVIO_DOCUMENTOS_BANCO_CLIENTE
+  RECEBIMENTO_CLIENTE
+  ENVIO_BL_ORIGINAL_TELEX
+  LIBERACAO_CARGA
 }
 
 model Corretora {
@@ -447,7 +463,7 @@ model ContratoExportacao {
   dataEstufagem  DateTime?       @db.Date
   dataEmbarque   DateTime?       @db.Date
   dataChegada    DateTime?       @db.Date
-  status         StatusContrato  @default(CONTRATO_ASSINADO)
+  status         StatusContrato  @default(CONFIRMACAO_NEGOCIO)
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?

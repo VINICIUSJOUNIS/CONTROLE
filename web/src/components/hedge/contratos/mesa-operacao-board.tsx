@@ -15,7 +15,7 @@ import {
   relevantDateField,
   dateFieldLabels,
 } from "@/lib/contrato-shared";
-import { MapPin, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 
 export function MesaOperacaoBoard({
   clientes,
@@ -42,7 +42,7 @@ export function MesaOperacaoBoard({
     });
   }, [contratos, clienteFilter, search]);
 
-  const columns = useMemo(() => {
+  const rows = useMemo(() => {
     return statusOrder.map((status) => ({
       status,
       items: filtered.filter((c) => c.status === status),
@@ -81,62 +81,70 @@ export function MesaOperacaoBoard({
         />
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {columns.map((column, columnIndex) => (
-          <div key={column.status} className="w-72 shrink-0 space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h3 className="text-sm font-medium">{statusLabels[column.status]}</h3>
-              <Badge variant="neutral">{column.items.length}</Badge>
-            </div>
-            <div className="space-y-3">
-              {column.items.map((row) => {
-                const dateField = relevantDateField[row.status as StatusContratoValue];
-                const dateValue = row[dateField];
-                return (
-                  <Card key={row.id} className="p-3">
-                    <p className="font-semibold">{row.contractNumber}</p>
-                    <p className="text-sm">{row.clienteName}</p>
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
-                      <MapPin size={12} />
-                      {row.country}
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-primary">
-                      {formatCompactCurrency(row.valorUsd, "USD")}
-                    </p>
-                    <p className="mt-1 flex items-center gap-1 text-xs text-muted">
-                      <Calendar size={12} />
-                      {dateValue
-                        ? `${dateFieldLabels[dateField]}: ${formatDate(dateValue)}`
-                        : `${dateFieldLabels[dateField]}: sem data`}
-                    </p>
-                    <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
-                      <button
-                        onClick={() => moveStatus(row.id, -1)}
-                        disabled={isPending || columnIndex === 0}
-                        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+      <Card className="overflow-hidden p-0">
+        <div className="border-b border-border bg-border/20 px-4 py-2.5">
+          <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Mesa de Operações</h2>
+        </div>
+        <div className="divide-y divide-border">
+          {rows.map((row, rowIndex) => (
+            <div key={row.status} className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold uppercase tracking-wide">{statusLabels[row.status]}</h3>
+                <Badge variant="neutral">{row.items.length}</Badge>
+              </div>
+
+              {row.items.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {row.items.map((item) => {
+                    const dateField = relevantDateField[item.status as StatusContratoValue];
+                    const dateValue = item[dateField];
+                    return (
+                      <div
+                        key={item.id}
+                        className="w-64 shrink-0 rounded-lg border border-border bg-background p-3"
                       >
-                        <ChevronLeft size={14} />
-                        Voltar
-                      </button>
-                      <button
-                        onClick={() => moveStatus(row.id, 1)}
-                        disabled={isPending || columnIndex === statusOrder.length - 1}
-                        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
-                      >
-                        Avancar
-                        <ChevronRight size={14} />
-                      </button>
-                    </div>
-                  </Card>
-                );
-              })}
-              {column.items.length === 0 && (
-                <p className="px-1 text-xs text-muted">Nenhum contrato nesta etapa.</p>
+                        <p className="font-semibold">{item.contractNumber}</p>
+                        <p className="text-sm">{item.clienteName}</p>
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
+                          <MapPin size={12} />
+                          {item.country}
+                        </p>
+                        <p className="mt-2 text-sm font-medium text-primary">
+                          {formatCompactCurrency(item.valorUsd, "USD")}
+                        </p>
+                        <p className="mt-1 flex items-center gap-1 text-xs text-muted">
+                          <Calendar size={12} />
+                          {dateValue
+                            ? `${dateFieldLabels[dateField]}: ${formatDate(dateValue)}`
+                            : `${dateFieldLabels[dateField]}: sem data`}
+                        </p>
+                        <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
+                          <button
+                            onClick={() => moveStatus(item.id, -1)}
+                            disabled={isPending || rowIndex === 0}
+                            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                          >
+                            <ChevronUp size={14} />
+                            Voltar
+                          </button>
+                          <button
+                            onClick={() => moveStatus(item.id, 1)}
+                            disabled={isPending || rowIndex === statusOrder.length - 1}
+                            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
+                          >
+                            Avançar
+                            <ChevronDown size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

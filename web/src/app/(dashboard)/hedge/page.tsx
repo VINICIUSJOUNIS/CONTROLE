@@ -3,26 +3,36 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getExportDashboard } from "@/lib/hedge-data";
 import { formatCompactCurrency, formatDate } from "@/lib/format";
+import { statusLabels as contratoStatusLabels } from "@/lib/contrato-shared";
 import { FileText, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
-  CONTRATO_ASSINADO: "Contrato assinado",
-  PRE_EMBARQUE: "Pre embarque",
-  ESTUFAGEM_PORTO: "Estufagem/Porto",
-  EMBARCADO: "Embarcado",
-  CARGA_DESTINO: "Carga no destino",
-  CONTRATO_FINALIZADO: "Contrato finalizado",
+  ...contratoStatusLabels,
   A_LIQUIDAR: "A liquidar",
   LIQUIDADA: "Liquidada",
 };
 
 const statusVariant: Record<string, "default" | "success" | "danger" | "warning" | "neutral"> = {
-  CONTRATO_ASSINADO: "neutral",
-  PRE_EMBARQUE: "default",
-  ESTUFAGEM_PORTO: "default",
-  EMBARCADO: "warning",
-  CARGA_DESTINO: "warning",
-  CONTRATO_FINALIZADO: "success",
+  CONFIRMACAO_NEGOCIO: "neutral",
+  ASSINATURA_CONTRATO: "neutral",
+  ENVIO_AMOSTRA_PSS: "default",
+  APROVACAO_AMOSTRA_PSS: "default",
+  ENVIO_ARTE_SACARIA: "default",
+  APROVACAO_ARTE_SACARIA: "default",
+  ENVIO_INSTRUCAO_EMBARQUE: "default",
+  BOOKING: "default",
+  MARCACAO_EMBARQUE_TRANSPORTADORA: "default",
+  ESTUFAGEM_CARREGAMENTO: "default",
+  RECEBIMENTO_BL: "warning",
+  ENVIO_DOCUMENTOS_APROVACAO: "warning",
+  APROVACAO_DOCUMENTOS: "warning",
+  ENVIO_FINANCIAMENTO_RTS: "warning",
+  TRADUCAO_PEDIDO_LEGALIZACAO: "warning",
+  EMISSAO_CARTA_BORDERO: "warning",
+  ENVIO_DOCUMENTOS_BANCO_CLIENTE: "warning",
+  RECEBIMENTO_CLIENTE: "warning",
+  ENVIO_BL_ORIGINAL_TELEX: "warning",
+  LIBERACAO_CARGA: "success",
   A_LIQUIDAR: "warning",
   LIQUIDADA: "success",
 };

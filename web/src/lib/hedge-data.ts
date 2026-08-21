@@ -60,12 +60,26 @@ export async function getClientes() {
 }
 
 const dataFieldByStatus = {
-  CONTRATO_ASSINADO: "dataEstufagem",
-  PRE_EMBARQUE: "dataEstufagem",
-  ESTUFAGEM_PORTO: "dataEmbarque",
-  EMBARCADO: "dataChegada",
-  CARGA_DESTINO: "dataChegada",
-  CONTRATO_FINALIZADO: null,
+  CONFIRMACAO_NEGOCIO: "dataEstufagem",
+  ASSINATURA_CONTRATO: "dataEstufagem",
+  ENVIO_AMOSTRA_PSS: "dataEstufagem",
+  APROVACAO_AMOSTRA_PSS: "dataEstufagem",
+  ENVIO_ARTE_SACARIA: "dataEstufagem",
+  APROVACAO_ARTE_SACARIA: "dataEstufagem",
+  ENVIO_INSTRUCAO_EMBARQUE: "dataEstufagem",
+  BOOKING: "dataEstufagem",
+  MARCACAO_EMBARQUE_TRANSPORTADORA: "dataEstufagem",
+  ESTUFAGEM_CARREGAMENTO: "dataEmbarque",
+  RECEBIMENTO_BL: "dataEmbarque",
+  ENVIO_DOCUMENTOS_APROVACAO: "dataChegada",
+  APROVACAO_DOCUMENTOS: "dataChegada",
+  ENVIO_FINANCIAMENTO_RTS: "dataChegada",
+  TRADUCAO_PEDIDO_LEGALIZACAO: "dataChegada",
+  EMISSAO_CARTA_BORDERO: "dataChegada",
+  ENVIO_DOCUMENTOS_BANCO_CLIENTE: "dataChegada",
+  RECEBIMENTO_CLIENTE: "dataChegada",
+  ENVIO_BL_ORIGINAL_TELEX: "dataChegada",
+  LIBERACAO_CARGA: null,
 } as const;
 
 export type ContratoRow = Awaited<ReturnType<typeof getContratosExportacao>>[number];
@@ -179,8 +193,8 @@ export async function getExportDashboard() {
   const contratos = await getContratosExportacao();
 
   const totalContratos = contratos.length;
-  const emAndamento = contratos.filter((c) => c.status !== "CONTRATO_FINALIZADO").length;
-  const concluidos = contratos.filter((c) => c.status === "CONTRATO_FINALIZADO").length;
+  const emAndamento = contratos.filter((c) => c.status !== "LIBERACAO_CARGA").length;
+  const concluidos = contratos.filter((c) => c.status === "LIBERACAO_CARGA").length;
   const vencidos = contratos.filter((c) => c.prazoVencido);
   const prazosVencidos = vencidos.length;
 
@@ -244,7 +258,7 @@ async function getProximosVencimentos(contratos: ContratoRow[]) {
   const operations = await getHedgeOperations();
 
   const doContrato = contratos
-    .filter((c) => c.status !== "CONTRATO_FINALIZADO" && !c.prazoVencido)
+    .filter((c) => c.status !== "LIBERACAO_CARGA" && !c.prazoVencido)
     .map((c) => {
       const relevantField = dataFieldByStatus[c.status];
       const vencimento =
