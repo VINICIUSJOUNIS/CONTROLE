@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { statusOrder, statusLabels } from "@/lib/contrato-shared";
+import { statusOrder, statusLabels, statusToSlug } from "@/lib/contrato-shared";
 
 const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
@@ -58,7 +58,10 @@ const hedgeNavItems = [
     href: "/hedge/mesa-operacao",
     label: "Mesa de Operacao",
     icon: Ship,
-    subItems: statusOrder.map((status) => statusLabels[status]),
+    subItems: statusOrder.map((status) => ({
+      label: statusLabels[status],
+      href: `/hedge/mesa-operacao/${statusToSlug(status)}`,
+    })),
   },
   { href: "/hedge/mapa", label: "Mapa de Exportacao", icon: Globe2 },
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
@@ -90,7 +93,13 @@ function getActiveModule(pathname: string) {
   return modules.find((m) => m.match(pathname)) ?? { label: "Controle de Emprestimos", items: navItems };
 }
 
-export function Sidebar({ profile }: { profile: { email: string; role: string } }) {
+export function Sidebar({
+  profile,
+  mesaOperacaoCount,
+}: {
+  profile: { email: string; role: string };
+  mesaOperacaoCount?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const activeModule = getActiveModule(pathname);
@@ -117,7 +126,7 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(item.href + "/"));
           const Icon = item.icon;
-          const subItems = (item as { subItems?: string[] }).subItems;
+          const subItems = (item as { subItems?: { label: string; href: string }[] }).subItems;
           const isExpanded = expanded === item.href;
           return (
             <div key={item.href}>
@@ -132,6 +141,11 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
                 <Link href={item.href} className="flex flex-1 items-center gap-3 px-3 py-2.5">
                   <Icon size={17} />
                   {item.label}
+                  {subItems && mesaOperacaoCount != null && (
+                    <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium">
+                      {mesaOperacaoCount}
+                    </span>
+                  )}
                 </Link>
                 {subItems && (
                   <button
@@ -149,15 +163,25 @@ export function Sidebar({ profile }: { profile: { email: string; role: string } 
               </div>
               {subItems && isExpanded && (
                 <ul className="mt-1 space-y-0.5 border-l border-white/10 pl-6">
-                  {subItems.map((label) => (
-                    <li
-                      key={label}
-                      className="truncate py-1 text-xs text-sidebar-foreground/70"
-                      title={label}
-                    >
-                      {label}
-                    </li>
-                  ))}
+                  {subItems.map((sub) => {
+                    const subActive = pathname === sub.href;
+                    return (
+                      <li key={sub.href}>
+                        <Link
+                          href={sub.href}
+                          title={sub.label}
+                          className={cn(
+                            "block truncate rounded py-1 px-1 text-xs transition-colors",
+                            subActive
+                              ? "text-white"
+                              : "text-sidebar-foreground/70 hover:text-white"
+                          )}
+                        >
+                          {sub.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

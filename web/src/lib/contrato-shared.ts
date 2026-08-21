@@ -29,6 +29,15 @@ export const statusOrder: StatusContratoValue[] = [
   "LIBERACAO_CARGA",
 ];
 
+export function statusToSlug(status: StatusContratoValue): string {
+  return status.toLowerCase().replace(/_/g, "-");
+}
+
+export function slugToStatus(slug: string): StatusContratoValue | null {
+  const normalized = slug.toUpperCase().replace(/-/g, "_");
+  return statusOrder.find((s) => s === normalized) ?? null;
+}
+
 export const statusLabels: Record<StatusContratoValue, string> = {
   CONFIRMACAO_NEGOCIO: "Confirmacao de negocio",
   ASSINATURA_CONTRATO: "Assinatura de contrato",

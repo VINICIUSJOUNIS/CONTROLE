@@ -106,6 +106,10 @@ const despesaFields = [
   "estadiaContainer",
 ] as const;
 
+export async function getContratosExportacaoCount() {
+  return prisma.contratoExportacao.count();
+}
+
 export async function getContratosExportacao() {
   const contratos = await prisma.contratoExportacao.findMany({
     include: { cliente: true, corretora: true },
