@@ -90,9 +90,26 @@ export async function getBanks() {
 const IOF_DIARIO_PERCENT = 0.0082;
 const IOF_ADICIONAL_PERCENT = 0.38;
 
+// Calcula dias/IOF/juros de uma unica utilizacao (uso). Usos ainda abertos
+// (dataFim nula) contam os dias ate hoje; usos encerrados contam apenas ate a
+// dataFim, entao quitar uma utilizacao trava o custo dela no periodo em que o
+// valor esteve de fato utilizado.
+function calcUso(valorUtilizado: number, taxaJurosPercent: number, dataInicio: Date, dataFim: Date | null, hoje: Date) {
+  const fim = dataFim ?? hoje;
+  const dias = daysBetween(dataInicio, fim);
+  // Taxa e "% ao mes" (mesma convencao do mes comercial de 30 dias usada nos
+  // Emprestimos - RATE_BASIS_DAYS.MENSAL), entao os juros sao proporcionais
+  // aos dias em que o valor esteve de fato utilizado, nao a taxa mensal cheia.
+  const juros = Number((valorUtilizado * (taxaJurosPercent / 100) * (dias / 30)).toFixed(2));
+  const iof = Number((valorUtilizado * (IOF_DIARIO_PERCENT / 100) * dias).toFixed(2));
+  const iofAdicional = Number((valorUtilizado * (IOF_ADICIONAL_PERCENT / 100)).toFixed(2));
+  const valorAPagar = Number((juros + iof + iofAdicional).toFixed(2));
+  return { dias, juros, iof, iofAdicional, valorAPagar };
+}
+
 export async function getContasGarantidas() {
   const contas = await prisma.contaGarantida.findMany({
-    include: { bank: true },
+    include: { bank: true, usos: { orderBy: { dataInicio: "desc" } } },
     orderBy: { createdAt: "desc" },
   });
   const hoje = new Date();
@@ -100,19 +117,42 @@ export async function getContasGarantidas() {
 
   return contas.map((c) => {
     const limiteContratado = n(c.limiteContratado);
-    const valorUtilizado = n(c.valorUtilizado);
     const taxaJurosPercent = n(c.taxaJurosPercent);
-    const diasUtilizado = c.dataUtilizacao ? daysBetween(c.dataUtilizacao, hoje) : 0;
 
+    const usos = c.usos.map((u) => {
+      const valorUtilizado = n(u.valorUtilizado);
+      const dataInicio = u.dataInicio;
+      const dataFim = u.dataFim;
+      const { dias, juros, iof, iofAdicional, valorAPagar } = calcUso(
+        valorUtilizado,
+        taxaJurosPercent,
+        dataInicio,
+        dataFim,
+        hoje
+      );
+      return {
+        id: u.id,
+        valorUtilizado,
+        dataInicio: dataInicio.toISOString().slice(0, 10),
+        dataFim: dataFim ? dataFim.toISOString().slice(0, 10) : null,
+        emAberto: dataFim === null,
+        dias,
+        juros,
+        iof,
+        iofAdicional,
+        valorAPagar,
+        observacao: u.observacao,
+      };
+    });
+
+    // So usos ainda em aberto (sem data de fim) consomem o limite disponivel
+    // hoje - um uso ja encerrado significa que o valor foi devolvido.
+    const valorUtilizado = Number(usos.filter((u) => u.emAberto).reduce((s, u) => s + u.valorUtilizado, 0).toFixed(2));
     const valorDisponivel = Number((limiteContratado - valorUtilizado).toFixed(2));
-    // Taxa e "% ao mes" (mesma convencao do mes comercial de 30 dias usada nos
-    // Emprestimos - RATE_BASIS_DAYS.MENSAL), entao os juros do periodo sao
-    // proporcionais aos dias em que o valor esteve de fato utilizado, nao a
-    // taxa mensal cheia.
-    const jurosPeriodo = Number((valorUtilizado * (taxaJurosPercent / 100) * (diasUtilizado / 30)).toFixed(2));
-    const iofPeriodo = Number((valorUtilizado * (IOF_DIARIO_PERCENT / 100) * diasUtilizado).toFixed(2));
-    const iofAdicionalPeriodo = Number((valorUtilizado * (IOF_ADICIONAL_PERCENT / 100)).toFixed(2));
-    const valorAPagarPeriodo = Number((jurosPeriodo + iofPeriodo + iofAdicionalPeriodo).toFixed(2));
+    const jurosPeriodo = Number(usos.reduce((s, u) => s + u.juros, 0).toFixed(2));
+    const iofPeriodo = Number(usos.reduce((s, u) => s + u.iof, 0).toFixed(2));
+    const iofAdicionalPeriodo = Number(usos.reduce((s, u) => s + u.iofAdicional, 0).toFixed(2));
+    const valorAPagarPeriodo = Number(usos.reduce((s, u) => s + u.valorAPagar, 0).toFixed(2));
 
     return {
       id: c.id,
@@ -122,8 +162,6 @@ export async function getContasGarantidas() {
       limiteContratado,
       valorUtilizado,
       valorDisponivel,
-      dataUtilizacao: c.dataUtilizacao ? c.dataUtilizacao.toISOString().slice(0, 10) : null,
-      diasUtilizado,
       taxaJurosPercent,
       jurosPeriodo,
       iofPeriodo,
@@ -131,76 +169,45 @@ export async function getContasGarantidas() {
       valorAPagarPeriodo,
       observacao: c.observacao,
       updatedAt: c.updatedAt.toISOString(),
+      usos,
     };
   });
 }
 
 export type ContaGarantidaRow = Awaited<ReturnType<typeof getContasGarantidas>>[number];
+export type ContaGarantidaUsoRow = ContaGarantidaRow["usos"][number];
 
-function firstOfMonthUTC(d: Date) {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-}
+// Saldo utilizado (soma dos usos abertos naquele mes) mes a mes, por banco -
+// mesma lógica de "saldo devedor mes a mes" usada em getDebtEvolution, mas
+// aplicada aos usos da conta garantida (dataInicio/dataFim de cada saque).
+export async function getContaGarantidaEvolucao() {
+  const contas = await getContasGarantidas();
+  const allDataInicio = contas.flatMap((c) => c.usos.map((u) => u.dataInicio));
 
-function endOfMonthUTC(d: Date) {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
-}
-
-function monthKeyUTC(d: Date) {
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
-// Decompoe o custo total de cada conta garantida (calculado em getContasGarantidas
-// sobre todos os dias desde dataUtilizacao) em fatias por mes calendario, dividindo
-// os dias acumulados mes a mes. O IOF adicional e um encargo unico cobrado na
-// utilizacao (nao diario), entao entra inteiro no mes de dataUtilizacao.
-export async function getContaGarantidaMensal() {
-  const contas = await prisma.contaGarantida.findMany({ include: { bank: true } });
-  const hoje = new Date();
-  hoje.setUTCHours(0, 0, 0, 0);
-
-  const porMes = new Map<string, { juros: number; iof: number; iofAdicional: number }>();
-
-  for (const c of contas) {
-    const valorUtilizado = n(c.valorUtilizado);
-    if (!c.dataUtilizacao || valorUtilizado <= 0 || c.dataUtilizacao > hoje) continue;
-    const taxaJurosPercent = n(c.taxaJurosPercent);
-    const inicio = c.dataUtilizacao;
-
-    let diasAcumulados = 0;
-    let primeiroMes = true;
-    let cursor = firstOfMonthUTC(inicio);
-    while (cursor <= hoje) {
-      const fimMes = endOfMonthUTC(cursor);
-      const ateData = fimMes < hoje ? fimMes : hoje;
-      const totalAteFim = daysBetween(inicio, ateData);
-      const diasNoMes = Math.max(0, totalAteFim - diasAcumulados);
-      diasAcumulados = totalAteFim;
-
-      const key = monthKeyUTC(cursor);
-      const cur = porMes.get(key) ?? { juros: 0, iof: 0, iofAdicional: 0 };
-      cur.juros += valorUtilizado * (taxaJurosPercent / 100) * (diasNoMes / 30);
-      cur.iof += valorUtilizado * (IOF_DIARIO_PERCENT / 100) * diasNoMes;
-      if (primeiroMes) {
-        cur.iofAdicional += valorUtilizado * (IOF_ADICIONAL_PERCENT / 100);
-        primeiroMes = false;
-      }
-      porMes.set(key, cur);
-
-      cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
-    }
+  if (allDataInicio.length === 0) {
+    return {
+      data: [] as Record<string, unknown>[],
+      series: [] as { key: string; name: string; color: string }[],
+    };
   }
 
-  return [...porMes.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([month, v]) => {
-      const juros = Number(v.juros.toFixed(2));
-      const iof = Number(v.iof.toFixed(2));
-      const iofAdicional = Number(v.iofAdicional.toFixed(2));
-      return { month, juros, iof, iofAdicional, total: Number((juros + iof + iofAdicional).toFixed(2)) };
+  const months = monthsSinceEarliest(allDataInicio);
+  const series = contas.map((c) => ({ key: c.id, name: c.bankName, color: c.bankColor }));
+
+  const data = months.map((month) => {
+    const row: Record<string, unknown> = { month };
+    contas.forEach((c) => {
+      const saldo = c.usos
+        .filter((u) => u.dataInicio.slice(0, 7) <= month && (!u.dataFim || u.dataFim.slice(0, 7) >= month))
+        .reduce((s, u) => s + u.valorUtilizado, 0);
+      row[c.id] = Number(saldo.toFixed(2));
     });
+    return row;
+  });
+
+  return { data, series };
 }
 
-export type ContaGarantidaMensalRow = Awaited<ReturnType<typeof getContaGarantidaMensal>>[number];
 
 export async function getLoans() {
   const loans = await prisma.loan.findMany({

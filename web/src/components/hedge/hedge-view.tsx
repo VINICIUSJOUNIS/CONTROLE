@@ -340,9 +340,9 @@ export function HedgeView({
       </div>
 
       <Card>
-        <CardContent className="overflow-x-auto p-0">
+        <CardContent className="max-h-[70vh] overflow-auto p-0">
           <table className="w-full whitespace-nowrap text-xs">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border text-left text-xs text-muted">
                 <th className="px-4 py-3 font-medium">Tipo</th>
                 <th className="px-4 py-3 font-medium">Corretora</th>

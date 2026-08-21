@@ -7,9 +7,15 @@ import { parseLocalDate } from "@/lib/date";
 export type ContaGarantidaFormInput = {
   bankId: string;
   limiteContratado: number;
-  valorUtilizado: number;
-  dataUtilizacao: string;
   taxaJurosPercent: number;
+  observacao: string;
+};
+
+export type ContaGarantidaUsoFormInput = {
+  contaGarantidaId: string;
+  valorUtilizado: number;
+  dataInicio: string;
+  dataFim: string;
   observacao: string;
 };
 
@@ -22,8 +28,6 @@ export async function createContaGarantida(input: ContaGarantidaFormInput) {
     data: {
       bankId: input.bankId,
       limiteContratado: input.limiteContratado,
-      valorUtilizado: input.valorUtilizado,
-      dataUtilizacao: input.dataUtilizacao ? parseLocalDate(input.dataUtilizacao) : null,
       taxaJurosPercent: input.taxaJurosPercent,
       observacao: input.observacao || null,
     },
@@ -38,8 +42,6 @@ export async function updateContaGarantida(id: string, input: ContaGarantidaForm
     data: {
       bankId: input.bankId,
       limiteContratado: input.limiteContratado,
-      valorUtilizado: input.valorUtilizado,
-      dataUtilizacao: input.dataUtilizacao ? parseLocalDate(input.dataUtilizacao) : null,
       taxaJurosPercent: input.taxaJurosPercent,
       observacao: input.observacao || null,
     },
@@ -50,5 +52,38 @@ export async function updateContaGarantida(id: string, input: ContaGarantidaForm
 
 export async function deleteContaGarantida(id: string) {
   await prisma.contaGarantida.delete({ where: { id } });
+  revalidateAll();
+}
+
+export async function createContaGarantidaUso(input: ContaGarantidaUsoFormInput) {
+  await prisma.contaGarantidaUso.create({
+    data: {
+      contaGarantidaId: input.contaGarantidaId,
+      valorUtilizado: input.valorUtilizado,
+      dataInicio: parseLocalDate(input.dataInicio),
+      dataFim: input.dataFim ? parseLocalDate(input.dataFim) : null,
+      observacao: input.observacao || null,
+    },
+  });
+
+  revalidateAll();
+}
+
+export async function updateContaGarantidaUso(id: string, input: ContaGarantidaUsoFormInput) {
+  await prisma.contaGarantidaUso.update({
+    where: { id },
+    data: {
+      valorUtilizado: input.valorUtilizado,
+      dataInicio: parseLocalDate(input.dataInicio),
+      dataFim: input.dataFim ? parseLocalDate(input.dataFim) : null,
+      observacao: input.observacao || null,
+    },
+  });
+
+  revalidateAll();
+}
+
+export async function deleteContaGarantidaUso(id: string) {
+  await prisma.contaGarantidaUso.delete({ where: { id } });
   revalidateAll();
 }

@@ -19,6 +19,7 @@ import {
   TrendingUp,
   ShieldCheck,
   Wallet,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -55,6 +56,10 @@ const hedgeNavItems = [
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
 ];
 
+const planejamentoNavItems = [
+  { href: "/planejamento-orcamentario", label: "Planejamento Orçamentário", icon: Target },
+];
+
 const roleLabels: Record<string, string> = {
   ADMINISTRADOR: "Administrador",
   TESOURARIA: "Tesouraria",
@@ -66,6 +71,11 @@ const modules = [
   { match: (p: string) => p.startsWith("/credito"), label: "Analise de Credito", items: creditoNavItems },
   { match: (p: string) => p.startsWith("/faturamento"), label: "Faturamento", items: faturamentoNavItems },
   { match: (p: string) => p.startsWith("/hedge"), label: "Controle de Hedge", items: hedgeNavItems },
+  {
+    match: (p: string) => p.startsWith("/planejamento-orcamentario"),
+    label: "Planejamento Orçamentário",
+    items: planejamentoNavItems,
+  },
 ];
 
 function getActiveModule(pathname: string) {

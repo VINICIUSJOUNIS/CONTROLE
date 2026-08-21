@@ -324,26 +324,42 @@ model SaleReturn {
 
 // Conta Garantida - limite rotativo de credito (usa/paga quando quiser, juros
 // sobre o saldo usado). Diferente de Loan, que tem parcelas com data e valor
-// fixos: aqui so guardamos o limite contratado e o valor utilizado hoje,
-// atualizados manualmente (sem historico de cada movimentacao). IOF nao e
-// digitado - e calculado automaticamente (ver src/lib/data.ts) a partir das
-// aliquotas oficiais do Bacen/Receita Federal para credito PJ (0,0082% ao dia
-// + 0,38% fixo, retomadas em 17/07/2025 apos decisao do STF) aplicadas sobre
-// valorUtilizado, usando os dias corridos desde dataUtilizacao.
+// fixos: aqui so guardamos o limite contratado por banco; cada saque/uso do
+// limite (em datas variadas, nao necessariamente continuo) vira um registro
+// em ContaGarantidaUso, com data de inicio e fim proprias. IOF nao e digitado
+// - e calculado automaticamente (ver src/lib/data.ts) a partir das aliquotas
+// oficiais do Bacen/Receita Federal para credito PJ (0,0082% ao dia + 0,38%
+// fixo, retomadas em 17/07/2025 apos decisao do STF) aplicadas sobre o valor
+// de cada uso, pelos dias corridos entre dataInicio e dataFim (ou hoje, se o
+// uso ainda estiver aberto).
 model ContaGarantida {
-  id               String    @id @default(uuid())
-  bank             Bank      @relation(fields: [bankId], references: [id])
+  id               String              @id @default(uuid())
+  bank             Bank                @relation(fields: [bankId], references: [id])
   bankId           String
-  limiteContratado Decimal   @db.Decimal(18, 2)
-  valorUtilizado   Decimal   @default(0) @db.Decimal(18, 2)
-  dataUtilizacao   DateTime? @db.Date
-  taxaJurosPercent Decimal   @default(0) @db.Decimal(6, 2)
+  limiteContratado Decimal             @db.Decimal(18, 2)
+  taxaJurosPercent Decimal             @default(0) @db.Decimal(6, 2)
   observacao       String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  usos             ContaGarantidaUso[]
 
   @@index([bankId])
   @@map("contas_garantidas")
+}
+
+model ContaGarantidaUso {
+  id               String         @id @default(uuid())
+  contaGarantida   ContaGarantida @relation(fields: [contaGarantidaId], references: [id], onDelete: Cascade)
+  contaGarantidaId String
+  valorUtilizado   Decimal        @db.Decimal(18, 2)
+  dataInicio       DateTime       @db.Date
+  dataFim          DateTime?      @db.Date
+  observacao       String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([contaGarantidaId])
+  @@map("contas_garantidas_usos")
 }
 
 enum Side {
@@ -473,4 +489,101 @@ model ContratoExportacao {
   @@index([clienteId])
   @@index([status])
   @@map("contratos_exportacao")
+}
+
+enum BudgetScenario {
+  CONSERVADOR
+  MODERADO
+  OTIMISTA
+  MUITO_OTIMISTA
+}
+
+// 9 grupos de despesa do planejamento orcamentario. Faturamento nao e um
+// grupo de BudgetLine - e calculado pelo motor de cenarios (ver BudgetPlan).
+enum BudgetGroup {
+  CUSTO_FORNECEDOR
+  DESPESA_ADM_FIXA
+  DESPESA_ADM_VARIAVEL
+  DESPESA_MERCADO_INTERNO
+  DESPESA_MERCADO_EXTERNO
+  DESPESA_PESSOAL
+  IMPOSTOS
+  FINANCIAMENTO
+  INVESTIMENTOS
+}
+
+// Planejamento Orcamentario - plano anual com motor de cenarios (Conservador/
+// Moderado/Otimista/Muito Otimista, aplicados como crescimento % sobre o
+// volume base em sacas) e acompanhamento mensal Previsto x Realizado por
+// linha de despesa. Faturamento nao e uma BudgetLine: e calculado a partir de
+// BudgetVolumeMonth (volume x cotacaoSacaUsd x cotacaoDolar) conforme o
+// cenario selecionado, com o Realizado informado mes a mes em receitaRealizada.
+model BudgetPlan {
+  id                       String         @id @default(uuid())
+  year                     Int            @unique
+  name                     String
+  scenario                 BudgetScenario @default(CONSERVADOR)
+  cotacaoSacaUsd           Decimal        @default(0) @db.Decimal(18, 2)
+  cotacaoDolar             Decimal        @default(0) @db.Decimal(18, 4)
+  crescimentoModerado      Decimal        @default(0) @db.Decimal(6, 4)
+  crescimentoOtimista      Decimal        @default(0) @db.Decimal(6, 4)
+  crescimentoMuitoOtimista Decimal        @default(0) @db.Decimal(6, 4)
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+
+  volumes BudgetVolumeMonth[]
+  lines   BudgetLine[]
+
+  @@map("budget_plans")
+}
+
+// Volume base em sacas (entra no motor de cenarios) e a divisao Mercado
+// Interno x Externo, previsto e realizado, mes a mes. Linhas sao criadas sob
+// demanda (upsert) - mes sem registro conta como zero.
+model BudgetVolumeMonth {
+  id                     String     @id @default(uuid())
+  budgetPlan             BudgetPlan @relation(fields: [budgetPlanId], references: [id], onDelete: Cascade)
+  budgetPlanId           String
+  month                  Int
+  volumeBaseSacas        Decimal    @default(0) @db.Decimal(18, 2)
+  volumeExternoSacas     Decimal    @default(0) @db.Decimal(18, 2)
+  volumeInternoRealizado Decimal    @default(0) @db.Decimal(18, 2)
+  volumeExternoRealizado Decimal    @default(0) @db.Decimal(18, 2)
+  receitaRealizada       Decimal    @default(0) @db.Decimal(18, 2)
+
+  @@unique([budgetPlanId, month])
+  @@map("budget_volume_months")
+}
+
+// Linha de despesa (ex.: "Aluguel", "FGTS", "Custo Mercadorias Vendidas"),
+// agrupada por BudgetGroup. Valores em BudgetLineMonth sao magnitudes
+// positivas (o sinal de despesa e aplicado no calculo, nao no dado).
+model BudgetLine {
+  id           String      @id @default(uuid())
+  budgetPlan   BudgetPlan  @relation(fields: [budgetPlanId], references: [id], onDelete: Cascade)
+  budgetPlanId String
+  group        BudgetGroup
+  name         String
+  orderIndex   Int         @default(0)
+  createdAt    DateTime    @default(now())
+
+  months BudgetLineMonth[]
+
+  @@index([budgetPlanId, group])
+  @@map("budget_lines")
+}
+
+// Valor Previsto x Realizado de uma linha em um mes especifico. Criado sob
+// demanda (upsert) quando o usuario preenche - mes sem registro conta como
+// zero, entao nao e preciso popular os 12 meses de toda linha no cadastro.
+model BudgetLineMonth {
+  id             String     @id @default(uuid())
+  budgetLine     BudgetLine @relation(fields: [budgetLineId], references: [id], onDelete: Cascade)
+  budgetLineId   String
+  month          Int
+  valorPrevisto  Decimal    @default(0) @db.Decimal(18, 2)
+  valorRealizado Decimal    @default(0) @db.Decimal(18, 2)
+
+  @@unique([budgetLineId, month])
+  @@map("budget_line_months")
 }
