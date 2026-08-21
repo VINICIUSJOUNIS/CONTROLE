@@ -1,33 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { BudgetGroup, BudgetScenario } from "@/generated/prisma/client";
+import { BUDGET_GROUP_ORDER, BUDGET_GROUP_LABELS } from "@/lib/budget-constants";
 
 function n(value: unknown): number {
   return Number(value);
 }
-
-export const BUDGET_GROUP_ORDER: BudgetGroup[] = [
-  "CUSTO_FORNECEDOR",
-  "DESPESA_MERCADO_INTERNO",
-  "DESPESA_MERCADO_EXTERNO",
-  "DESPESA_ADM_FIXA",
-  "DESPESA_ADM_VARIAVEL",
-  "DESPESA_PESSOAL",
-  "IMPOSTOS",
-  "FINANCIAMENTO",
-  "INVESTIMENTOS",
-];
-
-export const BUDGET_GROUP_LABELS: Record<BudgetGroup, string> = {
-  CUSTO_FORNECEDOR: "Custo Fornecedor",
-  DESPESA_MERCADO_INTERNO: "Despesas Mercado Interno",
-  DESPESA_MERCADO_EXTERNO: "Despesas Mercado Externo",
-  DESPESA_ADM_FIXA: "Despesas Administrativas Fixas",
-  DESPESA_ADM_VARIAVEL: "Despesas Administrativas Variáveis",
-  DESPESA_PESSOAL: "Despesa com Pessoal",
-  IMPOSTOS: "Impostos",
-  FINANCIAMENTO: "Empréstimo e Financiamento",
-  INVESTIMENTOS: "Investimentos",
-};
 
 // Grupos tratados como custo variavel (escalam com a receita) e fixo (nao
 // escalam) para o calculo do Ponto de Equilibrio. Investimentos fica de fora
@@ -55,13 +32,6 @@ const MONTH_LABELS = [
   "Novembro",
   "Dezembro",
 ];
-
-export const SCENARIO_LABELS: Record<BudgetScenario, string> = {
-  CONSERVADOR: "Conservador",
-  MODERADO: "Moderado",
-  OTIMISTA: "Otimista",
-  MUITO_OTIMISTA: "Muito Otimista",
-};
 
 export async function getBudgetYears() {
   const plans = await prisma.budgetPlan.findMany({ select: { year: true }, orderBy: { year: "desc" } });

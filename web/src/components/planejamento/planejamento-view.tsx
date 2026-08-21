@@ -11,7 +11,8 @@ import { LineChartCard } from "@/components/charts/line-chart-card";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { PieChartCard } from "@/components/charts/pie-chart-card";
 import { formatCompactCurrency, formatCurrency, formatPercent } from "@/lib/format";
-import { BudgetPlanData, BudgetGroupData, BudgetLineData, BUDGET_GROUP_ORDER, SCENARIO_LABELS } from "@/lib/budget-data";
+import { BudgetPlanData, BudgetGroupData, BudgetLineData } from "@/lib/budget-data";
+import { BUDGET_GROUP_ORDER, SCENARIO_LABELS } from "@/lib/budget-constants";
 import {
   updateBudgetPlanAssumptions,
   upsertBudgetVolumeMonths,
