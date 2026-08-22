@@ -56,10 +56,17 @@ function PrevisaoAssinatura({
   const [isPending, startTransition] = useTransition();
   const alerta = value ? alertaPrazo(value) : null;
 
-  function handleChange(newValue: string) {
-    setValue(newValue);
+  // So salva quando o campo perde o foco (nao a cada tecla) e so se a data
+  // estiver completa e valida - digitar um ano parcial (ex: "2" -> "0002")
+  // nao dispara mais um save intermediario com data invalida.
+  function handleBlur() {
+    if (value && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number(value.slice(0, 4)) < 1900)) {
+      setValue(previsao ?? "");
+      return;
+    }
+    if (value === (previsao ?? "")) return;
     startTransition(async () => {
-      await setPrevisaoEtapa(contratoId, status, newValue);
+      await setPrevisaoEtapa(contratoId, status, value);
       router.refresh();
     });
   }
@@ -72,7 +79,8 @@ function PrevisaoAssinatura({
           type="date"
           value={value}
           disabled={isPending}
-          onChange={(e) => handleChange(e.target.value)}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={handleBlur}
           className="rounded border border-border bg-background px-1.5 py-0.5 text-xs"
         />
       </label>

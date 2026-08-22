@@ -16,6 +16,9 @@ export async function setPrevisaoEtapa(contratoId: string, etapa: StatusContrato
   if (!dataPrevisao) {
     await prisma.contratoEtapaPrevisao.deleteMany({ where: { contratoId, etapa } });
   } else {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataPrevisao) || Number(dataPrevisao.slice(0, 4)) < 1900) {
+      throw new Error("Data de previsao invalida.");
+    }
     await prisma.contratoEtapaPrevisao.upsert({
       where: { contratoId_etapa: { contratoId, etapa } },
       create: { contratoId, etapa, dataPrevisao: parseLocalDate(dataPrevisao) },
