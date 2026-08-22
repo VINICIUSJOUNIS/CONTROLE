@@ -403,12 +403,13 @@ enum StatusContrato {
 }
 
 model Corretora {
-  id              String               @id @default(uuid())
-  name            String               @unique
-  color           String
-  hedgeOperations HedgeOperation[]
-  contratos       ContratoExportacao[]
-  createdAt       DateTime             @default(now())
+  id                  String                       @id @default(uuid())
+  name                String                       @unique
+  color               String
+  hedgeOperations     HedgeOperation[]
+  contratos           ContratoExportacao[]
+  confirmacoesNegocio ContratoConfirmacaoNegocio[]
+  createdAt           DateTime                     @default(now())
 
   @@map("corretoras")
 }
@@ -439,14 +440,15 @@ model HedgeOperation {
 }
 
 model Cliente {
-  id        String              @id @default(uuid())
-  name      String              @unique
-  city      String?
-  country   String
-  email     String?
-  phone     String?
-  contratos ContratoExportacao[]
-  createdAt DateTime            @default(now())
+  id                  String                       @id @default(uuid())
+  name                String                       @unique
+  city                String?
+  country             String
+  email               String?
+  phone               String?
+  contratos           ContratoExportacao[]
+  confirmacoesNegocio ContratoConfirmacaoNegocio[]
+  createdAt           DateTime                     @default(now())
 
   @@map("clientes")
 }
@@ -464,6 +466,10 @@ model ContratoExportacao {
   dataEmbarque   DateTime?       @db.Date
   dataChegada    DateTime?       @db.Date
   status         StatusContrato  @default(CONFIRMACAO_NEGOCIO)
+
+  // Dados proprios (independentes dos campos gerais do contrato acima) preenchidos
+  // na etapa "Confirmacao de Negocio" da Mesa de Operacao.
+  confirmacaoNegocio ContratoConfirmacaoNegocio?
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?
@@ -505,6 +511,35 @@ model ContratoExportacao {
   @@index([clienteId])
   @@index([status])
   @@map("contratos_exportacao")
+}
+
+// Ficha preenchida na etapa "Confirmacao de Negocio" da Mesa de Operacao -
+// campos proprios dessa etapa, independentes dos campos gerais do contrato
+// (ContratoExportacao), conforme solicitado pela area de operacoes.
+model ContratoConfirmacaoNegocio {
+  id               String              @id @default(uuid())
+  contrato         ContratoExportacao  @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId       String              @unique
+  dataConfirmacao  DateTime?           @db.Date
+  numeroContrato   String?
+  corretora        Corretora?          @relation(fields: [corretoraId], references: [id])
+  corretoraId      String?
+  cliente          Cliente?            @relation(fields: [clienteId], references: [id])
+  clienteId        String?
+  valorUsd         Decimal?            @db.Decimal(18, 2)
+  frete            Decimal?            @db.Decimal(18, 2)
+  tipoEmbalagem    String?
+  quantidadeSacas  Int?
+  descricaoCafe    String?
+  previsaoEmbarque DateTime?           @db.Date
+  destinoCarga     String?
+  formaPagamento   String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([corretoraId])
+  @@index([clienteId])
+  @@map("contrato_confirmacao_negocio")
 }
 
 enum BudgetScenario {

@@ -106,6 +106,55 @@ const despesaFields = [
   "estadiaContainer",
 ] as const;
 
+export type ConfirmacaoNegocioData = {
+  id: string;
+  dataConfirmacao: string | null;
+  numeroContrato: string | null;
+  corretoraId: string | null;
+  corretoraName: string | null;
+  clienteId: string | null;
+  clienteName: string | null;
+  valorUsd: number | null;
+  frete: number | null;
+  tipoEmbalagem: string | null;
+  quantidadeSacas: number | null;
+  descricaoCafe: string | null;
+  previsaoEmbarque: string | null;
+  destinoCarga: string | null;
+  formaPagamento: string | null;
+};
+
+// Ficha da etapa "Confirmacao de Negocio", indexada por contratoId - campos
+// proprios dessa etapa, independentes dos campos gerais do ContratoExportacao.
+export async function getConfirmacoesNegocio(): Promise<Record<string, ConfirmacaoNegocioData>> {
+  const rows = await prisma.contratoConfirmacaoNegocio.findMany({
+    include: { cliente: true, corretora: true },
+  });
+
+  return Object.fromEntries(
+    rows.map((r) => [
+      r.contratoId,
+      {
+        id: r.id,
+        dataConfirmacao: r.dataConfirmacao ? toISODate(r.dataConfirmacao) : null,
+        numeroContrato: r.numeroContrato,
+        corretoraId: r.corretoraId,
+        corretoraName: r.corretora?.name ?? null,
+        clienteId: r.clienteId,
+        clienteName: r.cliente?.name ?? null,
+        valorUsd: r.valorUsd != null ? Number(r.valorUsd) : null,
+        frete: r.frete != null ? Number(r.frete) : null,
+        tipoEmbalagem: r.tipoEmbalagem,
+        quantidadeSacas: r.quantidadeSacas,
+        descricaoCafe: r.descricaoCafe,
+        previsaoEmbarque: r.previsaoEmbarque ? toISODate(r.previsaoEmbarque) : null,
+        destinoCarga: r.destinoCarga,
+        formaPagamento: r.formaPagamento,
+      },
+    ])
+  );
+}
+
 export async function getContratosExportacaoCount() {
   return prisma.contratoExportacao.count();
 }
