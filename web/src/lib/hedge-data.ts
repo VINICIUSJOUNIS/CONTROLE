@@ -190,6 +190,13 @@ export async function getContratoAnexosPorEtapa(
   return porContrato;
 }
 
+// Data prevista para concluir uma etapa (ex: previsao de assinatura),
+// indexada por contratoId - usada para gerar os alertas de prazo.
+export async function getPrevisoesPorEtapa(etapa: StatusContratoValue): Promise<Record<string, string>> {
+  const rows = await prisma.contratoEtapaPrevisao.findMany({ where: { etapa } });
+  return Object.fromEntries(rows.map((r) => [r.contratoId, toISODate(r.dataPrevisao)]));
+}
+
 // Ficha da etapa "Confirmacao de Negocio", indexada por contratoId - campos
 // proprios dessa etapa, independentes dos campos gerais do ContratoExportacao.
 export async function getConfirmacoesNegocio(): Promise<Record<string, ConfirmacaoNegocioData>> {

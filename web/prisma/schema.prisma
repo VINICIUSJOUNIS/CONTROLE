@@ -471,6 +471,7 @@ model ContratoExportacao {
   // na etapa "Confirmacao de Negocio" da Mesa de Operacao.
   confirmacaoNegocio ContratoConfirmacaoNegocio?
   anexos             ContratoAnexo[]
+  previsoesEtapa     ContratoEtapaPrevisao[]
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?
@@ -573,6 +574,22 @@ model ContratoAnexo {
   @@index([contratoId])
   @@index([etapa])
   @@map("contrato_anexos")
+}
+
+// Data prevista para a conclusao de uma etapa (ex: previsao de assinatura do
+// contrato), usada para gerar alertas de prazo (3 dias antes, no dia, e em
+// atraso) na Mesa de Operacao. Generico por etapa, uma linha por contrato+etapa.
+model ContratoEtapaPrevisao {
+  id           String             @id @default(uuid())
+  contrato     ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId   String
+  etapa        StatusContrato
+  dataPrevisao DateTime           @db.Date
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@unique([contratoId, etapa])
+  @@map("contrato_etapa_previsoes")
 }
 
 enum BudgetScenario {

@@ -8,17 +8,86 @@ import {
   updateContratoStatus,
   StatusContratoValue,
 } from "@/app/(dashboard)/hedge/contratos/actions";
-import { addContratoAnexo, deleteContratoAnexo } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
+import {
+  addContratoAnexo,
+  deleteContratoAnexo,
+  setPrevisaoEtapa,
+} from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import { statusOrder, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
-import { MapPin, Calendar, ChevronLeft, ChevronRight, Paperclip, Upload, Trash2, X } from "lucide-react";
+import { MapPin, Calendar, ChevronLeft, ChevronRight, Paperclip, Upload, X, AlertTriangle } from "lucide-react";
 
 function formatFileSize(bytes: number | null) {
   if (!bytes) return "";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function parseISODateLocal(value: string) {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function alertaPrazo(dataPrevisao: string): { label: string; tone: "warning" | "danger" } | null {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const prevista = parseISODateLocal(dataPrevisao);
+  const dias = Math.round((prevista.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (dias < 0) return { label: `Atrasado ${Math.abs(dias)} dia(s)`, tone: "danger" };
+  if (dias === 0) return { label: "Vence hoje", tone: "warning" };
+  if (dias <= 3) return { label: `Vence em ${dias} dia(s)`, tone: "warning" };
+  return null;
+}
+
+function PrevisaoAssinatura({
+  contratoId,
+  status,
+  previsao,
+}: {
+  contratoId: string;
+  status: StatusContratoValue;
+  previsao: string | undefined;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(previsao ?? "");
+  const [isPending, startTransition] = useTransition();
+  const alerta = value ? alertaPrazo(value) : null;
+
+  function handleChange(newValue: string) {
+    setValue(newValue);
+    startTransition(async () => {
+      await setPrevisaoEtapa(contratoId, status, newValue);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 border-t border-border pt-2">
+      <label className="flex items-center justify-between gap-2 text-xs text-muted">
+        Previsão de assinatura
+        <input
+          type="date"
+          value={value}
+          disabled={isPending}
+          onChange={(e) => handleChange(e.target.value)}
+          className="rounded border border-border bg-background px-1.5 py-0.5 text-xs"
+        />
+      </label>
+      {alerta && (
+        <p
+          className={`mt-1 flex items-center gap-1 text-xs font-medium ${
+            alerta.tone === "danger" ? "text-danger" : "text-warning"
+          }`}
+        >
+          <AlertTriangle size={12} />
+          {alerta.label}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function AnexosSection({
@@ -135,10 +204,12 @@ export function EtapaContratosList({
   contratos,
   status,
   anexos,
+  previsoes,
 }: {
   contratos: ContratoRow[];
   status: StatusContratoValue;
   anexos: Record<string, ContratoAnexoData[]>;
+  previsoes: Record<string, string>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -181,6 +252,10 @@ export function EtapaContratosList({
             </p>
 
             <AnexosSection contratoId={item.id} status={status} anexos={anexos[item.id] ?? []} />
+
+            {status === "ASSINATURA_CONTRATO" && (
+              <PrevisaoAssinatura contratoId={item.id} status={status} previsao={previsoes[item.id]} />
+            )}
 
             {status === "ASSINATURA_CONTRATO" && (
               <label className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs">

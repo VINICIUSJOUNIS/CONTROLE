@@ -12,6 +12,20 @@ function revalidateAll() {
   revalidatePath("/hedge/mesa-operacao/[slug]", "page");
 }
 
+export async function setPrevisaoEtapa(contratoId: string, etapa: StatusContratoValue, dataPrevisao: string) {
+  if (!dataPrevisao) {
+    await prisma.contratoEtapaPrevisao.deleteMany({ where: { contratoId, etapa } });
+  } else {
+    await prisma.contratoEtapaPrevisao.upsert({
+      where: { contratoId_etapa: { contratoId, etapa } },
+      create: { contratoId, etapa, dataPrevisao: parseLocalDate(dataPrevisao) },
+      update: { dataPrevisao: parseLocalDate(dataPrevisao) },
+    });
+  }
+
+  revalidateAll();
+}
+
 export type AddContratoAnexoInput = {
   contratoId: string;
   etapa: StatusContratoValue;

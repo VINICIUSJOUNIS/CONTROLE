@@ -8,6 +8,7 @@ import {
   getCorretoras,
   getTiposEmbalagem,
   getContratoAnexosPorEtapa,
+  getPrevisoesPorEtapa,
   syncClientesFromVendasExternas,
 } from "@/lib/hedge-data";
 import { slugToStatus, statusLabels } from "@/lib/contrato-shared";
@@ -77,7 +78,10 @@ async function EtapaGenerica({
   contratos: Awaited<ReturnType<typeof getContratosExportacao>>;
   status: NonNullable<ReturnType<typeof slugToStatus>>;
 }) {
-  const anexos = await getContratoAnexosPorEtapa(status);
+  const [anexos, previsoes] = await Promise.all([
+    getContratoAnexosPorEtapa(status),
+    getPrevisoesPorEtapa(status),
+  ]);
 
-  return <EtapaContratosList contratos={contratos} status={status} anexos={anexos} />;
+  return <EtapaContratosList contratos={contratos} status={status} anexos={anexos} previsoes={previsoes} />;
 }
