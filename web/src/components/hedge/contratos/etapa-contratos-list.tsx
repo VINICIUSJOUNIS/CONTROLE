@@ -270,6 +270,55 @@ function ConcluidoCheckbox({
   );
 }
 
+function VoltarMenu({ contratoId, currentStatus }: { contratoId: string; currentStatus: StatusContratoValue }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
+  const idx = statusOrder.indexOf(currentStatus);
+  const etapasAnteriores = statusOrder.slice(0, idx);
+
+  function handleSelect(target: StatusContratoValue) {
+    setOpen(false);
+    startTransition(async () => {
+      await updateContratoStatus(contratoId, target);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div
+      className="relative"
+      onClick={(e) => e.stopPropagation()}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
+      }}
+    >
+      <button
+        onClick={() => setOpen((v) => !v)}
+        disabled={isPending || etapasAnteriores.length === 0}
+        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+      >
+        <ChevronLeft size={14} />
+        Voltar
+      </button>
+      {open && (
+        <ul className="absolute right-0 z-10 mt-1 max-h-64 w-56 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-lg">
+          {etapasAnteriores.map((s) => (
+            <li key={s}>
+              <button
+                onClick={() => handleSelect(s)}
+                className="block w-full truncate rounded px-2 py-1.5 text-left text-xs hover:bg-border/60"
+              >
+                {statusLabels[s]}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function AnexosSection({
   contratoId,
   status,
@@ -491,6 +540,13 @@ export function EtapaContratosList({
     });
   }
 
+  function goToStatus(id: string, target: StatusContratoValue) {
+    startTransition(async () => {
+      await updateContratoStatus(id, target);
+      router.refresh();
+    });
+  }
+
   if (contratos.length === 0) {
     return <Card className="p-6 text-center text-sm text-muted">Nenhum contrato nesta etapa.</Card>;
   }
@@ -554,14 +610,7 @@ export function EtapaContratosList({
               <div className="flex shrink-0 items-center gap-1">
                 <QuickUploadButton contratoId={item.id} status={status} />
                 <ConcluidoCheckbox contratoId={item.id} status={status} concluida={concluidas[item.id] ?? false} />
-                <button
-                  onClick={() => moveStatus(item.id, -1)}
-                  disabled={isPending || idx === 0}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
-                >
-                  <ChevronLeft size={14} />
-                  Voltar
-                </button>
+                <VoltarMenu contratoId={item.id} currentStatus={status} />
                 <button
                   onClick={() => moveStatus(item.id, 1)}
                   disabled={isPending || idx === statusOrder.length - 1 || !(concluidas[item.id] ?? false)}
