@@ -13,8 +13,13 @@ import {
   createContratoComConfirmacao,
   ConfirmacaoNegocioInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
-import { Cliente, Corretora } from "@/lib/contrato-shared";
-import { Pencil, MapPin, Plus } from "lucide-react";
+import { Cliente, Corretora, statusOrder } from "@/lib/contrato-shared";
+import { COUNTRIES } from "@/lib/countries";
+import { updateContratoStatus, StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
+import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
+import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
+import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embalagem";
+import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
 function emptyForm(): ConfirmacaoNegocioInput {
   return {
@@ -23,8 +28,8 @@ function emptyForm(): ConfirmacaoNegocioInput {
     corretoraId: "",
     clienteId: "",
     valorUsd: 0,
-    frete: 0,
-    tipoEmbalagem: "",
+    frete: "",
+    tipoEmbalagemId: "",
     quantidadeSacas: null,
     descricaoCafe: "",
     previsaoEmbarque: "",
@@ -40,8 +45,8 @@ function formFromData(data: ConfirmacaoNegocioData): ConfirmacaoNegocioInput {
     corretoraId: data.corretoraId ?? "",
     clienteId: data.clienteId ?? "",
     valorUsd: data.valorUsd ?? 0,
-    frete: data.frete ?? 0,
-    tipoEmbalagem: data.tipoEmbalagem ?? "",
+    frete: data.frete ?? "",
+    tipoEmbalagemId: data.tipoEmbalagemId ?? "",
     quantidadeSacas: data.quantidadeSacas,
     descricaoCafe: data.descricaoCafe ?? "",
     previsaoEmbarque: data.previsaoEmbarque ?? "",
@@ -55,11 +60,13 @@ export function ConfirmacaoNegocioList({
   confirmacoes,
   clientes,
   corretoras,
+  tiposEmbalagem,
 }: {
   contratos: ContratoRow[];
   confirmacoes: Record<string, ConfirmacaoNegocioData>;
   clientes: Cliente[];
   corretoras: Corretora[];
+  tiposEmbalagem: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -81,6 +88,19 @@ export function ConfirmacaoNegocioList({
     setForm(emptyForm());
     setError(null);
     setOpen(true);
+  }
+
+  function moveStatus(id: string, direction: -1 | 1) {
+    const current = contratos.find((c) => c.id === id);
+    if (!current) return;
+    const currentIndex = statusOrder.indexOf(current.status as StatusContratoValue);
+    const nextIndex = currentIndex + direction;
+    if (nextIndex < 0 || nextIndex >= statusOrder.length) return;
+    const nextStatus = statusOrder[nextIndex];
+    startTransition(async () => {
+      await updateContratoStatus(id, nextStatus);
+      router.refresh();
+    });
   }
 
   function handleSave() {
@@ -153,8 +173,8 @@ export function ConfirmacaoNegocioList({
                   {dados.numeroContrato && <p>Contrato: {dados.numeroContrato}</p>}
                   {dados.corretoraName && <p>Broker: {dados.corretoraName}</p>}
                   {dados.valorUsd != null && <p>Valor: {formatCurrency(dados.valorUsd, "USD")}</p>}
-                  {dados.frete != null && dados.frete > 0 && <p>Frete: {formatCurrency(dados.frete)}</p>}
-                  {dados.tipoEmbalagem && <p>Embalagem: {dados.tipoEmbalagem}</p>}
+                  {dados.frete && <p>Frete: {dados.frete}</p>}
+                  {dados.tipoEmbalagemNome && <p>Embalagem: {dados.tipoEmbalagemNome}</p>}
                   {dados.quantidadeSacas != null && <p>Quantidade: {dados.quantidadeSacas} sacas</p>}
                   {dados.descricaoCafe && <p>Café: {dados.descricaoCafe}</p>}
                   {dados.previsaoEmbarque && <p>Previsão embarque: {formatDate(dados.previsaoEmbarque)}</p>}
@@ -166,6 +186,32 @@ export function ConfirmacaoNegocioList({
                   Confirmação de negócio ainda não preenchida.
                 </p>
               )}
+
+              <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
+                {(() => {
+                  const idx = statusOrder.indexOf(item.status as StatusContratoValue);
+                  return (
+                    <>
+                      <button
+                        onClick={() => moveStatus(item.id, -1)}
+                        disabled={isPending || idx === 0}
+                        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                      >
+                        <ChevronLeft size={14} />
+                        Voltar
+                      </button>
+                      <button
+                        onClick={() => moveStatus(item.id, 1)}
+                        disabled={isPending || idx === statusOrder.length - 1}
+                        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
+                      >
+                        Avançar
+                        <ChevronRight size={14} />
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
             </div>
           );
         })}
@@ -195,25 +241,34 @@ export function ConfirmacaoNegocioList({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Broker</Label>
-                <Select value={form.corretoraId} onChange={(e) => setForm({ ...form, corretoraId: e.target.value })}>
-                  <option value="">Selecione...</option>
-                  {corretoras.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={form.corretoraId}
+                    onChange={(e) => setForm({ ...form, corretoraId: e.target.value })}
+                  >
+                    <option value="">Selecione...</option>
+                    {corretoras.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <NovaCorretora compact />
+                </div>
               </div>
               <div>
                 <Label>Cliente</Label>
-                <Select value={form.clienteId} onChange={(e) => setForm({ ...form, clienteId: e.target.value })}>
-                  <option value="">Selecione...</option>
-                  {clientes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={form.clienteId} onChange={(e) => setForm({ ...form, clienteId: e.target.value })}>
+                    <option value="">Selecione...</option>
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <NovoCliente compact />
+                </div>
               </div>
             </div>
 
@@ -228,24 +283,32 @@ export function ConfirmacaoNegocioList({
                 />
               </div>
               <div>
-                <Label>Frete (R$)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={form.frete}
-                  onChange={(e) => setForm({ ...form, frete: Number(e.target.value) || 0 })}
-                />
+                <Label>Frete</Label>
+                <Select value={form.frete} onChange={(e) => setForm({ ...form, frete: e.target.value })}>
+                  <option value="">Selecione...</option>
+                  <option value="FOB">FOB</option>
+                  <option value="CIF">CIF</option>
+                </Select>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Tipo de Embalagem</Label>
-                <Input
-                  value={form.tipoEmbalagem}
-                  onChange={(e) => setForm({ ...form, tipoEmbalagem: e.target.value })}
-                  placeholder="Ex: Saca 60kg"
-                />
+                <div className="flex gap-2">
+                  <Select
+                    value={form.tipoEmbalagemId}
+                    onChange={(e) => setForm({ ...form, tipoEmbalagemId: e.target.value })}
+                  >
+                    <option value="">Selecione...</option>
+                    {tiposEmbalagem.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <NovoTipoEmbalagem compact />
+                </div>
               </div>
               <div>
                 <Label>Quantidade (sacas)</Label>
@@ -279,10 +342,17 @@ export function ConfirmacaoNegocioList({
               </div>
               <div>
                 <Label>Destino da Carga</Label>
-                <Input
+                <Select
                   value={form.destinoCarga}
                   onChange={(e) => setForm({ ...form, destinoCarga: e.target.value })}
-                />
+                >
+                  <option value="">Selecione...</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.id} value={c.labelPt}>
+                      {c.labelPt}
+                    </option>
+                  ))}
+                </Select>
               </div>
             </div>
 

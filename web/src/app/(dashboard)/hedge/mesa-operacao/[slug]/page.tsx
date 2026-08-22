@@ -3,7 +3,13 @@ import Link from "next/link";
 import { Topbar } from "@/components/layout/topbar";
 import { Card } from "@/components/ui/card";
 import { formatCompactCurrency, formatDate } from "@/lib/format";
-import { getContratosExportacao, getConfirmacoesNegocio, getClientes, getCorretoras } from "@/lib/hedge-data";
+import {
+  getContratosExportacao,
+  getConfirmacoesNegocio,
+  getClientes,
+  getCorretoras,
+  getTiposEmbalagem,
+} from "@/lib/hedge-data";
 import { slugToStatus, statusLabels, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
 import { ConfirmacaoNegocioList } from "@/components/hedge/contratos/confirmacao-negocio-list";
 import { MapPin, Calendar, ArrowLeft } from "lucide-react";
@@ -43,10 +49,11 @@ export default async function MesaOperacaoEtapaPage({
 }
 
 async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<ReturnType<typeof getContratosExportacao>> }) {
-  const [confirmacoes, clientes, corretoras] = await Promise.all([
+  const [confirmacoes, clientes, corretoras, tiposEmbalagem] = await Promise.all([
     getConfirmacoesNegocio(),
     getClientes(),
     getCorretoras(),
+    getTiposEmbalagem(),
   ]);
 
   return (
@@ -55,6 +62,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
       confirmacoes={confirmacoes}
       clientes={clientes}
       corretoras={corretoras}
+      tiposEmbalagem={tiposEmbalagem}
     />
   );
 }

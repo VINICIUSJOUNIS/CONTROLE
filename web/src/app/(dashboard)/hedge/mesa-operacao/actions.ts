@@ -17,8 +17,8 @@ export type ConfirmacaoNegocioInput = {
   corretoraId: string;
   clienteId: string;
   valorUsd: number;
-  frete: number;
-  tipoEmbalagem: string;
+  frete: string;
+  tipoEmbalagemId: string;
   quantidadeSacas: number | null;
   descricaoCafe: string;
   previsaoEmbarque: string;
@@ -33,8 +33,8 @@ function confirmacaoData(input: ConfirmacaoNegocioInput) {
     corretoraId: input.corretoraId || null,
     clienteId: input.clienteId || null,
     valorUsd: input.valorUsd,
-    frete: input.frete,
-    tipoEmbalagem: input.tipoEmbalagem.trim() || null,
+    frete: input.frete || null,
+    tipoEmbalagemId: input.tipoEmbalagemId || null,
     quantidadeSacas: input.quantidadeSacas,
     descricaoCafe: input.descricaoCafe.trim() || null,
     previsaoEmbarque: input.previsaoEmbarque ? parseLocalDate(input.previsaoEmbarque) : null,

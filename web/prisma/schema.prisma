@@ -527,8 +527,9 @@ model ContratoConfirmacaoNegocio {
   cliente          Cliente?            @relation(fields: [clienteId], references: [id])
   clienteId        String?
   valorUsd         Decimal?            @db.Decimal(18, 2)
-  frete            Decimal?            @db.Decimal(18, 2)
-  tipoEmbalagem    String?
+  frete            String?
+  tipoEmbalagem    TipoEmbalagem?      @relation(fields: [tipoEmbalagemId], references: [id])
+  tipoEmbalagemId  String?
   quantidadeSacas  Int?
   descricaoCafe    String?
   previsaoEmbarque DateTime?           @db.Date
@@ -539,7 +540,19 @@ model ContratoConfirmacaoNegocio {
 
   @@index([corretoraId])
   @@index([clienteId])
+  @@index([tipoEmbalagemId])
   @@map("contrato_confirmacao_negocio")
+}
+
+// Lista de tipos de embalagem cadastraveis (ex: Saca 60kg, Big bag), usada na
+// ficha da etapa Confirmacao de Negocio da Mesa de Operacao.
+model TipoEmbalagem {
+  id                  String                       @id @default(uuid())
+  name                String                       @unique
+  confirmacoesNegocio ContratoConfirmacaoNegocio[]
+  createdAt           DateTime                     @default(now())
+
+  @@map("tipos_embalagem")
 }
 
 enum BudgetScenario {
