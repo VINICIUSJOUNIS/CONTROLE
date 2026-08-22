@@ -182,6 +182,20 @@ export function EtapaContratosList({
 
             <AnexosSection contratoId={item.id} status={status} anexos={anexos[item.id] ?? []} />
 
+            {status === "ASSINATURA_CONTRATO" && (
+              <label className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs">
+                <input
+                  type="checkbox"
+                  disabled={isPending}
+                  onChange={(e) => {
+                    if (e.target.checked) moveStatus(item.id, 1);
+                  }}
+                  className="h-3.5 w-3.5 rounded border-border"
+                />
+                Contrato assinado
+              </label>
+            )}
+
             <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
               <button
                 onClick={() => moveStatus(item.id, -1)}
