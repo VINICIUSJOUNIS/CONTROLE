@@ -186,6 +186,10 @@ export type EnvioAmostraData = {
   tipoAmostraNome: string | null;
   transportadoraId: string | null;
   transportadoraNome: string | null;
+  cteNumero: string | null;
+  cteValor: number | null;
+  notaFiscalNumero: string | null;
+  notaFiscalValor: number | null;
 };
 
 // Ficha da etapa "Envio de Amostra de Aprovacao (PSS)", indexada por
@@ -203,6 +207,10 @@ export async function getEnviosAmostra(): Promise<Record<string, EnvioAmostraDat
         tipoAmostraNome: r.tipoAmostra?.name ?? null,
         transportadoraId: r.transportadoraId,
         transportadoraNome: r.transportadora?.name ?? null,
+        cteNumero: r.cteNumero,
+        cteValor: r.cteValor != null ? Number(r.cteValor) : null,
+        notaFiscalNumero: r.notaFiscalNumero,
+        notaFiscalValor: r.notaFiscalValor != null ? Number(r.notaFiscalValor) : null,
       },
     ])
   );

@@ -12,22 +12,29 @@ function revalidateAll() {
   revalidatePath("/hedge/mesa-operacao/[slug]", "page");
 }
 
-export async function upsertEnvioAmostra(
-  contratoId: string,
-  tipoAmostraId: string,
-  transportadoraId: string
-) {
+export type EnvioAmostraInput = {
+  tipoAmostraId: string;
+  transportadoraId: string;
+  cteNumero: string;
+  cteValor: string;
+  notaFiscalNumero: string;
+  notaFiscalValor: string;
+};
+
+export async function upsertEnvioAmostra(contratoId: string, input: EnvioAmostraInput) {
+  const data = {
+    tipoAmostraId: input.tipoAmostraId || null,
+    transportadoraId: input.transportadoraId || null,
+    cteNumero: input.cteNumero.trim() || null,
+    cteValor: input.cteValor.trim() ? Number(input.cteValor) : null,
+    notaFiscalNumero: input.notaFiscalNumero.trim() || null,
+    notaFiscalValor: input.notaFiscalValor.trim() ? Number(input.notaFiscalValor) : null,
+  };
+
   await prisma.contratoEnvioAmostra.upsert({
     where: { contratoId },
-    create: {
-      contratoId,
-      tipoAmostraId: tipoAmostraId || null,
-      transportadoraId: transportadoraId || null,
-    },
-    update: {
-      tipoAmostraId: tipoAmostraId || null,
-      transportadoraId: transportadoraId || null,
-    },
+    create: { contratoId, ...data },
+    update: data,
   });
 
   revalidateAll();

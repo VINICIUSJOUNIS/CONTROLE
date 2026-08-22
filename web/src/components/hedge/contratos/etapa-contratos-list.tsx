@@ -14,6 +14,7 @@ import {
   setPrevisaoEtapa,
   setEtapaConcluida,
   upsertEnvioAmostra,
+  EnvioAmostraInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import { statusOrder, statusLabels, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
 import { createClient } from "@/lib/supabase/client";
@@ -112,6 +113,17 @@ export function PrevisaoEtapa({
   );
 }
 
+function envioAmostraFormFromData(dados: EnvioAmostraData | undefined): EnvioAmostraInput {
+  return {
+    tipoAmostraId: dados?.tipoAmostraId ?? "",
+    transportadoraId: dados?.transportadoraId ?? "",
+    cteNumero: dados?.cteNumero ?? "",
+    cteValor: dados?.cteValor != null ? String(dados.cteValor) : "",
+    notaFiscalNumero: dados?.notaFiscalNumero ?? "",
+    notaFiscalValor: dados?.notaFiscalValor != null ? String(dados.notaFiscalValor) : "",
+  };
+}
+
 function EnvioAmostraSection({
   contratoId,
   dados,
@@ -125,54 +137,113 @@ function EnvioAmostraSection({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [tipoAmostraId, setTipoAmostraId] = useState(dados?.tipoAmostraId ?? "");
-  const [transportadoraId, setTransportadoraId] = useState(dados?.transportadoraId ?? "");
+  const [form, setForm] = useState<EnvioAmostraInput>(() => envioAmostraFormFromData(dados));
 
-  function handleChange(nextTipo: string, nextTransportadora: string) {
-    setTipoAmostraId(nextTipo);
-    setTransportadoraId(nextTransportadora);
+  function save(next: EnvioAmostraInput) {
     startTransition(async () => {
-      await upsertEnvioAmostra(contratoId, nextTipo, nextTransportadora);
+      await upsertEnvioAmostra(contratoId, next);
       router.refresh();
     });
   }
 
+  function handleSelectChange(patch: Partial<EnvioAmostraInput>) {
+    const next = { ...form, ...patch };
+    setForm(next);
+    save(next);
+  }
+
+  function handleTextBlur() {
+    save(form);
+  }
+
   return (
-    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
-      <div>
-        <p className="mb-1 text-xs font-medium text-muted">Tipo de Amostra</p>
-        <div className="flex gap-2">
-          <Select
-            value={tipoAmostraId}
-            disabled={isPending}
-            onChange={(e) => handleChange(e.target.value, transportadoraId)}
-          >
-            <option value="">Selecione...</option>
-            {tiposAmostra.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </Select>
-          <NovoTipoAmostra compact />
+    <div className="mt-3 space-y-3 border-t border-border pt-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Tipo de Amostra</p>
+          <div className="flex gap-2">
+            <Select
+              value={form.tipoAmostraId}
+              disabled={isPending}
+              onChange={(e) => handleSelectChange({ tipoAmostraId: e.target.value })}
+            >
+              <option value="">Selecione...</option>
+              {tiposAmostra.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </Select>
+            <NovoTipoAmostra compact />
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Envio por</p>
+          <div className="flex gap-2">
+            <Select
+              value={form.transportadoraId}
+              disabled={isPending}
+              onChange={(e) => handleSelectChange({ transportadoraId: e.target.value })}
+            >
+              <option value="">Selecione...</option>
+              {transportadorasAmostra.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </Select>
+            <NovaTransportadoraAmostra compact />
+          </div>
         </div>
       </div>
-      <div>
-        <p className="mb-1 text-xs font-medium text-muted">Envio por</p>
-        <div className="flex gap-2">
-          <Select
-            value={transportadoraId}
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">CT-e de Envio</p>
+          <input
+            value={form.cteNumero}
             disabled={isPending}
-            onChange={(e) => handleChange(tipoAmostraId, e.target.value)}
-          >
-            <option value="">Selecione...</option>
-            {transportadorasAmostra.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </Select>
-          <NovaTransportadoraAmostra compact />
+            onChange={(e) => setForm({ ...form, cteNumero: e.target.value })}
+            onBlur={handleTextBlur}
+            className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+          />
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Valor do CT-e (R$)</p>
+          <input
+            type="number"
+            step="0.01"
+            value={form.cteValor}
+            disabled={isPending}
+            onChange={(e) => setForm({ ...form, cteValor: e.target.value })}
+            onBlur={handleTextBlur}
+            className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Nota Fiscal de Envio</p>
+          <input
+            value={form.notaFiscalNumero}
+            disabled={isPending}
+            onChange={(e) => setForm({ ...form, notaFiscalNumero: e.target.value })}
+            onBlur={handleTextBlur}
+            className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+          />
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Valor da Nota Fiscal (R$)</p>
+          <input
+            type="number"
+            step="0.01"
+            value={form.notaFiscalValor}
+            disabled={isPending}
+            onChange={(e) => setForm({ ...form, notaFiscalValor: e.target.value })}
+            onBlur={handleTextBlur}
+            className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+          />
         </div>
       </div>
     </div>
