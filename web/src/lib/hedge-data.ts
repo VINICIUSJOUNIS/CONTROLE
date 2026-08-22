@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
+import { statusOrder } from "@/lib/contrato-shared";
 
 function toISODate(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -228,6 +229,81 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
       },
     ])
   );
+}
+
+export type HistoricoEtapaAnterior = {
+  etapa: StatusContratoValue;
+  anexos: ContratoAnexoData[];
+  previsao: string | null;
+};
+
+export type HistoricoAnteriorItem = {
+  confirmacaoNegocio: ConfirmacaoNegocioData | null;
+  porEtapa: HistoricoEtapaAnterior[];
+};
+
+// Resumo do que ja foi preenchido nas etapas anteriores a `etapaAtual`
+// (Confirmacao de Negocio, anexos e previsoes de cada etapa ja passada),
+// indexado por contratoId - usado para expandir o "historico" de um
+// contrato na Mesa de Operacao.
+export async function getHistoricoAnteriorPorContrato(
+  etapaAtual: StatusContratoValue
+): Promise<Record<string, HistoricoAnteriorItem>> {
+  const idx = statusOrder.indexOf(etapaAtual);
+  const etapasAnteriores = statusOrder.slice(0, idx);
+  if (etapasAnteriores.length === 0) return {};
+
+  const [anexosRows, previsoesRows, confirmacoes] = await Promise.all([
+    prisma.contratoAnexo.findMany({
+      where: { etapa: { in: etapasAnteriores } },
+      orderBy: { uploadedAt: "desc" },
+    }),
+    prisma.contratoEtapaPrevisao.findMany({ where: { etapa: { in: etapasAnteriores } } }),
+    etapasAnteriores.includes("CONFIRMACAO_NEGOCIO")
+      ? getConfirmacoesNegocio()
+      : Promise.resolve({} as Record<string, ConfirmacaoNegocioData>),
+  ]);
+
+  const result: Record<string, HistoricoAnteriorItem> = {};
+
+  function ensure(contratoId: string) {
+    return (result[contratoId] ??= { confirmacaoNegocio: null, porEtapa: [] });
+  }
+
+  function etapaEntry(item: HistoricoAnteriorItem, etapa: StatusContratoValue) {
+    let entry = item.porEtapa.find((e) => e.etapa === etapa);
+    if (!entry) {
+      entry = { etapa, anexos: [], previsao: null };
+      item.porEtapa.push(entry);
+    }
+    return entry;
+  }
+
+  for (const [contratoId, dados] of Object.entries(confirmacoes)) {
+    ensure(contratoId).confirmacaoNegocio = dados;
+  }
+
+  for (const r of anexosRows) {
+    const item = ensure(r.contratoId);
+    etapaEntry(item, r.etapa).anexos.push({
+      id: r.id,
+      fileName: r.fileName,
+      fileUrl: r.fileUrl,
+      fileSize: r.fileSize,
+      uploadedAt: r.uploadedAt.toISOString(),
+    });
+  }
+
+  for (const r of previsoesRows) {
+    const item = ensure(r.contratoId);
+    etapaEntry(item, r.etapa).previsao = toISODate(r.dataPrevisao);
+  }
+
+  for (const item of Object.values(result)) {
+    item.porEtapa.sort((a, b) => statusOrder.indexOf(a.etapa) - statusOrder.indexOf(b.etapa));
+  }
+
+  return result;
 }
 
 export async function getContratosExportacaoCount() {

@@ -2,8 +2,8 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { formatCompactCurrency, formatDate } from "@/lib/format";
-import { ContratoRow, ContratoAnexoData } from "@/lib/hedge-data";
+import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
+import { ContratoRow, ContratoAnexoData, HistoricoAnteriorItem } from "@/lib/hedge-data";
 import {
   updateContratoStatus,
   StatusContratoValue,
@@ -13,10 +13,20 @@ import {
   deleteContratoAnexo,
   setPrevisaoEtapa,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
-import { statusOrder, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
+import { statusOrder, statusLabels, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
-import { MapPin, Calendar, ChevronLeft, ChevronRight, Paperclip, Upload, X, AlertTriangle } from "lucide-react";
+import {
+  MapPin,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Paperclip,
+  Upload,
+  X,
+  AlertTriangle,
+} from "lucide-react";
 
 function formatFileSize(bytes: number | null) {
   if (!bytes) return "";
@@ -208,19 +218,98 @@ function AnexosSection({
   );
 }
 
+function ConfirmacaoNegocioResumo({ dados }: { dados: NonNullable<HistoricoAnteriorItem["confirmacaoNegocio"]> }) {
+  const linhas: [string, string][] = [];
+  if (dados.dataConfirmacao) linhas.push(["Confirmado em", formatDate(dados.dataConfirmacao)]);
+  if (dados.numeroContrato) linhas.push(["Contrato", dados.numeroContrato]);
+  if (dados.corretoraName) linhas.push(["Broker", dados.corretoraName]);
+  if (dados.valorUsd != null) linhas.push(["Valor", formatCurrency(dados.valorUsd, "USD")]);
+  if (dados.frete) linhas.push(["Frete", dados.frete]);
+  if (dados.tipoEmbalagemNome) linhas.push(["Embalagem", dados.tipoEmbalagemNome]);
+  if (dados.quantidadeSacas != null) linhas.push(["Quantidade", `${dados.quantidadeSacas} sacas`]);
+  if (dados.descricaoCafe) linhas.push(["Café", dados.descricaoCafe]);
+  if (dados.previsaoEmbarque) linhas.push(["Previsão embarque", formatDate(dados.previsaoEmbarque)]);
+  if (dados.destinoCarga) linhas.push(["Destino", dados.destinoCarga]);
+  if (dados.formaPagamento) linhas.push(["Pagamento", dados.formaPagamento]);
+
+  if (linhas.length === 0) return null;
+
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+        {statusLabels.CONFIRMACAO_NEGOCIO}
+      </p>
+      <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+        {linhas.map(([label, value]) => (
+          <div key={label} className="flex justify-between gap-2">
+            <dt className="text-muted">{label}</dt>
+            <dd className="text-right">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function HistoricoAnterior({ item }: { item: HistoricoAnteriorItem | undefined }) {
+  if (!item) return <p className="text-xs text-muted">Nenhuma etapa anterior preenchida ainda.</p>;
+
+  const temAlgo = item.confirmacaoNegocio || item.porEtapa.some((e) => e.anexos.length > 0 || e.previsao);
+  if (!temAlgo) return <p className="text-xs text-muted">Nenhuma etapa anterior preenchida ainda.</p>;
+
+  return (
+    <div className="space-y-3">
+      {item.confirmacaoNegocio && <ConfirmacaoNegocioResumo dados={item.confirmacaoNegocio} />}
+      {item.porEtapa
+        .filter((e) => e.anexos.length > 0 || e.previsao)
+        .map((e) => (
+          <div key={e.etapa}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">{statusLabels[e.etapa]}</p>
+            {e.previsao && (
+              <p className="mt-1 text-xs">
+                Previsão: <span className="text-foreground">{formatDate(e.previsao)}</span>
+              </p>
+            )}
+            {e.anexos.length > 0 && (
+              <ul className="mt-1 space-y-1">
+                {e.anexos.map((a) => (
+                  <li key={a.id} className="flex items-center gap-1 text-xs">
+                    <Paperclip size={11} className="shrink-0 text-muted" />
+                    <a
+                      href={a.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-w-0 truncate text-primary hover:underline"
+                      title={a.fileName}
+                    >
+                      {a.fileName}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+    </div>
+  );
+}
+
 export function EtapaContratosList({
   contratos,
   status,
   anexos,
   previsoes,
+  historico,
 }: {
   contratos: ContratoRow[];
   status: StatusContratoValue;
   anexos: Record<string, ContratoAnexoData[]>;
   previsoes: Record<string, string>;
+  historico: Record<string, HistoricoAnteriorItem>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const dateField = relevantDateField[status];
   const idx = statusOrder.indexOf(status);
 
@@ -238,66 +327,91 @@ export function EtapaContratosList({
   }
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="space-y-2">
       {contratos.map((item) => {
         const dateValue = item[dateField];
+        const isExpanded = expandedId === item.id;
         return (
-          <div key={item.id} className="w-72 shrink-0 rounded-lg border border-border bg-card p-3">
-            <p className="font-semibold">{item.contractNumber}</p>
-            <p className="text-sm">{item.clienteName}</p>
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
-              <MapPin size={12} />
-              {item.country}
-            </p>
-            <p className="mt-2 text-sm font-medium text-primary">
-              {formatCompactCurrency(item.valorUsd, "USD")}
-            </p>
-            <p className="mt-1 flex items-center gap-1 text-xs text-muted">
-              <Calendar size={12} />
-              {dateValue
-                ? `${dateFieldLabels[dateField]}: ${formatDate(dateValue)}`
-                : `${dateFieldLabels[dateField]}: sem data`}
-            </p>
+          <Card key={item.id} className="overflow-hidden p-0">
+            <button
+              onClick={() => setExpandedId(isExpanded ? null : item.id)}
+              className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 p-3 text-left hover:bg-border/20"
+            >
+              <ChevronDown
+                size={16}
+                className={`shrink-0 text-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{item.contractNumber}</p>
+                <p className="flex items-center gap-1 text-xs text-muted">
+                  {item.clienteName}
+                  <MapPin size={11} className="ml-1" />
+                  {item.country}
+                </p>
+              </div>
+              <p className="text-sm font-medium text-primary">{formatCompactCurrency(item.valorUsd, "USD")}</p>
+              <p className="flex items-center gap-1 text-xs text-muted">
+                <Calendar size={12} />
+                {dateValue
+                  ? `${dateFieldLabels[dateField]}: ${formatDate(dateValue)}`
+                  : `${dateFieldLabels[dateField]}: sem data`}
+              </p>
+              {(anexos[item.id]?.length ?? 0) > 0 && (
+                <span className="flex items-center gap-1 text-xs text-muted">
+                  <Paperclip size={12} />
+                  {anexos[item.id]!.length}
+                </span>
+              )}
+            </button>
 
-            <AnexosSection contratoId={item.id} status={status} anexos={anexos[item.id] ?? []} />
+            {isExpanded && (
+              <div className="border-t border-border p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Etapas anteriores
+                </p>
+                <HistoricoAnterior item={historico[item.id]} />
 
-            {status === "ASSINATURA_CONTRATO" && (
-              <PrevisaoAssinatura contratoId={item.id} status={status} previsao={previsoes[item.id]} />
+                <AnexosSection contratoId={item.id} status={status} anexos={anexos[item.id] ?? []} />
+
+                {status === "ASSINATURA_CONTRATO" && (
+                  <PrevisaoAssinatura contratoId={item.id} status={status} previsao={previsoes[item.id]} />
+                )}
+
+                {status === "ASSINATURA_CONTRATO" && (
+                  <label className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs">
+                    <input
+                      type="checkbox"
+                      disabled={isPending}
+                      onChange={(e) => {
+                        if (e.target.checked) moveStatus(item.id, 1);
+                      }}
+                      className="h-3.5 w-3.5 rounded border-border"
+                    />
+                    Contrato assinado
+                  </label>
+                )}
+
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
+                  <button
+                    onClick={() => moveStatus(item.id, -1)}
+                    disabled={isPending || idx === 0}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronLeft size={14} />
+                    Voltar
+                  </button>
+                  <button
+                    onClick={() => moveStatus(item.id, 1)}
+                    disabled={isPending || idx === statusOrder.length - 1}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    Avançar
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
             )}
-
-            {status === "ASSINATURA_CONTRATO" && (
-              <label className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs">
-                <input
-                  type="checkbox"
-                  disabled={isPending}
-                  onChange={(e) => {
-                    if (e.target.checked) moveStatus(item.id, 1);
-                  }}
-                  className="h-3.5 w-3.5 rounded border-border"
-                />
-                Contrato assinado
-              </label>
-            )}
-
-            <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
-              <button
-                onClick={() => moveStatus(item.id, -1)}
-                disabled={isPending || idx === 0}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
-              >
-                <ChevronLeft size={14} />
-                Voltar
-              </button>
-              <button
-                onClick={() => moveStatus(item.id, 1)}
-                disabled={isPending || idx === statusOrder.length - 1}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
-              >
-                Avançar
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
+          </Card>
         );
       })}
     </div>
