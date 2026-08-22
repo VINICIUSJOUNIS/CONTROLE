@@ -4,6 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { parseLocalDate } from "@/lib/date";
 
+function revalidateAll() {
+  revalidatePath("/hedge");
+  revalidatePath("/hedge/contratos");
+  revalidatePath("/hedge/mesa-operacao");
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+}
+
 export type ConfirmacaoNegocioInput = {
   dataConfirmacao: string;
   numeroContrato: string;
@@ -19,8 +26,8 @@ export type ConfirmacaoNegocioInput = {
   formaPagamento: string;
 };
 
-export async function upsertConfirmacaoNegocio(contratoId: string, input: ConfirmacaoNegocioInput) {
-  const data = {
+function confirmacaoData(input: ConfirmacaoNegocioInput) {
+  return {
     dataConfirmacao: input.dataConfirmacao ? parseLocalDate(input.dataConfirmacao) : null,
     numeroContrato: input.numeroContrato.trim() || null,
     corretoraId: input.corretoraId || null,
@@ -34,6 +41,10 @@ export async function upsertConfirmacaoNegocio(contratoId: string, input: Confir
     destinoCarga: input.destinoCarga.trim() || null,
     formaPagamento: input.formaPagamento.trim() || null,
   };
+}
+
+export async function upsertConfirmacaoNegocio(contratoId: string, input: ConfirmacaoNegocioInput) {
+  const data = confirmacaoData(input);
 
   await prisma.contratoConfirmacaoNegocio.upsert({
     where: { contratoId },
@@ -41,5 +52,34 @@ export async function upsertConfirmacaoNegocio(contratoId: string, input: Confir
     update: data,
   });
 
-  revalidatePath("/hedge/mesa-operacao/confirmacao-negocio");
+  revalidateAll();
+}
+
+// Cadastra o contrato direto pela etapa "Confirmacao de Negocio" da Mesa de
+// Operacao (em vez de exigir criar antes pela tela de Contratos): cria o
+// ContratoExportacao (que entra na mesa ja em CONFIRMACAO_NEGOCIO) e a ficha
+// da etapa juntos, na mesma transacao.
+export async function createContratoComConfirmacao(input: ConfirmacaoNegocioInput) {
+  const numeroContrato = input.numeroContrato.trim();
+  if (!numeroContrato) throw new Error("Informe o numero do contrato.");
+  if (!input.clienteId) throw new Error("Selecione o cliente.");
+
+  await prisma.$transaction(async (tx) => {
+    const contrato = await tx.contratoExportacao.create({
+      data: {
+        contractNumber: numeroContrato,
+        clienteId: input.clienteId,
+        corretoraId: input.corretoraId || null,
+        country: input.destinoCarga.trim(),
+        valorUsd: input.valorUsd,
+        status: "CONFIRMACAO_NEGOCIO",
+      },
+    });
+
+    await tx.contratoConfirmacaoNegocio.create({
+      data: { contratoId: contrato.id, ...confirmacaoData(input) },
+    });
+  });
+
+  revalidateAll();
 }

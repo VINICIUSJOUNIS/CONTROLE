@@ -8,9 +8,13 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
 import { ContratoRow, ConfirmacaoNegocioData } from "@/lib/hedge-data";
-import { upsertConfirmacaoNegocio, ConfirmacaoNegocioInput } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
+import {
+  upsertConfirmacaoNegocio,
+  createContratoComConfirmacao,
+  ConfirmacaoNegocioInput,
+} from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import { Cliente, Corretora } from "@/lib/contrato-shared";
-import { Pencil, MapPin } from "lucide-react";
+import { Pencil, MapPin, Plus } from "lucide-react";
 
 function emptyForm(): ConfirmacaoNegocioInput {
   return {
@@ -62,29 +66,59 @@ export function ConfirmacaoNegocioList({
   const [open, setOpen] = useState(false);
   const [editingContratoId, setEditingContratoId] = useState<string | null>(null);
   const [form, setForm] = useState<ConfirmacaoNegocioInput>(emptyForm());
+  const [error, setError] = useState<string | null>(null);
 
   function openEdit(contratoId: string) {
     const existing = confirmacoes[contratoId];
     setEditingContratoId(contratoId);
     setForm(existing ? formFromData(existing) : emptyForm());
+    setError(null);
+    setOpen(true);
+  }
+
+  function openCreate() {
+    setEditingContratoId(null);
+    setForm(emptyForm());
+    setError(null);
     setOpen(true);
   }
 
   function handleSave() {
-    if (!editingContratoId) return;
+    if (!editingContratoId && !form.numeroContrato.trim()) {
+      setError("Informe o numero do contrato.");
+      return;
+    }
+    if (!editingContratoId && !form.clienteId) {
+      setError("Selecione o cliente.");
+      return;
+    }
+    setError(null);
     startTransition(async () => {
-      await upsertConfirmacaoNegocio(editingContratoId, form);
-      setOpen(false);
-      router.refresh();
+      try {
+        if (editingContratoId) {
+          await upsertConfirmacaoNegocio(editingContratoId, form);
+        } else {
+          await createContratoComConfirmacao(form);
+        }
+        setOpen(false);
+        router.refresh();
+      } catch {
+        setError("Nao foi possivel salvar. Confira se o numero do contrato ja nao esta em uso.");
+      }
     });
   }
 
-  if (contratos.length === 0) {
-    return <Card className="p-6 text-center text-sm text-muted">Nenhum contrato nesta etapa.</Card>;
-  }
-
   return (
-    <>
+    <div className="space-y-4">
+      <Button onClick={openCreate}>
+        <Plus size={16} />
+        Novo Contrato
+      </Button>
+
+      {contratos.length === 0 && (
+        <Card className="p-6 text-center text-sm text-muted">Nenhum contrato nesta etapa ainda.</Card>
+      )}
+
       <div className="flex flex-wrap gap-3">
         {contratos.map((item) => {
           const dados = confirmacoes[item.id];
@@ -138,7 +172,7 @@ export function ConfirmacaoNegocioList({
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent title="Confirmação de Negócio">
+        <DialogContent title={editingContratoId ? "Confirmação de Negócio" : "Novo Contrato — Confirmação de Negócio"}>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -261,12 +295,13 @@ export function ConfirmacaoNegocioList({
               />
             </div>
 
+            {error && <p className="text-sm text-danger">{error}</p>}
             <Button className="w-full" onClick={handleSave} disabled={isPending}>
               {isPending ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
