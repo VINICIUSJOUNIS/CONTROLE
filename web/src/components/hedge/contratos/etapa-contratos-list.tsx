@@ -233,6 +233,10 @@ function ConfirmacaoNegocioResumo({ dados }: { dados: NonNullable<HistoricoAnter
       })}`,
     ]);
   if (dados.frete) linhas.push(["Frete", dados.frete]);
+  if (dados.fixacaoTipo) linhas.push(["Fixação", dados.fixacaoTipo === "BUYER" ? "Buyer" : "Seller"]);
+  if (dados.dataFixacao) linhas.push(["Data da fixação", formatDate(dados.dataFixacao)]);
+  if (dados.nivelBolsa != null) linhas.push(["Nível de bolsa", String(dados.nivelBolsa)]);
+  if (dados.valorDolar != null) linhas.push(["Valor do dólar", String(dados.valorDolar)]);
   if (dados.tipoEmbalagemNome) linhas.push(["Embalagem", dados.tipoEmbalagemNome]);
   if (dados.quantidadeSacas != null) linhas.push(["Quantidade", `${dados.quantidadeSacas} sacas`]);
   if (dados.descricaoCafe) linhas.push(["Café", dados.descricaoCafe]);

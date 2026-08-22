@@ -154,6 +154,10 @@ export type ConfirmacaoNegocioData = {
   destinoCarga: string | null;
   formaPagamento: string | null;
   diferencial: number | null;
+  fixacaoTipo: string | null;
+  dataFixacao: string | null;
+  nivelBolsa: number | null;
+  valorDolar: number | null;
 };
 
 export async function getTiposEmbalagem() {
@@ -228,6 +232,10 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
         destinoCarga: r.destinoCarga,
         formaPagamento: r.formaPagamento,
         diferencial: r.diferencial != null ? Number(r.diferencial) : null,
+        fixacaoTipo: r.fixacaoTipo,
+        dataFixacao: r.dataFixacao ? toISODate(r.dataFixacao) : null,
+        nivelBolsa: r.nivelBolsa != null ? Number(r.nivelBolsa) : null,
+        valorDolar: r.valorDolar != null ? Number(r.valorDolar) : null,
       },
     ])
   );

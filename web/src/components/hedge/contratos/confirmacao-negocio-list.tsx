@@ -36,6 +36,10 @@ function emptyForm(): ConfirmacaoNegocioInput {
     destinoCarga: "",
     formaPagamento: "",
     diferencial: "",
+    fixacaoTipo: "",
+    dataFixacao: "",
+    nivelBolsa: "",
+    valorDolar: "",
   };
 }
 
@@ -54,6 +58,10 @@ function formFromData(data: ConfirmacaoNegocioData): ConfirmacaoNegocioInput {
     destinoCarga: data.destinoCarga ?? "",
     formaPagamento: data.formaPagamento ?? "",
     diferencial: data.diferencial != null ? String(data.diferencial) : "",
+    fixacaoTipo: data.fixacaoTipo ?? "",
+    dataFixacao: data.dataFixacao ?? "",
+    nivelBolsa: data.nivelBolsa != null ? String(data.nivelBolsa) : "",
+    valorDolar: data.valorDolar != null ? String(data.valorDolar) : "",
   };
 }
 
@@ -188,6 +196,10 @@ export function ConfirmacaoNegocioList({
                     </p>
                   )}
                   {dados.frete && <p>Frete: {dados.frete}</p>}
+                  {dados.fixacaoTipo && <p>Fixação: {dados.fixacaoTipo === "BUYER" ? "Buyer" : "Seller"}</p>}
+                  {dados.dataFixacao && <p>Data da fixação: {formatDate(dados.dataFixacao)}</p>}
+                  {dados.nivelBolsa != null && <p>Nível de bolsa: {dados.nivelBolsa}</p>}
+                  {dados.valorDolar != null && <p>Valor do dólar: {dados.valorDolar}</p>}
                   {dados.tipoEmbalagemNome && <p>Embalagem: {dados.tipoEmbalagemNome}</p>}
                   {dados.quantidadeSacas != null && <p>Quantidade: {dados.quantidadeSacas} sacas</p>}
                   {dados.descricaoCafe && <p>Café: {dados.descricaoCafe}</p>}
@@ -316,6 +328,46 @@ export function ConfirmacaoNegocioList({
                   <option value="FOB">FOB</option>
                   <option value="CIF">CIF</option>
                 </Select>
+              </div>
+              <div>
+                <Label>Fixação do Contrato</Label>
+                <Select
+                  value={form.fixacaoTipo}
+                  onChange={(e) => setForm({ ...form, fixacaoTipo: e.target.value })}
+                >
+                  <option value="">Selecione...</option>
+                  <option value="BUYER">Buyer</option>
+                  <option value="SELLER">Seller</option>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Data da Fixação</Label>
+                <Input
+                  type="date"
+                  value={form.dataFixacao}
+                  onChange={(e) => setForm({ ...form, dataFixacao: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Nível de Bolsa</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.nivelBolsa}
+                  onChange={(e) => setForm({ ...form, nivelBolsa: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Valor do Dólar</Label>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  value={form.valorDolar}
+                  onChange={(e) => setForm({ ...form, valorDolar: e.target.value })}
+                />
               </div>
             </div>
 

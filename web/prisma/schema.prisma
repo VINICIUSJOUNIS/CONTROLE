@@ -539,6 +539,10 @@ model ContratoConfirmacaoNegocio {
   destinoCarga     String?
   formaPagamento   String?
   diferencial      Decimal?            @db.Decimal(10, 4)
+  fixacaoTipo      String?
+  dataFixacao      DateTime?           @db.Date
+  nivelBolsa       Decimal?            @db.Decimal(10, 4)
+  valorDolar       Decimal?            @db.Decimal(10, 4)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
