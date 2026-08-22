@@ -9,6 +9,7 @@ import {
 export const statusOrder: StatusContratoValue[] = [
   "CONFIRMACAO_NEGOCIO",
   "ASSINATURA_CONTRATO",
+  "PROFORMA_INVOICE",
   "ENVIO_AMOSTRA_PSS",
   "APROVACAO_AMOSTRA_PSS",
   "ENVIO_ARTE_SACARIA",
@@ -41,6 +42,7 @@ export function slugToStatus(slug: string): StatusContratoValue | null {
 export const statusLabels: Record<StatusContratoValue, string> = {
   CONFIRMACAO_NEGOCIO: "Confirmacao de negocio",
   ASSINATURA_CONTRATO: "Assinatura de contrato",
+  PROFORMA_INVOICE: "Proforma Invoice",
   ENVIO_AMOSTRA_PSS: "Envio de amostra de aprovacao (PSS)",
   APROVACAO_AMOSTRA_PSS: "Aprovacao da amostra (PSS)",
   ENVIO_ARTE_SACARIA: "Envio da arte de sacaria",
@@ -71,6 +73,7 @@ export const relevantDateField: Record<
 > = {
   CONFIRMACAO_NEGOCIO: "dataEstufagem",
   ASSINATURA_CONTRATO: "dataEstufagem",
+  PROFORMA_INVOICE: "dataEstufagem",
   ENVIO_AMOSTRA_PSS: "dataEstufagem",
   APROVACAO_AMOSTRA_PSS: "dataEstufagem",
   ENVIO_ARTE_SACARIA: "dataEstufagem",

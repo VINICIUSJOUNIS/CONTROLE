@@ -90,6 +90,7 @@ export async function getClientes() {
 const dataFieldByStatus = {
   CONFIRMACAO_NEGOCIO: "dataEstufagem",
   ASSINATURA_CONTRATO: "dataEstufagem",
+  PROFORMA_INVOICE: "dataEstufagem",
   ENVIO_AMOSTRA_PSS: "dataEstufagem",
   APROVACAO_AMOSTRA_PSS: "dataEstufagem",
   ENVIO_ARTE_SACARIA: "dataEstufagem",

@@ -7,6 +7,7 @@ import { parseLocalDate } from "@/lib/date";
 export type StatusContratoValue =
   | "CONFIRMACAO_NEGOCIO"
   | "ASSINATURA_CONTRATO"
+  | "PROFORMA_INVOICE"
   | "ENVIO_AMOSTRA_PSS"
   | "APROVACAO_AMOSTRA_PSS"
   | "ENVIO_ARTE_SACARIA"

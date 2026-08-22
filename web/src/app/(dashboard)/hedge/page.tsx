@@ -15,6 +15,7 @@ const statusLabels: Record<string, string> = {
 const statusVariant: Record<string, "default" | "success" | "danger" | "warning" | "neutral"> = {
   CONFIRMACAO_NEGOCIO: "neutral",
   ASSINATURA_CONTRATO: "neutral",
+  PROFORMA_INVOICE: "neutral",
   ENVIO_AMOSTRA_PSS: "default",
   APROVACAO_AMOSTRA_PSS: "default",
   ENVIO_ARTE_SACARIA: "default",
