@@ -21,7 +21,7 @@ import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
 import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embalagem";
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
-import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 function emptyForm(): ConfirmacaoNegocioInput {
   return {
@@ -90,6 +90,7 @@ export function ConfirmacaoNegocioList({
   const [editingContratoId, setEditingContratoId] = useState<string | null>(null);
   const [form, setForm] = useState<ConfirmacaoNegocioInput>(emptyForm());
   const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   function openEdit(contratoId: string) {
     const existing = confirmacoes[contratoId];
@@ -155,113 +156,200 @@ export function ConfirmacaoNegocioList({
         <Card className="p-6 text-center text-sm text-muted">Nenhum contrato nesta etapa ainda.</Card>
       )}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="space-y-2">
         {contratos.map((item) => {
           const dados = confirmacoes[item.id];
+          const isExpanded = expandedId === item.id;
+          const idx = statusOrder.indexOf(item.status as StatusContratoValue);
           return (
-            <div key={item.id} className="w-72 shrink-0 rounded-lg border border-border bg-card p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold">{item.contractNumber}</p>
-                  <p className="text-sm">{item.clienteName}</p>
-                </div>
+            <Card key={item.id} className="overflow-hidden p-0">
+              <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 p-3">
                 <button
-                  onClick={() => openEdit(item.id)}
-                  className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
-                  title="Preencher confirmação de negócio"
+                  onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                  className="flex min-w-0 flex-1 items-center gap-x-4 gap-y-1 text-left"
                 >
-                  <Pencil size={14} />
-                </button>
-              </div>
-              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
-                <MapPin size={12} />
-                {item.country}
-              </p>
-              <p className="mt-2 text-sm font-medium text-primary">
-                {formatCompactCurrency(item.valorUsd, "USD")}
-              </p>
-
-              {dados ? (
-                <div className="mt-3 space-y-1 border-t border-border pt-2 text-xs text-muted">
-                  <p>
-                    Confirmado em: {dados.dataConfirmacao ? formatDate(dados.dataConfirmacao) : "-"}
+                  <ChevronDown
+                    size={16}
+                    className={`shrink-0 text-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{item.contractNumber}</p>
+                    <p className="flex items-center gap-1 text-xs text-muted">
+                      {item.clienteName}
+                      <MapPin size={11} className="ml-1" />
+                      {item.country}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-sm font-medium text-primary">
+                    {formatCompactCurrency(item.valorUsd, "USD")}
                   </p>
-                  {dados.numeroContrato && <p>Contrato: {dados.numeroContrato}</p>}
-                  {dados.corretoraName && <p>Broker: {dados.corretoraName}</p>}
-                  {dados.valorUsd != null && <p>Valor: {formatCurrency(dados.valorUsd, "USD")}</p>}
-                  {dados.diferencial != null && (
-                    <p>
-                      Diferencial:{" "}
-                      <span className={dados.diferencial < 0 ? "text-danger" : undefined}>
-                        {dados.diferencial >= 0 ? "+" : ""}
-                        {dados.diferencial.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
+                  {!dados && (
+                    <p className="shrink-0 text-xs text-muted">Confirmação ainda não preenchida</p>
+                  )}
+                </button>
+
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(item.id);
+                    }}
+                    className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
+                    title="Preencher confirmação de negócio"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <label
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={concluidas[item.id] ?? false}
+                      disabled={isPending}
+                      onChange={(e) => {
+                        startTransition(async () => {
+                          await setEtapaConcluida(item.id, "CONFIRMACAO_NEGOCIO", e.target.checked);
+                          router.refresh();
+                        });
+                      }}
+                      className="h-3.5 w-3.5 rounded border-border"
+                    />
+                    Concluído
+                  </label>
+                  <button
+                    onClick={() => moveStatus(item.id, -1)}
+                    disabled={isPending || idx === 0}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronLeft size={14} />
+                    Voltar
+                  </button>
+                  <button
+                    onClick={() => moveStatus(item.id, 1)}
+                    disabled={isPending || idx === statusOrder.length - 1 || !(concluidas[item.id] ?? false)}
+                    title={!(concluidas[item.id] ?? false) ? "Marque como concluído para avançar" : undefined}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    Avançar
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className="border-t border-border p-3">
+                  {dados ? (
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+                      <div className="flex justify-between gap-2">
+                        <dt className="text-muted">Confirmado em</dt>
+                        <dd>{dados.dataConfirmacao ? formatDate(dados.dataConfirmacao) : "-"}</dd>
+                      </div>
+                      {dados.numeroContrato && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Contrato</dt>
+                          <dd>{dados.numeroContrato}</dd>
+                        </div>
+                      )}
+                      {dados.corretoraName && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Broker</dt>
+                          <dd>{dados.corretoraName}</dd>
+                        </div>
+                      )}
+                      {dados.valorUsd != null && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Valor</dt>
+                          <dd>{formatCurrency(dados.valorUsd, "USD")}</dd>
+                        </div>
+                      )}
+                      {dados.diferencial != null && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Diferencial</dt>
+                          <dd className={dados.diferencial < 0 ? "text-danger" : undefined}>
+                            {dados.diferencial >= 0 ? "+" : ""}
+                            {dados.diferencial.toLocaleString("pt-BR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </dd>
+                        </div>
+                      )}
+                      {dados.frete && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Frete</dt>
+                          <dd>{dados.frete}</dd>
+                        </div>
+                      )}
+                      {dados.fixacaoTipo && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Fixação</dt>
+                          <dd>{dados.fixacaoTipo === "BUYER" ? "Buyer" : "Seller"}</dd>
+                        </div>
+                      )}
+                      {dados.dataFixacao && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Data da fixação</dt>
+                          <dd>{formatDate(dados.dataFixacao)}</dd>
+                        </div>
+                      )}
+                      {dados.nivelBolsa != null && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Nível de bolsa</dt>
+                          <dd>{dados.nivelBolsa}</dd>
+                        </div>
+                      )}
+                      {dados.valorDolar != null && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Valor do dólar</dt>
+                          <dd>{dados.valorDolar}</dd>
+                        </div>
+                      )}
+                      {dados.tipoEmbalagemNome && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Embalagem</dt>
+                          <dd>{dados.tipoEmbalagemNome}</dd>
+                        </div>
+                      )}
+                      {dados.quantidadeSacas != null && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Quantidade</dt>
+                          <dd>{dados.quantidadeSacas} sacas</dd>
+                        </div>
+                      )}
+                      {dados.descricaoCafe && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Café</dt>
+                          <dd>{dados.descricaoCafe}</dd>
+                        </div>
+                      )}
+                      {dados.previsaoEmbarque && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Previsão embarque</dt>
+                          <dd>{formatDate(dados.previsaoEmbarque)}</dd>
+                        </div>
+                      )}
+                      {dados.destinoCarga && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Destino</dt>
+                          <dd>{dados.destinoCarga}</dd>
+                        </div>
+                      )}
+                      {dados.formaPagamentoNome && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Pagamento</dt>
+                          <dd>{dados.formaPagamentoNome}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  ) : (
+                    <p className="text-xs text-muted">
+                      Confirmação de negócio ainda não preenchida. Clique no lápis para preencher.
                     </p>
                   )}
-                  {dados.frete && <p>Frete: {dados.frete}</p>}
-                  {dados.fixacaoTipo && <p>Fixação: {dados.fixacaoTipo === "BUYER" ? "Buyer" : "Seller"}</p>}
-                  {dados.dataFixacao && <p>Data da fixação: {formatDate(dados.dataFixacao)}</p>}
-                  {dados.nivelBolsa != null && <p>Nível de bolsa: {dados.nivelBolsa}</p>}
-                  {dados.valorDolar != null && <p>Valor do dólar: {dados.valorDolar}</p>}
-                  {dados.tipoEmbalagemNome && <p>Embalagem: {dados.tipoEmbalagemNome}</p>}
-                  {dados.quantidadeSacas != null && <p>Quantidade: {dados.quantidadeSacas} sacas</p>}
-                  {dados.descricaoCafe && <p>Café: {dados.descricaoCafe}</p>}
-                  {dados.previsaoEmbarque && <p>Previsão embarque: {formatDate(dados.previsaoEmbarque)}</p>}
-                  {dados.destinoCarga && <p>Destino: {dados.destinoCarga}</p>}
-                  {dados.formaPagamentoNome && <p>Pagamento: {dados.formaPagamentoNome}</p>}
                 </div>
-              ) : (
-                <p className="mt-3 border-t border-border pt-2 text-xs text-muted">
-                  Confirmação de negócio ainda não preenchida.
-                </p>
               )}
-
-              <label className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted">
-                <input
-                  type="checkbox"
-                  checked={concluidas[item.id] ?? false}
-                  disabled={isPending}
-                  onChange={(e) => {
-                    startTransition(async () => {
-                      await setEtapaConcluida(item.id, "CONFIRMACAO_NEGOCIO", e.target.checked);
-                      router.refresh();
-                    });
-                  }}
-                  className="h-3.5 w-3.5 rounded border-border"
-                />
-                Concluído
-              </label>
-
-              <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
-                {(() => {
-                  const idx = statusOrder.indexOf(item.status as StatusContratoValue);
-                  return (
-                    <>
-                      <button
-                        onClick={() => moveStatus(item.id, -1)}
-                        disabled={isPending || idx === 0}
-                        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
-                      >
-                        <ChevronLeft size={14} />
-                        Voltar
-                      </button>
-                      <button
-                        onClick={() => moveStatus(item.id, 1)}
-                        disabled={isPending || idx === statusOrder.length - 1 || !(concluidas[item.id] ?? false)}
-                        title={!(concluidas[item.id] ?? false) ? "Marque como concluído para avançar" : undefined}
-                        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
-                      >
-                        Avançar
-                        <ChevronRight size={14} />
-                      </button>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
+            </Card>
           );
         })}
       </div>
