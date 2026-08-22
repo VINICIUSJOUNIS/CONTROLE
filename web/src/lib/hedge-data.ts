@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
 
 function toISODate(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -155,6 +156,38 @@ export type ConfirmacaoNegocioData = {
 export async function getTiposEmbalagem() {
   const tipos = await prisma.tipoEmbalagem.findMany({ orderBy: { name: "asc" } });
   return tipos.map((t) => ({ id: t.id, name: t.name }));
+}
+
+export type ContratoAnexoData = {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number | null;
+  uploadedAt: string;
+};
+
+// Anexos de um contrato numa etapa especifica (contrato assinado, amostra,
+// BL, etc), indexados por contratoId.
+export async function getContratoAnexosPorEtapa(
+  etapa: StatusContratoValue
+): Promise<Record<string, ContratoAnexoData[]>> {
+  const rows = await prisma.contratoAnexo.findMany({
+    where: { etapa },
+    orderBy: { uploadedAt: "desc" },
+  });
+
+  const porContrato: Record<string, ContratoAnexoData[]> = {};
+  for (const r of rows) {
+    const item = {
+      id: r.id,
+      fileName: r.fileName,
+      fileUrl: r.fileUrl,
+      fileSize: r.fileSize,
+      uploadedAt: r.uploadedAt.toISOString(),
+    };
+    (porContrato[r.contratoId] ??= []).push(item);
+  }
+  return porContrato;
 }
 
 // Ficha da etapa "Confirmacao de Negocio", indexada por contratoId - campos

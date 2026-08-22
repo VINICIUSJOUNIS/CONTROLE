@@ -3,12 +3,42 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { parseLocalDate } from "@/lib/date";
+import { StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
 
 function revalidateAll() {
   revalidatePath("/hedge");
   revalidatePath("/hedge/contratos");
   revalidatePath("/hedge/mesa-operacao");
   revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+}
+
+export type AddContratoAnexoInput = {
+  contratoId: string;
+  etapa: StatusContratoValue;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number;
+};
+
+// O upload em si (para o Supabase Storage) acontece no navegador; esta acao
+// so grava a referencia do arquivo ja enviado.
+export async function addContratoAnexo(input: AddContratoAnexoInput) {
+  await prisma.contratoAnexo.create({
+    data: {
+      contratoId: input.contratoId,
+      etapa: input.etapa,
+      fileName: input.fileName,
+      fileUrl: input.fileUrl,
+      fileSize: input.fileSize,
+    },
+  });
+
+  revalidateAll();
+}
+
+export async function deleteContratoAnexo(id: string) {
+  await prisma.contratoAnexo.delete({ where: { id } });
+  revalidateAll();
 }
 
 export type ConfirmacaoNegocioInput = {

@@ -470,6 +470,7 @@ model ContratoExportacao {
   // Dados proprios (independentes dos campos gerais do contrato acima) preenchidos
   // na etapa "Confirmacao de Negocio" da Mesa de Operacao.
   confirmacaoNegocio ContratoConfirmacaoNegocio?
+  anexos             ContratoAnexo[]
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?
@@ -553,6 +554,25 @@ model TipoEmbalagem {
   createdAt           DateTime                     @default(now())
 
   @@map("tipos_embalagem")
+}
+
+// Documentos anexados a um contrato em qualquer etapa da Mesa de Operacao
+// (contrato assinado, amostra, arte de sacaria, BL, etc). O arquivo em si
+// fica no Supabase Storage (bucket "contrato-anexos"); aqui guardamos so a
+// referencia.
+model ContratoAnexo {
+  id         String         @id @default(uuid())
+  contrato   ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId String
+  etapa      StatusContrato
+  fileName   String
+  fileUrl    String
+  fileSize   Int?
+  uploadedAt DateTime       @default(now())
+
+  @@index([contratoId])
+  @@index([etapa])
+  @@map("contrato_anexos")
 }
 
 enum BudgetScenario {
