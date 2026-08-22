@@ -108,6 +108,59 @@ function PrevisaoAssinatura({
   );
 }
 
+async function uploadAnexo(contratoId: string, status: StatusContratoValue, file: File) {
+  const supabase = createClient();
+  const path = `${contratoId}/${status}/${Date.now()}-${file.name}`;
+  const { error: uploadError } = await supabase.storage.from("contrato-anexos").upload(path, file);
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from("contrato-anexos").getPublicUrl(path);
+
+  await addContratoAnexo({
+    contratoId,
+    etapa: status,
+    fileName: file.name,
+    fileUrl: data.publicUrl,
+    fileSize: file.size,
+  });
+}
+
+function QuickUploadButton({ contratoId, status }: { contratoId: string; status: StatusContratoValue }) {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      await uploadAnexo(contratoId, status, file);
+      router.refresh();
+    } catch {
+      // erro exibido na lista de anexos ao expandir a linha
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <span onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:opacity-50"
+      >
+        <Upload size={14} />
+        {uploading ? "Enviando..." : "Anexar"}
+      </button>
+      <input ref={inputRef} type="file" className="hidden" onChange={handleFileChange} />
+    </span>
+  );
+}
+
 function AnexosSection({
   contratoId,
   status,
@@ -131,20 +184,7 @@ function AnexosSection({
     setUploading(true);
     setError(null);
     try {
-      const supabase = createClient();
-      const path = `${contratoId}/${status}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("contrato-anexos").upload(path, file);
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from("contrato-anexos").getPublicUrl(path);
-
-      await addContratoAnexo({
-        contratoId,
-        etapa: status,
-        fileName: file.name,
-        fileUrl: data.publicUrl,
-        fileSize: file.size,
-      });
+      await uploadAnexo(contratoId, status, file);
       router.refresh();
     } catch {
       setError("Nao foi possivel enviar o arquivo.");
@@ -380,6 +420,7 @@ export function EtapaContratosList({
               </button>
 
               <div className="flex shrink-0 items-center gap-1">
+                <QuickUploadButton contratoId={item.id} status={status} />
                 <button
                   onClick={() => moveStatus(item.id, -1)}
                   disabled={isPending || idx === 0}
