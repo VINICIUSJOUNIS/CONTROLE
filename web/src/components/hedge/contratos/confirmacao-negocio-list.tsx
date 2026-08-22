@@ -19,6 +19,7 @@ import { updateContratoStatus, StatusContratoValue } from "@/app/(dashboard)/hed
 import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
 import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embalagem";
+import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
 import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
 function emptyForm(): ConfirmacaoNegocioInput {
@@ -34,7 +35,7 @@ function emptyForm(): ConfirmacaoNegocioInput {
     descricaoCafe: "",
     previsaoEmbarque: "",
     destinoCarga: "",
-    formaPagamento: "",
+    formaPagamentoId: "",
     diferencial: "",
     fixacaoTipo: "",
     dataFixacao: "",
@@ -56,7 +57,7 @@ function formFromData(data: ConfirmacaoNegocioData): ConfirmacaoNegocioInput {
     descricaoCafe: data.descricaoCafe ?? "",
     previsaoEmbarque: data.previsaoEmbarque ?? "",
     destinoCarga: data.destinoCarga ?? "",
-    formaPagamento: data.formaPagamento ?? "",
+    formaPagamentoId: data.formaPagamentoId ?? "",
     diferencial: data.diferencial != null ? String(data.diferencial) : "",
     fixacaoTipo: data.fixacaoTipo ?? "",
     dataFixacao: data.dataFixacao ?? "",
@@ -71,12 +72,14 @@ export function ConfirmacaoNegocioList({
   clientes,
   corretoras,
   tiposEmbalagem,
+  formasPagamento,
 }: {
   contratos: ContratoRow[];
   confirmacoes: Record<string, ConfirmacaoNegocioData>;
   clientes: Cliente[];
   corretoras: Corretora[];
   tiposEmbalagem: { id: string; name: string }[];
+  formasPagamento: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -205,7 +208,7 @@ export function ConfirmacaoNegocioList({
                   {dados.descricaoCafe && <p>Café: {dados.descricaoCafe}</p>}
                   {dados.previsaoEmbarque && <p>Previsão embarque: {formatDate(dados.previsaoEmbarque)}</p>}
                   {dados.destinoCarga && <p>Destino: {dados.destinoCarga}</p>}
-                  {dados.formaPagamento && <p>Pagamento: {dados.formaPagamento}</p>}
+                  {dados.formaPagamentoNome && <p>Pagamento: {dados.formaPagamentoNome}</p>}
                 </div>
               ) : (
                 <p className="mt-3 border-t border-border pt-2 text-xs text-muted">
@@ -433,11 +436,20 @@ export function ConfirmacaoNegocioList({
 
             <div>
               <Label>Forma de Pagamento</Label>
-              <Input
-                value={form.formaPagamento}
-                onChange={(e) => setForm({ ...form, formaPagamento: e.target.value })}
-                placeholder="Ex: Carta de crédito, 30/60/90 dias"
-              />
+              <div className="flex gap-2">
+                <Select
+                  value={form.formaPagamentoId}
+                  onChange={(e) => setForm({ ...form, formaPagamentoId: e.target.value })}
+                >
+                  <option value="">Selecione...</option>
+                  {formasPagamento.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </Select>
+                <NovaFormaPagamento compact />
+              </div>
             </div>
 
             {error && <p className="text-sm text-danger">{error}</p>}

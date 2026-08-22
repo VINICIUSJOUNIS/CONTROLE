@@ -537,7 +537,8 @@ model ContratoConfirmacaoNegocio {
   descricaoCafe    String?
   previsaoEmbarque DateTime?           @db.Date
   destinoCarga     String?
-  formaPagamento   String?
+  formaPagamento   FormaPagamento?     @relation(fields: [formaPagamentoId], references: [id])
+  formaPagamentoId String?
   diferencial      Decimal?            @db.Decimal(10, 4)
   fixacaoTipo      String?
   dataFixacao      DateTime?           @db.Date
@@ -549,6 +550,7 @@ model ContratoConfirmacaoNegocio {
   @@index([corretoraId])
   @@index([clienteId])
   @@index([tipoEmbalagemId])
+  @@index([formaPagamentoId])
   @@map("contrato_confirmacao_negocio")
 }
 
@@ -561,6 +563,17 @@ model TipoEmbalagem {
   createdAt           DateTime                     @default(now())
 
   @@map("tipos_embalagem")
+}
+
+// Lista de formas de pagamento cadastraveis (ex: Carta de credito, 30/60/90
+// dias), usada na ficha da etapa Confirmacao de Negocio da Mesa de Operacao.
+model FormaPagamento {
+  id                  String                       @id @default(uuid())
+  name                String                       @unique
+  confirmacoesNegocio ContratoConfirmacaoNegocio[]
+  createdAt           DateTime                     @default(now())
+
+  @@map("formas_pagamento")
 }
 
 // Documentos anexados a um contrato em qualquer etapa da Mesa de Operacao

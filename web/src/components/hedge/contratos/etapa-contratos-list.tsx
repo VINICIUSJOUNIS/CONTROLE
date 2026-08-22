@@ -242,7 +242,7 @@ function ConfirmacaoNegocioResumo({ dados }: { dados: NonNullable<HistoricoAnter
   if (dados.descricaoCafe) linhas.push(["Café", dados.descricaoCafe]);
   if (dados.previsaoEmbarque) linhas.push(["Previsão embarque", formatDate(dados.previsaoEmbarque)]);
   if (dados.destinoCarga) linhas.push(["Destino", dados.destinoCarga]);
-  if (dados.formaPagamento) linhas.push(["Pagamento", dados.formaPagamento]);
+  if (dados.formaPagamentoNome) linhas.push(["Pagamento", dados.formaPagamentoNome]);
 
   if (linhas.length === 0) return null;
 

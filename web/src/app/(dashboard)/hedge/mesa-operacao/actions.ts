@@ -70,7 +70,7 @@ export type ConfirmacaoNegocioInput = {
   descricaoCafe: string;
   previsaoEmbarque: string;
   destinoCarga: string;
-  formaPagamento: string;
+  formaPagamentoId: string;
   diferencial: string;
   fixacaoTipo: string;
   dataFixacao: string;
@@ -91,7 +91,7 @@ function confirmacaoData(input: ConfirmacaoNegocioInput) {
     descricaoCafe: input.descricaoCafe.trim() || null,
     previsaoEmbarque: input.previsaoEmbarque ? parseLocalDate(input.previsaoEmbarque) : null,
     destinoCarga: input.destinoCarga.trim() || null,
-    formaPagamento: input.formaPagamento.trim() || null,
+    formaPagamentoId: input.formaPagamentoId || null,
     diferencial: input.diferencial.trim() ? Number(input.diferencial) : null,
     fixacaoTipo: input.fixacaoTipo || null,
     dataFixacao: input.dataFixacao ? parseLocalDate(input.dataFixacao) : null,
