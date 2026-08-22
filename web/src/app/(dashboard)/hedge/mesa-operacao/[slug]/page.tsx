@@ -9,6 +9,7 @@ import {
   getClientes,
   getCorretoras,
   getTiposEmbalagem,
+  syncClientesFromVendasExternas,
 } from "@/lib/hedge-data";
 import { slugToStatus, statusLabels, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
 import { ConfirmacaoNegocioList } from "@/components/hedge/contratos/confirmacao-negocio-list";
@@ -49,6 +50,8 @@ export default async function MesaOperacaoEtapaPage({
 }
 
 async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<ReturnType<typeof getContratosExportacao>> }) {
+  await syncClientesFromVendasExternas();
+
   const [confirmacoes, clientes, corretoras, tiposEmbalagem] = await Promise.all([
     getConfirmacoesNegocio(),
     getClientes(),

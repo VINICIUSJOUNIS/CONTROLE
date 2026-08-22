@@ -47,6 +47,33 @@ export async function getHedgeOperations() {
   });
 }
 
+// Traz para a lista de clientes do hedge (Cliente) qualquer cliente que ja
+// esteja cadastrado nas Vendas Externas (Sale com clientType EXTERNO) mas
+// ainda nao exista aqui, para poder reaproveitar o mesmo cadastro na Mesa de
+// Operacao em vez de digitar de novo.
+export async function syncClientesFromVendasExternas() {
+  const [vendasExternas, existentes] = await Promise.all([
+    prisma.sale.findMany({
+      where: { clientType: "EXTERNO" },
+      select: { clientName: true, country: true },
+      distinct: ["clientName"],
+    }),
+    prisma.cliente.findMany({ select: { name: true } }),
+  ]);
+
+  const nomesExistentes = new Set(existentes.map((c) => c.name.trim().toLowerCase()));
+  const faltantes = vendasExternas.filter(
+    (v) => v.clientName.trim() && !nomesExistentes.has(v.clientName.trim().toLowerCase())
+  );
+
+  if (faltantes.length > 0) {
+    await prisma.cliente.createMany({
+      data: faltantes.map((v) => ({ name: v.clientName.trim(), country: v.country ?? "" })),
+      skipDuplicates: true,
+    });
+  }
+}
+
 export async function getClientes() {
   const clientes = await prisma.cliente.findMany({ orderBy: { name: "asc" } });
   return clientes.map((c) => ({
