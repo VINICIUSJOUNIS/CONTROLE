@@ -333,36 +333,59 @@ export function EtapaContratosList({
         const isExpanded = expandedId === item.id;
         return (
           <Card key={item.id} className="overflow-hidden p-0">
-            <button
-              onClick={() => setExpandedId(isExpanded ? null : item.id)}
-              className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 p-3 text-left hover:bg-border/20"
-            >
-              <ChevronDown
-                size={16}
-                className={`shrink-0 text-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">{item.contractNumber}</p>
-                <p className="flex items-center gap-1 text-xs text-muted">
-                  {item.clienteName}
-                  <MapPin size={11} className="ml-1" />
-                  {item.country}
+            <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 p-3">
+              <button
+                onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                className="flex min-w-0 flex-1 items-center gap-x-4 gap-y-1 text-left"
+              >
+                <ChevronDown
+                  size={16}
+                  className={`shrink-0 text-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">{item.contractNumber}</p>
+                  <p className="flex items-center gap-1 text-xs text-muted">
+                    {item.clienteName}
+                    <MapPin size={11} className="ml-1" />
+                    {item.country}
+                  </p>
+                </div>
+                <p className="shrink-0 text-sm font-medium text-primary">
+                  {formatCompactCurrency(item.valorUsd, "USD")}
                 </p>
+                <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                  <Calendar size={12} />
+                  {dateValue
+                    ? `${dateFieldLabels[dateField]}: ${formatDate(dateValue)}`
+                    : `${dateFieldLabels[dateField]}: sem data`}
+                </p>
+                {(anexos[item.id]?.length ?? 0) > 0 && (
+                  <span className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                    <Paperclip size={12} />
+                    {anexos[item.id]!.length}
+                  </span>
+                )}
+              </button>
+
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  onClick={() => moveStatus(item.id, -1)}
+                  disabled={isPending || idx === 0}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                >
+                  <ChevronLeft size={14} />
+                  Voltar
+                </button>
+                <button
+                  onClick={() => moveStatus(item.id, 1)}
+                  disabled={isPending || idx === statusOrder.length - 1}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
+                >
+                  Avançar
+                  <ChevronRight size={14} />
+                </button>
               </div>
-              <p className="text-sm font-medium text-primary">{formatCompactCurrency(item.valorUsd, "USD")}</p>
-              <p className="flex items-center gap-1 text-xs text-muted">
-                <Calendar size={12} />
-                {dateValue
-                  ? `${dateFieldLabels[dateField]}: ${formatDate(dateValue)}`
-                  : `${dateFieldLabels[dateField]}: sem data`}
-              </p>
-              {(anexos[item.id]?.length ?? 0) > 0 && (
-                <span className="flex items-center gap-1 text-xs text-muted">
-                  <Paperclip size={12} />
-                  {anexos[item.id]!.length}
-                </span>
-              )}
-            </button>
+            </div>
 
             {isExpanded && (
               <div className="border-t border-border p-3">
@@ -390,25 +413,6 @@ export function EtapaContratosList({
                     Contrato assinado
                   </label>
                 )}
-
-                <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
-                  <button
-                    onClick={() => moveStatus(item.id, -1)}
-                    disabled={isPending || idx === 0}
-                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
-                  >
-                    <ChevronLeft size={14} />
-                    Voltar
-                  </button>
-                  <button
-                    onClick={() => moveStatus(item.id, 1)}
-                    disabled={isPending || idx === statusOrder.length - 1}
-                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
-                  >
-                    Avançar
-                    <ChevronRight size={14} />
-                  </button>
-                </div>
               </div>
             )}
           </Card>
