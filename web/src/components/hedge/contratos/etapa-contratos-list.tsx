@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
-import { ContratoRow, ContratoAnexoData, HistoricoAnteriorItem } from "@/lib/hedge-data";
+import { ContratoRow, ContratoAnexoData, HistoricoAnteriorItem, EnvioAmostraData } from "@/lib/hedge-data";
 import {
   updateContratoStatus,
   StatusContratoValue,
@@ -13,10 +13,14 @@ import {
   deleteContratoAnexo,
   setPrevisaoEtapa,
   setEtapaConcluida,
+  upsertEnvioAmostra,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import { statusOrder, statusLabels, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Select } from "@/components/ui/field";
+import { NovoTipoAmostra } from "@/components/hedge/contratos/novo-tipo-amostra";
+import { NovaTransportadoraAmostra } from "@/components/hedge/contratos/nova-transportadora-amostra";
 import {
   MapPin,
   Calendar,
@@ -105,6 +109,73 @@ export function PrevisaoEtapa({
           {alerta.label}
         </p>
       )}
+    </div>
+  );
+}
+
+function EnvioAmostraSection({
+  contratoId,
+  dados,
+  tiposAmostra,
+  transportadorasAmostra,
+}: {
+  contratoId: string;
+  dados: EnvioAmostraData | undefined;
+  tiposAmostra: { id: string; name: string }[];
+  transportadorasAmostra: { id: string; name: string }[];
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [tipoAmostraId, setTipoAmostraId] = useState(dados?.tipoAmostraId ?? "");
+  const [transportadoraId, setTransportadoraId] = useState(dados?.transportadoraId ?? "");
+
+  function handleChange(nextTipo: string, nextTransportadora: string) {
+    setTipoAmostraId(nextTipo);
+    setTransportadoraId(nextTransportadora);
+    startTransition(async () => {
+      await upsertEnvioAmostra(contratoId, nextTipo, nextTransportadora);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+      <div>
+        <p className="mb-1 text-xs font-medium text-muted">Tipo de Amostra</p>
+        <div className="flex gap-2">
+          <Select
+            value={tipoAmostraId}
+            disabled={isPending}
+            onChange={(e) => handleChange(e.target.value, transportadoraId)}
+          >
+            <option value="">Selecione...</option>
+            {tiposAmostra.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </Select>
+          <NovoTipoAmostra compact />
+        </div>
+      </div>
+      <div>
+        <p className="mb-1 text-xs font-medium text-muted">Envio por</p>
+        <div className="flex gap-2">
+          <Select
+            value={transportadoraId}
+            disabled={isPending}
+            onChange={(e) => handleChange(tipoAmostraId, e.target.value)}
+          >
+            <option value="">Selecione...</option>
+            {transportadorasAmostra.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </Select>
+          <NovaTransportadoraAmostra compact />
+        </div>
+      </div>
     </div>
   );
 }
@@ -391,6 +462,9 @@ export function EtapaContratosList({
   previsoes,
   historico,
   concluidas,
+  enviosAmostra,
+  tiposAmostra,
+  transportadorasAmostra,
 }: {
   contratos: ContratoRow[];
   status: StatusContratoValue;
@@ -398,6 +472,9 @@ export function EtapaContratosList({
   previsoes: Record<string, string>;
   historico: Record<string, HistoricoAnteriorItem>;
   concluidas: Record<string, boolean>;
+  enviosAmostra?: Record<string, EnvioAmostraData>;
+  tiposAmostra?: { id: string; name: string }[];
+  transportadorasAmostra?: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -507,6 +584,15 @@ export function EtapaContratosList({
                 <AnexosSection contratoId={item.id} status={status} anexos={anexos[item.id] ?? []} />
 
                 <PrevisaoEtapa contratoId={item.id} status={status} previsao={previsoes[item.id]} />
+
+                {status === "ENVIO_AMOSTRA_PSS" && (
+                  <EnvioAmostraSection
+                    contratoId={item.id}
+                    dados={enviosAmostra?.[item.id]}
+                    tiposAmostra={tiposAmostra ?? []}
+                    transportadorasAmostra={transportadorasAmostra ?? []}
+                  />
+                )}
               </div>
             )}
           </Card>

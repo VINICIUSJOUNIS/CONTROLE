@@ -12,6 +12,9 @@ import {
   getPrevisoesPorEtapa,
   getConcluidasPorEtapa,
   getHistoricoAnteriorPorContrato,
+  getEnviosAmostra,
+  getTiposAmostra,
+  getTransportadorasAmostra,
   syncClientesFromVendasExternas,
 } from "@/lib/hedge-data";
 import { slugToStatus, statusLabels } from "@/lib/contrato-shared";
@@ -94,6 +97,28 @@ async function EtapaGenerica({
     getHistoricoAnteriorPorContrato(status),
     getConcluidasPorEtapa(status),
   ]);
+
+  if (status === "ENVIO_AMOSTRA_PSS") {
+    const [enviosAmostra, tiposAmostra, transportadorasAmostra] = await Promise.all([
+      getEnviosAmostra(),
+      getTiposAmostra(),
+      getTransportadorasAmostra(),
+    ]);
+
+    return (
+      <EtapaContratosList
+        contratos={contratos}
+        status={status}
+        anexos={anexos}
+        previsoes={previsoes}
+        historico={historico}
+        concluidas={concluidas}
+        enviosAmostra={enviosAmostra}
+        tiposAmostra={tiposAmostra}
+        transportadorasAmostra={transportadorasAmostra}
+      />
+    );
+  }
 
   return (
     <EtapaContratosList

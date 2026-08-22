@@ -171,6 +171,43 @@ export async function getFormasPagamento() {
   return formas.map((f) => ({ id: f.id, name: f.name }));
 }
 
+export async function getTiposAmostra() {
+  const tipos = await prisma.tipoAmostra.findMany({ orderBy: { name: "asc" } });
+  return tipos.map((t) => ({ id: t.id, name: t.name }));
+}
+
+export async function getTransportadorasAmostra() {
+  const transportadoras = await prisma.transportadoraAmostra.findMany({ orderBy: { name: "asc" } });
+  return transportadoras.map((t) => ({ id: t.id, name: t.name }));
+}
+
+export type EnvioAmostraData = {
+  tipoAmostraId: string | null;
+  tipoAmostraNome: string | null;
+  transportadoraId: string | null;
+  transportadoraNome: string | null;
+};
+
+// Ficha da etapa "Envio de Amostra de Aprovacao (PSS)", indexada por
+// contratoId.
+export async function getEnviosAmostra(): Promise<Record<string, EnvioAmostraData>> {
+  const rows = await prisma.contratoEnvioAmostra.findMany({
+    include: { tipoAmostra: true, transportadora: true },
+  });
+
+  return Object.fromEntries(
+    rows.map((r) => [
+      r.contratoId,
+      {
+        tipoAmostraId: r.tipoAmostraId,
+        tipoAmostraNome: r.tipoAmostra?.name ?? null,
+        transportadoraId: r.transportadoraId,
+        transportadoraNome: r.transportadora?.name ?? null,
+      },
+    ])
+  );
+}
+
 export type ContratoAnexoData = {
   id: string;
   fileName: string;

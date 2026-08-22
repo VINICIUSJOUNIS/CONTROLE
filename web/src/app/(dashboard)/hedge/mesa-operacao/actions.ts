@@ -12,6 +12,27 @@ function revalidateAll() {
   revalidatePath("/hedge/mesa-operacao/[slug]", "page");
 }
 
+export async function upsertEnvioAmostra(
+  contratoId: string,
+  tipoAmostraId: string,
+  transportadoraId: string
+) {
+  await prisma.contratoEnvioAmostra.upsert({
+    where: { contratoId },
+    create: {
+      contratoId,
+      tipoAmostraId: tipoAmostraId || null,
+      transportadoraId: transportadoraId || null,
+    },
+    update: {
+      tipoAmostraId: tipoAmostraId || null,
+      transportadoraId: transportadoraId || null,
+    },
+  });
+
+  revalidateAll();
+}
+
 export async function setPrevisaoEtapa(contratoId: string, etapa: StatusContratoValue, dataPrevisao: string) {
   if (!dataPrevisao) {
     await prisma.contratoEtapaPrevisao.deleteMany({ where: { contratoId, etapa } });

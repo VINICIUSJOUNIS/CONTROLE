@@ -474,6 +474,7 @@ model ContratoExportacao {
   anexos             ContratoAnexo[]
   previsoesEtapa     ContratoEtapaPrevisao[]
   etapasConcluidas   ContratoEtapaConcluida[]
+  fichaEnvioAmostra  ContratoEnvioAmostra?
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?
@@ -575,6 +576,46 @@ model FormaPagamento {
   createdAt           DateTime                     @default(now())
 
   @@map("formas_pagamento")
+}
+
+// Lista de tipos de amostra cadastraveis, usada na ficha da etapa Envio de
+// Amostra de Aprovacao (PSS) da Mesa de Operacao.
+model TipoAmostra {
+  id        String                @id @default(uuid())
+  name      String                @unique
+  envios    ContratoEnvioAmostra[]
+  createdAt DateTime              @default(now())
+
+  @@map("tipos_amostra")
+}
+
+// Lista de transportadoras/couriers cadastraveis (ex: DHL, FedEx), usada na
+// ficha da etapa Envio de Amostra de Aprovacao (PSS) da Mesa de Operacao.
+model TransportadoraAmostra {
+  id        String                @id @default(uuid())
+  name      String                @unique
+  envios    ContratoEnvioAmostra[]
+  createdAt DateTime              @default(now())
+
+  @@map("transportadoras_amostra")
+}
+
+// Ficha da etapa "Envio de Amostra de Aprovacao (PSS)" - tipo de amostra e
+// transportadora usados no envio.
+model ContratoEnvioAmostra {
+  id               String                 @id @default(uuid())
+  contrato         ContratoExportacao     @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId       String                 @unique
+  tipoAmostra      TipoAmostra?           @relation(fields: [tipoAmostraId], references: [id])
+  tipoAmostraId    String?
+  transportadora   TransportadoraAmostra? @relation(fields: [transportadoraId], references: [id])
+  transportadoraId String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@index([tipoAmostraId])
+  @@index([transportadoraId])
+  @@map("contrato_envio_amostra")
 }
 
 // Documentos anexados a um contrato em qualquer etapa da Mesa de Operacao
