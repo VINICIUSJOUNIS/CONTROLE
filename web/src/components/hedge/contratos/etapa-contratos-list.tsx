@@ -41,7 +41,7 @@ function parseISODateLocal(value: string) {
   return new Date(y, m - 1, d);
 }
 
-function alertaPrazo(dataPrevisao: string): { label: string; tone: "warning" | "danger" } | null {
+export function alertaPrazo(dataPrevisao: string): { label: string; tone: "warning" | "danger" } | null {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   const prevista = parseISODateLocal(dataPrevisao);
@@ -53,7 +53,7 @@ function alertaPrazo(dataPrevisao: string): { label: string; tone: "warning" | "
   return null;
 }
 
-function PrevisaoAssinatura({
+export function PrevisaoEtapa({
   contratoId,
   status,
   previsao,
@@ -85,7 +85,7 @@ function PrevisaoAssinatura({
   return (
     <div className="mt-3 border-t border-border pt-2">
       <label className="flex items-center justify-between gap-2 text-xs text-muted">
-        Previsão de assinatura
+        Prazo previsto
         <input
           type="date"
           value={value}
@@ -457,6 +457,21 @@ export function EtapaContratosList({
                     {anexos[item.id]!.length}
                   </span>
                 )}
+                {(() => {
+                  const previsao = previsoes[item.id];
+                  const alerta = previsao ? alertaPrazo(previsao) : null;
+                  if (!alerta) return null;
+                  return (
+                    <span
+                      className={`flex shrink-0 items-center gap-1 text-xs font-medium ${
+                        alerta.tone === "danger" ? "text-danger" : "text-warning"
+                      }`}
+                    >
+                      <AlertTriangle size={12} />
+                      {alerta.label}
+                    </span>
+                  );
+                })()}
               </button>
 
               <div className="flex shrink-0 items-center gap-1">
@@ -491,9 +506,7 @@ export function EtapaContratosList({
 
                 <AnexosSection contratoId={item.id} status={status} anexos={anexos[item.id] ?? []} />
 
-                {status === "ASSINATURA_CONTRATO" && (
-                  <PrevisaoAssinatura contratoId={item.id} status={status} previsao={previsoes[item.id]} />
-                )}
+                <PrevisaoEtapa contratoId={item.id} status={status} previsao={previsoes[item.id]} />
               </div>
             )}
           </Card>

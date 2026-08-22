@@ -21,7 +21,8 @@ import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
 import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embalagem";
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
-import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { PrevisaoEtapa, alertaPrazo } from "@/components/hedge/contratos/etapa-contratos-list";
+import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight, ChevronDown, AlertTriangle } from "lucide-react";
 
 function emptyForm(): ConfirmacaoNegocioInput {
   return {
@@ -75,6 +76,7 @@ export function ConfirmacaoNegocioList({
   tiposEmbalagem,
   formasPagamento,
   concluidas,
+  previsoes,
 }: {
   contratos: ContratoRow[];
   confirmacoes: Record<string, ConfirmacaoNegocioData>;
@@ -83,6 +85,7 @@ export function ConfirmacaoNegocioList({
   tiposEmbalagem: { id: string; name: string }[];
   formasPagamento: { id: string; name: string }[];
   concluidas: Record<string, boolean>;
+  previsoes: Record<string, string>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -186,6 +189,21 @@ export function ConfirmacaoNegocioList({
                   {!dados && (
                     <p className="shrink-0 text-xs text-muted">Confirmação ainda não preenchida</p>
                   )}
+                  {(() => {
+                    const previsao = previsoes[item.id];
+                    const alerta = previsao ? alertaPrazo(previsao) : null;
+                    if (!alerta) return null;
+                    return (
+                      <span
+                        className={`flex shrink-0 items-center gap-1 text-xs font-medium ${
+                          alerta.tone === "danger" ? "text-danger" : "text-warning"
+                        }`}
+                      >
+                        <AlertTriangle size={12} />
+                        {alerta.label}
+                      </span>
+                    );
+                  })()}
                 </button>
 
                 <div className="flex shrink-0 items-center gap-1">
@@ -347,6 +365,12 @@ export function ConfirmacaoNegocioList({
                       Confirmação de negócio ainda não preenchida. Clique no lápis para preencher.
                     </p>
                   )}
+
+                  <PrevisaoEtapa
+                    contratoId={item.id}
+                    status="CONFIRMACAO_NEGOCIO"
+                    previsao={previsoes[item.id]}
+                  />
                 </div>
               )}
             </Card>

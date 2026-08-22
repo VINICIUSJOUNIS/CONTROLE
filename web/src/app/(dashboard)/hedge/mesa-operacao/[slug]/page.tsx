@@ -56,14 +56,16 @@ export default async function MesaOperacaoEtapaPage({
 async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<ReturnType<typeof getContratosExportacao>> }) {
   await syncClientesFromVendasExternas();
 
-  const [confirmacoes, clientes, corretoras, tiposEmbalagem, formasPagamento, concluidas] = await Promise.all([
-    getConfirmacoesNegocio(),
-    getClientes(),
-    getCorretoras(),
-    getTiposEmbalagem(),
-    getFormasPagamento(),
-    getConcluidasPorEtapa("CONFIRMACAO_NEGOCIO"),
-  ]);
+  const [confirmacoes, clientes, corretoras, tiposEmbalagem, formasPagamento, concluidas, previsoes] =
+    await Promise.all([
+      getConfirmacoesNegocio(),
+      getClientes(),
+      getCorretoras(),
+      getTiposEmbalagem(),
+      getFormasPagamento(),
+      getConcluidasPorEtapa("CONFIRMACAO_NEGOCIO"),
+      getPrevisoesPorEtapa("CONFIRMACAO_NEGOCIO"),
+    ]);
 
   return (
     <ConfirmacaoNegocioList
@@ -74,6 +76,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
       tiposEmbalagem={tiposEmbalagem}
       formasPagamento={formasPagamento}
       concluidas={concluidas}
+      previsoes={previsoes}
     />
   );
 }
