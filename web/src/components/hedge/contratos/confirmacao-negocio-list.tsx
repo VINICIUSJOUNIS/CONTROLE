@@ -244,9 +244,12 @@ export function ConfirmacaoNegocioList({
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent title={editingContratoId ? "Confirmação de Negócio" : "Novo Contrato — Confirmação de Negócio"}>
+        <DialogContent
+          className="max-w-2xl"
+          title={editingContratoId ? "Confirmação de Negócio" : "Novo Contrato — Confirmação de Negócio"}
+        >
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               <div>
                 <Label>Data da Confirmação</Label>
                 <Input
@@ -260,6 +263,25 @@ export function ConfirmacaoNegocioList({
                 <Input
                   value={form.numeroContrato}
                   onChange={(e) => setForm({ ...form, numeroContrato: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Valor (US$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.valorUsd}
+                  onChange={(e) => setForm({ ...form, valorUsd: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <Label>Diferencial</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.diferencial}
+                  onChange={(e) => setForm({ ...form, diferencial: e.target.value })}
+                  placeholder="Ex: -5,00"
                 />
               </div>
             </div>
@@ -298,29 +320,7 @@ export function ConfirmacaoNegocioList({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Valor (US$)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={form.valorUsd}
-                  onChange={(e) => setForm({ ...form, valorUsd: Number(e.target.value) || 0 })}
-                />
-              </div>
-              <div>
-                <Label>Diferencial</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={form.diferencial}
-                  onChange={(e) => setForm({ ...form, diferencial: e.target.value })}
-                  placeholder="Ex: -5,00 ou 10,00"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               <div>
                 <Label>Frete</Label>
                 <Select value={form.frete} onChange={(e) => setForm({ ...form, frete: e.target.value })}>
@@ -330,7 +330,7 @@ export function ConfirmacaoNegocioList({
                 </Select>
               </div>
               <div>
-                <Label>Fixação do Contrato</Label>
+                <Label>Fixação</Label>
                 <Select
                   value={form.fixacaoTipo}
                   onChange={(e) => setForm({ ...form, fixacaoTipo: e.target.value })}
@@ -340,9 +340,6 @@ export function ConfirmacaoNegocioList({
                   <option value="SELLER">Seller</option>
                 </Select>
               </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label>Data da Fixação</Label>
                 <Input
@@ -351,6 +348,19 @@ export function ConfirmacaoNegocioList({
                   onChange={(e) => setForm({ ...form, dataFixacao: e.target.value })}
                 />
               </div>
+              <div>
+                <Label>Quantidade (sacas)</Label>
+                <Input
+                  type="number"
+                  value={form.quantidadeSacas ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, quantidadeSacas: e.target.value ? Number(e.target.value) : null })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-3">
               <div>
                 <Label>Nível de Bolsa</Label>
                 <Input
@@ -368,6 +378,28 @@ export function ConfirmacaoNegocioList({
                   value={form.valorDolar}
                   onChange={(e) => setForm({ ...form, valorDolar: e.target.value })}
                 />
+              </div>
+              <div>
+                <Label>Previsão de Embarque</Label>
+                <Input
+                  type="date"
+                  value={form.previsaoEmbarque}
+                  onChange={(e) => setForm({ ...form, previsaoEmbarque: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Destino da Carga</Label>
+                <Select
+                  value={form.destinoCarga}
+                  onChange={(e) => setForm({ ...form, destinoCarga: e.target.value })}
+                >
+                  <option value="">Selecione...</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.id} value={c.labelPt}>
+                      {c.labelPt}
+                    </option>
+                  ))}
+                </Select>
               </div>
             </div>
 
@@ -390,48 +422,12 @@ export function ConfirmacaoNegocioList({
                 </div>
               </div>
               <div>
-                <Label>Quantidade (sacas)</Label>
+                <Label>Descrição do Café</Label>
                 <Input
-                  type="number"
-                  value={form.quantidadeSacas ?? ""}
-                  onChange={(e) =>
-                    setForm({ ...form, quantidadeSacas: e.target.value ? Number(e.target.value) : null })
-                  }
+                  value={form.descricaoCafe}
+                  onChange={(e) => setForm({ ...form, descricaoCafe: e.target.value })}
+                  placeholder="Ex: Arábica tipo 6, bica corrida"
                 />
-              </div>
-            </div>
-
-            <div>
-              <Label>Descrição do Café</Label>
-              <Input
-                value={form.descricaoCafe}
-                onChange={(e) => setForm({ ...form, descricaoCafe: e.target.value })}
-                placeholder="Ex: Arábica tipo 6, bica corrida"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Previsão de Embarque</Label>
-                <Input
-                  type="date"
-                  value={form.previsaoEmbarque}
-                  onChange={(e) => setForm({ ...form, previsaoEmbarque: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Destino da Carga</Label>
-                <Select
-                  value={form.destinoCarga}
-                  onChange={(e) => setForm({ ...form, destinoCarga: e.target.value })}
-                >
-                  <option value="">Selecione...</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c.id} value={c.labelPt}>
-                      {c.labelPt}
-                    </option>
-                  ))}
-                </Select>
               </div>
             </div>
 
