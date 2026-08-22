@@ -89,7 +89,7 @@ export function PrevisaoEtapa({
   return (
     <div className="mt-3 border-t border-border pt-2">
       <label className="flex items-center justify-between gap-2 text-xs text-muted">
-        Prazo previsto
+        Prazo previsto — {statusLabels[status]}
         <input
           type="date"
           value={value}
