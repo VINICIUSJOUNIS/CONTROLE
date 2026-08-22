@@ -17,6 +17,7 @@ import {
   EnvioAmostraInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import { statusOrder, statusLabels, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
+import { alertaPrazo } from "@/lib/prazo";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/field";
@@ -40,22 +41,6 @@ function formatFileSize(bytes: number | null) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function parseISODateLocal(value: string) {
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-export function alertaPrazo(dataPrevisao: string): { label: string; tone: "warning" | "danger" } | null {
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const prevista = parseISODateLocal(dataPrevisao);
-  const dias = Math.round((prevista.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (dias < 0) return { label: `Atrasado ${Math.abs(dias)} dia(s)`, tone: "danger" };
-  if (dias === 0) return { label: "Vence hoje", tone: "warning" };
-  if (dias <= 3) return { label: `Vence em ${dias} dia(s)`, tone: "warning" };
-  return null;
-}
 
 export function PrevisaoEtapa({
   contratoId,

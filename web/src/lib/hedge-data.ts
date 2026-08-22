@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
-import { statusOrder } from "@/lib/contrato-shared";
+import { statusOrder, statusLabels } from "@/lib/contrato-shared";
+import { alertaPrazo, AlertaPrazo } from "@/lib/prazo";
 
 function toISODate(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -603,4 +604,42 @@ export async function getHedgeKpis() {
     contratosAbertos,
     totalContratos,
   };
+}
+
+export type AlertaPrazoRow = {
+  contratoId: string;
+  contractNumber: string;
+  clienteName: string;
+  etapa: StatusContratoValue;
+  etapaLabel: string;
+  dataPrevisao: string;
+  alerta: AlertaPrazo;
+};
+
+// Prazos previstos das etapas em que cada contrato esta atualmente (previsoes
+// de etapas ja ultrapassadas nao contam mais), ordenados do mais urgente para
+// o menos urgente - base da pagina "Alerta de Prazos".
+export async function getAlertasPrazos(): Promise<AlertaPrazoRow[]> {
+  const rows = await prisma.contratoEtapaPrevisao.findMany({
+    include: { contrato: { include: { cliente: true } } },
+  });
+
+  const alertas: AlertaPrazoRow[] = [];
+  for (const r of rows) {
+    if (r.contrato.status !== r.etapa) continue;
+    const dataPrevisao = toISODate(r.dataPrevisao);
+    const alerta = alertaPrazo(dataPrevisao);
+    if (!alerta) continue;
+    alertas.push({
+      contratoId: r.contratoId,
+      contractNumber: r.contrato.contractNumber,
+      clienteName: r.contrato.cliente.name,
+      etapa: r.etapa as StatusContratoValue,
+      etapaLabel: statusLabels[r.etapa as StatusContratoValue],
+      dataPrevisao,
+      alerta,
+    });
+  }
+
+  return alertas.sort((a, b) => a.alerta.dias - b.alerta.dias);
 }

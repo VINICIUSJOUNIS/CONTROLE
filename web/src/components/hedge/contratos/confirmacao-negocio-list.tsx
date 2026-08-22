@@ -21,7 +21,8 @@ import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
 import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embalagem";
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
-import { PrevisaoEtapa, alertaPrazo } from "@/components/hedge/contratos/etapa-contratos-list";
+import { PrevisaoEtapa } from "@/components/hedge/contratos/etapa-contratos-list";
+import { alertaPrazo } from "@/lib/prazo";
 import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight, ChevronDown, AlertTriangle } from "lucide-react";
 
 function emptyForm(): ConfirmacaoNegocioInput {

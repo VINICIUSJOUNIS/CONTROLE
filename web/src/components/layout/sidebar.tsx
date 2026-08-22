@@ -22,6 +22,7 @@ import {
   Wallet,
   Target,
   ChevronDown,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -66,6 +67,7 @@ const hedgeNavItems = [
   },
   { href: "/hedge/mapa", label: "Mapa de Exportacao", icon: Globe2 },
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
+  { href: "/hedge/alertas-prazos", label: "Alerta de Prazos", icon: AlertTriangle },
 ];
 
 const planejamentoNavItems = [
@@ -98,10 +100,12 @@ export function Sidebar({
   profile,
   mesaOperacaoCount,
   mesaOperacaoCountByStatus,
+  alertasPrazosCount,
 }: {
   profile: { email: string; role: string };
   mesaOperacaoCount?: number;
   mesaOperacaoCountByStatus?: Record<string, number>;
+  alertasPrazosCount?: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -148,6 +152,11 @@ export function Sidebar({
                   {subItems && mesaOperacaoCount != null && (
                     <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium">
                       {mesaOperacaoCount}
+                    </span>
+                  )}
+                  {item.href === "/hedge/alertas-prazos" && !!alertasPrazosCount && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-xs font-bold text-white">
+                      {alertasPrazosCount}
                     </span>
                   )}
                 </Link>
