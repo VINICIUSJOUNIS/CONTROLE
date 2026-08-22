@@ -210,6 +210,12 @@ export async function getPrevisoesPorEtapa(etapa: StatusContratoValue): Promise<
   return Object.fromEntries(rows.map((r) => [r.contratoId, toISODate(r.dataPrevisao)]));
 }
 
+// Contratos que ja marcaram a etapa como concluida - so esses podem avancar.
+export async function getConcluidasPorEtapa(etapa: StatusContratoValue): Promise<Record<string, boolean>> {
+  const rows = await prisma.contratoEtapaConcluida.findMany({ where: { etapa } });
+  return Object.fromEntries(rows.map((r) => [r.contratoId, true]));
+}
+
 // Ficha da etapa "Confirmacao de Negocio", indexada por contratoId - campos
 // proprios dessa etapa, independentes dos campos gerais do ContratoExportacao.
 export async function getConfirmacoesNegocio(): Promise<Record<string, ConfirmacaoNegocioData>> {

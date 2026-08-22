@@ -473,6 +473,7 @@ model ContratoExportacao {
   confirmacaoNegocio ContratoConfirmacaoNegocio?
   anexos             ContratoAnexo[]
   previsoesEtapa     ContratoEtapaPrevisao[]
+  etapasConcluidas   ContratoEtapaConcluida[]
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?
@@ -609,6 +610,20 @@ model ContratoEtapaPrevisao {
 
   @@unique([contratoId, etapa])
   @@map("contrato_etapa_previsoes")
+}
+
+// Marca que o contrato concluiu o que precisava nessa etapa - so libera o
+// botao "Avancar" quando marcado. Uma linha por contrato+etapa; ausencia da
+// linha = ainda nao concluido.
+model ContratoEtapaConcluida {
+  id         String             @id @default(uuid())
+  contrato   ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId String
+  etapa      StatusContrato
+  createdAt  DateTime           @default(now())
+
+  @@unique([contratoId, etapa])
+  @@map("contrato_etapa_concluida")
 }
 
 enum BudgetScenario {

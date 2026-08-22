@@ -12,6 +12,7 @@ import {
   addContratoAnexo,
   deleteContratoAnexo,
   setPrevisaoEtapa,
+  setEtapaConcluida,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import { statusOrder, statusLabels, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
 import { createClient } from "@/lib/supabase/client";
@@ -158,6 +159,43 @@ function QuickUploadButton({ contratoId, status }: { contratoId: string; status:
       </button>
       <input ref={inputRef} type="file" className="hidden" onChange={handleFileChange} />
     </span>
+  );
+}
+
+function ConcluidoCheckbox({
+  contratoId,
+  status,
+  concluida,
+}: {
+  contratoId: string;
+  status: StatusContratoValue;
+  concluida: boolean;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const label = status === "ASSINATURA_CONTRATO" ? "Assinado" : "Concluído";
+
+  function handleChange(checked: boolean) {
+    startTransition(async () => {
+      await setEtapaConcluida(contratoId, status, checked);
+      router.refresh();
+    });
+  }
+
+  return (
+    <label
+      onClick={(e) => e.stopPropagation()}
+      className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted"
+    >
+      <input
+        type="checkbox"
+        checked={concluida}
+        disabled={isPending}
+        onChange={(e) => handleChange(e.target.checked)}
+        className="h-3.5 w-3.5 rounded border-border"
+      />
+      {label}
+    </label>
   );
 }
 
@@ -352,12 +390,14 @@ export function EtapaContratosList({
   anexos,
   previsoes,
   historico,
+  concluidas,
 }: {
   contratos: ContratoRow[];
   status: StatusContratoValue;
   anexos: Record<string, ContratoAnexoData[]>;
   previsoes: Record<string, string>;
   historico: Record<string, HistoricoAnteriorItem>;
+  concluidas: Record<string, boolean>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -421,6 +461,7 @@ export function EtapaContratosList({
 
               <div className="flex shrink-0 items-center gap-1">
                 <QuickUploadButton contratoId={item.id} status={status} />
+                <ConcluidoCheckbox contratoId={item.id} status={status} concluida={concluidas[item.id] ?? false} />
                 <button
                   onClick={() => moveStatus(item.id, -1)}
                   disabled={isPending || idx === 0}
@@ -431,7 +472,8 @@ export function EtapaContratosList({
                 </button>
                 <button
                   onClick={() => moveStatus(item.id, 1)}
-                  disabled={isPending || idx === statusOrder.length - 1}
+                  disabled={isPending || idx === statusOrder.length - 1 || !(concluidas[item.id] ?? false)}
+                  title={!(concluidas[item.id] ?? false) ? "Marque como concluído para avançar" : undefined}
                   className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
                 >
                   Avançar
@@ -451,20 +493,6 @@ export function EtapaContratosList({
 
                 {status === "ASSINATURA_CONTRATO" && (
                   <PrevisaoAssinatura contratoId={item.id} status={status} previsao={previsoes[item.id]} />
-                )}
-
-                {status === "ASSINATURA_CONTRATO" && (
-                  <label className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs">
-                    <input
-                      type="checkbox"
-                      disabled={isPending}
-                      onChange={(e) => {
-                        if (e.target.checked) moveStatus(item.id, 1);
-                      }}
-                      className="h-3.5 w-3.5 rounded border-border"
-                    />
-                    Contrato assinado
-                  </label>
                 )}
               </div>
             )}

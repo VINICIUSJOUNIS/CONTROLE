@@ -29,6 +29,20 @@ export async function setPrevisaoEtapa(contratoId: string, etapa: StatusContrato
   revalidateAll();
 }
 
+export async function setEtapaConcluida(contratoId: string, etapa: StatusContratoValue, concluida: boolean) {
+  if (concluida) {
+    await prisma.contratoEtapaConcluida.upsert({
+      where: { contratoId_etapa: { contratoId, etapa } },
+      create: { contratoId, etapa },
+      update: {},
+    });
+  } else {
+    await prisma.contratoEtapaConcluida.deleteMany({ where: { contratoId, etapa } });
+  }
+
+  revalidateAll();
+}
+
 export type AddContratoAnexoInput = {
   contratoId: string;
   etapa: StatusContratoValue;

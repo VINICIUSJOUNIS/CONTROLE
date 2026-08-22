@@ -11,6 +11,7 @@ import { ContratoRow, ConfirmacaoNegocioData } from "@/lib/hedge-data";
 import {
   upsertConfirmacaoNegocio,
   createContratoComConfirmacao,
+  setEtapaConcluida,
   ConfirmacaoNegocioInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import { Cliente, Corretora, statusOrder } from "@/lib/contrato-shared";
@@ -73,6 +74,7 @@ export function ConfirmacaoNegocioList({
   corretoras,
   tiposEmbalagem,
   formasPagamento,
+  concluidas,
 }: {
   contratos: ContratoRow[];
   confirmacoes: Record<string, ConfirmacaoNegocioData>;
@@ -80,6 +82,7 @@ export function ConfirmacaoNegocioList({
   corretoras: Corretora[];
   tiposEmbalagem: { id: string; name: string }[];
   formasPagamento: { id: string; name: string }[];
+  concluidas: Record<string, boolean>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -216,7 +219,23 @@ export function ConfirmacaoNegocioList({
                 </p>
               )}
 
-              <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
+              <label className="mt-3 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted">
+                <input
+                  type="checkbox"
+                  checked={concluidas[item.id] ?? false}
+                  disabled={isPending}
+                  onChange={(e) => {
+                    startTransition(async () => {
+                      await setEtapaConcluida(item.id, "CONFIRMACAO_NEGOCIO", e.target.checked);
+                      router.refresh();
+                    });
+                  }}
+                  className="h-3.5 w-3.5 rounded border-border"
+                />
+                Concluído
+              </label>
+
+              <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
                 {(() => {
                   const idx = statusOrder.indexOf(item.status as StatusContratoValue);
                   return (
@@ -231,7 +250,8 @@ export function ConfirmacaoNegocioList({
                       </button>
                       <button
                         onClick={() => moveStatus(item.id, 1)}
-                        disabled={isPending || idx === statusOrder.length - 1}
+                        disabled={isPending || idx === statusOrder.length - 1 || !(concluidas[item.id] ?? false)}
+                        title={!(concluidas[item.id] ?? false) ? "Marque como concluído para avançar" : undefined}
                         className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
                       >
                         Avançar

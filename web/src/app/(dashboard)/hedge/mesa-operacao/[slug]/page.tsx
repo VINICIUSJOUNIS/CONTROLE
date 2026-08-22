@@ -10,6 +10,7 @@ import {
   getFormasPagamento,
   getContratoAnexosPorEtapa,
   getPrevisoesPorEtapa,
+  getConcluidasPorEtapa,
   getHistoricoAnteriorPorContrato,
   syncClientesFromVendasExternas,
 } from "@/lib/hedge-data";
@@ -55,12 +56,13 @@ export default async function MesaOperacaoEtapaPage({
 async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<ReturnType<typeof getContratosExportacao>> }) {
   await syncClientesFromVendasExternas();
 
-  const [confirmacoes, clientes, corretoras, tiposEmbalagem, formasPagamento] = await Promise.all([
+  const [confirmacoes, clientes, corretoras, tiposEmbalagem, formasPagamento, concluidas] = await Promise.all([
     getConfirmacoesNegocio(),
     getClientes(),
     getCorretoras(),
     getTiposEmbalagem(),
     getFormasPagamento(),
+    getConcluidasPorEtapa("CONFIRMACAO_NEGOCIO"),
   ]);
 
   return (
@@ -71,6 +73,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
       corretoras={corretoras}
       tiposEmbalagem={tiposEmbalagem}
       formasPagamento={formasPagamento}
+      concluidas={concluidas}
     />
   );
 }
@@ -82,10 +85,11 @@ async function EtapaGenerica({
   contratos: Awaited<ReturnType<typeof getContratosExportacao>>;
   status: NonNullable<ReturnType<typeof slugToStatus>>;
 }) {
-  const [anexos, previsoes, historico] = await Promise.all([
+  const [anexos, previsoes, historico, concluidas] = await Promise.all([
     getContratoAnexosPorEtapa(status),
     getPrevisoesPorEtapa(status),
     getHistoricoAnteriorPorContrato(status),
+    getConcluidasPorEtapa(status),
   ]);
 
   return (
@@ -95,6 +99,7 @@ async function EtapaGenerica({
       anexos={anexos}
       previsoes={previsoes}
       historico={historico}
+      concluidas={concluidas}
     />
   );
 }
