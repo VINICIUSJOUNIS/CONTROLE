@@ -224,6 +224,14 @@ function ConfirmacaoNegocioResumo({ dados }: { dados: NonNullable<HistoricoAnter
   if (dados.numeroContrato) linhas.push(["Contrato", dados.numeroContrato]);
   if (dados.corretoraName) linhas.push(["Broker", dados.corretoraName]);
   if (dados.valorUsd != null) linhas.push(["Valor", formatCurrency(dados.valorUsd, "USD")]);
+  if (dados.diferencial != null)
+    linhas.push([
+      "Diferencial",
+      `${dados.diferencial >= 0 ? "+" : ""}${dados.diferencial.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+    ]);
   if (dados.frete) linhas.push(["Frete", dados.frete]);
   if (dados.tipoEmbalagemNome) linhas.push(["Embalagem", dados.tipoEmbalagemNome]);
   if (dados.quantidadeSacas != null) linhas.push(["Quantidade", `${dados.quantidadeSacas} sacas`]);

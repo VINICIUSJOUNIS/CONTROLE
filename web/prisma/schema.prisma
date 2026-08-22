@@ -538,6 +538,7 @@ model ContratoConfirmacaoNegocio {
   previsaoEmbarque DateTime?           @db.Date
   destinoCarga     String?
   formaPagamento   String?
+  diferencial      Decimal?            @db.Decimal(10, 4)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 

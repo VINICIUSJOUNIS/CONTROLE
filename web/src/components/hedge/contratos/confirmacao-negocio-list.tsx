@@ -35,6 +35,7 @@ function emptyForm(): ConfirmacaoNegocioInput {
     previsaoEmbarque: "",
     destinoCarga: "",
     formaPagamento: "",
+    diferencial: "",
   };
 }
 
@@ -52,6 +53,7 @@ function formFromData(data: ConfirmacaoNegocioData): ConfirmacaoNegocioInput {
     previsaoEmbarque: data.previsaoEmbarque ?? "",
     destinoCarga: data.destinoCarga ?? "",
     formaPagamento: data.formaPagamento ?? "",
+    diferencial: data.diferencial != null ? String(data.diferencial) : "",
   };
 }
 
@@ -173,6 +175,18 @@ export function ConfirmacaoNegocioList({
                   {dados.numeroContrato && <p>Contrato: {dados.numeroContrato}</p>}
                   {dados.corretoraName && <p>Broker: {dados.corretoraName}</p>}
                   {dados.valorUsd != null && <p>Valor: {formatCurrency(dados.valorUsd, "USD")}</p>}
+                  {dados.diferencial != null && (
+                    <p>
+                      Diferencial:{" "}
+                      <span className={dados.diferencial < 0 ? "text-danger" : undefined}>
+                        {dados.diferencial >= 0 ? "+" : ""}
+                        {dados.diferencial.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </p>
+                  )}
                   {dados.frete && <p>Frete: {dados.frete}</p>}
                   {dados.tipoEmbalagemNome && <p>Embalagem: {dados.tipoEmbalagemNome}</p>}
                   {dados.quantidadeSacas != null && <p>Quantidade: {dados.quantidadeSacas} sacas</p>}
@@ -282,6 +296,19 @@ export function ConfirmacaoNegocioList({
                   onChange={(e) => setForm({ ...form, valorUsd: Number(e.target.value) || 0 })}
                 />
               </div>
+              <div>
+                <Label>Diferencial</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.diferencial}
+                  onChange={(e) => setForm({ ...form, diferencial: e.target.value })}
+                  placeholder="Ex: -5,00 ou 10,00"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Frete</Label>
                 <Select value={form.frete} onChange={(e) => setForm({ ...form, frete: e.target.value })}>

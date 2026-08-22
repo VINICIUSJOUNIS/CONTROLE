@@ -71,6 +71,7 @@ export type ConfirmacaoNegocioInput = {
   previsaoEmbarque: string;
   destinoCarga: string;
   formaPagamento: string;
+  diferencial: string;
 };
 
 function confirmacaoData(input: ConfirmacaoNegocioInput) {
@@ -87,6 +88,7 @@ function confirmacaoData(input: ConfirmacaoNegocioInput) {
     previsaoEmbarque: input.previsaoEmbarque ? parseLocalDate(input.previsaoEmbarque) : null,
     destinoCarga: input.destinoCarga.trim() || null,
     formaPagamento: input.formaPagamento.trim() || null,
+    diferencial: input.diferencial.trim() ? Number(input.diferencial) : null,
   };
 }
 

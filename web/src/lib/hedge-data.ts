@@ -153,6 +153,7 @@ export type ConfirmacaoNegocioData = {
   previsaoEmbarque: string | null;
   destinoCarga: string | null;
   formaPagamento: string | null;
+  diferencial: number | null;
 };
 
 export async function getTiposEmbalagem() {
@@ -226,6 +227,7 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
         previsaoEmbarque: r.previsaoEmbarque ? toISODate(r.previsaoEmbarque) : null,
         destinoCarga: r.destinoCarga,
         formaPagamento: r.formaPagamento,
+        diferencial: r.diferencial != null ? Number(r.diferencial) : null,
       },
     ])
   );
