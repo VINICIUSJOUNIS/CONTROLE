@@ -24,7 +24,6 @@ import { NovaTransportadoraAmostra } from "@/components/hedge/contratos/nova-tra
 import {
   MapPin,
   Calendar,
-  ChevronLeft,
   ChevronRight,
   ChevronDown,
   Paperclip,
@@ -273,48 +272,34 @@ function ConcluidoCheckbox({
 function VoltarMenu({ contratoId, currentStatus }: { contratoId: string; currentStatus: StatusContratoValue }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [open, setOpen] = useState(false);
   const idx = statusOrder.indexOf(currentStatus);
   const etapasAnteriores = statusOrder.slice(0, idx);
 
-  function handleSelect(target: StatusContratoValue) {
-    setOpen(false);
+  function handleSelect(target: string) {
+    if (!target) return;
     startTransition(async () => {
-      await updateContratoStatus(contratoId, target);
+      await updateContratoStatus(contratoId, target as StatusContratoValue);
       router.refresh();
     });
   }
 
+  // Select nativo em vez de menu proprio: o navegador renderiza a lista de
+  // opcoes por cima de tudo, sem ficar cortada pelo overflow-hidden do card.
   return (
-    <div
-      className="relative"
-      onClick={(e) => e.stopPropagation()}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
-      }}
-    >
-      <button
-        onClick={() => setOpen((v) => !v)}
+    <div onClick={(e) => e.stopPropagation()}>
+      <select
+        value=""
+        onChange={(e) => handleSelect(e.target.value)}
         disabled={isPending || etapasAnteriores.length === 0}
-        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+        className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
       >
-        <ChevronLeft size={14} />
-        Voltar
-      </button>
-      {open && (
-        <ul className="absolute right-0 z-10 mt-1 max-h-64 w-56 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-lg">
-          {etapasAnteriores.map((s) => (
-            <li key={s}>
-              <button
-                onClick={() => handleSelect(s)}
-                className="block w-full truncate rounded px-2 py-1.5 text-left text-xs hover:bg-border/60"
-              >
-                {statusLabels[s]}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        <option value="">Voltar</option>
+        {etapasAnteriores.map((s) => (
+          <option key={s} value={s}>
+            {statusLabels[s]}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
