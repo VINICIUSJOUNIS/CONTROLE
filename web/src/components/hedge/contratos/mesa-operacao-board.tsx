@@ -137,10 +137,10 @@ export function MesaOperacaoBoard({
                 .map((group) => (
                   <div
                     key={group.key}
-                    className="mt-3 flex gap-3 overflow-x-auto rounded-lg border border-border bg-border/5 p-3"
+                    className="mt-3 divide-y divide-border rounded-lg border border-border bg-border/5"
                   >
                     {group.statuses.map((status) => (
-                      <StatusColumn
+                      <StatusRow
                         key={status}
                         status={status}
                         items={itemsByStatus[status]}
@@ -159,7 +159,7 @@ export function MesaOperacaoBoard({
   );
 }
 
-function StatusColumn({
+function StatusRow({
   status,
   items,
   isPending,
@@ -175,15 +175,13 @@ function StatusColumn({
   const statusIndex = statusOrder.indexOf(status);
 
   return (
-    <div className="flex w-52 shrink-0 flex-col rounded-lg border border-border bg-background">
-      <div className="flex items-center justify-between gap-2 border-b border-border px-2.5 py-2">
-        <h3 className="truncate text-xs font-semibold uppercase tracking-wide" title={statusLabels[status]}>
-          {statusLabels[status]}
-        </h3>
+    <div className="p-3">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide">{statusLabels[status]}</h3>
         <Badge variant="neutral">{items.length}</Badge>
       </div>
 
-      <div className="flex flex-col gap-2 p-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         {items.map((item) => {
           const dateField = relevantDateField[item.status as StatusContratoValue];
           const dateValue = item[dateField];
@@ -195,7 +193,7 @@ function StatusColumn({
                   `/hedge/mesa-operacao/${statusToSlug(item.status as StatusContratoValue)}?contrato=${item.id}`
                 )
               }
-              className="cursor-pointer rounded-md border border-border bg-card p-2 text-xs hover:border-primary/50"
+              className="w-44 shrink-0 cursor-pointer rounded-md border border-border bg-card p-2 text-xs hover:border-primary/50"
             >
               <p className="truncate font-semibold">{item.contractNumber}</p>
               <p className="truncate text-muted">{item.clienteName}</p>
