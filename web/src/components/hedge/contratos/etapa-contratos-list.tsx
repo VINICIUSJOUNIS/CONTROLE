@@ -346,7 +346,7 @@ function VoltarMenu({ contratoId, currentStatus }: { contratoId: string; current
         value=""
         onChange={(e) => handleSelect(e.target.value)}
         disabled={isPending || etapasAnteriores.length === 0}
-        className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+        className="w-28 shrink-0 truncate rounded-md border border-border bg-background px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
       >
         <option value="">Voltar</option>
         {etapasAnteriores.map((s) => (
@@ -379,7 +379,7 @@ function AvancarMenu({ contratoId, currentStatus }: { contratoId: string; curren
         value=""
         onChange={(e) => handleSelect(e.target.value)}
         disabled={isPending || etapasPosteriores.length === 0}
-        className="flex items-center gap-1 rounded-md border border-border bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-30"
+        className="w-28 shrink-0 truncate rounded-md border border-border bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-30"
       >
         <option value="">Avançar</option>
         {etapasPosteriores.map((s) => (
