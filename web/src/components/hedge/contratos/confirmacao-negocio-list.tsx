@@ -103,6 +103,14 @@ export function ConfirmacaoNegocioList({
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(contratoParam);
 
+  // Valor (US$) e sempre calculado a partir do nivel de bolsa, diferencial,
+  // valor do dolar e quantidade de sacas informados, em vez de digitado
+  // manualmente.
+  const calculatedValorUsd =
+    ((Number(form.nivelBolsa) || 0) + (Number(form.diferencial) || 0)) *
+    (Number(form.valorDolar) || 0) *
+    (form.quantidadeSacas ?? 0);
+
   useEffect(() => {
     if (contratoParam) {
       document.getElementById(`contrato-${contratoParam}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -148,12 +156,13 @@ export function ConfirmacaoNegocioList({
       return;
     }
     setError(null);
+    const payload = { ...form, valorUsd: calculatedValorUsd };
     startTransition(async () => {
       try {
         if (editingContratoId) {
-          await upsertConfirmacaoNegocio(editingContratoId, form);
+          await upsertConfirmacaoNegocio(editingContratoId, payload);
         } else {
-          await createContratoComConfirmacao(form);
+          await createContratoComConfirmacao(payload);
         }
         setOpen(false);
         router.refresh();
@@ -435,8 +444,9 @@ export function ConfirmacaoNegocioList({
                 <Input
                   type="number"
                   step="0.01"
-                  value={form.valorUsd}
-                  onChange={(e) => setForm({ ...form, valorUsd: Number(e.target.value) || 0 })}
+                  value={calculatedValorUsd.toFixed(2)}
+                  disabled
+                  title="(Nível de Bolsa + Diferencial) × Valor do Dólar × Quantidade de Sacas"
                 />
               </div>
               <div>
