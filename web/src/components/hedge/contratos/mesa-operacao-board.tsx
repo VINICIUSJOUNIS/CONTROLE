@@ -111,13 +111,12 @@ export function MesaOperacaoBoard({
           });
 
           return (
-            <div className="p-4">
-              <div className="flex flex-wrap gap-3">
-                {groupInfos.map((group) => (
+            <div className="flex flex-wrap items-start gap-3 p-4">
+              {groupInfos.map((group) => (
+                <div key={group.key} className="min-w-[220px] flex-1">
                   <button
-                    key={group.key}
                     onClick={() => toggleGroup(group.key)}
-                    className="flex flex-1 items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-left hover:bg-border/10"
+                    className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-left hover:bg-border/10"
                   >
                     <span className="flex min-w-0 items-center gap-2 text-sm font-semibold uppercase tracking-wide">
                       {group.isExpanded ? (
@@ -129,28 +128,23 @@ export function MesaOperacaoBoard({
                     </span>
                     <Badge variant="neutral">{group.totalCount}</Badge>
                   </button>
-                ))}
-              </div>
 
-              {groupInfos
-                .filter((group) => group.isExpanded)
-                .map((group) => (
-                  <div
-                    key={group.key}
-                    className="mt-3 divide-y divide-border rounded-lg border border-border bg-border/5"
-                  >
-                    {group.statuses.map((status) => (
-                      <StatusRow
-                        key={status}
-                        status={status}
-                        items={itemsByStatus[status]}
-                        isPending={isPending}
-                        moveStatus={moveStatus}
-                        router={router}
-                      />
-                    ))}
-                  </div>
-                ))}
+                  {group.isExpanded && (
+                    <div className="mt-2 divide-y divide-border rounded-lg border border-border bg-border/5">
+                      {group.statuses.map((status) => (
+                        <StatusRow
+                          key={status}
+                          status={status}
+                          items={itemsByStatus[status]}
+                          isPending={isPending}
+                          moveStatus={moveStatus}
+                          router={router}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           );
         })()}
