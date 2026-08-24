@@ -30,6 +30,7 @@ function emptyForm(): ConfirmacaoNegocioInput {
   return {
     dataConfirmacao: "",
     numeroContrato: "",
+    numeroContratoInterno: "",
     corretoraId: "",
     clienteId: "",
     valorUsd: 0,
@@ -52,6 +53,7 @@ function formFromData(data: ConfirmacaoNegocioData): ConfirmacaoNegocioInput {
   return {
     dataConfirmacao: data.dataConfirmacao ?? "",
     numeroContrato: data.numeroContrato ?? "",
+    numeroContratoInterno: data.numeroContratoInterno ?? "",
     corretoraId: data.corretoraId ?? "",
     clienteId: data.clienteId ?? "",
     valorUsd: data.valorUsd ?? 0,
@@ -282,6 +284,12 @@ export function ConfirmacaoNegocioList({
                           <dd>{dados.numeroContrato}</dd>
                         </div>
                       )}
+                      {dados.numeroContratoInterno && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Contrato interno</dt>
+                          <dd>{dados.numeroContratoInterno}</dd>
+                        </div>
+                      )}
                       {dados.corretoraName && (
                         <div className="flex justify-between gap-2">
                           <dt className="text-muted">Broker</dt>
@@ -397,20 +405,30 @@ export function ConfirmacaoNegocioList({
           title={editingContratoId ? "Confirmação de Negócio" : "Novo Contrato — Confirmação de Negócio"}
         >
           <div className="space-y-3">
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Número do Contrato</Label>
+                <Input
+                  value={form.numeroContrato}
+                  onChange={(e) => setForm({ ...form, numeroContrato: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Número do Contrato Interno</Label>
+                <Input
+                  value={form.numeroContratoInterno}
+                  onChange={(e) => setForm({ ...form, numeroContratoInterno: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label>Data da Confirmação</Label>
                 <Input
                   type="date"
                   value={form.dataConfirmacao}
                   onChange={(e) => setForm({ ...form, dataConfirmacao: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Contrato</Label>
-                <Input
-                  value={form.numeroContrato}
-                  onChange={(e) => setForm({ ...form, numeroContrato: e.target.value })}
                 />
               </div>
               <div>

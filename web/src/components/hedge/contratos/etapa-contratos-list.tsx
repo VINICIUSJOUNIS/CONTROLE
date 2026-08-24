@@ -461,6 +461,7 @@ function ConfirmacaoNegocioResumo({ dados }: { dados: NonNullable<HistoricoAnter
   const linhas: [string, string][] = [];
   if (dados.dataConfirmacao) linhas.push(["Confirmado em", formatDate(dados.dataConfirmacao)]);
   if (dados.numeroContrato) linhas.push(["Contrato", dados.numeroContrato]);
+  if (dados.numeroContratoInterno) linhas.push(["Contrato interno", dados.numeroContratoInterno]);
   if (dados.corretoraName) linhas.push(["Broker", dados.corretoraName]);
   if (dados.valorUsd != null) linhas.push(["Valor", formatCurrency(dados.valorUsd, "USD")]);
   if (dados.diferencial != null)

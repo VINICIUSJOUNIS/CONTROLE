@@ -141,6 +141,7 @@ export type ConfirmacaoNegocioData = {
   id: string;
   dataConfirmacao: string | null;
   numeroContrato: string | null;
+  numeroContratoInterno: string | null;
   corretoraId: string | null;
   corretoraName: string | null;
   clienteId: string | null;
@@ -282,6 +283,7 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
         id: r.id,
         dataConfirmacao: r.dataConfirmacao ? toISODate(r.dataConfirmacao) : null,
         numeroContrato: r.numeroContrato,
+        numeroContratoInterno: r.numeroContratoInterno,
         corretoraId: r.corretoraId,
         corretoraName: r.corretora?.name ?? null,
         clienteId: r.clienteId,

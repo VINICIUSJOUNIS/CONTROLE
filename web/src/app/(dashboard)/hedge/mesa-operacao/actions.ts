@@ -103,6 +103,7 @@ export async function deleteContratoAnexo(id: string) {
 export type ConfirmacaoNegocioInput = {
   dataConfirmacao: string;
   numeroContrato: string;
+  numeroContratoInterno: string;
   corretoraId: string;
   clienteId: string;
   valorUsd: number;
@@ -124,6 +125,7 @@ function confirmacaoData(input: ConfirmacaoNegocioInput) {
   return {
     dataConfirmacao: input.dataConfirmacao ? parseLocalDate(input.dataConfirmacao) : null,
     numeroContrato: input.numeroContrato.trim() || null,
+    numeroContratoInterno: input.numeroContratoInterno.trim() || null,
     corretoraId: input.corretoraId || null,
     clienteId: input.clienteId || null,
     valorUsd: input.valorUsd,

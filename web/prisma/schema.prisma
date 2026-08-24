@@ -527,6 +527,7 @@ model ContratoConfirmacaoNegocio {
   contratoId       String              @unique
   dataConfirmacao  DateTime?           @db.Date
   numeroContrato   String?
+  numeroContratoInterno String?
   corretora        Corretora?          @relation(fields: [corretoraId], references: [id])
   corretoraId      String?
   cliente          Cliente?            @relation(fields: [clienteId], references: [id])
