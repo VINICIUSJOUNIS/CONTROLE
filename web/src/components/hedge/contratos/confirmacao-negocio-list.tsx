@@ -103,13 +103,11 @@ export function ConfirmacaoNegocioList({
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(contratoParam);
 
-  // Valor (US$) e sempre calculado a partir do nivel de bolsa, diferencial,
-  // valor do dolar e quantidade de sacas informados, em vez de digitado
-  // manualmente.
+  // Valor (US$) e sempre calculado a partir do nivel de bolsa, diferencial e
+  // quantidade de sacas informados, em vez de digitado manualmente.
   const calculatedValorUsd =
     ((Number(form.nivelBolsa) || 0) + (Number(form.diferencial) || 0)) *
     1.3228 *
-    (Number(form.valorDolar) || 0) *
     (form.quantidadeSacas ?? 0);
 
   useEffect(() => {
@@ -447,7 +445,7 @@ export function ConfirmacaoNegocioList({
                   step="0.01"
                   value={calculatedValorUsd.toFixed(2)}
                   disabled
-                  title="(Nível de Bolsa + Diferencial) × 1,3228 × Valor do Dólar × Quantidade de Sacas"
+                  title="(Nível de Bolsa + Diferencial) × 1,3228 × Quantidade de Sacas"
                 />
               </div>
               <div>
