@@ -43,6 +43,18 @@ export const mesaOperacaoGroups: MesaOperacaoGroup[] = [
     label: "Confirmação de Negócio",
     statuses: ["CONFIRMACAO_NEGOCIO", "ASSINATURA_CONTRATO", "PROFORMA_INVOICE"],
   },
+  {
+    label: "Pré-Embarque",
+    statuses: [
+      "ENVIO_AMOSTRA_PSS",
+      "APROVACAO_AMOSTRA_PSS",
+      "ENVIO_ARTE_SACARIA",
+      "APROVACAO_ARTE_SACARIA",
+      "ENVIO_INSTRUCAO_EMBARQUE",
+      "BOOKING",
+      "MARCACAO_EMBARQUE_TRANSPORTADORA",
+    ],
+  },
 ];
 
 export type MesaOperacaoSection =
