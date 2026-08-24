@@ -26,7 +26,6 @@ import { NovaTransportadoraAmostra } from "@/components/hedge/contratos/nova-tra
 import {
   MapPin,
   Calendar,
-  ChevronRight,
   ChevronDown,
   Paperclip,
   Upload,
@@ -360,6 +359,39 @@ function VoltarMenu({ contratoId, currentStatus }: { contratoId: string; current
   );
 }
 
+function AvancarMenu({ contratoId, currentStatus }: { contratoId: string; currentStatus: StatusContratoValue }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const idx = statusOrder.indexOf(currentStatus);
+  const etapasPosteriores = statusOrder.slice(idx + 1);
+
+  function handleSelect(target: string) {
+    if (!target) return;
+    startTransition(async () => {
+      await updateContratoStatus(contratoId, target as StatusContratoValue);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <select
+        value=""
+        onChange={(e) => handleSelect(e.target.value)}
+        disabled={isPending || etapasPosteriores.length === 0}
+        className="flex items-center gap-1 rounded-md border border-border bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20 disabled:pointer-events-none disabled:opacity-30"
+      >
+        <option value="">Avançar</option>
+        {etapasPosteriores.map((s) => (
+          <option key={s} value={s}>
+            {statusLabels[s]}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function AnexosSection({
   contratoId,
   status,
@@ -570,10 +602,9 @@ export function EtapaContratosList({
   const router = useRouter();
   const searchParams = useSearchParams();
   const contratoParam = searchParams.get("contrato");
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [expandedId, setExpandedId] = useState<string | null>(contratoParam);
   const dateField = relevantDateField[status];
-  const idx = statusOrder.indexOf(status);
 
   useEffect(() => {
     if (contratoParam) {
@@ -581,15 +612,6 @@ export function EtapaContratosList({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function moveStatus(id: string, direction: -1 | 1) {
-    const nextIndex = idx + direction;
-    if (nextIndex < 0 || nextIndex >= statusOrder.length) return;
-    startTransition(async () => {
-      await updateContratoStatus(id, statusOrder[nextIndex]);
-      router.refresh();
-    });
-  }
 
   function goToStatus(id: string, target: StatusContratoValue) {
     startTransition(async () => {
@@ -662,15 +684,7 @@ export function EtapaContratosList({
                 <QuickUploadButton contratoId={item.id} status={status} />
                 <ConcluidoCheckbox contratoId={item.id} status={status} concluida={concluidas[item.id] ?? false} />
                 <VoltarMenu contratoId={item.id} currentStatus={status} />
-                <button
-                  onClick={() => moveStatus(item.id, 1)}
-                  disabled={isPending || idx === statusOrder.length - 1 || !(concluidas[item.id] ?? false)}
-                  title={!(concluidas[item.id] ?? false) ? "Marque como concluído para avançar" : undefined}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
-                >
-                  Avançar
-                  <ChevronRight size={14} />
-                </button>
+                <AvancarMenu contratoId={item.id} currentStatus={status} />
               </div>
             </div>
 

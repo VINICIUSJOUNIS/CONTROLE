@@ -260,8 +260,7 @@ export function ConfirmacaoNegocioList({
                   </button>
                   <button
                     onClick={() => moveStatus(item.id, 1)}
-                    disabled={isPending || idx === statusOrder.length - 1 || !(concluidas[item.id] ?? false)}
-                    title={!(concluidas[item.id] ?? false) ? "Marque como concluído para avançar" : undefined}
+                    disabled={isPending || idx === statusOrder.length - 1}
                     className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
                   >
                     Avançar
