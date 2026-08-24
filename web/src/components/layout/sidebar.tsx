@@ -26,7 +26,34 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { statusOrder, statusLabels, statusToSlug } from "@/lib/contrato-shared";
+import { statusLabels, statusToSlug, buildMesaOperacaoSections } from "@/lib/contrato-shared";
+
+type MesaOperacaoSubItem =
+  | { kind: "link"; label: string; status: string; href: string }
+  | {
+      kind: "group";
+      label: string;
+      children: { label: string; status: string; href: string }[];
+    };
+
+const mesaOperacaoSubItems: MesaOperacaoSubItem[] = buildMesaOperacaoSections().map((section) =>
+  section.kind === "group"
+    ? {
+        kind: "group",
+        label: section.label,
+        children: section.statuses.map((status) => ({
+          label: statusLabels[status],
+          status,
+          href: `/hedge/mesa-operacao/${statusToSlug(status)}`,
+        })),
+      }
+    : {
+        kind: "link",
+        label: statusLabels[section.status],
+        status: section.status,
+        href: `/hedge/mesa-operacao/${statusToSlug(section.status)}`,
+      }
+);
 
 const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
@@ -59,11 +86,7 @@ const hedgeNavItems = [
     href: "/hedge/mesa-operacao",
     label: "Mesa de Operacao",
     icon: Ship,
-    subItems: statusOrder.map((status) => ({
-      label: statusLabels[status],
-      status,
-      href: `/hedge/mesa-operacao/${statusToSlug(status)}`,
-    })),
+    subItems: mesaOperacaoSubItems,
   },
   { href: "/hedge/mapa", label: "Mapa de Exportacao", icon: Globe2 },
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
@@ -111,6 +134,7 @@ export function Sidebar({
   const router = useRouter();
   const activeModule = getActiveModule(pathname);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [expandedSubGroup, setExpandedSubGroup] = useState<string | null>(null);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -133,8 +157,7 @@ export function Sidebar({
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(item.href + "/"));
           const Icon = item.icon;
-          const subItems = (item as { subItems?: { label: string; href: string; status: string }[] })
-            .subItems;
+          const subItems = (item as { subItems?: MesaOperacaoSubItem[] }).subItems;
           const isExpanded = expanded === item.href;
           return (
             <div key={item.href}>
@@ -177,6 +200,65 @@ export function Sidebar({
               {subItems && isExpanded && (
                 <ul className="mt-1 space-y-0.5 border-l border-white/10 pl-6">
                   {subItems.map((sub) => {
+                    if (sub.kind === "group") {
+                      const isSubGroupExpanded = expandedSubGroup === sub.label;
+                      const groupCount = sub.children.reduce(
+                        (total, child) => total + (mesaOperacaoCountByStatus?.[child.status] ?? 0),
+                        0
+                      );
+                      return (
+                        <li key={sub.label}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedSubGroup(isSubGroupExpanded ? null : sub.label)
+                            }
+                            title={sub.label}
+                            className="flex w-full items-center gap-2 rounded py-1 px-1 text-xs text-sidebar-foreground/70 transition-colors hover:text-white"
+                          >
+                            <ChevronDown
+                              size={12}
+                              className={cn(
+                                "shrink-0 transition-transform",
+                                isSubGroupExpanded && "rotate-180"
+                              )}
+                            />
+                            <span className="min-w-0 flex-1 truncate text-left">{sub.label}</span>
+                            <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-medium">
+                              {groupCount}
+                            </span>
+                          </button>
+                          {isSubGroupExpanded && (
+                            <ul className="mt-0.5 space-y-0.5 border-l border-white/10 pl-4">
+                              {sub.children.map((child) => {
+                                const childActive = pathname === child.href;
+                                const count = mesaOperacaoCountByStatus?.[child.status] ?? 0;
+                                return (
+                                  <li key={child.href}>
+                                    <Link
+                                      href={child.href}
+                                      title={child.label}
+                                      className={cn(
+                                        "flex items-center gap-2 rounded py-1 px-1 text-xs transition-colors",
+                                        childActive
+                                          ? "text-white"
+                                          : "text-sidebar-foreground/70 hover:text-white"
+                                      )}
+                                    >
+                                      <span className="min-w-0 flex-1 truncate">{child.label}</span>
+                                      <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-medium">
+                                        {count}
+                                      </span>
+                                    </Link>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    }
+
                     const subActive = pathname === sub.href;
                     const count = mesaOperacaoCountByStatus?.[sub.status] ?? 0;
                     return (
