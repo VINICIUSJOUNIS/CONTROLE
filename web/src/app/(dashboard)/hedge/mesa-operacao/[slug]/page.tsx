@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Topbar } from "@/components/layout/topbar";
 import {
@@ -8,6 +9,7 @@ import {
   getCorretoras,
   getTiposEmbalagem,
   getFormasPagamento,
+  getDescricoesCafe,
   getContratoAnexosPorEtapa,
   getPrevisoesPorEtapa,
   getConcluidasPorEtapa,
@@ -59,28 +61,32 @@ export default async function MesaOperacaoEtapaPage({
 async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<ReturnType<typeof getContratosExportacao>> }) {
   await syncClientesFromVendasExternas();
 
-  const [confirmacoes, clientes, corretoras, tiposEmbalagem, formasPagamento, concluidas, previsoes] =
+  const [confirmacoes, clientes, corretoras, tiposEmbalagem, formasPagamento, descricoesCafe, concluidas, previsoes] =
     await Promise.all([
       getConfirmacoesNegocio(),
       getClientes(),
       getCorretoras(),
       getTiposEmbalagem(),
       getFormasPagamento(),
+      getDescricoesCafe(),
       getConcluidasPorEtapa("CONFIRMACAO_NEGOCIO"),
       getPrevisoesPorEtapa("CONFIRMACAO_NEGOCIO"),
     ]);
 
   return (
-    <ConfirmacaoNegocioList
-      contratos={contratos}
-      confirmacoes={confirmacoes}
-      clientes={clientes}
-      corretoras={corretoras}
-      tiposEmbalagem={tiposEmbalagem}
-      formasPagamento={formasPagamento}
-      concluidas={concluidas}
-      previsoes={previsoes}
-    />
+    <Suspense>
+      <ConfirmacaoNegocioList
+        contratos={contratos}
+        confirmacoes={confirmacoes}
+        clientes={clientes}
+        corretoras={corretoras}
+        tiposEmbalagem={tiposEmbalagem}
+        formasPagamento={formasPagamento}
+        descricoesCafe={descricoesCafe}
+        concluidas={concluidas}
+        previsoes={previsoes}
+      />
+    </Suspense>
   );
 }
 
@@ -106,6 +112,24 @@ async function EtapaGenerica({
     ]);
 
     return (
+      <Suspense>
+        <EtapaContratosList
+          contratos={contratos}
+          status={status}
+          anexos={anexos}
+          previsoes={previsoes}
+          historico={historico}
+          concluidas={concluidas}
+          enviosAmostra={enviosAmostra}
+          tiposAmostra={tiposAmostra}
+          transportadorasAmostra={transportadorasAmostra}
+        />
+      </Suspense>
+    );
+  }
+
+  return (
+    <Suspense>
       <EtapaContratosList
         contratos={contratos}
         status={status}
@@ -113,21 +137,7 @@ async function EtapaGenerica({
         previsoes={previsoes}
         historico={historico}
         concluidas={concluidas}
-        enviosAmostra={enviosAmostra}
-        tiposAmostra={tiposAmostra}
-        transportadorasAmostra={transportadorasAmostra}
       />
-    );
-  }
-
-  return (
-    <EtapaContratosList
-      contratos={contratos}
-      status={status}
-      anexos={anexos}
-      previsoes={previsoes}
-      historico={historico}
-      concluidas={concluidas}
-    />
+    </Suspense>
   );
 }

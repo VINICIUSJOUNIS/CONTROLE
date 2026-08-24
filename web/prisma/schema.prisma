@@ -536,7 +536,8 @@ model ContratoConfirmacaoNegocio {
   tipoEmbalagem    TipoEmbalagem?      @relation(fields: [tipoEmbalagemId], references: [id])
   tipoEmbalagemId  String?
   quantidadeSacas  Int?
-  descricaoCafe    String?
+  descricaoCafe    DescricaoCafe?      @relation(fields: [descricaoCafeId], references: [id])
+  descricaoCafeId  String?
   previsaoEmbarque DateTime?           @db.Date
   destinoCarga     String?
   formaPagamento   FormaPagamento?     @relation(fields: [formaPagamentoId], references: [id])
@@ -553,6 +554,7 @@ model ContratoConfirmacaoNegocio {
   @@index([clienteId])
   @@index([tipoEmbalagemId])
   @@index([formaPagamentoId])
+  @@index([descricaoCafeId])
   @@map("contrato_confirmacao_negocio")
 }
 
@@ -565,6 +567,18 @@ model TipoEmbalagem {
   createdAt           DateTime                     @default(now())
 
   @@map("tipos_embalagem")
+}
+
+// Lista de descricoes de cafe cadastraveis (ex: Arabica tipo 6, bica
+// corrida), usada na ficha da etapa Confirmacao de Negocio da Mesa de
+// Operacao.
+model DescricaoCafe {
+  id                  String                       @id @default(uuid())
+  name                String                       @unique
+  confirmacoesNegocio ContratoConfirmacaoNegocio[]
+  createdAt           DateTime                     @default(now())
+
+  @@map("descricoes_cafe")
 }
 
 // Lista de formas de pagamento cadastraveis (ex: Carta de credito, 30/60/90

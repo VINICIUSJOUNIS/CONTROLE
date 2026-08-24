@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -21,6 +21,7 @@ import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
 import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embalagem";
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
+import { NovaDescricaoCafe } from "@/components/hedge/contratos/nova-descricao-cafe";
 import { PrevisaoEtapa } from "@/components/hedge/contratos/etapa-contratos-list";
 import { alertaPrazo } from "@/lib/prazo";
 import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight, ChevronDown, AlertTriangle } from "lucide-react";
@@ -35,7 +36,7 @@ function emptyForm(): ConfirmacaoNegocioInput {
     frete: "",
     tipoEmbalagemId: "",
     quantidadeSacas: null,
-    descricaoCafe: "",
+    descricaoCafeId: "",
     previsaoEmbarque: "",
     destinoCarga: "",
     formaPagamentoId: "",
@@ -57,7 +58,7 @@ function formFromData(data: ConfirmacaoNegocioData): ConfirmacaoNegocioInput {
     frete: data.frete ?? "",
     tipoEmbalagemId: data.tipoEmbalagemId ?? "",
     quantidadeSacas: data.quantidadeSacas,
-    descricaoCafe: data.descricaoCafe ?? "",
+    descricaoCafeId: data.descricaoCafeId ?? "",
     previsaoEmbarque: data.previsaoEmbarque ?? "",
     destinoCarga: data.destinoCarga ?? "",
     formaPagamentoId: data.formaPagamentoId ?? "",
@@ -76,6 +77,7 @@ export function ConfirmacaoNegocioList({
   corretoras,
   tiposEmbalagem,
   formasPagamento,
+  descricoesCafe,
   concluidas,
   previsoes,
 }: {
@@ -85,16 +87,26 @@ export function ConfirmacaoNegocioList({
   corretoras: Corretora[];
   tiposEmbalagem: { id: string; name: string }[];
   formasPagamento: { id: string; name: string }[];
+  descricoesCafe: { id: string; name: string }[];
   concluidas: Record<string, boolean>;
   previsoes: Record<string, string>;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const contratoParam = searchParams.get("contrato");
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [editingContratoId, setEditingContratoId] = useState<string | null>(null);
   const [form, setForm] = useState<ConfirmacaoNegocioInput>(emptyForm());
   const [error, setError] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(contratoParam);
+
+  useEffect(() => {
+    if (contratoParam) {
+      document.getElementById(`contrato-${contratoParam}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function openEdit(contratoId: string) {
     const existing = confirmacoes[contratoId];
@@ -166,7 +178,7 @@ export function ConfirmacaoNegocioList({
           const isExpanded = expandedId === item.id;
           const idx = statusOrder.indexOf(item.status as StatusContratoValue);
           return (
-            <Card key={item.id} className="overflow-hidden p-0">
+            <Card key={item.id} id={`contrato-${item.id}`} className="overflow-hidden p-0">
               <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 p-3">
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : item.id)}
@@ -336,10 +348,10 @@ export function ConfirmacaoNegocioList({
                           <dd>{dados.quantidadeSacas} sacas</dd>
                         </div>
                       )}
-                      {dados.descricaoCafe && (
+                      {dados.descricaoCafeNome && (
                         <div className="flex justify-between gap-2">
                           <dt className="text-muted">Café</dt>
-                          <dd>{dados.descricaoCafe}</dd>
+                          <dd>{dados.descricaoCafeNome}</dd>
                         </div>
                       )}
                       {dados.previsaoEmbarque && (
@@ -559,11 +571,20 @@ export function ConfirmacaoNegocioList({
               </div>
               <div>
                 <Label>Descrição do Café</Label>
-                <Input
-                  value={form.descricaoCafe}
-                  onChange={(e) => setForm({ ...form, descricaoCafe: e.target.value })}
-                  placeholder="Ex: Arábica tipo 6, bica corrida"
-                />
+                <div className="flex gap-2">
+                  <Select
+                    value={form.descricaoCafeId}
+                    onChange={(e) => setForm({ ...form, descricaoCafeId: e.target.value })}
+                  >
+                    <option value="">Selecione...</option>
+                    {descricoesCafe.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <NovaDescricaoCafe compact />
+                </div>
               </div>
             </div>
 

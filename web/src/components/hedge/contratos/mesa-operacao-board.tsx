@@ -12,6 +12,7 @@ import {
   Cliente,
   statusOrder,
   statusLabels,
+  statusToSlug,
   relevantDateField,
   dateFieldLabels,
 } from "@/lib/contrato-shared";
@@ -101,7 +102,12 @@ export function MesaOperacaoBoard({
                     return (
                       <div
                         key={item.id}
-                        className="w-64 shrink-0 rounded-lg border border-border bg-background p-3"
+                        onClick={() =>
+                          router.push(
+                            `/hedge/mesa-operacao/${statusToSlug(item.status as StatusContratoValue)}?contrato=${item.id}`
+                          )
+                        }
+                        className="w-64 shrink-0 cursor-pointer rounded-lg border border-border bg-background p-3 hover:border-primary/50"
                       >
                         <p className="font-semibold">{item.contractNumber}</p>
                         <p className="text-sm">{item.clienteName}</p>
@@ -120,7 +126,10 @@ export function MesaOperacaoBoard({
                         </p>
                         <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
                           <button
-                            onClick={() => moveStatus(item.id, -1)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              moveStatus(item.id, -1);
+                            }}
                             disabled={isPending || rowIndex === 0}
                             className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
                           >
@@ -128,7 +137,10 @@ export function MesaOperacaoBoard({
                             Voltar
                           </button>
                           <button
-                            onClick={() => moveStatus(item.id, 1)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              moveStatus(item.id, 1);
+                            }}
                             disabled={isPending || rowIndex === statusOrder.length - 1}
                             className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
                           >

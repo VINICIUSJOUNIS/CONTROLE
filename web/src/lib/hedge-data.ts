@@ -150,7 +150,8 @@ export type ConfirmacaoNegocioData = {
   tipoEmbalagemId: string | null;
   tipoEmbalagemNome: string | null;
   quantidadeSacas: number | null;
-  descricaoCafe: string | null;
+  descricaoCafeId: string | null;
+  descricaoCafeNome: string | null;
   previsaoEmbarque: string | null;
   destinoCarga: string | null;
   formaPagamentoId: string | null;
@@ -170,6 +171,11 @@ export async function getTiposEmbalagem() {
 export async function getFormasPagamento() {
   const formas = await prisma.formaPagamento.findMany({ orderBy: { name: "asc" } });
   return formas.map((f) => ({ id: f.id, name: f.name }));
+}
+
+export async function getDescricoesCafe() {
+  const descricoes = await prisma.descricaoCafe.findMany({ orderBy: { name: "asc" } });
+  return descricoes.map((d) => ({ id: d.id, name: d.name }));
 }
 
 export async function getTiposAmostra() {
@@ -266,7 +272,7 @@ export async function getConcluidasPorEtapa(etapa: StatusContratoValue): Promise
 // proprios dessa etapa, independentes dos campos gerais do ContratoExportacao.
 export async function getConfirmacoesNegocio(): Promise<Record<string, ConfirmacaoNegocioData>> {
   const rows = await prisma.contratoConfirmacaoNegocio.findMany({
-    include: { cliente: true, corretora: true, tipoEmbalagem: true, formaPagamento: true },
+    include: { cliente: true, corretora: true, tipoEmbalagem: true, formaPagamento: true, descricaoCafe: true },
   });
 
   return Object.fromEntries(
@@ -285,7 +291,8 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
         tipoEmbalagemId: r.tipoEmbalagemId,
         tipoEmbalagemNome: r.tipoEmbalagem?.name ?? null,
         quantidadeSacas: r.quantidadeSacas,
-        descricaoCafe: r.descricaoCafe,
+        descricaoCafeId: r.descricaoCafeId,
+        descricaoCafeNome: r.descricaoCafe?.name ?? null,
         previsaoEmbarque: r.previsaoEmbarque ? toISODate(r.previsaoEmbarque) : null,
         destinoCarga: r.destinoCarga,
         formaPagamentoId: r.formaPagamentoId,

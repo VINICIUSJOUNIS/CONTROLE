@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
 import { ContratoRow, ContratoAnexoData, HistoricoAnteriorItem, EnvioAmostraData } from "@/lib/hedge-data";
 import {
@@ -478,7 +478,7 @@ function ConfirmacaoNegocioResumo({ dados }: { dados: NonNullable<HistoricoAnter
   if (dados.valorDolar != null) linhas.push(["Valor do dólar", String(dados.valorDolar)]);
   if (dados.tipoEmbalagemNome) linhas.push(["Embalagem", dados.tipoEmbalagemNome]);
   if (dados.quantidadeSacas != null) linhas.push(["Quantidade", `${dados.quantidadeSacas} sacas`]);
-  if (dados.descricaoCafe) linhas.push(["Café", dados.descricaoCafe]);
+  if (dados.descricaoCafeNome) linhas.push(["Café", dados.descricaoCafeNome]);
   if (dados.previsaoEmbarque) linhas.push(["Previsão embarque", formatDate(dados.previsaoEmbarque)]);
   if (dados.destinoCarga) linhas.push(["Destino", dados.destinoCarga]);
   if (dados.formaPagamentoNome) linhas.push(["Pagamento", dados.formaPagamentoNome]);
@@ -567,10 +567,19 @@ export function EtapaContratosList({
   transportadorasAmostra?: { id: string; name: string }[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const contratoParam = searchParams.get("contrato");
   const [isPending, startTransition] = useTransition();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(contratoParam);
   const dateField = relevantDateField[status];
   const idx = statusOrder.indexOf(status);
+
+  useEffect(() => {
+    if (contratoParam) {
+      document.getElementById(`contrato-${contratoParam}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function moveStatus(id: string, direction: -1 | 1) {
     const nextIndex = idx + direction;
@@ -598,7 +607,7 @@ export function EtapaContratosList({
         const dateValue = item[dateField];
         const isExpanded = expandedId === item.id;
         return (
-          <Card key={item.id} className="overflow-hidden p-0">
+          <Card key={item.id} id={`contrato-${item.id}`} className="overflow-hidden p-0">
             <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 p-3">
               <button
                 onClick={() => setExpandedId(isExpanded ? null : item.id)}
