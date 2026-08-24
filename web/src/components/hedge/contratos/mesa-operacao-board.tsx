@@ -99,30 +99,47 @@ export function MesaOperacaoBoard({
         <div className="border-b border-border bg-border/20 px-4 py-2.5">
           <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Mesa de Operações</h2>
         </div>
-        <div className="divide-y divide-border">
-          {sections.map((section) => {
+
+        {(() => {
+          const groupInfos = sections.map((section) => {
             const statuses = section.kind === "group" ? section.statuses : [section.status];
             const label = section.kind === "group" ? section.label : statusLabels[section.status];
             const key = section.kind === "group" ? section.label : section.status;
             const isExpanded = expandedGroups.has(key);
             const totalCount = statuses.reduce((sum, s) => sum + itemsByStatus[s].length, 0);
+            return { key, label, statuses, isExpanded, totalCount };
+          });
 
-            return (
-              <div key={key}>
-                <button
-                  onClick={() => toggleGroup(key)}
-                  className="flex w-full items-center justify-between gap-2 p-4 text-left hover:bg-border/10"
-                >
-                  <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
-                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                    {label}
-                  </span>
-                  <Badge variant="neutral">{totalCount}</Badge>
-                </button>
+          return (
+            <div className="p-4">
+              <div className="flex flex-wrap gap-3">
+                {groupInfos.map((group) => (
+                  <button
+                    key={group.key}
+                    onClick={() => toggleGroup(group.key)}
+                    className="flex flex-1 items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-left hover:bg-border/10"
+                  >
+                    <span className="flex min-w-0 items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                      {group.isExpanded ? (
+                        <ChevronDown size={16} className="shrink-0" />
+                      ) : (
+                        <ChevronRight size={16} className="shrink-0" />
+                      )}
+                      <span className="truncate">{group.label}</span>
+                    </span>
+                    <Badge variant="neutral">{group.totalCount}</Badge>
+                  </button>
+                ))}
+              </div>
 
-                {isExpanded && (
-                  <div className="flex gap-3 overflow-x-auto border-t border-border bg-border/5 p-4">
-                    {statuses.map((status) => (
+              {groupInfos
+                .filter((group) => group.isExpanded)
+                .map((group) => (
+                  <div
+                    key={group.key}
+                    className="mt-3 flex gap-3 overflow-x-auto rounded-lg border border-border bg-border/5 p-3"
+                  >
+                    {group.statuses.map((status) => (
                       <StatusColumn
                         key={status}
                         status={status}
@@ -133,11 +150,10 @@ export function MesaOperacaoBoard({
                       />
                     ))}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                ))}
+            </div>
+          );
+        })()}
       </Card>
     </div>
   );
