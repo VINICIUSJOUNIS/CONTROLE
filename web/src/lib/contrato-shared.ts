@@ -30,6 +30,43 @@ export const statusOrder: StatusContratoValue[] = [
   "LIBERACAO_CARGA",
 ];
 
+// Agrupamentos de etapas exibidos como uma unica secao expansivel na Mesa de
+// Operacoes. Etapas que nao aparecem em nenhum grupo continuam exibidas
+// individualmente, na ordem normal de statusOrder.
+export type MesaOperacaoGroup = {
+  label: string;
+  statuses: StatusContratoValue[];
+};
+
+export const mesaOperacaoGroups: MesaOperacaoGroup[] = [
+  {
+    label: "1ª Confirmação de Negócio",
+    statuses: ["CONFIRMACAO_NEGOCIO", "ASSINATURA_CONTRATO", "PROFORMA_INVOICE"],
+  },
+];
+
+export type MesaOperacaoSection =
+  | { kind: "group"; label: string; statuses: StatusContratoValue[] }
+  | { kind: "single"; status: StatusContratoValue };
+
+export function buildMesaOperacaoSections(): MesaOperacaoSection[] {
+  const consumed = new Set<StatusContratoValue>();
+  const sections: MesaOperacaoSection[] = [];
+
+  for (const status of statusOrder) {
+    if (consumed.has(status)) continue;
+    const group = mesaOperacaoGroups.find((g) => g.statuses[0] === status);
+    if (group) {
+      group.statuses.forEach((s) => consumed.add(s));
+      sections.push({ kind: "group", label: group.label, statuses: group.statuses });
+    } else {
+      sections.push({ kind: "single", status });
+    }
+  }
+
+  return sections;
+}
+
 export function statusToSlug(status: StatusContratoValue): string {
   return status.toLowerCase().replace(/_/g, "-");
 }
