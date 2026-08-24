@@ -40,7 +40,7 @@ export type MesaOperacaoGroup = {
 
 export const mesaOperacaoGroups: MesaOperacaoGroup[] = [
   {
-    label: "1ª Confirmação de Negócio",
+    label: "Confirmação de Negócio",
     statuses: ["CONFIRMACAO_NEGOCIO", "ASSINATURA_CONTRATO", "PROFORMA_INVOICE"],
   },
 ];
