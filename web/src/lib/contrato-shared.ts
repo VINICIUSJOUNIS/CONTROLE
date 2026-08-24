@@ -55,6 +55,10 @@ export const mesaOperacaoGroups: MesaOperacaoGroup[] = [
       "MARCACAO_EMBARQUE_TRANSPORTADORA",
     ],
   },
+  {
+    label: "Estufagem/Carregamento",
+    statuses: ["ESTUFAGEM_CARREGAMENTO"],
+  },
 ];
 
 export type MesaOperacaoSection =
