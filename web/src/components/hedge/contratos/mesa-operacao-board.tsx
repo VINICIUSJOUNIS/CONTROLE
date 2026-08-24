@@ -14,8 +14,11 @@ import {
   statusLabels,
   statusToSlug,
   relevantDateField,
+  buildMesaOperacaoSections,
 } from "@/lib/contrato-shared";
-import { Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
+
+const sections = buildMesaOperacaoSections();
 
 export function MesaOperacaoBoard({
   clientes,
@@ -28,6 +31,7 @@ export function MesaOperacaoBoard({
   const [isPending, startTransition] = useTransition();
   const [clienteFilter, setClienteFilter] = useState("todos");
   const [search, setSearch] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -42,11 +46,12 @@ export function MesaOperacaoBoard({
     });
   }, [contratos, clienteFilter, search]);
 
-  const columns = useMemo(() => {
-    return statusOrder.map((status) => ({
-      status,
-      items: filtered.filter((c) => c.status === status),
-    }));
+  const itemsByStatus = useMemo(() => {
+    const map = {} as Record<StatusContratoValue, ContratoRow[]>;
+    for (const status of statusOrder) {
+      map[status] = filtered.filter((c) => c.status === status);
+    }
+    return map;
   }, [filtered]);
 
   function moveStatus(id: string, direction: -1 | 1) {
@@ -59,6 +64,15 @@ export function MesaOperacaoBoard({
     startTransition(async () => {
       await updateContratoStatus(id, nextStatus);
       router.refresh();
+    });
+  }
+
+  function toggleGroup(label: string) {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
     });
   }
 
@@ -85,80 +99,124 @@ export function MesaOperacaoBoard({
         <div className="border-b border-border bg-border/20 px-4 py-2.5">
           <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Mesa de Operações</h2>
         </div>
-        <div className="flex gap-3 overflow-x-auto p-4">
-          {columns.map((column, columnIndex) => (
-            <div
-              key={column.status}
-              className="flex w-52 shrink-0 flex-col rounded-lg border border-border bg-background"
-            >
-              <div className="flex items-center justify-between gap-2 border-b border-border px-2.5 py-2">
-                <h3
-                  className="truncate text-xs font-semibold uppercase tracking-wide"
-                  title={statusLabels[column.status]}
-                >
-                  {statusLabels[column.status]}
-                </h3>
-                <Badge variant="neutral">{column.items.length}</Badge>
-              </div>
+        <div className="divide-y divide-border">
+          {sections.map((section) => {
+            const statuses = section.kind === "group" ? section.statuses : [section.status];
+            const label = section.kind === "group" ? section.label : statusLabels[section.status];
+            const key = section.kind === "group" ? section.label : section.status;
+            const isExpanded = expandedGroups.has(key);
+            const totalCount = statuses.reduce((sum, s) => sum + itemsByStatus[s].length, 0);
 
-              <div className="flex flex-col gap-2 p-2">
-                {column.items.map((item) => {
-                  const dateField = relevantDateField[item.status as StatusContratoValue];
-                  const dateValue = item[dateField];
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() =>
-                        router.push(
-                          `/hedge/mesa-operacao/${statusToSlug(item.status as StatusContratoValue)}?contrato=${item.id}`
-                        )
-                      }
-                      className="cursor-pointer rounded-md border border-border bg-card p-2 text-xs hover:border-primary/50"
-                    >
-                      <p className="truncate font-semibold">{item.contractNumber}</p>
-                      <p className="truncate text-muted">{item.clienteName}</p>
-                      <p className="mt-1 font-medium text-primary">
-                        {formatCompactCurrency(item.valorUsd, "USD")}
-                      </p>
-                      <p className="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
-                        <Calendar size={10} />
-                        {dateValue ? formatDate(dateValue) : "sem data"}
-                      </p>
-                      <div className="mt-1.5 flex items-center justify-between border-t border-border pt-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveStatus(item.id, -1);
-                          }}
-                          disabled={isPending || columnIndex === 0}
-                          title="Voltar"
-                          className="rounded p-0.5 text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
-                        >
-                          <ChevronUp size={12} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveStatus(item.id, 1);
-                          }}
-                          disabled={isPending || columnIndex === statusOrder.length - 1}
-                          title="Avançar"
-                          className="rounded p-0.5 text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
-                        >
-                          <ChevronDown size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-                {column.items.length === 0 && (
-                  <p className="py-3 text-center text-[10px] text-muted">Vazio</p>
+            return (
+              <div key={key}>
+                <button
+                  onClick={() => toggleGroup(key)}
+                  className="flex w-full items-center justify-between gap-2 p-4 text-left hover:bg-border/10"
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    {label}
+                  </span>
+                  <Badge variant="neutral">{totalCount}</Badge>
+                </button>
+
+                {isExpanded && (
+                  <div className="flex gap-3 overflow-x-auto border-t border-border bg-border/5 p-4">
+                    {statuses.map((status) => (
+                      <StatusColumn
+                        key={status}
+                        status={status}
+                        items={itemsByStatus[status]}
+                        isPending={isPending}
+                        moveStatus={moveStatus}
+                        router={router}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
+    </div>
+  );
+}
+
+function StatusColumn({
+  status,
+  items,
+  isPending,
+  moveStatus,
+  router,
+}: {
+  status: StatusContratoValue;
+  items: ContratoRow[];
+  isPending: boolean;
+  moveStatus: (id: string, direction: -1 | 1) => void;
+  router: ReturnType<typeof useRouter>;
+}) {
+  const statusIndex = statusOrder.indexOf(status);
+
+  return (
+    <div className="flex w-52 shrink-0 flex-col rounded-lg border border-border bg-background">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-2.5 py-2">
+        <h3 className="truncate text-xs font-semibold uppercase tracking-wide" title={statusLabels[status]}>
+          {statusLabels[status]}
+        </h3>
+        <Badge variant="neutral">{items.length}</Badge>
+      </div>
+
+      <div className="flex flex-col gap-2 p-2">
+        {items.map((item) => {
+          const dateField = relevantDateField[item.status as StatusContratoValue];
+          const dateValue = item[dateField];
+          return (
+            <div
+              key={item.id}
+              onClick={() =>
+                router.push(
+                  `/hedge/mesa-operacao/${statusToSlug(item.status as StatusContratoValue)}?contrato=${item.id}`
+                )
+              }
+              className="cursor-pointer rounded-md border border-border bg-card p-2 text-xs hover:border-primary/50"
+            >
+              <p className="truncate font-semibold">{item.contractNumber}</p>
+              <p className="truncate text-muted">{item.clienteName}</p>
+              <p className="mt-1 font-medium text-primary">{formatCompactCurrency(item.valorUsd, "USD")}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
+                <Calendar size={10} />
+                {dateValue ? formatDate(dateValue) : "sem data"}
+              </p>
+              <div className="mt-1.5 flex items-center justify-between border-t border-border pt-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    moveStatus(item.id, -1);
+                  }}
+                  disabled={isPending || statusIndex === 0}
+                  title="Voltar"
+                  className="rounded p-0.5 text-muted hover:bg-border/60 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                >
+                  <ChevronUp size={12} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    moveStatus(item.id, 1);
+                  }}
+                  disabled={isPending || statusIndex === statusOrder.length - 1}
+                  title="Avançar"
+                  className="rounded p-0.5 text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-30"
+                >
+                  <ChevronDown size={12} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+        {items.length === 0 && <p className="py-3 text-center text-[10px] text-muted">Vazio</p>}
+      </div>
     </div>
   );
 }
