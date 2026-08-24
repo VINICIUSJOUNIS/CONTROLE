@@ -59,6 +59,21 @@ export const mesaOperacaoGroups: MesaOperacaoGroup[] = [
     label: "Estufagem/Carregamento",
     statuses: ["ESTUFAGEM_CARREGAMENTO"],
   },
+  {
+    label: "Pós Embarque",
+    statuses: [
+      "RECEBIMENTO_BL",
+      "ENVIO_DOCUMENTOS_APROVACAO",
+      "APROVACAO_DOCUMENTOS",
+      "ENVIO_FINANCIAMENTO_RTS",
+      "TRADUCAO_PEDIDO_LEGALIZACAO",
+      "EMISSAO_CARTA_BORDERO",
+      "ENVIO_DOCUMENTOS_BANCO_CLIENTE",
+      "RECEBIMENTO_CLIENTE",
+      "ENVIO_BL_ORIGINAL_TELEX",
+      "LIBERACAO_CARGA",
+    ],
+  },
 ];
 
 export type MesaOperacaoSection =
