@@ -108,6 +108,7 @@ export function ConfirmacaoNegocioList({
   // manualmente.
   const calculatedValorUsd =
     ((Number(form.nivelBolsa) || 0) + (Number(form.diferencial) || 0)) *
+    1.3228 *
     (Number(form.valorDolar) || 0) *
     (form.quantidadeSacas ?? 0);
 
@@ -446,7 +447,7 @@ export function ConfirmacaoNegocioList({
                   step="0.01"
                   value={calculatedValorUsd.toFixed(2)}
                   disabled
-                  title="(Nível de Bolsa + Diferencial) × Valor do Dólar × Quantidade de Sacas"
+                  title="(Nível de Bolsa + Diferencial) × 1,3228 × Valor do Dólar × Quantidade de Sacas"
                 />
               </div>
               <div>
