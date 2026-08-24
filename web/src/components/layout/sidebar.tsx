@@ -214,7 +214,7 @@ export function Sidebar({
                               setExpandedSubGroup(isSubGroupExpanded ? null : sub.label)
                             }
                             title={sub.label}
-                            className="flex w-full items-center gap-2 rounded py-1 px-1 text-xs text-sidebar-foreground/70 transition-colors hover:text-white"
+                            className="flex w-full items-center gap-2 rounded bg-white/5 py-1.5 px-1.5 text-xs font-semibold uppercase tracking-wide text-white/90 transition-colors hover:bg-white/10 hover:text-white"
                           >
                             <ChevronDown
                               size={12}
@@ -224,7 +224,7 @@ export function Sidebar({
                               )}
                             />
                             <span className="min-w-0 flex-1 truncate text-left">{sub.label}</span>
-                            <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-medium">
+                            <span className="shrink-0 rounded-full bg-white/15 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal">
                               {groupCount}
                             </span>
                           </button>
