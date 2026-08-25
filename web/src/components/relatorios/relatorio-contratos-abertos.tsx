@@ -1,11 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCompactCurrency, formatDate } from "@/lib/format";
+import { formatCompactCurrency, formatDate, formatPercent } from "@/lib/format";
 import { Download, Printer } from "lucide-react";
+
+const rateBasisSuffix: Record<string, string> = {
+  MENSAL: "a.m.",
+  SEMESTRAL: "a.s.",
+  ANUAL: "a.a.",
+};
 
 type ReportRow = {
   id: string;
@@ -15,6 +22,8 @@ type ReportRow = {
   valorTomado: number;
   valorEmAberto: number;
   vencimento: string;
+  taxaJuros: number;
+  taxaBase: string;
 };
 
 export function RelatorioContratosAbertos({
@@ -26,8 +35,18 @@ export function RelatorioContratosAbertos({
   filePrefix: string;
   rows: ReportRow[];
 }) {
+  const [showTaxas, setShowTaxas] = useState(false);
+
   function handleExportCsv() {
-    const header = ["Tipo", "Banco", "Data da contratacao", "Valor tomado", "Valor em aberto", "Vencimento"];
+    const header = [
+      "Tipo",
+      "Banco",
+      "Data da contratacao",
+      "Valor tomado",
+      "Valor em aberto",
+      "Vencimento",
+      ...(showTaxas ? ["Taxa"] : []),
+    ];
     const lines = rows.map((r) =>
       [
         r.tipo,
@@ -36,6 +55,7 @@ export function RelatorioContratosAbertos({
         r.valorTomado.toFixed(2).replace(".", ","),
         r.valorEmAberto.toFixed(2).replace(".", ","),
         formatDate(r.vencimento),
+        ...(showTaxas ? [`${formatPercent(r.taxaJuros)} ${rateBasisSuffix[r.taxaBase] ?? ""}`.trim()] : []),
       ]
         .map((v) => `"${v}"`)
         .join(";")
@@ -67,7 +87,16 @@ export function RelatorioContratosAbertos({
 
       <CardHeader className="relative flex flex-row items-center justify-between print:hidden">
         <CardTitle>{title}</CardTitle>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1.5 text-xs text-muted">
+            <input
+              type="checkbox"
+              checked={showTaxas}
+              onChange={(e) => setShowTaxas(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-border"
+            />
+            Mostrar taxas
+          </label>
           <Button variant="outline" size="sm" onClick={handleExportCsv}>
             <Download size={14} />
             Exportar CSV
@@ -102,7 +131,8 @@ export function RelatorioContratosAbertos({
               <th className="pb-2 pr-4 font-medium print:pb-1">Data da contratacao</th>
               <th className="pb-2 pr-4 font-medium print:pb-1">Valor tomado</th>
               <th className="pb-2 pr-4 font-medium print:pb-1">Valor em aberto</th>
-              <th className="pb-2 font-medium print:pb-1">Vencimento</th>
+              <th className={`pb-2 font-medium print:pb-1 ${showTaxas ? "pr-4" : ""}`}>Vencimento</th>
+              {showTaxas && <th className="pb-2 font-medium print:pb-1">Taxa</th>}
             </tr>
           </thead>
           <tbody>
@@ -115,12 +145,17 @@ export function RelatorioContratosAbertos({
                 <td className="py-2.5 pr-4 print:py-0.5">{formatDate(r.contractDate)}</td>
                 <td className="py-2.5 pr-4 print:py-0.5">{formatCompactCurrency(r.valorTomado)}</td>
                 <td className="py-2.5 pr-4 print:py-0.5">{formatCompactCurrency(r.valorEmAberto)}</td>
-                <td className="py-2.5 print:py-0.5">{formatDate(r.vencimento)}</td>
+                <td className={`py-2.5 print:py-0.5 ${showTaxas ? "pr-4" : ""}`}>{formatDate(r.vencimento)}</td>
+                {showTaxas && (
+                  <td className="py-2.5 print:py-0.5">
+                    {formatPercent(r.taxaJuros)} {rateBasisSuffix[r.taxaBase] ?? ""}
+                  </td>
+                )}
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-muted">
+                <td colSpan={showTaxas ? 7 : 6} className="py-8 text-center text-muted">
                   Nenhum registro em aberto no momento.
                 </td>
               </tr>
@@ -135,6 +170,7 @@ export function RelatorioContratosAbertos({
                 <td className="py-2.5 pr-4 print:py-1">{formatCompactCurrency(totalTomado)}</td>
                 <td className="py-2.5 pr-4 print:py-1">{formatCompactCurrency(totalAberto)}</td>
                 <td />
+                {showTaxas && <td />}
               </tr>
             </tfoot>
           )}
