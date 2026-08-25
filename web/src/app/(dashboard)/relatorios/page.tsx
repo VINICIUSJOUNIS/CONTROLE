@@ -24,8 +24,8 @@ export default async function RelatoriosPage({
     params.modalidade === "EMPRESTIMOS" || params.modalidade === "ACC" ? params.modalidade : "TODOS";
 
   const [openLoans, openAcc, periodLoans, periodAcc, years] = await Promise.all([
-    modalidade === "ACC" ? Promise.resolve([]) : getOpenLoansReport(),
-    modalidade === "EMPRESTIMOS" ? Promise.resolve([]) : getOpenAccReport(),
+    getOpenLoansReport(),
+    getOpenAccReport(),
     modalidade === "ACC" ? Promise.resolve([]) : getLoansReport(range),
     modalidade === "EMPRESTIMOS" ? Promise.resolve([]) : getAccReport(range),
     getAvailableYears(),
@@ -48,6 +48,7 @@ export default async function RelatoriosPage({
         <RelatorioContratosAbertos
           title="Emprestimos e ACC em aberto"
           filePrefix="emprestimos-e-acc-em-aberto"
+          reportId="em-aberto"
           rows={openRows}
         />
 
@@ -59,6 +60,7 @@ export default async function RelatoriosPage({
         <RelatorioContratosAbertos
           title="Emprestimos e ACC por periodo"
           filePrefix="emprestimos-e-acc-por-periodo"
+          reportId="por-periodo"
           rows={periodRows}
         />
       </div>

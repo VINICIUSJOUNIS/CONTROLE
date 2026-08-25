@@ -30,13 +30,33 @@ type ReportRow = {
 export function RelatorioContratosAbertos({
   title,
   filePrefix,
+  reportId,
   rows,
 }: {
   title: string;
   filePrefix: string;
+  reportId: string;
   rows: ReportRow[];
 }) {
   const [showTaxas, setShowTaxas] = useState(false);
+
+  // window.print() imprime a pagina inteira - como ha dois relatorios na mesma
+  // pagina, escondemos temporariamente o(s) outro(s) card(s) antes de imprimir,
+  // restaurando assim que a caixa de impressao fecha.
+  function handlePrint() {
+    const others = document.querySelectorAll<HTMLElement>(
+      `[data-print-report]:not([data-print-report="${reportId}"])`
+    );
+    others.forEach((el) => el.classList.add("hidden"));
+
+    function restore() {
+      others.forEach((el) => el.classList.remove("hidden"));
+      window.removeEventListener("afterprint", restore);
+    }
+    window.addEventListener("afterprint", restore);
+
+    window.print();
+  }
 
   function handleExportCsv() {
     const header = [
@@ -78,7 +98,10 @@ export function RelatorioContratosAbertos({
   const totalAberto = rows.reduce((s, r) => s + r.valorEmAberto, 0);
 
   return (
-    <Card className="relative overflow-hidden print:break-inside-avoid print:border-0 print:shadow-none">
+    <Card
+      data-print-report={reportId}
+      className="relative overflow-hidden print:break-inside-avoid print:border-0 print:shadow-none"
+    >
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <Image
           src="/nayme-logo.png"
@@ -105,7 +128,7 @@ export function RelatorioContratosAbertos({
             <Download size={14} />
             Exportar CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
+          <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer size={14} />
             Imprimir / PDF
           </Button>
