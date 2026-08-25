@@ -23,6 +23,7 @@ import {
   Target,
   ChevronDown,
   AlertTriangle,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -73,6 +74,7 @@ const faturamentoNavItems = [
   { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
   { href: "/faturamento/curva-abc", label: "Curva ABC", icon: BarChart3 },
   { href: "/faturamento/relatorio", label: "Relatório Comparativo", icon: FileText },
+  { href: "/faturamento/relatorio-clientes", label: "Relatório de Clientes", icon: Users },
 ];
 
 const creditoNavItems = [
