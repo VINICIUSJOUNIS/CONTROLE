@@ -72,6 +72,7 @@ const faturamentoNavItems = [
   { href: "/faturamento/devolucoes", label: "Devoluções", icon: Undo2 },
   { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
   { href: "/faturamento/curva-abc", label: "Curva ABC", icon: BarChart3 },
+  { href: "/faturamento/relatorio", label: "Relatório Comparativo", icon: FileText },
 ];
 
 const creditoNavItems = [
