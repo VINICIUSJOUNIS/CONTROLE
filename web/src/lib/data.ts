@@ -902,6 +902,43 @@ export async function getOpenAccReport() {
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
 }
 
+// Mesmo formato do relatorio "em aberto", mas sem filtrar por status - traz
+// todos os contratos (liquidados ou nao) cuja data de contratacao caia dentro
+// do periodo informado, para o relatorio "por periodo" da tela de Relatorios.
+export async function getLoansReport(range?: PeriodRange) {
+  const loans = filterByPeriod(await getLoans(), range);
+
+  return loans
+    .map((l) => ({
+      id: l.id,
+      bankName: l.bankName,
+      contractNumber: l.contractNumber,
+      contractDate: l.contractDate,
+      valorTomado: l.contractedValue,
+      valorEmAberto: l.saldoDevedorAtual,
+      vencimento: l.lastDueDate,
+      status: l.status,
+    }))
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+}
+
+export async function getAccReport(range?: PeriodRange) {
+  const accOperations = filterByPeriod(await getAccOperations(), range);
+
+  return accOperations
+    .map((a) => ({
+      id: a.id,
+      bankName: a.bankName,
+      contractNumber: a.accNumber,
+      contractDate: a.contractDate,
+      valorTomado: a.receivedValueBRL,
+      valorEmAberto: Number((a.saldoAbertoUSD * a.closingRate).toFixed(2)),
+      vencimento: a.settlementDate,
+      status: a.status,
+    }))
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+}
+
 const KG_POR_SACA = 60;
 
 export async function getSales() {
