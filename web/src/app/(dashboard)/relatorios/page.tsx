@@ -34,12 +34,12 @@ export default async function RelatoriosPage({
   const openRows = [
     ...openLoans.map((r) => ({ ...r, tipo: "Emprestimo" as const })),
     ...openAcc.map((r) => ({ ...r, tipo: "ACC" as const })),
-  ].sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+  ].sort((a, b) => a.contractDate.localeCompare(b.contractDate));
 
   const periodRows = [
     ...periodLoans.map((r) => ({ ...r, tipo: "Emprestimo" as const })),
     ...periodAcc.map((r) => ({ ...r, tipo: "ACC" as const })),
-  ].sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+  ].sort((a, b) => a.contractDate.localeCompare(b.contractDate));
 
   return (
     <div className="flex flex-col">
