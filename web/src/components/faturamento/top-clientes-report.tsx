@@ -15,27 +15,47 @@ export type ClientRankRow = {
   country: string | null;
 };
 
+function pctFmt(v: number) {
+  return `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
+function pctOf(value: number, total: number) {
+  return total > 0 ? (value / total) * 100 : 0;
+}
+
 export function TopClientesReport({
   periodLabel,
   internos,
   externos,
+  totalInternoBRL,
+  totalExternoBRL,
   topCount,
 }: {
   periodLabel: string;
   internos: ClientRankRow[];
   externos: ClientRankRow[];
+  totalInternoBRL: number;
+  totalExternoBRL: number;
   topCount: number;
 }) {
   function handleExportCsv() {
-    const header = ["Mercado", "Cliente", "Pais", "Sacas", "Faturamento (R$)"];
+    const header = ["Mercado", "Cliente", "Pais", "Sacas", "Faturamento (R$)", "% do Mercado"];
     const lines = [
-      ...internos.map((c) => ["Interno", c.name, "-", c.sacas.toFixed(0), c.valueBRL.toFixed(2).replace(".", ",")]),
+      ...internos.map((c) => [
+        "Interno",
+        c.name,
+        "-",
+        c.sacas.toFixed(0),
+        c.valueBRL.toFixed(2).replace(".", ","),
+        pctFmt(pctOf(c.valueBRL, totalInternoBRL)),
+      ]),
       ...externos.map((c) => [
         "Externo",
         c.name,
         countryLabel(c.country),
         c.sacas.toFixed(0),
         c.valueBRL.toFixed(2).replace(".", ","),
+        pctFmt(pctOf(c.valueBRL, totalExternoBRL)),
       ]),
     ].map((cells) => cells.map((v) => `"${v}"`).join(";"));
     const csv = [header.join(";"), ...lines].join("\n");
@@ -94,6 +114,7 @@ export function TopClientesReport({
                   <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Cliente</th>
                   <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Sacas</th>
                   <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Faturamento (R$)</th>
+                  <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">% do Interno</th>
                 </tr>
               </thead>
               <tbody>
@@ -107,11 +128,14 @@ export function TopClientesReport({
                     <td className={cn("px-4 py-2.5 print:px-2 print:py-0.5", c.valueBRL < 0 && "text-danger")}>
                       {formatCurrency(c.valueBRL)}
                     </td>
+                    <td className="px-4 py-2.5 print:px-2 print:py-0.5">
+                      {pctFmt(pctOf(c.valueBRL, totalInternoBRL))}
+                    </td>
                   </tr>
                 ))}
                 {internos.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-muted">
+                    <td colSpan={5} className="px-4 py-6 text-center text-muted">
                       Nenhuma venda interna neste período.
                     </td>
                   </tr>
@@ -134,6 +158,7 @@ export function TopClientesReport({
                   <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">País</th>
                   <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Sacas</th>
                   <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Faturamento (R$)</th>
+                  <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">% do Externo</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,11 +173,14 @@ export function TopClientesReport({
                     <td className={cn("px-4 py-2.5 print:px-2 print:py-0.5", c.valueBRL < 0 && "text-danger")}>
                       {formatCurrency(c.valueBRL)}
                     </td>
+                    <td className="px-4 py-2.5 print:px-2 print:py-0.5">
+                      {pctFmt(pctOf(c.valueBRL, totalExternoBRL))}
+                    </td>
                   </tr>
                 ))}
                 {externos.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-muted">
+                    <td colSpan={6} className="px-4 py-6 text-center text-muted">
                       Nenhuma venda externa neste período.
                     </td>
                   </tr>

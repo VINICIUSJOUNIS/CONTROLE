@@ -49,10 +49,18 @@ export default async function RelatorioClientesPage({
   const returnsInternos = returns.filter((r) => r.clientType === "INTERNO");
   const returnsExternos = returns.filter((r) => r.clientType === "EXTERNO");
 
-  const topInternos: ClientRankRow[] = rankClients(internos, returnsInternos)
+  const rankedInternos = rankClients(internos, returnsInternos);
+  const rankedExternos = rankClients(externos, returnsExternos);
+
+  // Percentual calculado sobre o total do mercado (todos os clientes, nao so
+  // o top 20), para refletir a participacao real de cada cliente.
+  const totalInternoBRL = rankedInternos.reduce((sum, [, agg]) => sum + agg.valueBRL, 0);
+  const totalExternoBRL = rankedExternos.reduce((sum, [, agg]) => sum + agg.valueBRL, 0);
+
+  const topInternos: ClientRankRow[] = rankedInternos
     .slice(0, TOP_CLIENTES)
     .map(([name, agg]) => ({ name, ...agg }));
-  const topExternos: ClientRankRow[] = rankClients(externos, returnsExternos)
+  const topExternos: ClientRankRow[] = rankedExternos
     .slice(0, TOP_CLIENTES)
     .map(([name, agg]) => ({ name, ...agg }));
 
@@ -70,6 +78,8 @@ export default async function RelatorioClientesPage({
           periodLabel={periodLabel}
           internos={topInternos}
           externos={topExternos}
+          totalInternoBRL={totalInternoBRL}
+          totalExternoBRL={totalExternoBRL}
           topCount={TOP_CLIENTES}
         />
       </div>
