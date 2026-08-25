@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Download, Printer } from "lucide-react";
 
@@ -10,7 +11,7 @@ export type ComparisonRow = {
   a: number;
   b: number;
   c: number | null;
-  format: (v: number) => string;
+  unit: "currency" | "sacas";
 };
 
 function deltaPct(base: number, value: number) {
@@ -20,6 +21,11 @@ function deltaPct(base: number, value: number) {
 
 function pctFmt(v: number) {
   return `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
+function formatValue(v: number, unit: ComparisonRow["unit"]) {
+  if (unit === "currency") return formatCurrency(v);
+  return v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 }
 
 export function ComparacaoVendasReport({
@@ -47,10 +53,15 @@ export function ComparacaoVendasReport({
     ];
     const lines = rows.map((r) => {
       const deltaAB = deltaPct(r.b, r.a);
-      const cells = [r.label, r.format(r.a), r.format(r.b), deltaAB !== null ? pctFmt(deltaAB) : "-"];
+      const cells = [
+        r.label,
+        formatValue(r.a, r.unit),
+        formatValue(r.b, r.unit),
+        deltaAB !== null ? pctFmt(deltaAB) : "-",
+      ];
       if (hasC) {
         const deltaAC = r.c !== null ? deltaPct(r.c, r.a) : null;
-        cells.push(r.c !== null ? r.format(r.c) : "-", deltaAC !== null ? pctFmt(deltaAC) : "-");
+        cells.push(r.c !== null ? formatValue(r.c, r.unit) : "-", deltaAC !== null ? pctFmt(deltaAC) : "-");
       }
       return cells.map((v) => `"${v}"`).join(";");
     });
@@ -102,8 +113,8 @@ export function ComparacaoVendasReport({
               return (
                 <tr key={row.label} className="border-b border-border last:border-0">
                   <td className="px-4 py-2.5 font-medium">{row.label}</td>
-                  <td className={cn("px-4 py-2.5", row.a < 0 && "text-danger")}>{row.format(row.a)}</td>
-                  <td className={cn("px-4 py-2.5", row.b < 0 && "text-danger")}>{row.format(row.b)}</td>
+                  <td className={cn("px-4 py-2.5", row.a < 0 && "text-danger")}>{formatValue(row.a, row.unit)}</td>
+                  <td className={cn("px-4 py-2.5", row.b < 0 && "text-danger")}>{formatValue(row.b, row.unit)}</td>
                   <td className="px-4 py-2.5">
                     {deltaAB === null ? (
                       <span className="text-muted">-</span>
@@ -117,7 +128,7 @@ export function ComparacaoVendasReport({
                   {hasC && (
                     <>
                       <td className={cn("px-4 py-2.5", row.c != null && row.c < 0 && "text-danger")}>
-                        {row.c !== null ? row.format(row.c) : "-"}
+                        {row.c !== null ? formatValue(row.c, row.unit) : "-"}
                       </td>
                       <td className="px-4 py-2.5">
                         {deltaAC === null ? (

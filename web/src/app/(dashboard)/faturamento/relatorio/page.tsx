@@ -3,7 +3,6 @@ import { PeriodComparison } from "@/components/dashboard/period-comparison";
 import { MercadoFilter } from "@/components/faturamento/mercado-filter";
 import { ComparacaoVendasReport, type ComparisonRow } from "@/components/faturamento/comparacao-vendas-report";
 import { getSales, getSaleReturns, type SaleRow, type SaleReturnRow } from "@/lib/data";
-import { formatCurrency } from "@/lib/format";
 
 type MarketAgg = { brl: number; sacas: number };
 type PeriodAgg = { total: MarketAgg; interno: MarketAgg; externo: MarketAgg };
@@ -42,10 +41,6 @@ function aggregatePeriodByMarket(
   };
 }
 
-function sacasFmt(v: number) {
-  return v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
-}
-
 export default async function RelatorioVendasPage({
   searchParams,
 }: {
@@ -81,14 +76,14 @@ export default async function RelatorioVendasPage({
             a: comparison.a.total.brl,
             b: comparison.b.total.brl,
             c: comparison.c ? comparison.c.total.brl : null,
-            format: formatCurrency,
+            unit: "currency" as const,
           },
           {
             label: "Sacas",
             a: comparison.a.total.sacas,
             b: comparison.b.total.sacas,
             c: comparison.c ? comparison.c.total.sacas : null,
-            format: sacasFmt,
+            unit: "sacas" as const,
           },
         ]
       : [
@@ -97,42 +92,42 @@ export default async function RelatorioVendasPage({
             a: comparison.a.interno.brl,
             b: comparison.b.interno.brl,
             c: comparison.c ? comparison.c.interno.brl : null,
-            format: formatCurrency,
+            unit: "currency" as const,
           },
           {
             label: "Faturamento Externo (R$)",
             a: comparison.a.externo.brl,
             b: comparison.b.externo.brl,
             c: comparison.c ? comparison.c.externo.brl : null,
-            format: formatCurrency,
+            unit: "currency" as const,
           },
           {
             label: "Faturamento Total (R$)",
             a: comparison.a.total.brl,
             b: comparison.b.total.brl,
             c: comparison.c ? comparison.c.total.brl : null,
-            format: formatCurrency,
+            unit: "currency" as const,
           },
           {
             label: "Sacas Interno",
             a: comparison.a.interno.sacas,
             b: comparison.b.interno.sacas,
             c: comparison.c ? comparison.c.interno.sacas : null,
-            format: sacasFmt,
+            unit: "sacas" as const,
           },
           {
             label: "Sacas Externo",
             a: comparison.a.externo.sacas,
             b: comparison.b.externo.sacas,
             c: comparison.c ? comparison.c.externo.sacas : null,
-            format: sacasFmt,
+            unit: "sacas" as const,
           },
           {
             label: "Sacas Total",
             a: comparison.a.total.sacas,
             b: comparison.b.total.sacas,
             c: comparison.c ? comparison.c.total.sacas : null,
-            format: sacasFmt,
+            unit: "sacas" as const,
           },
         ]
     : [];
