@@ -1,10 +1,11 @@
+import Image from "next/image";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PeriodComparison } from "@/components/dashboard/period-comparison";
 import { MercadoFilter } from "@/components/faturamento/mercado-filter";
 import { ComparacaoVendasReport, type ComparisonRow } from "@/components/faturamento/comparacao-vendas-report";
 import { getSales, getSaleReturns, type SaleRow, type SaleReturnRow } from "@/lib/data";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { countryLabel } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 
@@ -189,10 +190,24 @@ export default async function RelatorioVendasPage({
         title="Relatório Comparativo de Vendas"
         subtitle="Compare dois ou tres periodos, com o mercado interno e externo juntos ou separados"
       />
-      <div className="space-y-6 p-6 print:p-0">
+      <div className="space-y-6 p-6 print:space-y-2 print:p-0">
         <div className="space-y-3 print:hidden">
           <PeriodComparison />
           <MercadoFilter />
+        </div>
+
+        <div className="mb-2 hidden items-end justify-between border-b-2 border-primary pb-1.5 print:flex">
+          <div className="flex items-center gap-3">
+            <Image src="/nayme-logo.png" alt="Nayme" width={32} height={32} className="h-8 w-8 rounded-full" />
+            <div>
+              <p className="text-sm font-semibold tracking-wide">NAYME</p>
+              <p className="text-[9px] text-muted">Tesouraria Corporativa</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-semibold">Relatório Comparativo de Vendas</p>
+            <p className="text-[9px] text-muted">Emitido em {formatDate(new Date().toISOString().slice(0, 10))}</p>
+          </div>
         </div>
 
         {comparison ? (
@@ -205,30 +220,32 @@ export default async function RelatorioVendasPage({
               rows={rows}
             />
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 print:break-inside-avoid">
-              <Card>
-                <CardHeader>
-                  <CardTitle>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 print:grid-cols-1 print:gap-2">
+              <Card className="print:break-inside-avoid print:border-0 print:shadow-none">
+                <CardHeader className="print:pb-1.5">
+                  <CardTitle className="print:text-xs">
                     {TOP_CLIENTES} Maiores Clientes Internos — Período A ({cmpFromA} a {cmpToA})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-x-auto p-0">
-                  <table className="w-full whitespace-nowrap text-sm">
+                  <table className="w-full whitespace-nowrap text-sm print:text-[10px]">
                     <thead>
-                      <tr className="border-b border-border text-left text-xs text-muted">
-                        <th className="px-4 py-2.5 font-medium">#</th>
-                        <th className="px-4 py-2.5 font-medium">Cliente</th>
-                        <th className="px-4 py-2.5 font-medium">Sacas</th>
-                        <th className="px-4 py-2.5 font-medium">Faturamento (R$)</th>
+                      <tr className="border-b border-border text-left text-xs text-muted print:text-[9px]">
+                        <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">#</th>
+                        <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Cliente</th>
+                        <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Sacas</th>
+                        <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Faturamento (R$)</th>
                       </tr>
                     </thead>
                     <tbody>
                       {topInternosA.map(([name, agg], i) => (
                         <tr key={name} className="border-b border-border last:border-0">
-                          <td className="px-4 py-2.5 text-muted">{i + 1}</td>
-                          <td className="px-4 py-2.5 font-medium">{name}</td>
-                          <td className="px-4 py-2.5">{agg.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</td>
-                          <td className={cn("px-4 py-2.5", agg.valueBRL < 0 && "text-danger")}>
+                          <td className="px-4 py-2.5 text-muted print:px-2 print:py-0.5">{i + 1}</td>
+                          <td className="px-4 py-2.5 font-medium print:px-2 print:py-0.5">{name}</td>
+                          <td className="px-4 py-2.5 print:px-2 print:py-0.5">
+                            {agg.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                          </td>
+                          <td className={cn("px-4 py-2.5 print:px-2 print:py-0.5", agg.valueBRL < 0 && "text-danger")}>
                             {formatCurrency(agg.valueBRL)}
                           </td>
                         </tr>
@@ -245,31 +262,33 @@ export default async function RelatorioVendasPage({
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>
+              <Card className="print:break-inside-avoid print:border-0 print:shadow-none">
+                <CardHeader className="print:pb-1.5">
+                  <CardTitle className="print:text-xs">
                     {TOP_CLIENTES} Maiores Clientes Externos — Período A ({cmpFromA} a {cmpToA})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-x-auto p-0">
-                  <table className="w-full whitespace-nowrap text-sm">
+                  <table className="w-full whitespace-nowrap text-sm print:text-[10px]">
                     <thead>
-                      <tr className="border-b border-border text-left text-xs text-muted">
-                        <th className="px-4 py-2.5 font-medium">#</th>
-                        <th className="px-4 py-2.5 font-medium">Cliente</th>
-                        <th className="px-4 py-2.5 font-medium">País</th>
-                        <th className="px-4 py-2.5 font-medium">Sacas</th>
-                        <th className="px-4 py-2.5 font-medium">Faturamento (R$)</th>
+                      <tr className="border-b border-border text-left text-xs text-muted print:text-[9px]">
+                        <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">#</th>
+                        <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Cliente</th>
+                        <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">País</th>
+                        <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Sacas</th>
+                        <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Faturamento (R$)</th>
                       </tr>
                     </thead>
                     <tbody>
                       {topExternosA.map(([name, agg], i) => (
                         <tr key={name} className="border-b border-border last:border-0">
-                          <td className="px-4 py-2.5 text-muted">{i + 1}</td>
-                          <td className="px-4 py-2.5 font-medium">{name}</td>
-                          <td className="px-4 py-2.5">{countryLabel(agg.country)}</td>
-                          <td className="px-4 py-2.5">{agg.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</td>
-                          <td className={cn("px-4 py-2.5", agg.valueBRL < 0 && "text-danger")}>
+                          <td className="px-4 py-2.5 text-muted print:px-2 print:py-0.5">{i + 1}</td>
+                          <td className="px-4 py-2.5 font-medium print:px-2 print:py-0.5">{name}</td>
+                          <td className="px-4 py-2.5 print:px-2 print:py-0.5">{countryLabel(agg.country)}</td>
+                          <td className="px-4 py-2.5 print:px-2 print:py-0.5">
+                            {agg.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                          </td>
+                          <td className={cn("px-4 py-2.5 print:px-2 print:py-0.5", agg.valueBRL < 0 && "text-danger")}>
                             {formatCurrency(agg.valueBRL)}
                           </td>
                         </tr>

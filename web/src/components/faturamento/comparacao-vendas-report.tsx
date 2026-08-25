@@ -77,9 +77,9 @@ export function ComparacaoVendasReport({
 
   return (
     <Card className="print:break-inside-avoid print:border-0 print:shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between print:hidden">
-        <CardTitle>{title}</CardTitle>
-        <div className="flex gap-2">
+      <CardHeader className="flex flex-row items-center justify-between print:pb-1.5">
+        <CardTitle className="print:text-xs">{title}</CardTitle>
+        <div className="flex gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={handleExportCsv}>
             <Download size={14} />
             Exportar CSV
@@ -93,15 +93,15 @@ export function ComparacaoVendasReport({
       <CardContent className="overflow-x-auto p-0 print:p-0">
         <table className="w-full whitespace-nowrap text-sm print:text-[10px]">
           <thead>
-            <tr className="border-b border-border text-left text-xs text-muted">
-              <th className="px-4 py-2.5 font-medium">Métrica</th>
-              <th className="px-4 py-2.5 font-medium">{periodALabel}</th>
-              <th className="px-4 py-2.5 font-medium">{periodBLabel}</th>
-              <th className="px-4 py-2.5 font-medium">Var. A vs B</th>
+            <tr className="border-b border-border text-left text-xs text-muted print:text-[9px]">
+              <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Métrica</th>
+              <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">{periodALabel}</th>
+              <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">{periodBLabel}</th>
+              <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Var. A vs B</th>
               {hasC && (
                 <>
-                  <th className="px-4 py-2.5 font-medium">{periodCLabel}</th>
-                  <th className="px-4 py-2.5 font-medium">Var. A vs C</th>
+                  <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">{periodCLabel}</th>
+                  <th className="px-4 py-2.5 font-medium print:px-2 print:py-1">Var. A vs C</th>
                 </>
               )}
             </tr>
@@ -112,10 +112,14 @@ export function ComparacaoVendasReport({
               const deltaAC = row.c !== null ? deltaPct(row.c, row.a) : null;
               return (
                 <tr key={row.label} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2.5 font-medium">{row.label}</td>
-                  <td className={cn("px-4 py-2.5", row.a < 0 && "text-danger")}>{formatValue(row.a, row.unit)}</td>
-                  <td className={cn("px-4 py-2.5", row.b < 0 && "text-danger")}>{formatValue(row.b, row.unit)}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-4 py-2.5 font-medium print:px-2 print:py-0.5">{row.label}</td>
+                  <td className={cn("px-4 py-2.5 print:px-2 print:py-0.5", row.a < 0 && "text-danger")}>
+                    {formatValue(row.a, row.unit)}
+                  </td>
+                  <td className={cn("px-4 py-2.5 print:px-2 print:py-0.5", row.b < 0 && "text-danger")}>
+                    {formatValue(row.b, row.unit)}
+                  </td>
+                  <td className="px-4 py-2.5 print:px-2 print:py-0.5">
                     {deltaAB === null ? (
                       <span className="text-muted">-</span>
                     ) : (
@@ -127,10 +131,15 @@ export function ComparacaoVendasReport({
                   </td>
                   {hasC && (
                     <>
-                      <td className={cn("px-4 py-2.5", row.c != null && row.c < 0 && "text-danger")}>
+                      <td
+                        className={cn(
+                          "px-4 py-2.5 print:px-2 print:py-0.5",
+                          row.c != null && row.c < 0 && "text-danger"
+                        )}
+                      >
                         {row.c !== null ? formatValue(row.c, row.unit) : "-"}
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-4 py-2.5 print:px-2 print:py-0.5">
                         {deltaAC === null ? (
                           <span className="text-muted">-</span>
                         ) : (
