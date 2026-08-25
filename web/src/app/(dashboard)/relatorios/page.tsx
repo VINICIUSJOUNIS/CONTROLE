@@ -24,8 +24,8 @@ export default async function RelatoriosPage({
     params.modalidade === "EMPRESTIMOS" || params.modalidade === "ACC" ? params.modalidade : "TODOS";
 
   const [openLoans, openAcc, periodLoans, periodAcc, years] = await Promise.all([
-    getOpenLoansReport(),
-    getOpenAccReport(),
+    modalidade === "ACC" ? Promise.resolve([]) : getOpenLoansReport(),
+    modalidade === "EMPRESTIMOS" ? Promise.resolve([]) : getOpenAccReport(),
     modalidade === "ACC" ? Promise.resolve([]) : getLoansReport(range),
     modalidade === "EMPRESTIMOS" ? Promise.resolve([]) : getAccReport(range),
     getAvailableYears(),
