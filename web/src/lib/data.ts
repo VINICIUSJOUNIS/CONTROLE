@@ -879,6 +879,7 @@ export async function getOpenLoansReport() {
       status: l.status,
       taxaJuros: l.interestRate,
       taxaBase: l.rateBasis,
+      valorContratadoUsd: null as number | null,
     }))
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
 }
@@ -902,6 +903,7 @@ export async function getOpenAccReport() {
       status: a.status,
       taxaJuros: a.interestRate,
       taxaBase: "ANUAL" as const,
+      valorContratadoUsd: a.contractedValueForeign as number | null,
     }))
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
 }
@@ -924,6 +926,7 @@ export async function getLoansReport(range?: PeriodRange) {
       status: l.status,
       taxaJuros: l.interestRate,
       taxaBase: l.rateBasis,
+      valorContratadoUsd: null as number | null,
     }))
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
 }
@@ -943,6 +946,7 @@ export async function getAccReport(range?: PeriodRange) {
       status: a.status,
       taxaJuros: a.interestRate,
       taxaBase: "ANUAL" as const,
+      valorContratadoUsd: a.contractedValueForeign as number | null,
     }))
     .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
 }

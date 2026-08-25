@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCompactCurrency, formatDate, formatPercent } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { Download, Printer } from "lucide-react";
 
 const rateBasisSuffix: Record<string, string> = {
@@ -24,6 +24,7 @@ type ReportRow = {
   vencimento: string;
   taxaJuros: number;
   taxaBase: string;
+  valorContratadoUsd: number | null;
 };
 
 export function RelatorioContratosAbertos({
@@ -43,6 +44,7 @@ export function RelatorioContratosAbertos({
       "Banco",
       "Data da contratacao",
       "Valor tomado",
+      "Valor contratado (US$)",
       "Valor em aberto",
       "Vencimento",
       ...(showTaxas ? ["Taxa"] : []),
@@ -53,6 +55,7 @@ export function RelatorioContratosAbertos({
         r.bankName,
         formatDate(r.contractDate),
         r.valorTomado.toFixed(2).replace(".", ","),
+        r.valorContratadoUsd != null ? r.valorContratadoUsd.toFixed(2).replace(".", ",") : "-",
         r.valorEmAberto.toFixed(2).replace(".", ","),
         formatDate(r.vencimento),
         ...(showTaxas ? [`${formatPercent(r.taxaJuros)} ${rateBasisSuffix[r.taxaBase] ?? ""}`.trim()] : []),
@@ -71,6 +74,7 @@ export function RelatorioContratosAbertos({
   }
 
   const totalTomado = rows.reduce((s, r) => s + r.valorTomado, 0);
+  const totalContratadoUsd = rows.reduce((s, r) => s + (r.valorContratadoUsd ?? 0), 0);
   const totalAberto = rows.reduce((s, r) => s + r.valorEmAberto, 0);
 
   return (
@@ -130,6 +134,7 @@ export function RelatorioContratosAbertos({
               <th className="pb-2 pr-4 font-medium print:pb-1">Banco</th>
               <th className="pb-2 pr-4 font-medium print:pb-1">Data da contratacao</th>
               <th className="pb-2 pr-4 font-medium print:pb-1">Valor tomado</th>
+              <th className="pb-2 pr-4 font-medium print:pb-1">Valor contratado (US$)</th>
               <th className="pb-2 pr-4 font-medium print:pb-1">Valor em aberto</th>
               <th className={`pb-2 font-medium print:pb-1 ${showTaxas ? "pr-4" : ""}`}>Vencimento</th>
               {showTaxas && <th className="pb-2 font-medium print:pb-1">Taxa</th>}
@@ -144,6 +149,9 @@ export function RelatorioContratosAbertos({
                 <td className="py-2.5 pr-4 font-medium print:py-0.5">{r.bankName}</td>
                 <td className="py-2.5 pr-4 print:py-0.5">{formatDate(r.contractDate)}</td>
                 <td className="py-2.5 pr-4 print:py-0.5">{formatCompactCurrency(r.valorTomado)}</td>
+                <td className="py-2.5 pr-4 print:py-0.5">
+                  {r.valorContratadoUsd != null ? formatCurrency(r.valorContratadoUsd, "USD") : "-"}
+                </td>
                 <td className="py-2.5 pr-4 print:py-0.5">{formatCompactCurrency(r.valorEmAberto)}</td>
                 <td className={`py-2.5 print:py-0.5 ${showTaxas ? "pr-4" : ""}`}>{formatDate(r.vencimento)}</td>
                 {showTaxas && (
@@ -155,7 +163,7 @@ export function RelatorioContratosAbertos({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={showTaxas ? 7 : 6} className="py-8 text-center text-muted">
+                <td colSpan={showTaxas ? 8 : 7} className="py-8 text-center text-muted">
                   Nenhum registro em aberto no momento.
                 </td>
               </tr>
@@ -168,6 +176,7 @@ export function RelatorioContratosAbertos({
                   Total
                 </td>
                 <td className="py-2.5 pr-4 print:py-1">{formatCompactCurrency(totalTomado)}</td>
+                <td className="py-2.5 pr-4 print:py-1">{formatCurrency(totalContratadoUsd, "USD")}</td>
                 <td className="py-2.5 pr-4 print:py-1">{formatCompactCurrency(totalAberto)}</td>
                 <td />
                 {showTaxas && <td />}
