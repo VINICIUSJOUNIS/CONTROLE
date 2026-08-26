@@ -50,6 +50,15 @@ const rateBasisSuffix: Record<string, string> = {
   ANUAL: "a.a.",
 };
 
+// No BULLET, "Parcelas" e o numero de vencimentos mensais de juros ate a
+// liquidacao (o capital so entra na ultima). Sugere esse numero a partir do
+// prazo do contrato, para nao cair num BULLET de 1 parcela so (juros + capital
+// juntos no fim, sem os pagamentos mensais de juros no meio).
+function mesesEntre(deStr: string, ateStr: string) {
+  const dias = (new Date(ateStr).getTime() - new Date(deStr).getTime()) / (1000 * 60 * 60 * 24);
+  return Math.max(1, Math.round(dias / 30));
+}
+
 function emptyForm(defaultBankId: string) {
   return {
     bankId: defaultBankId,
@@ -495,12 +504,18 @@ export function EmprestimosView({
                   <Label>Sistema de amortizacao</Label>
                   <Select
                     value={form.amortizationSystem}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const amortizationSystem = e.target.value as AmortizationSystemValue;
+                      const sugereParcelas =
+                        amortizationSystem === "BULLET" && form.primeiroVencimento && form.vencimento;
                       setForm({
                         ...form,
-                        amortizationSystem: e.target.value as AmortizationSystemValue,
-                      })
-                    }
+                        amortizationSystem,
+                        installments: sugereParcelas
+                          ? String(mesesEntre(form.primeiroVencimento, form.vencimento))
+                          : form.installments,
+                      });
+                    }}
                   >
                     <option value="PRICE">PRICE (parcela fixa)</option>
                     <option value="SAC">SAC (amortizacao fixa)</option>
@@ -516,6 +531,12 @@ export function EmprestimosView({
                     value={form.installments}
                     onChange={(e) => setForm({ ...form, installments: e.target.value })}
                   />
+                  {form.amortizationSystem === "BULLET" && (
+                    <p className="mt-1 text-xs text-muted">
+                      No BULLET, e o numero de vencimentos mensais de juros ate a liquidacao (o
+                      capital entra so na ultima parcela).
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label>IOF (%)</Label>
@@ -547,7 +568,17 @@ export function EmprestimosView({
                   <Input
                     type="date"
                     value={form.primeiroVencimento}
-                    onChange={(e) => setForm({ ...form, primeiroVencimento: e.target.value })}
+                    onChange={(e) => {
+                      const primeiroVencimento = e.target.value;
+                      const sugereParcelas = form.amortizationSystem === "BULLET" && form.vencimento;
+                      setForm({
+                        ...form,
+                        primeiroVencimento,
+                        installments: sugereParcelas
+                          ? String(mesesEntre(primeiroVencimento, form.vencimento))
+                          : form.installments,
+                      });
+                    }}
                   />
                   <p className="mt-1 text-xs text-muted">
                     As proximas parcelas repetem esse dia do mes.
@@ -560,7 +591,17 @@ export function EmprestimosView({
                   <Input
                     type="date"
                     value={form.vencimento}
-                    onChange={(e) => setForm({ ...form, vencimento: e.target.value })}
+                    onChange={(e) => {
+                      const vencimento = e.target.value;
+                      const sugereParcelas = form.amortizationSystem === "BULLET" && form.primeiroVencimento;
+                      setForm({
+                        ...form,
+                        vencimento,
+                        installments: sugereParcelas
+                          ? String(mesesEntre(form.primeiroVencimento, vencimento))
+                          : form.installments,
+                      });
+                    }}
                   />
                 </div>
                 <div>
