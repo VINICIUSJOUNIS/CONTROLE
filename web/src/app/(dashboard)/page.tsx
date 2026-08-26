@@ -39,12 +39,12 @@ const statusLabels: Record<string, string> = {
 };
 
 // Proxima parcela ainda nao paga de um emprestimo (data e valor reais dela, nao a
-// data final do contrato nem o valor total contratado).
+// data final do contrato nem o valor total contratado). Pode ser uma parcela em
+// atraso (vencimento no passado) - nesse caso e a mais urgente, nao a mais futura.
 function proximaParcela(
   loan: Parameters<typeof buildAmortizationSchedule>[0] & {
     parcelas: { numero: number; vencimento: string | null; paidAt: string | null }[];
-  },
-  hojeStr: string
+  }
 ) {
   const overrides: Record<number, string> = {};
   const pagas = new Set<number>();
@@ -53,7 +53,7 @@ function proximaParcela(
     if (p.paidAt) pagas.add(p.numero);
   });
   const schedule = buildAmortizationSchedule(loan, overrides);
-  return schedule.find((row) => !pagas.has(row.numero) && row.vencimento >= hojeStr) ?? null;
+  return schedule.find((row) => !pagas.has(row.numero)) ?? null;
 }
 
 export default async function DashboardPage({
@@ -113,23 +113,23 @@ export default async function DashboardPage({
     { name: "ACC", value: kpis.totalAccContratado, color: "#12b76a" },
   ];
 
-  const hojeStr = new Date().toISOString().slice(0, 10);
-
   const upcoming = [
     ...loans
       .filter((l) => l.status !== "LIQUIDADO")
       .map((l) => {
-        const parcela = proximaParcela(l, hojeStr);
+        const parcela = proximaParcela(l);
+        if (!parcela) return null;
         return {
           id: l.id,
           tipo: "Emprestimo" as const,
           contractNumber: l.contractNumber,
           bankName: l.bankName,
-          valor: parcela ? parcela.valorParcela : l.contractedValue,
-          vencimento: parcela ? parcela.vencimento : l.lastDueDate,
+          valor: parcela.valorParcela,
+          vencimento: parcela.vencimento,
           status: l.status,
         };
-      }),
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null),
     ...accOperations
       .filter((a) => a.status !== "LIQUIDADO")
       .map((a) => ({
