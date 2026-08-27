@@ -91,7 +91,11 @@ export function valorPorExtenso(valor: number, moeda: string): string {
   const inteiro = Math.floor(Math.abs(valor) + 1e-9);
   const centavos = Math.round((Math.abs(valor) - inteiro) * 100);
 
-  const parteInteira = `${inteiroPorExtenso(inteiro)} ${inteiro === 1 ? nomes.singular : nomes.plural}`;
+  // "de" entra quando o numero termina exatamente em milhao/milhoes/bilhao/bilhoes
+  // (ex: "um milhao DE dolares"), mas nao quando sobra "mil" ou unidades depois
+  // (ex: "um milhao e cinquenta dolares", sem "de").
+  const precisaDe = inteiro > 0 && inteiro % 1_000_000 === 0;
+  const parteInteira = `${inteiroPorExtenso(inteiro)}${precisaDe ? " de" : ""} ${inteiro === 1 ? nomes.singular : nomes.plural}`;
   if (centavos === 0) return parteInteira;
 
   const parteCentavos = `${inteiroPorExtenso(centavos)} ${centavos === 1 ? "centavo" : "centavos"} de ${nomes.singular}`;

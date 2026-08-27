@@ -186,8 +186,9 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
                 <div>
                   <Label>Valor ({simbolo})</Label>
                   <Input
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="Ex: 42.096,40"
                     value={form.valor}
                     onChange={(e) => setValorEMoeda(e.target.value, form.moeda)}
                   />
@@ -238,8 +239,9 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
                   <div>
                     <Label>Valor da tarifa ({simbolo})</Label>
                     <Input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ex: 50,00"
                       value={form.valorTarifa}
                       onChange={(e) => set("valorTarifa", e.target.value)}
                     />
@@ -489,13 +491,13 @@ function CartaPreview({
           );
         })()}
 
-        <p className="mb-6 text-justify">
-          {form.descontaTarifa === "SIM"
-            ? `Favor descontar a ordem do banqueiro em conta corrente no valor de ${simbolo} ${
-                form.valorTarifa ? Number(form.valorTarifa).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "0,00"
-              }.`
-            : "Favor não descontar a ordem do banqueiro na transferência desta ordem."}
-        </p>
+        {form.descontaTarifa === "SIM" && (
+          <p className="mb-6 text-justify">
+            Favor descontar a ordem do banqueiro em conta corrente no valor de {simbolo}{" "}
+            {formValue(form.valorTarifa).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            , não desconta na transferência desta ordem.
+          </p>
+        )}
 
         {form.observacoes && <p className="mb-6 text-justify">{form.observacoes}</p>}
 
