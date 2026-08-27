@@ -5,17 +5,7 @@ import { revalidatePath } from "next/cache";
 
 export type BankTransferChannelInput = {
   moeda: string;
-  correspondentSwift: string;
-  correspondentBanco: string;
-  correspondentConta: string;
-  beneficiarySwift: string;
-  beneficiaryBanco: string;
-  beneficiaryEndereco: string;
-  finalBeneficiario: string;
-  finalIban: string;
-  finalLocal: string;
-  finalBranch: string;
-  finalConta: string;
+  instrucoes: string;
 };
 
 export async function saveBankTransferChannel(bankId: string, input: BankTransferChannelInput) {

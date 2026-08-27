@@ -12,34 +12,14 @@ import { Printer, Save, Pencil } from "lucide-react";
 
 type CanalBancario = {
   moeda: string;
-  correspondentSwift: string;
-  correspondentBanco: string;
-  correspondentConta: string;
-  beneficiarySwift: string;
-  beneficiaryBanco: string;
-  beneficiaryEndereco: string;
-  finalBeneficiario: string;
-  finalIban: string;
-  finalLocal: string;
-  finalBranch: string;
-  finalConta: string;
+  instrucoes: string;
 };
 
 type Bank = { id: string; name: string; transferChannel: CanalBancario | null };
 
 const canalVazio: CanalBancario = {
   moeda: "USD",
-  correspondentSwift: "",
-  correspondentBanco: "",
-  correspondentConta: "",
-  beneficiarySwift: "",
-  beneficiaryBanco: "",
-  beneficiaryEndereco: "",
-  finalBeneficiario: "",
-  finalIban: "",
-  finalLocal: "",
-  finalBranch: "",
-  finalConta: "",
+  instrucoes: "",
 };
 
 const moedaOptions = [
@@ -117,13 +97,9 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
 
   function salvarCanalPadrao() {
     if (!form.bancoId) return;
-    const { moeda, correspondentSwift, correspondentBanco, correspondentConta, beneficiarySwift, beneficiaryBanco, beneficiaryEndereco, finalBeneficiario, finalIban, finalLocal, finalBranch, finalConta } = form;
+    const { moeda, instrucoes } = form;
     startTransition(async () => {
-      await saveBankTransferChannel(form.bancoId, {
-        moeda, correspondentSwift, correspondentBanco, correspondentConta,
-        beneficiarySwift, beneficiaryBanco, beneficiaryEndereco,
-        finalBeneficiario, finalIban, finalLocal, finalBranch, finalConta,
-      });
+      await saveBankTransferChannel(form.bancoId, { moeda, instrucoes });
       setEditandoCanal(false);
       router.refresh();
     });
@@ -269,89 +245,28 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
               {form.bancoId && !editandoCanal ? (
                 <p className="text-xs text-muted">
                   Preenchido automaticamente com o canal cadastrado para este banco. Clique em
-                  &quot;Editar canal deste banco&quot; para corrigir os dados salvos.
+                  &quot;Editar canal deste banco&quot; para corrigir o texto salvo.
                 </p>
               ) : (
                 <p className="text-xs text-muted">
                   {form.bancoId
                     ? "Editando o canal padrão deste banco — salve para atualizar para as próximas transferências."
-                    : "Selecione um banco cadastrado acima para preencher automaticamente, ou digite manualmente para um banco avulso."}
+                    : "Selecione um banco cadastrado acima para preencher automaticamente, ou cole abaixo o texto do canal para um banco avulso."}
                 </p>
               )}
-              <fieldset disabled={!!form.bancoId && !editandoCanal} className="space-y-4 disabled:opacity-60">
-                <div>
-                  <p className="mb-2 text-xs font-semibold text-muted">Correspondent Bank (campo 56)</p>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Swift Code"
-                      value={form.correspondentSwift}
-                      onChange={(e) => set("correspondentSwift", e.target.value)}
-                    />
-                    <Input
-                      placeholder="Banco - Cidade, País"
-                      value={form.correspondentBanco}
-                      onChange={(e) => set("correspondentBanco", e.target.value)}
-                    />
-                    <Input
-                      placeholder="Conta do banco beneficiário nesse correspondente"
-                      value={form.correspondentConta}
-                      onChange={(e) => set("correspondentConta", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <p className="mb-2 text-xs font-semibold text-muted">Beneficiary Bank (campo 57)</p>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Swift Code"
-                      value={form.beneficiarySwift}
-                      onChange={(e) => set("beneficiarySwift", e.target.value)}
-                    />
-                    <Input
-                      placeholder="Banco - Cidade, País"
-                      value={form.beneficiaryBanco}
-                      onChange={(e) => set("beneficiaryBanco", e.target.value)}
-                    />
-                    <Input
-                      placeholder="Endereço"
-                      value={form.beneficiaryEndereco}
-                      onChange={(e) => set("beneficiaryEndereco", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <p className="mb-2 text-xs font-semibold text-muted">Final Beneficiary (campo 59)</p>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Nome do beneficiário final"
-                      value={form.finalBeneficiario}
-                      onChange={(e) => set("finalBeneficiario", e.target.value)}
-                    />
-                    <Input
-                      placeholder="IBAN"
-                      value={form.finalIban}
-                      onChange={(e) => set("finalIban", e.target.value)}
-                    />
-                    <Input
-                      placeholder="Cidade, UF - País"
-                      value={form.finalLocal}
-                      onChange={(e) => set("finalLocal", e.target.value)}
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        placeholder="Branch"
-                        value={form.finalBranch}
-                        onChange={(e) => set("finalBranch", e.target.value)}
-                      />
-                      <Input
-                        placeholder="Conta"
-                        value={form.finalConta}
-                        onChange={(e) => set("finalConta", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </fieldset>
+              <div>
+                <Textarea
+                  rows={14}
+                  disabled={!!form.bancoId && !editandoCanal}
+                  className="font-mono text-xs disabled:opacity-60"
+                  value={form.instrucoes}
+                  onChange={(e) => set("instrucoes", e.target.value)}
+                  placeholder="Cole aqui exatamente o texto do canal bancário/instruções SWIFT-MT103 fornecido pelo banco, sem editar."
+                />
+                <p className="mt-1 text-xs text-muted">
+                  Colado literalmente do documento do banco — aparece na carta exatamente como está aqui.
+                </p>
+              </div>
               {editandoCanal && form.bancoId && (
                 <Button onClick={salvarCanalPadrao} disabled={isPending} className="w-full" variant="outline">
                   <Save size={14} />
@@ -434,62 +349,13 @@ function CartaPreview({
           <strong>{form.bancoDestino || "____________"}</strong> conforme canal bancário abaixo:
         </p>
 
-        {(() => {
-          const temCorrespondent = !!(form.correspondentSwift || form.correspondentBanco || form.correspondentConta);
-          const temBeneficiary = !!(form.beneficiarySwift || form.beneficiaryBanco || form.beneficiaryEndereco);
-          const temFinal = !!(
-            form.finalBeneficiario ||
-            form.finalIban ||
-            form.finalLocal ||
-            form.finalBranch ||
-            form.finalConta
-          );
-          if (!temCorrespondent && !temBeneficiary && !temFinal) return null;
-
-          return (
-            <div className="mb-6 space-y-4 rounded-md border border-[#1c8388]/30 bg-[#1c8388]/5 p-4">
-              <p className="font-semibold underline">
-                Instructions for credit: {form.moeda} – MT 103
-              </p>
-
-              {temCorrespondent && (
-                <div>
-                  <p className="font-semibold">
-                    Correspondent Bank (field 56){form.correspondentSwift && `: ${form.correspondentSwift}`}
-                  </p>
-                  {form.correspondentBanco && <p>{form.correspondentBanco}</p>}
-                  {form.correspondentSwift && <p>Swift Code: {form.correspondentSwift}</p>}
-                  {form.correspondentConta && <p>Conta: {form.correspondentConta}</p>}
-                </div>
-              )}
-
-              {temBeneficiary && (
-                <div>
-                  <p className="font-semibold">
-                    Beneficiary Bank (field 57){form.beneficiarySwift && `: ${form.beneficiarySwift}`}
-                  </p>
-                  {form.beneficiaryBanco && <p>{form.beneficiaryBanco}</p>}
-                  {form.beneficiarySwift && <p>Swift Code: {form.beneficiarySwift}</p>}
-                  {form.beneficiaryEndereco && <p>{form.beneficiaryEndereco}</p>}
-                </div>
-              )}
-
-              {temFinal && (
-                <div>
-                  <p className="font-semibold">
-                    Final Beneficiary (field 59){form.finalIban && `: ${form.finalIban}`}
-                  </p>
-                  {form.finalBeneficiario && <p>{form.finalBeneficiario}</p>}
-                  {form.finalIban && <p>{form.finalIban}</p>}
-                  {form.finalLocal && <p>{form.finalLocal}</p>}
-                  {form.finalBranch && <p>Branch: {form.finalBranch}</p>}
-                  {form.finalConta && <p>Account: {form.finalConta}</p>}
-                  {form.finalIban && <p>IBAN: {form.finalIban}</p>}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        {form.instrucoes && (
+          <div className="mb-6 rounded-md border border-[#1c8388]/30 bg-[#1c8388]/5 p-4">
+            <p className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed print:text-[10px]">
+              {form.instrucoes}
+            </p>
+          </div>
+        )}
 
         {form.descontaTarifa === "SIM" && (
           <p className="mb-6 text-justify">

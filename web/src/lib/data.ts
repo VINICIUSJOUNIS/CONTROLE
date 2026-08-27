@@ -95,17 +95,7 @@ export async function getBanksWithTransferChannel() {
     transferChannel: b.transferChannel
       ? {
           moeda: b.transferChannel.moeda,
-          correspondentSwift: b.transferChannel.correspondentSwift ?? "",
-          correspondentBanco: b.transferChannel.correspondentBanco ?? "",
-          correspondentConta: b.transferChannel.correspondentConta ?? "",
-          beneficiarySwift: b.transferChannel.beneficiarySwift ?? "",
-          beneficiaryBanco: b.transferChannel.beneficiaryBanco ?? "",
-          beneficiaryEndereco: b.transferChannel.beneficiaryEndereco ?? "",
-          finalBeneficiario: b.transferChannel.finalBeneficiario ?? "",
-          finalIban: b.transferChannel.finalIban ?? "",
-          finalLocal: b.transferChannel.finalLocal ?? "",
-          finalBranch: b.transferChannel.finalBranch ?? "",
-          finalConta: b.transferChannel.finalConta ?? "",
+          instrucoes: b.transferChannel.instrucoes,
         }
       : null,
   }));

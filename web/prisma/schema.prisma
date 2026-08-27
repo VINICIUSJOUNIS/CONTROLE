@@ -87,24 +87,18 @@ model Bank {
 // Canal bancario (instrucoes SWIFT/MT103) usado para creditar em US$ na conta do
 // banco na Transferencia de Ordem de pagamento do exterior - cada banco tem o seu,
 // preenchido uma vez aqui para nao precisar digitar de novo em cada carta.
+// Texto livre, copiado literalmente do documento que o banco forneceu - cada banco
+// usa um layout/rotulos diferentes (Correspondent Bank vs Intermediary Bank, etc),
+// entao decompor em campos estruturados com rotulos fixos ja causou erro de mapear
+// numero de conta na secao errada. Texto literal elimina esse risco.
 model BankTransferChannel {
-  id                  String   @id @default(uuid())
-  bank                Bank     @relation(fields: [bankId], references: [id], onDelete: Cascade)
-  bankId              String   @unique
-  moeda               String   @default("USD")
-  correspondentSwift  String?
-  correspondentBanco  String?
-  correspondentConta  String?
-  beneficiarySwift    String?
-  beneficiaryBanco    String?
-  beneficiaryEndereco String?
-  finalBeneficiario   String?
-  finalIban           String?
-  finalLocal          String?
-  finalBranch         String?
-  finalConta          String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id         String   @id @default(uuid())
+  bank       Bank     @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  bankId     String   @unique
+  moeda      String   @default("USD")
+  instrucoes String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("bank_transfer_channels")
 }
