@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Landmark, Scale, Receipt, ShieldCheck, ArrowRight, Target } from "lucide-react";
+import { Landmark, Scale, Receipt, ShieldCheck, ArrowRight, Target, Send } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -34,6 +34,12 @@ const modules = [
     label: "Planejamento Orçamentário",
     description: "Cenarios de receita, despesas por grupo e acompanhamento Previsto x Realizado.",
     icon: Target,
+  },
+  {
+    href: "/transferencia-ordem",
+    label: "Transferência de Ordem",
+    description: "Carta de transferencia de ordem de pagamento do exterior, no papel timbrado.",
+    icon: Send,
   },
 ];
 

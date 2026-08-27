@@ -62,7 +62,6 @@ const navItems = [
   { href: "/emprestimos", label: "Emprestimos", icon: Landmark },
   { href: "/conta-garantida", label: "Conta Garantida", icon: Wallet },
   { href: "/acc", label: "ACC", icon: Ship },
-  { href: "/transferencia-ordem", label: "Transferência de Ordem", icon: Send },
   { href: "/cambial", label: "Dashboard Cambial", icon: Globe2 },
   { href: "/taxas", label: "Evolucao das Taxas", icon: LineChart },
   { href: "/bancos", label: "Comparativo de Bancos", icon: Building2 },
@@ -102,6 +101,10 @@ const planejamentoNavItems = [
   { href: "/planejamento-orcamentario", label: "Planejamento Orçamentário", icon: Target },
 ];
 
+const transferenciaOrdemNavItems = [
+  { href: "/transferencia-ordem", label: "Transferência de Ordem", icon: Send },
+];
+
 const roleLabels: Record<string, string> = {
   ADMINISTRADOR: "Administrador",
   TESOURARIA: "Tesouraria",
@@ -117,6 +120,11 @@ const modules = [
     match: (p: string) => p.startsWith("/planejamento-orcamentario"),
     label: "Planejamento Orçamentário",
     items: planejamentoNavItems,
+  },
+  {
+    match: (p: string) => p.startsWith("/transferencia-ordem"),
+    label: "Transferência de Ordem",
+    items: transferenciaOrdemNavItems,
   },
 ];
 
