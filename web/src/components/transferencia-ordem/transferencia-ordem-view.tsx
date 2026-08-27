@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/field";
 import { valorPorExtenso } from "@/lib/extenso";
 import { saveBankTransferChannel } from "@/app/(dashboard)/transferencia-ordem/actions";
-import { Printer, Wand2, Save, Pencil } from "lucide-react";
+import { Printer, Save, Pencil } from "lucide-react";
 
 type CanalBancario = {
   moeda: string;
@@ -94,10 +94,14 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function gerarExtenso() {
-    const valorNum = formValue(form.valor);
-    if (!(valorNum > 0)) return;
-    set("valorExtenso", valorPorExtenso(valorNum, form.moeda));
+  function setValorEMoeda(valor: string, moeda: string) {
+    const valorNum = formValue(valor);
+    setForm((prev) => ({
+      ...prev,
+      valor,
+      moeda,
+      valorExtenso: valorNum > 0 ? valorPorExtenso(valorNum, moeda) : "",
+    }));
   }
 
   function selecionarBanco(bancoId: string) {
@@ -171,7 +175,7 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Moeda</Label>
-                  <Select value={form.moeda} onChange={(e) => set("moeda", e.target.value)}>
+                  <Select value={form.moeda} onChange={(e) => setValorEMoeda(form.valor, e.target.value)}>
                     {moedaOptions.map((m) => (
                       <option key={m.value} value={m.value}>
                         {m.label}
@@ -185,28 +189,19 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
                     type="number"
                     step="0.01"
                     value={form.valor}
-                    onChange={(e) => set("valor", e.target.value)}
+                    onChange={(e) => setValorEMoeda(e.target.value, form.moeda)}
                   />
                 </div>
               </div>
               <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <Label className="mb-0">Valor por extenso</Label>
-                  <button
-                    type="button"
-                    onClick={gerarExtenso}
-                    className="flex items-center gap-1 text-xs text-primary hover:underline"
-                  >
-                    <Wand2 size={12} />
-                    Gerar
-                  </button>
-                </div>
+                <Label>Valor por extenso</Label>
                 <Textarea
                   rows={2}
                   value={form.valorExtenso}
                   onChange={(e) => set("valorExtenso", e.target.value)}
-                  placeholder="Clique em Gerar para sugerir a partir do valor"
+                  placeholder="Preenchido automaticamente ao digitar o valor"
                 />
+                <p className="mt-1 text-xs text-muted">Gerado automaticamente — pode editar se precisar ajustar.</p>
               </div>
               <div>
                 <Label>Banco de destino</Label>
