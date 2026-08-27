@@ -1,9 +1,9 @@
 import { Topbar } from "@/components/layout/topbar";
 import { TransferenciaOrdemView } from "@/components/transferencia-ordem/transferencia-ordem-view";
-import { getBanks } from "@/lib/data";
+import { getBanksWithTransferChannel } from "@/lib/data";
 
 export default async function TransferenciaOrdemPage() {
-  const banks = await getBanks();
+  const banks = await getBanksWithTransferChannel();
 
   return (
     <div className="flex flex-col">

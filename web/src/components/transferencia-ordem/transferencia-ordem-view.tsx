@@ -1,14 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/field";
 import { valorPorExtenso } from "@/lib/extenso";
-import { Printer, Wand2 } from "lucide-react";
+import { saveBankTransferChannel } from "@/app/(dashboard)/transferencia-ordem/actions";
+import { Printer, Wand2, Save, Pencil } from "lucide-react";
 
-type Bank = { id: string; name: string };
+type CanalBancario = {
+  moeda: string;
+  correspondentSwift: string;
+  correspondentBanco: string;
+  correspondentConta: string;
+  beneficiarySwift: string;
+  beneficiaryBanco: string;
+  beneficiaryEndereco: string;
+  finalBeneficiario: string;
+  finalIban: string;
+  finalLocal: string;
+  finalBranch: string;
+  finalConta: string;
+};
+
+type Bank = { id: string; name: string; transferChannel: CanalBancario | null };
+
+const canalVazio: CanalBancario = {
+  moeda: "USD",
+  correspondentSwift: "",
+  correspondentBanco: "",
+  correspondentConta: "",
+  beneficiarySwift: "",
+  beneficiaryBanco: "",
+  beneficiaryEndereco: "",
+  finalBeneficiario: "",
+  finalIban: "",
+  finalLocal: "",
+  finalBranch: "",
+  finalConta: "",
+};
 
 const moedaOptions = [
   { value: "USD", label: "US$ - Dólar" },
@@ -41,29 +73,22 @@ function emptyForm() {
     data: new Date().toISOString().slice(0, 10),
     tipo: "PARCIAL" as "PARCIAL" | "TOTAL",
     numeroOrdem: "",
-    moeda: "USD",
     valor: "",
     valorExtenso: "",
+    bancoId: "",
     bancoDestino: "",
     descontaTarifa: "NAO" as "SIM" | "NAO",
     valorTarifa: "",
-    correspondentSwift: "",
-    correspondentBanco: "",
-    correspondentLocal: "",
-    correspondentConta: "",
-    beneficiarySwift: "",
-    beneficiaryBanco: "",
-    beneficiaryEndereco: "",
-    finalIban: "",
-    finalLocal: "",
-    finalBranch: "",
-    finalConta: "",
     observacoes: "",
+    ...canalVazio,
   };
 }
 
 export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState(emptyForm());
+  const [editandoCanal, setEditandoCanal] = useState(false);
 
   function set<K extends keyof ReturnType<typeof emptyForm>>(key: K, value: ReturnType<typeof emptyForm>[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -73,6 +98,31 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
     const valorNum = formValue(form.valor);
     if (!(valorNum > 0)) return;
     set("valorExtenso", valorPorExtenso(valorNum, form.moeda));
+  }
+
+  function selecionarBanco(bancoId: string) {
+    const banco = banks.find((b) => b.id === bancoId);
+    setEditandoCanal(false);
+    setForm((prev) => ({
+      ...prev,
+      bancoId,
+      bancoDestino: banco?.name ?? prev.bancoDestino,
+      ...(banco ? banco.transferChannel ?? canalVazio : {}),
+    }));
+  }
+
+  function salvarCanalPadrao() {
+    if (!form.bancoId) return;
+    const { moeda, correspondentSwift, correspondentBanco, correspondentConta, beneficiarySwift, beneficiaryBanco, beneficiaryEndereco, finalBeneficiario, finalIban, finalLocal, finalBranch, finalConta } = form;
+    startTransition(async () => {
+      await saveBankTransferChannel(form.bancoId, {
+        moeda, correspondentSwift, correspondentBanco, correspondentConta,
+        beneficiarySwift, beneficiaryBanco, beneficiaryEndereco,
+        finalBeneficiario, finalIban, finalLocal, finalBranch, finalConta,
+      });
+      setEditandoCanal(false);
+      router.refresh();
+    });
   }
 
   const simbolo = moedaSimbolo[form.moeda] ?? "US$";
@@ -160,17 +210,23 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
               </div>
               <div>
                 <Label>Banco de destino</Label>
-                <Input
-                  list="bancos-cadastrados"
-                  value={form.bancoDestino}
-                  onChange={(e) => set("bancoDestino", e.target.value)}
-                  placeholder="Ex: Banco Bradesco S/A"
-                />
-                <datalist id="bancos-cadastrados">
+                <Select value={form.bancoId} onChange={(e) => selecionarBanco(e.target.value)}>
+                  <option value="">Selecione um banco cadastrado…</option>
                   {banks.map((b) => (
-                    <option key={b.id} value={b.name} />
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                      {!b.transferChannel ? " (sem canal cadastrado)" : ""}
+                    </option>
                   ))}
-                </datalist>
+                </Select>
+                {!form.bancoId && (
+                  <Input
+                    className="mt-2"
+                    value={form.bancoDestino}
+                    onChange={(e) => set("bancoDestino", e.target.value)}
+                    placeholder="Ou digite o nome de um banco fora da lista"
+                  />
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -199,77 +255,112 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Canal bancário (instruções de crédito)</CardTitle>
+              {form.bancoId && (
+                <button
+                  type="button"
+                  onClick={() => setEditandoCanal((v) => !v)}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <Pencil size={12} />
+                  {editandoCanal ? "Cancelar edição" : "Editar canal deste banco"}
+                </button>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <p className="mb-2 text-xs font-semibold text-muted">Correspondent Bank (campo 56)</p>
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Swift Code"
-                    value={form.correspondentSwift}
-                    onChange={(e) => set("correspondentSwift", e.target.value)}
-                  />
-                  <Input
-                    placeholder="Banco - Cidade, País"
-                    value={form.correspondentBanco}
-                    onChange={(e) => set("correspondentBanco", e.target.value)}
-                  />
-                  <Input
-                    placeholder="Conta do banco beneficiário nesse correspondente"
-                    value={form.correspondentConta}
-                    onChange={(e) => set("correspondentConta", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold text-muted">Beneficiary Bank (campo 57)</p>
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Swift Code"
-                    value={form.beneficiarySwift}
-                    onChange={(e) => set("beneficiarySwift", e.target.value)}
-                  />
-                  <Input
-                    placeholder="Banco - Cidade, País"
-                    value={form.beneficiaryBanco}
-                    onChange={(e) => set("beneficiaryBanco", e.target.value)}
-                  />
-                  <Input
-                    placeholder="Endereço"
-                    value={form.beneficiaryEndereco}
-                    onChange={(e) => set("beneficiaryEndereco", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold text-muted">Final Beneficiary (campo 59)</p>
-                <div className="space-y-2">
-                  <Input
-                    placeholder="IBAN"
-                    value={form.finalIban}
-                    onChange={(e) => set("finalIban", e.target.value)}
-                  />
-                  <Input
-                    placeholder="Cidade, UF - País"
-                    value={form.finalLocal}
-                    onChange={(e) => set("finalLocal", e.target.value)}
-                  />
-                  <div className="grid grid-cols-2 gap-2">
+              {form.bancoId && !editandoCanal ? (
+                <p className="text-xs text-muted">
+                  Preenchido automaticamente com o canal cadastrado para este banco. Clique em
+                  &quot;Editar canal deste banco&quot; para corrigir os dados salvos.
+                </p>
+              ) : (
+                <p className="text-xs text-muted">
+                  {form.bancoId
+                    ? "Editando o canal padrão deste banco — salve para atualizar para as próximas transferências."
+                    : "Selecione um banco cadastrado acima para preencher automaticamente, ou digite manualmente para um banco avulso."}
+                </p>
+              )}
+              <fieldset disabled={!!form.bancoId && !editandoCanal} className="space-y-4 disabled:opacity-60">
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-muted">Correspondent Bank (campo 56)</p>
+                  <div className="space-y-2">
                     <Input
-                      placeholder="Branch"
-                      value={form.finalBranch}
-                      onChange={(e) => set("finalBranch", e.target.value)}
+                      placeholder="Swift Code"
+                      value={form.correspondentSwift}
+                      onChange={(e) => set("correspondentSwift", e.target.value)}
                     />
                     <Input
-                      placeholder="Conta"
-                      value={form.finalConta}
-                      onChange={(e) => set("finalConta", e.target.value)}
+                      placeholder="Banco - Cidade, País"
+                      value={form.correspondentBanco}
+                      onChange={(e) => set("correspondentBanco", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Conta do banco beneficiário nesse correspondente"
+                      value={form.correspondentConta}
+                      onChange={(e) => set("correspondentConta", e.target.value)}
                     />
                   </div>
                 </div>
-              </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-muted">Beneficiary Bank (campo 57)</p>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Swift Code"
+                      value={form.beneficiarySwift}
+                      onChange={(e) => set("beneficiarySwift", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Banco - Cidade, País"
+                      value={form.beneficiaryBanco}
+                      onChange={(e) => set("beneficiaryBanco", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Endereço"
+                      value={form.beneficiaryEndereco}
+                      onChange={(e) => set("beneficiaryEndereco", e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-muted">Final Beneficiary (campo 59)</p>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Nome do beneficiário final"
+                      value={form.finalBeneficiario}
+                      onChange={(e) => set("finalBeneficiario", e.target.value)}
+                    />
+                    <Input
+                      placeholder="IBAN"
+                      value={form.finalIban}
+                      onChange={(e) => set("finalIban", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Cidade, UF - País"
+                      value={form.finalLocal}
+                      onChange={(e) => set("finalLocal", e.target.value)}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Branch"
+                        value={form.finalBranch}
+                        onChange={(e) => set("finalBranch", e.target.value)}
+                      />
+                      <Input
+                        placeholder="Conta"
+                        value={form.finalConta}
+                        onChange={(e) => set("finalConta", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+              {editandoCanal && form.bancoId && (
+                <Button onClick={salvarCanalPadrao} disabled={isPending} className="w-full" variant="outline">
+                  <Save size={14} />
+                  {isPending ? "Salvando…" : "Salvar como canal padrão deste banco"}
+                </Button>
+              )}
               <div>
                 <Label>Observações (opcional)</Label>
                 <Textarea
@@ -373,6 +464,7 @@ function CartaPreview({
             <p className="font-semibold">
               Final Beneficiary (field 59){form.finalIban && `: ${form.finalIban}`}
             </p>
+            {form.finalBeneficiario && <p>{form.finalBeneficiario}</p>}
             {form.finalIban && <p>{form.finalIban}</p>}
             {form.finalLocal && <p>{form.finalLocal}</p>}
             {form.finalBranch && <p>Branch: {form.finalBranch}</p>}

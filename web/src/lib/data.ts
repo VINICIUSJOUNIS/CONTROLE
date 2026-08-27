@@ -82,6 +82,35 @@ export async function getBanks() {
   return banks.map((b) => ({ id: b.id, name: b.name, color: b.color }));
 }
 
+// Banco + canal bancario (instrucoes SWIFT/MT103) usado para auto-preencher a
+// Transferencia de Ordem - cada banco pode ter o seu, cadastrado uma unica vez.
+export async function getBanksWithTransferChannel() {
+  const banks = await prisma.bank.findMany({
+    orderBy: { name: "asc" },
+    include: { transferChannel: true },
+  });
+  return banks.map((b) => ({
+    id: b.id,
+    name: b.name,
+    transferChannel: b.transferChannel
+      ? {
+          moeda: b.transferChannel.moeda,
+          correspondentSwift: b.transferChannel.correspondentSwift ?? "",
+          correspondentBanco: b.transferChannel.correspondentBanco ?? "",
+          correspondentConta: b.transferChannel.correspondentConta ?? "",
+          beneficiarySwift: b.transferChannel.beneficiarySwift ?? "",
+          beneficiaryBanco: b.transferChannel.beneficiaryBanco ?? "",
+          beneficiaryEndereco: b.transferChannel.beneficiaryEndereco ?? "",
+          finalBeneficiario: b.transferChannel.finalBeneficiario ?? "",
+          finalIban: b.transferChannel.finalIban ?? "",
+          finalLocal: b.transferChannel.finalLocal ?? "",
+          finalBranch: b.transferChannel.finalBranch ?? "",
+          finalConta: b.transferChannel.finalConta ?? "",
+        }
+      : null,
+  }));
+}
+
 // Aliquotas oficiais de IOF sobre credito para pessoa juridica (Decreto 6.306/2007,
 // com alteracoes) - diaria sobre o saldo usado + adicional fixo. Retomadas em
 // 17/07/2025 apos decisao do STF que derrubou a alta temporaria (que tinha ido
