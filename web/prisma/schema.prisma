@@ -72,14 +72,15 @@ model Profile {
 }
 
 model Bank {
-  id              String           @id @default(uuid())
-  name            String           @unique
-  color           String
-  loans           Loan[]
-  accOperations   AccOperation[]
-  contasGarantidas ContaGarantida[]
-  transferChannel BankTransferChannel?
-  createdAt       DateTime         @default(now())
+  id                   String                @id @default(uuid())
+  name                 String                @unique
+  color                String
+  loans                Loan[]
+  accOperations        AccOperation[]
+  contasGarantidas     ContaGarantida[]
+  transferChannel      BankTransferChannel?
+  transferenciasOrdem  TransferenciaOrdem[]
+  createdAt            DateTime              @default(now())
 
   @@map("banks")
 }
@@ -101,6 +102,32 @@ model BankTransferChannel {
   updatedAt  DateTime @updatedAt
 
   @@map("bank_transfer_channels")
+}
+
+// Uma carta de Transferencia de Ordem de pagamento do exterior salva - guarda
+// os dados preenchidos (inclusive o texto do canal bancario usado naquela carta,
+// para nao mudar retroativamente se o canal padrao do banco for editado depois)
+// para poder reabrir e editar mais tarde, ou reimprimir sem redigitar tudo.
+model TransferenciaOrdem {
+  id             String   @id @default(uuid())
+  cidade         String
+  data           DateTime @db.Date
+  tipo           String
+  numeroOrdem    String
+  moeda          String
+  valor          Decimal  @db.Decimal(18, 2)
+  valorExtenso   String
+  bank           Bank?    @relation(fields: [bankId], references: [id], onDelete: SetNull)
+  bankId         String?
+  bancoDestino   String
+  descontaTarifa String
+  valorTarifa    Decimal? @db.Decimal(18, 2)
+  instrucoes     String
+  observacoes    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("transferencias_ordem")
 }
 
 model Loan {

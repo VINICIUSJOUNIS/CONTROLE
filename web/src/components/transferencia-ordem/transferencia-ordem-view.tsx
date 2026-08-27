@@ -7,8 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/field";
 import { valorPorExtenso } from "@/lib/extenso";
-import { saveBankTransferChannel } from "@/app/(dashboard)/transferencia-ordem/actions";
-import { Printer, Save, Pencil } from "lucide-react";
+import {
+  saveBankTransferChannel,
+  createTransferenciaOrdem,
+  updateTransferenciaOrdem,
+  deleteTransferenciaOrdem,
+} from "@/app/(dashboard)/transferencia-ordem/actions";
+import { Printer, Save, Pencil, FilePlus2, Trash2, FileText } from "lucide-react";
 
 type CanalBancario = {
   moeda: string;
@@ -16,6 +21,23 @@ type CanalBancario = {
 };
 
 type Bank = { id: string; name: string; transferChannel: CanalBancario | null };
+
+type TransferenciaSalva = {
+  id: string;
+  cidade: string;
+  data: string;
+  tipo: string;
+  numeroOrdem: string;
+  moeda: string;
+  valor: number;
+  valorExtenso: string;
+  bankId: string | null;
+  bancoDestino: string;
+  descontaTarifa: string;
+  valorTarifa: number | null;
+  instrucoes: string;
+  observacoes: string;
+};
 
 const canalVazio: CanalBancario = {
   moeda: "USD",
@@ -47,6 +69,10 @@ function formValue(valor: string) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function formatBR(n: number) {
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function emptyForm() {
   return {
     cidade: "Manhuaçu",
@@ -64,11 +90,19 @@ function emptyForm() {
   };
 }
 
-export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
+export function TransferenciaOrdemView({
+  banks,
+  initialTransferencias,
+}: {
+  banks: Bank[];
+  initialTransferencias: TransferenciaSalva[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isSaving, startSaving] = useTransition();
   const [form, setForm] = useState(emptyForm());
   const [editandoCanal, setEditandoCanal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   function set<K extends keyof ReturnType<typeof emptyForm>>(key: K, value: ReturnType<typeof emptyForm>[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -101,6 +135,69 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
     startTransition(async () => {
       await saveBankTransferChannel(form.bancoId, { moeda, instrucoes });
       setEditandoCanal(false);
+      router.refresh();
+    });
+  }
+
+  function novaTransferencia() {
+    setForm(emptyForm());
+    setEditingId(null);
+    setEditandoCanal(false);
+  }
+
+  function carregarTransferencia(t: TransferenciaSalva) {
+    setEditingId(t.id);
+    setEditandoCanal(false);
+    setForm({
+      cidade: t.cidade,
+      data: t.data,
+      tipo: t.tipo as "PARCIAL" | "TOTAL",
+      numeroOrdem: t.numeroOrdem,
+      moeda: t.moeda,
+      valor: formatBR(t.valor),
+      valorExtenso: t.valorExtenso,
+      bancoId: t.bankId ?? "",
+      bancoDestino: t.bancoDestino,
+      descontaTarifa: t.descontaTarifa as "SIM" | "NAO",
+      valorTarifa: t.valorTarifa != null ? formatBR(t.valorTarifa) : "",
+      instrucoes: t.instrucoes,
+      observacoes: t.observacoes,
+    });
+  }
+
+  function salvarTransferencia() {
+    const payload = {
+      cidade: form.cidade,
+      data: form.data,
+      tipo: form.tipo,
+      numeroOrdem: form.numeroOrdem,
+      moeda: form.moeda,
+      valor: formValue(form.valor),
+      valorExtenso: form.valorExtenso,
+      bankId: form.bancoId || null,
+      bancoDestino: form.bancoDestino,
+      descontaTarifa: form.descontaTarifa,
+      valorTarifa: form.descontaTarifa === "SIM" ? formValue(form.valorTarifa) : null,
+      instrucoes: form.instrucoes,
+      observacoes: form.observacoes,
+    };
+    startSaving(async () => {
+      if (editingId) {
+        await updateTransferenciaOrdem(editingId, payload);
+      } else {
+        const id = await createTransferenciaOrdem(payload);
+        setEditingId(id);
+      }
+      router.refresh();
+    });
+  }
+
+  function excluirTransferencia(t: TransferenciaSalva) {
+    if (!window.confirm(`Excluir a transferência de ordem nº ${t.numeroOrdem || t.id}? Esta ação não pode ser desfeita.`))
+      return;
+    startTransition(async () => {
+      await deleteTransferenciaOrdem(t.id);
+      if (editingId === t.id) novaTransferencia();
       router.refresh();
     });
   }
@@ -284,10 +381,61 @@ export function TransferenciaOrdemView({ banks }: { banks: Bank[] }) {
             </CardContent>
           </Card>
 
-          <Button onClick={() => window.print()} className="w-full">
+          <div className="flex gap-2">
+            <Button onClick={salvarTransferencia} disabled={isSaving} className="flex-1">
+              <Save size={16} />
+              {isSaving ? "Salvando…" : editingId ? "Salvar alterações" : "Salvar transferência"}
+            </Button>
+            <Button onClick={novaTransferencia} variant="outline">
+              <FilePlus2 size={16} />
+              Nova
+            </Button>
+          </div>
+
+          <Button onClick={() => window.print()} variant="outline" className="w-full">
             <Printer size={16} />
             Imprimir no papel timbrado
           </Button>
+
+          {initialTransferencias.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Transferências salvas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1 p-2 pt-0">
+                {initialTransferencias.map((t) => (
+                  <div
+                    key={t.id}
+                    className={`flex items-center gap-2 rounded-lg p-2 text-sm ${
+                      editingId === t.id ? "bg-primary/10" : "hover:bg-background"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => carregarTransferencia(t)}
+                      className="flex flex-1 items-center gap-2 text-left"
+                    >
+                      <FileText size={14} className="shrink-0 text-muted" />
+                      <span className="min-w-0 flex-1 truncate">
+                        {t.numeroOrdem || "(sem número)"} — {t.bancoDestino || "?"}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted">
+                        {moedaSimbolo[t.moeda] ?? t.moeda} {formatBR(t.valor)}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => excluirTransferencia(t)}
+                      className="shrink-0 rounded p-1 text-muted hover:text-danger"
+                      aria-label="Excluir"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <Card className="h-fit">

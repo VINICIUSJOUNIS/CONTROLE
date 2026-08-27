@@ -101,6 +101,30 @@ export async function getBanksWithTransferChannel() {
   }));
 }
 
+// Cartas de Transferencia de Ordem ja salvas - para reabrir/editar ou reimprimir
+// sem redigitar tudo de novo.
+export async function getTransferenciasOrdem() {
+  const lista = await prisma.transferenciaOrdem.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+  return lista.map((t) => ({
+    id: t.id,
+    cidade: t.cidade,
+    data: t.data.toISOString().slice(0, 10),
+    tipo: t.tipo,
+    numeroOrdem: t.numeroOrdem,
+    moeda: t.moeda,
+    valor: n(t.valor),
+    valorExtenso: t.valorExtenso,
+    bankId: t.bankId,
+    bancoDestino: t.bancoDestino,
+    descontaTarifa: t.descontaTarifa,
+    valorTarifa: t.valorTarifa != null ? n(t.valorTarifa) : null,
+    instrucoes: t.instrucoes,
+    observacoes: t.observacoes,
+  }));
+}
+
 // Aliquotas oficiais de IOF sobre credito para pessoa juridica (Decreto 6.306/2007,
 // com alteracoes) - diaria sobre o saldo usado + adicional fixo. Retomadas em
 // 17/07/2025 apos decisao do STF que derrubou a alta temporaria (que tinha ido
