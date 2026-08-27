@@ -437,41 +437,62 @@ function CartaPreview({
           <strong>{form.bancoDestino || "____________"}</strong> conforme canal bancário abaixo:
         </p>
 
-        <div className="mb-6 space-y-4 rounded-md border border-[#1c8388]/30 bg-[#1c8388]/5 p-4">
-          <p className="font-semibold underline">
-            Instructions for credit: {form.moeda} – MT 103
-          </p>
+        {(() => {
+          const temCorrespondent = !!(form.correspondentSwift || form.correspondentBanco || form.correspondentConta);
+          const temBeneficiary = !!(form.beneficiarySwift || form.beneficiaryBanco || form.beneficiaryEndereco);
+          const temFinal = !!(
+            form.finalBeneficiario ||
+            form.finalIban ||
+            form.finalLocal ||
+            form.finalBranch ||
+            form.finalConta
+          );
+          if (!temCorrespondent && !temBeneficiary && !temFinal) return null;
 
-          <div>
-            <p className="font-semibold">
-              Correspondent Bank (field 56){form.correspondentSwift && `: ${form.correspondentSwift}`}
-            </p>
-            {form.correspondentBanco && <p>{form.correspondentBanco}</p>}
-            {form.correspondentSwift && <p>Swift Code: {form.correspondentSwift}</p>}
-            {form.correspondentConta && <p>Conta: {form.correspondentConta}</p>}
-          </div>
+          return (
+            <div className="mb-6 space-y-4 rounded-md border border-[#1c8388]/30 bg-[#1c8388]/5 p-4">
+              <p className="font-semibold underline">
+                Instructions for credit: {form.moeda} – MT 103
+              </p>
 
-          <div>
-            <p className="font-semibold">
-              Beneficiary Bank (field 57){form.beneficiarySwift && `: ${form.beneficiarySwift}`}
-            </p>
-            {form.beneficiaryBanco && <p>{form.beneficiaryBanco}</p>}
-            {form.beneficiarySwift && <p>Swift Code: {form.beneficiarySwift}</p>}
-            {form.beneficiaryEndereco && <p>{form.beneficiaryEndereco}</p>}
-          </div>
+              {temCorrespondent && (
+                <div>
+                  <p className="font-semibold">
+                    Correspondent Bank (field 56){form.correspondentSwift && `: ${form.correspondentSwift}`}
+                  </p>
+                  {form.correspondentBanco && <p>{form.correspondentBanco}</p>}
+                  {form.correspondentSwift && <p>Swift Code: {form.correspondentSwift}</p>}
+                  {form.correspondentConta && <p>Conta: {form.correspondentConta}</p>}
+                </div>
+              )}
 
-          <div>
-            <p className="font-semibold">
-              Final Beneficiary (field 59){form.finalIban && `: ${form.finalIban}`}
-            </p>
-            {form.finalBeneficiario && <p>{form.finalBeneficiario}</p>}
-            {form.finalIban && <p>{form.finalIban}</p>}
-            {form.finalLocal && <p>{form.finalLocal}</p>}
-            {form.finalBranch && <p>Branch: {form.finalBranch}</p>}
-            {form.finalConta && <p>Account: {form.finalConta}</p>}
-            {form.finalIban && <p>IBAN: {form.finalIban}</p>}
-          </div>
-        </div>
+              {temBeneficiary && (
+                <div>
+                  <p className="font-semibold">
+                    Beneficiary Bank (field 57){form.beneficiarySwift && `: ${form.beneficiarySwift}`}
+                  </p>
+                  {form.beneficiaryBanco && <p>{form.beneficiaryBanco}</p>}
+                  {form.beneficiarySwift && <p>Swift Code: {form.beneficiarySwift}</p>}
+                  {form.beneficiaryEndereco && <p>{form.beneficiaryEndereco}</p>}
+                </div>
+              )}
+
+              {temFinal && (
+                <div>
+                  <p className="font-semibold">
+                    Final Beneficiary (field 59){form.finalIban && `: ${form.finalIban}`}
+                  </p>
+                  {form.finalBeneficiario && <p>{form.finalBeneficiario}</p>}
+                  {form.finalIban && <p>{form.finalIban}</p>}
+                  {form.finalLocal && <p>{form.finalLocal}</p>}
+                  {form.finalBranch && <p>Branch: {form.finalBranch}</p>}
+                  {form.finalConta && <p>Account: {form.finalConta}</p>}
+                  {form.finalIban && <p>IBAN: {form.finalIban}</p>}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         <p className="mb-6 text-justify">
           {form.descontaTarifa === "SIM"
