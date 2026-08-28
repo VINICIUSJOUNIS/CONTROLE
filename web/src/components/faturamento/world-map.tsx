@@ -282,11 +282,11 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                           <Marker coordinates={centroid as [number, number]}>
                             <image
                               href="/nayme-logo.png"
-                              x={-4}
-                              y={-4}
-                              width={8}
-                              height={8}
-                              style={{ pointerEvents: "none" }}
+                              x={-5}
+                              y={-5}
+                              width={10}
+                              height={10}
+                              style={{ pointerEvents: "none", filter: "grayscale(1)", opacity: 0.25 }}
                             />
                           </Marker>
                         </g>
