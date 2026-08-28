@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
+import { geoCentroid } from "d3-geo";
 import worldData from "world-atlas/countries-110m.json";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/field";
@@ -229,7 +230,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                       const dimmed = continentFilter !== "todos" && cont !== continentFilter;
                       const fill = stat ? `var(--seq-${seqStep(stat.valueBRL)})` : "var(--seq-none)";
                       const isHovered = hovered === id;
-                      return (
+                      const geography = (
                         <Geography
                           key={geo.rsmKey}
                           geography={geo}
@@ -268,6 +269,27 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                         >
                           <title>{countryLabel(id) !== "-" ? countryLabel(id) : String(geo.properties?.name ?? id)}</title>
                         </Geography>
+                      );
+
+                      if (!exported || dimmed) return geography;
+
+                      const centroid = geoCentroid(geo);
+                      if (!Number.isFinite(centroid[0]) || !Number.isFinite(centroid[1])) return geography;
+
+                      return (
+                        <g key={geo.rsmKey}>
+                          {geography}
+                          <Marker coordinates={centroid as [number, number]}>
+                            <image
+                              href="/nayme-logo.png"
+                              x={-4}
+                              y={-4}
+                              width={8}
+                              height={8}
+                              style={{ pointerEvents: "none" }}
+                            />
+                          </Marker>
+                        </g>
                       );
                     })
                   }
