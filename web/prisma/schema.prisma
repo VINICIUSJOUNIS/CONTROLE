@@ -294,6 +294,7 @@ model AccOperation {
   exchangeSpread         Decimal   @db.Decimal(10, 4)
   exchangeVariationValue Decimal   @default(0) @db.Decimal(10, 4)
   bankFees               Decimal   @db.Decimal(18, 2)
+  flatFeeRate            Decimal   @default(0) @db.Decimal(6, 2)
   hasInsurance           Boolean   @default(false)
   insuranceCost          Decimal   @default(0) @db.Decimal(18, 2)
   otherCosts             Decimal   @default(0) @db.Decimal(18, 2)

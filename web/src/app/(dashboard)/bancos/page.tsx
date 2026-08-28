@@ -145,6 +145,7 @@ export default async function BancosPage({
                   <th className="pb-2 pr-4 font-medium">Juros pagos</th>
                   <th className="pb-2 pr-4 font-medium">IOF</th>
                   <th className="pb-2 pr-4 font-medium">Tarifas</th>
+                  <th className="pb-2 pr-4 font-medium">Taxa Flat</th>
                   <th className="pb-2 pr-4 font-medium">Seguro</th>
                   <th className="pb-2 pr-4 font-medium">Outros custos</th>
                   <th className="pb-2 font-medium">Custo total geral</th>
@@ -162,6 +163,7 @@ export default async function BancosPage({
                       <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalJuros)}</td>
                       <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalIOF)}</td>
                       <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalTarifas)}</td>
+                      <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalFlat)}</td>
                       <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalSeguro)}</td>
                       <td className="py-2.5 pr-4">{formatCompactCurrency(b.totalOutrosCustos)}</td>
                       <td className="py-2.5 font-semibold">{formatCompactCurrency(b.custoTotalGeral)}</td>

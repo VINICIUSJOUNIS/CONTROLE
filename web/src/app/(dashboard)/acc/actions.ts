@@ -21,6 +21,7 @@ export type AccFormInput = {
   otherCosts: number;
   iof: number;
   bankFees: number;
+  flatFeeRate: number;
 };
 
 function revalidateAll() {
@@ -63,6 +64,7 @@ export async function createAcc(input: AccFormInput) {
       exchangeSpread: Number((input.closingRate - input.spotRate).toFixed(4)),
       exchangeVariationValue: input.exchangeVariationValue,
       bankFees: input.bankFees,
+      flatFeeRate: input.flatFeeRate,
       hasInsurance: input.hasInsurance,
       insuranceCost: input.hasInsurance ? input.insuranceCost : 0,
       otherCosts: input.otherCosts,
@@ -96,6 +98,7 @@ export async function updateAcc(id: string, input: AccFormInput) {
       exchangeVariationValue: input.exchangeVariationValue,
       iof: input.iof,
       bankFees: input.bankFees,
+      flatFeeRate: input.flatFeeRate,
       hasInsurance: input.hasInsurance,
       insuranceCost: input.hasInsurance ? input.insuranceCost : 0,
       otherCosts: input.otherCosts,

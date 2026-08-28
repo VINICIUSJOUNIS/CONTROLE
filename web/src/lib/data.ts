@@ -366,6 +366,7 @@ export async function getAccOperations() {
     const exchangeSpread = n(a.exchangeSpread);
     const iof = n(a.iof);
     const bankFees = n(a.bankFees);
+    const flatFeeRate = n(a.flatFeeRate);
     const insuranceCost = n(a.insuranceCost);
     const otherCosts = n(a.otherCosts);
 
@@ -433,9 +434,12 @@ export async function getAccOperations() {
     // Valor do spread: (valor contratado x taxa spot) - valor recebido.
     const spreadValor = Number((contractedValueForeign * spotRate - receivedValueBRL).toFixed(2));
 
-    // Custo total: spread + juros pagos + IOF + tarifas + seguro + outras despesas.
+    // Taxa flat: percentual cobrado sobre o valor total liberado (receivedValueBRL).
+    const flatFeeValor = Number((receivedValueBRL * (flatFeeRate / 100)).toFixed(2));
+
+    // Custo total: spread + juros pagos + IOF + tarifas + taxa flat + seguro + outras despesas.
     const custoTotal = Number(
-      (spreadValor + jurosPagoValor + iof + bankFees + insuranceCost + otherCosts).toFixed(2)
+      (spreadValor + jurosPagoValor + iof + bankFees + flatFeeValor + insuranceCost + otherCosts).toFixed(2)
     );
 
     // Percentual final do juros do contrato: custo total / valor recebido.
@@ -462,6 +466,8 @@ export async function getAccOperations() {
       interestRate,
       iof,
       bankFees,
+      flatFeeRate,
+      flatFeeValor,
       hasInsurance: a.hasInsurance,
       insuranceCost,
       otherCosts,
@@ -897,6 +903,7 @@ export async function getBankComparison(range?: PeriodRange) {
       totalJuros: Number(ops.reduce((s, a) => s + a.jurosPagoValor, 0).toFixed(2)),
       totalIOF: Number(ops.reduce((s, a) => s + a.iof, 0).toFixed(2)),
       totalTarifas: Number(ops.reduce((s, a) => s + a.bankFees, 0).toFixed(2)),
+      totalFlat: Number(ops.reduce((s, a) => s + a.flatFeeValor, 0).toFixed(2)),
       totalSeguro: Number(ops.reduce((s, a) => s + a.insuranceCost, 0).toFixed(2)),
       totalOutrosCustos: Number(ops.reduce((s, a) => s + a.otherCosts, 0).toFixed(2)),
       custoTotalGeral,

@@ -60,6 +60,7 @@ function emptyForm(defaultBankId: string) {
     otherCosts: "",
     iof: "",
     bankFees: "",
+    flatFeeRate: "",
   };
 }
 
@@ -81,6 +82,7 @@ function formFromRow(acc: AccRow) {
     otherCosts: String(acc.otherCosts),
     iof: String(acc.iof),
     bankFees: String(acc.bankFees),
+    flatFeeRate: String(acc.flatFeeRate),
   };
 }
 
@@ -261,6 +263,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
       otherCosts: Number(form.otherCosts) || 0,
       iof: Number(form.iof) || 0,
       bankFees: Number(form.bankFees) || 0,
+      flatFeeRate: Number(form.flatFeeRate) || 0,
     };
     startTransition(async () => {
       try {
@@ -481,6 +484,24 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                 </div>
               </div>
 
+              <div>
+                <Label>Taxa Flat (%)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.flatFeeRate}
+                  onChange={(e) => setForm({ ...form, flatFeeRate: e.target.value })}
+                />
+                <p className="mt-1 text-xs text-muted">
+                  = {formatCurrencyPrecise(
+                    (Number(form.contractedValueForeign) || 0) *
+                      (Number(form.closingRate) || 0) *
+                      ((Number(form.flatFeeRate) || 0) / 100)
+                  )}{" "}
+                  (percentual sobre o valor total liberado)
+                </p>
+              </div>
+
               <div className="rounded-lg border border-border p-3">
                 <label className="flex items-center gap-2 text-sm font-medium">
                   <input
@@ -543,6 +564,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                 <th className="px-4 py-3 font-medium">Juros pagos</th>
                 <th className="px-4 py-3 font-medium">IOF</th>
                 <th className="px-4 py-3 font-medium">Tarifas</th>
+                <th className="px-4 py-3 font-medium">Taxa Flat</th>
                 <th className="px-4 py-3 font-medium">Seguro</th>
                 <th className="px-4 py-3 font-medium">Custo total</th>
                 <th className="px-4 py-3 font-medium">% Juros</th>
@@ -588,6 +610,15 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                   <td className="px-4 py-2.5">{formatCurrencyPrecise(acc.jurosPagoValor)}</td>
                   <td className="px-4 py-2.5">{formatCompactCurrency(acc.iof)}</td>
                   <td className="px-4 py-2.5">{formatCompactCurrency(acc.bankFees)}</td>
+                  <td className="px-4 py-2.5">
+                    {acc.flatFeeRate > 0 ? (
+                      <span title={`${formatPercent(acc.flatFeeRate)} do valor liberado`}>
+                        {formatCompactCurrency(acc.flatFeeValor)}
+                      </span>
+                    ) : (
+                      <span className="text-muted">-</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5">
                     {acc.hasInsurance ? (
                       <Badge variant="warning">{formatCompactCurrency(acc.insuranceCost)}</Badge>
@@ -643,7 +674,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={22} className="px-4 py-8 text-center text-muted">
+                  <td colSpan={23} className="px-4 py-8 text-center text-muted">
                     Nenhuma operacao de ACC encontrada com os filtros atuais.
                   </td>
                 </tr>

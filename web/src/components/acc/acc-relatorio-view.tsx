@@ -99,6 +99,14 @@ export function AccRelatorioView({ acc, monthlySchedule }: { acc: AccRow; monthl
             <InfoItem label="IOF" value={formatCompactCurrency(acc.iof)} />
             <InfoItem label="Tarifas Bancárias" value={formatCompactCurrency(acc.bankFees)} />
             <InfoItem
+              label="Taxa Flat"
+              value={
+                acc.flatFeeRate > 0
+                  ? `${formatPercent(acc.flatFeeRate)} (${formatCompactCurrency(acc.flatFeeValor)})`
+                  : "-"
+              }
+            />
+            <InfoItem
               label="Seguro"
               value={acc.hasInsurance ? formatCompactCurrency(acc.insuranceCost) : "Não"}
             />
