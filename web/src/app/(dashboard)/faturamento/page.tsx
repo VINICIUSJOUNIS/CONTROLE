@@ -1,5 +1,6 @@
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { PeriodComparison } from "@/components/dashboard/period-comparison";
@@ -19,6 +20,7 @@ type ClientAgg = {
   containers20: number;
   containers40: number;
   country: string | null;
+  clientType: SaleRow["clientType"];
   diferencialSoma: number;
   diferencialQtd: number;
 };
@@ -68,6 +70,7 @@ function rankClients(rows: SaleRow[], returnsByClient: SaleReturnRow[]) {
         containers20: 0,
         containers40: 0,
         country: s.country,
+        clientType: s.clientType,
         diferencialSoma: 0,
         diferencialQtd: 0,
       };
@@ -175,6 +178,7 @@ export default async function FaturamentoDashboardPage({
 
   const topInternos = rankClients(internos, returnsInternos).slice(0, 10);
   const topExternos = rankClients(externos, returnsExternos).slice(0, 10);
+  const topGeral = rankClients(sales, returnsInPeriod).slice(0, 10);
 
   const porMes = new Map<string, { interno: number; externo: number }>();
   for (const s of sales) {
@@ -532,6 +536,59 @@ export default async function FaturamentoDashboardPage({
         <div className="space-y-4">
           <Card>
             <CardHeader>
+              <CardTitle>Maiores Clientes — Geral</CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-x-auto p-0">
+              <table className="w-full whitespace-nowrap text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs text-muted">
+                    <th className="px-4 py-2.5 font-medium">#</th>
+                    <th className="px-4 py-2.5 font-medium">Cliente</th>
+                    <th className="px-4 py-2.5 font-medium">Mercado</th>
+                    <th className="px-4 py-2.5 font-medium">Sacas</th>
+                    <th className="px-4 py-2.5 font-medium">Valor (R$)</th>
+                    <th className="px-4 py-2.5 font-medium">% do Total</th>
+                    <th className="px-4 py-2.5 font-medium">Diferencial Médio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topGeral.map(([name, agg], i) => (
+                    <tr key={name} className="border-b border-border last:border-0">
+                      <td className="px-4 py-2.5 align-top text-muted">{i + 1}</td>
+                      <td className="px-4 py-2.5 align-top font-medium">{name}</td>
+                      <td className="px-4 py-2.5 align-top">
+                        <Badge variant={agg.clientType === "EXTERNO" ? "success" : "default"}>
+                          {agg.clientType === "EXTERNO" ? "Externo" : "Interno"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-2.5 align-top">
+                        {agg.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                      </td>
+                      <td className={cn("px-4 py-2.5 align-top", agg.valueBRL < 0 && "text-danger")}>
+                        {formatCurrency(agg.valueBRL)}
+                      </td>
+                      <td className="px-4 py-2.5 align-top">
+                        {pctFmt(totalBRL > 0 ? (agg.valueBRL / totalBRL) * 100 : 0)}
+                      </td>
+                      <td className="px-4 py-2.5 align-top">
+                        <DiferencialCell v={diferencialMedio(agg)} />
+                      </td>
+                    </tr>
+                  ))}
+                  {topGeral.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-6 text-center text-muted">
+                        Nenhuma venda registrada ainda.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Maiores Clientes — Mercado Interno</CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto p-0">
@@ -589,8 +646,8 @@ export default async function FaturamentoDashboardPage({
                     <th className="px-4 py-2.5 font-medium">Cliente</th>
                     <th className="px-4 py-2.5 font-medium">País</th>
                     <th className="px-4 py-2.5 font-medium">Sacas</th>
-                    <th className="px-4 py-2.5 font-medium">Cnt 20'</th>
-                    <th className="px-4 py-2.5 font-medium">Cnt 40'</th>
+                    <th className="px-4 py-2.5 font-medium">Cnt 20&apos;</th>
+                    <th className="px-4 py-2.5 font-medium">Cnt 40&apos;</th>
                     <th className="px-4 py-2.5 font-medium">Valor (R$)</th>
                     <th className="px-4 py-2.5 font-medium">Valor (US$)</th>
                     <th className="px-4 py-2.5 font-medium">% do Externo</th>
