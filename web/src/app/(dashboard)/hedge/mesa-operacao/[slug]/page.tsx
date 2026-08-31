@@ -10,7 +10,8 @@ import {
   getTiposFrete,
   getTiposEmbalagem,
   getFormasPagamento,
-  getDescricoesCafe,
+  getPeneiras,
+  getPadroesCafe,
   getContratoAnexosPorContrato,
   getPrevisoesPorEtapa,
   getConcluidasPorEtapa,
@@ -69,7 +70,8 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
     tiposFrete,
     tiposEmbalagem,
     formasPagamento,
-    descricoesCafe,
+    peneiras,
+    padroesCafe,
     concluidas,
     previsoes,
     anexos,
@@ -80,7 +82,8 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
     getTiposFrete(),
     getTiposEmbalagem(),
     getFormasPagamento(),
-    getDescricoesCafe(),
+    getPeneiras(),
+    getPadroesCafe(),
     getConcluidasPorEtapa("CONFIRMACAO_NEGOCIO"),
     getPrevisoesPorEtapa("CONFIRMACAO_NEGOCIO"),
     getContratoAnexosPorContrato(),
@@ -96,7 +99,8 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
         tiposFrete={tiposFrete}
         tiposEmbalagem={tiposEmbalagem}
         formasPagamento={formasPagamento}
-        descricoesCafe={descricoesCafe}
+        peneiras={peneiras}
+        padroesCafe={padroesCafe}
         concluidas={concluidas}
         previsoes={previsoes}
         anexos={anexos}

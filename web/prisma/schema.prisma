@@ -587,8 +587,10 @@ model ContratoConfirmacaoNegocio {
   tipoEmbalagem    TipoEmbalagem?      @relation(fields: [tipoEmbalagemId], references: [id])
   tipoEmbalagemId  String?
   quantidadeSacas  Int?
-  descricaoCafe    DescricaoCafe?      @relation(fields: [descricaoCafeId], references: [id])
-  descricaoCafeId  String?
+  peneira          Peneira?            @relation(fields: [peneiraId], references: [id])
+  peneiraId        String?
+  padrao           PadraoCafe?         @relation(fields: [padraoId], references: [id])
+  padraoId         String?
   previsaoEmbarque DateTime?           @db.Date
   destinoCarga     String?
   formaPagamento   FormaPagamento?     @relation(fields: [formaPagamentoId], references: [id])
@@ -606,7 +608,8 @@ model ContratoConfirmacaoNegocio {
   @@index([tipoFreteId])
   @@index([tipoEmbalagemId])
   @@index([formaPagamentoId])
-  @@index([descricaoCafeId])
+  @@index([peneiraId])
+  @@index([padraoId])
   @@map("contrato_confirmacao_negocio")
 }
 
@@ -632,16 +635,27 @@ model TipoEmbalagem {
   @@map("tipos_embalagem")
 }
 
-// Lista de descricoes de cafe cadastraveis (ex: Arabica tipo 6, bica
-// corrida), usada na ficha da etapa Confirmacao de Negocio da Mesa de
-// Operacao.
-model DescricaoCafe {
+// Lista de peneiras cadastraveis (ex: 16/18, 17/18), usada na ficha da
+// etapa Confirmacao de Negocio da Mesa de Operacao.
+model Peneira {
   id                  String                       @id @default(uuid())
   name                String                       @unique
   confirmacoesNegocio ContratoConfirmacaoNegocio[]
   createdAt           DateTime                     @default(now())
 
-  @@map("descricoes_cafe")
+  @@map("peneiras")
+}
+
+// Lista de padroes de cafe cadastraveis (ex: Bica corrida, Tipo 6, Fine
+// Cup), usada na ficha da etapa Confirmacao de Negocio da Mesa de
+// Operacao.
+model PadraoCafe {
+  id                  String                       @id @default(uuid())
+  name                String                       @unique
+  confirmacoesNegocio ContratoConfirmacaoNegocio[]
+  createdAt           DateTime                     @default(now())
+
+  @@map("padroes_cafe")
 }
 
 // Lista de formas de pagamento cadastraveis (ex: Carta de credito, 30/60/90

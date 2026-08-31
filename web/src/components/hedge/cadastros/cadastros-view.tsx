@@ -31,10 +31,15 @@ import {
   deleteTransportadoraAmostra,
 } from "@/app/(dashboard)/hedge/mesa-operacao/transportadoras-amostra/actions";
 import {
-  createDescricaoCafe,
-  updateDescricaoCafe,
-  deleteDescricaoCafe,
-} from "@/app/(dashboard)/hedge/mesa-operacao/descricoes-cafe/actions";
+  createPeneira,
+  updatePeneira,
+  deletePeneira,
+} from "@/app/(dashboard)/hedge/mesa-operacao/peneiras/actions";
+import {
+  createPadraoCafe,
+  updatePadraoCafe,
+  deletePadraoCafe,
+} from "@/app/(dashboard)/hedge/mesa-operacao/padroes-cafe/actions";
 
 type Item = { id: string; name: string };
 
@@ -46,7 +51,8 @@ const tabs = [
   { key: "pagamento", label: "Forma de Pagamento" },
   { key: "amostra", label: "Tipo de Amostra" },
   { key: "transportadora", label: "Transportadora de Amostra" },
-  { key: "cafe", label: "Descricao do Cafe" },
+  { key: "peneira", label: "Peneira" },
+  { key: "padrao", label: "Padrão" },
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
@@ -59,7 +65,8 @@ export function CadastrosView({
   formasPagamento,
   tiposAmostra,
   transportadorasAmostra,
-  descricoesCafe,
+  peneiras,
+  padroesCafe,
 }: {
   clientes: ClienteRow[];
   corretoras: CorretoraRow[];
@@ -68,7 +75,8 @@ export function CadastrosView({
   formasPagamento: Item[];
   tiposAmostra: Item[];
   transportadorasAmostra: Item[];
-  descricoesCafe: Item[];
+  peneiras: Item[];
+  padroesCafe: Item[];
 }) {
   const [tab, setTab] = useState<TabKey>("clientes");
 
@@ -141,14 +149,24 @@ export function CadastrosView({
           deleteAction={deleteTransportadoraAmostra}
         />
       )}
-      {tab === "cafe" && (
+      {tab === "peneira" && (
         <CatalogoSimplesTable
-          itemLabel="Descricao do cafe"
-          placeholder="Ex: Arabica tipo 6, bica corrida"
-          items={descricoesCafe}
-          createAction={createDescricaoCafe}
-          updateAction={updateDescricaoCafe}
-          deleteAction={deleteDescricaoCafe}
+          itemLabel="Peneira"
+          placeholder="Ex: 16/18, 17/18"
+          items={peneiras}
+          createAction={createPeneira}
+          updateAction={updatePeneira}
+          deleteAction={deletePeneira}
+        />
+      )}
+      {tab === "padrao" && (
+        <CatalogoSimplesTable
+          itemLabel="Padrão"
+          placeholder="Ex: Bica corrida, Tipo 6, Fine Cup"
+          items={padroesCafe}
+          createAction={createPadraoCafe}
+          updateAction={updatePadraoCafe}
+          deleteAction={deletePadraoCafe}
         />
       )}
     </div>

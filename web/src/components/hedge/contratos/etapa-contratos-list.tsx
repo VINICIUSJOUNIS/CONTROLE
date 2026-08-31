@@ -474,7 +474,8 @@ function ConfirmacaoNegocioResumo({ dados }: { dados: NonNullable<HistoricoAnter
   if (dados.valorDolar != null) linhas.push(["Valor do dólar", String(dados.valorDolar)]);
   if (dados.tipoEmbalagemNome) linhas.push(["Embalagem", dados.tipoEmbalagemNome]);
   if (dados.quantidadeSacas != null) linhas.push(["Quantidade", `${dados.quantidadeSacas} sacas`]);
-  if (dados.descricaoCafeNome) linhas.push(["Café", dados.descricaoCafeNome]);
+  if (dados.peneiraNome) linhas.push(["Peneira", dados.peneiraNome]);
+  if (dados.padraoNome) linhas.push(["Padrão", dados.padraoNome]);
   if (dados.previsaoEmbarque) linhas.push(["Previsão embarque", formatDate(dados.previsaoEmbarque)]);
   if (dados.destinoCarga) linhas.push(["Destino", dados.destinoCarga]);
   if (dados.formaPagamentoNome) linhas.push(["Pagamento", dados.formaPagamentoNome]);

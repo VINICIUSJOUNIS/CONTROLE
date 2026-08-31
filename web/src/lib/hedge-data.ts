@@ -152,8 +152,10 @@ export type ConfirmacaoNegocioData = {
   tipoEmbalagemId: string | null;
   tipoEmbalagemNome: string | null;
   quantidadeSacas: number | null;
-  descricaoCafeId: string | null;
-  descricaoCafeNome: string | null;
+  peneiraId: string | null;
+  peneiraNome: string | null;
+  padraoId: string | null;
+  padraoNome: string | null;
   previsaoEmbarque: string | null;
   destinoCarga: string | null;
   formaPagamentoId: string | null;
@@ -180,9 +182,14 @@ export async function getFormasPagamento() {
   return formas.map((f) => ({ id: f.id, name: f.name }));
 }
 
-export async function getDescricoesCafe() {
-  const descricoes = await prisma.descricaoCafe.findMany({ orderBy: { name: "asc" } });
-  return descricoes.map((d) => ({ id: d.id, name: d.name }));
+export async function getPeneiras() {
+  const peneiras = await prisma.peneira.findMany({ orderBy: { name: "asc" } });
+  return peneiras.map((p) => ({ id: p.id, name: p.name }));
+}
+
+export async function getPadroesCafe() {
+  const padroes = await prisma.padraoCafe.findMany({ orderBy: { name: "asc" } });
+  return padroes.map((p) => ({ id: p.id, name: p.name }));
 }
 
 export async function getTiposAmostra() {
@@ -285,7 +292,8 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
       tipoFrete: true,
       tipoEmbalagem: true,
       formaPagamento: true,
-      descricaoCafe: true,
+      peneira: true,
+      padrao: true,
     },
   });
 
@@ -307,8 +315,10 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
         tipoEmbalagemId: r.tipoEmbalagemId,
         tipoEmbalagemNome: r.tipoEmbalagem?.name ?? null,
         quantidadeSacas: r.quantidadeSacas,
-        descricaoCafeId: r.descricaoCafeId,
-        descricaoCafeNome: r.descricaoCafe?.name ?? null,
+        peneiraId: r.peneiraId,
+        peneiraNome: r.peneira?.name ?? null,
+        padraoId: r.padraoId,
+        padraoNome: r.padrao?.name ?? null,
         previsaoEmbarque: r.previsaoEmbarque ? toISODate(r.previsaoEmbarque) : null,
         destinoCarga: r.destinoCarga,
         formaPagamentoId: r.formaPagamentoId,

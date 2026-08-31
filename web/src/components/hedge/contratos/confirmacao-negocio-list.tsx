@@ -22,7 +22,8 @@ import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
 import { NovoTipoFrete } from "@/components/hedge/contratos/novo-tipo-frete";
 import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embalagem";
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
-import { NovaDescricaoCafe } from "@/components/hedge/contratos/nova-descricao-cafe";
+import { NovaPeneira } from "@/components/hedge/contratos/nova-peneira";
+import { NovoPadraoCafe } from "@/components/hedge/contratos/novo-padrao-cafe";
 import { PrevisaoEtapa } from "@/components/hedge/contratos/etapa-contratos-list";
 import { AnexosSection } from "@/components/hedge/contratos/anexos-section";
 import { alertaPrazo } from "@/lib/prazo";
@@ -53,7 +54,8 @@ function emptyForm(): ConfirmacaoNegocioInput {
     tipoFreteId: "",
     tipoEmbalagemId: "",
     quantidadeSacas: null,
-    descricaoCafeId: "",
+    peneiraId: "",
+    padraoId: "",
     previsaoEmbarque: "",
     destinoCarga: "",
     formaPagamentoId: "",
@@ -80,7 +82,8 @@ function formFromData(data: ConfirmacaoNegocioData, contrato: ContratoRow | unde
     tipoFreteId: data.tipoFreteId ?? "",
     tipoEmbalagemId: data.tipoEmbalagemId ?? "",
     quantidadeSacas: data.quantidadeSacas,
-    descricaoCafeId: data.descricaoCafeId ?? "",
+    peneiraId: data.peneiraId ?? "",
+    padraoId: data.padraoId ?? "",
     previsaoEmbarque: data.previsaoEmbarque ?? "",
     destinoCarga: data.destinoCarga ?? "",
     formaPagamentoId: data.formaPagamentoId ?? "",
@@ -100,7 +103,8 @@ export function ConfirmacaoNegocioList({
   tiposFrete,
   tiposEmbalagem,
   formasPagamento,
-  descricoesCafe,
+  peneiras,
+  padroesCafe,
   concluidas,
   previsoes,
   anexos,
@@ -112,7 +116,8 @@ export function ConfirmacaoNegocioList({
   tiposFrete: { id: string; name: string }[];
   tiposEmbalagem: { id: string; name: string }[];
   formasPagamento: { id: string; name: string }[];
-  descricoesCafe: { id: string; name: string }[];
+  peneiras: { id: string; name: string }[];
+  padroesCafe: { id: string; name: string }[];
   concluidas: Record<string, boolean>;
   previsoes: Record<string, string>;
   anexos: Record<string, ContratoAnexoData[]>;
@@ -440,10 +445,16 @@ export function ConfirmacaoNegocioList({
                           <dd>{dados.quantidadeSacas} sacas</dd>
                         </div>
                       )}
-                      {dados.descricaoCafeNome && (
+                      {dados.peneiraNome && (
                         <div className="flex justify-between gap-2">
-                          <dt className="text-muted">Café</dt>
-                          <dd>{dados.descricaoCafeNome}</dd>
+                          <dt className="text-muted">Peneira</dt>
+                          <dd>{dados.peneiraNome}</dd>
+                        </div>
+                      )}
+                      {dados.padraoNome && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Padrão</dt>
+                          <dd>{dados.padraoNome}</dd>
                         </div>
                       )}
                       {dados.previsaoEmbarque && (
@@ -704,7 +715,7 @@ export function ConfirmacaoNegocioList({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label>Tipo de Embalagem</Label>
                 <div className="flex gap-2">
@@ -723,20 +734,37 @@ export function ConfirmacaoNegocioList({
                 </div>
               </div>
               <div>
-                <Label>Descrição do Café</Label>
+                <Label>Peneira</Label>
                 <div className="flex gap-2">
                   <Select
-                    value={form.descricaoCafeId}
-                    onChange={(e) => setForm({ ...form, descricaoCafeId: e.target.value })}
+                    value={form.peneiraId}
+                    onChange={(e) => setForm({ ...form, peneiraId: e.target.value })}
                   >
                     <option value="">Selecione...</option>
-                    {descricoesCafe.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
+                    {peneiras.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
                       </option>
                     ))}
                   </Select>
-                  <NovaDescricaoCafe compact />
+                  <NovaPeneira compact />
+                </div>
+              </div>
+              <div>
+                <Label>Padrão</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={form.padraoId}
+                    onChange={(e) => setForm({ ...form, padraoId: e.target.value })}
+                  >
+                    <option value="">Selecione...</option>
+                    {padroesCafe.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <NovoPadraoCafe compact />
                 </div>
               </div>
             </div>

@@ -114,7 +114,8 @@ export type ConfirmacaoNegocioInput = {
   tipoFreteId: string;
   tipoEmbalagemId: string;
   quantidadeSacas: number | null;
-  descricaoCafeId: string;
+  peneiraId: string;
+  padraoId: string;
   previsaoEmbarque: string;
   destinoCarga: string;
   formaPagamentoId: string;
@@ -136,7 +137,8 @@ function confirmacaoData(input: ConfirmacaoNegocioInput) {
     tipoFreteId: input.tipoFreteId || null,
     tipoEmbalagemId: input.tipoEmbalagemId || null,
     quantidadeSacas: input.quantidadeSacas,
-    descricaoCafeId: input.descricaoCafeId || null,
+    peneiraId: input.peneiraId || null,
+    padraoId: input.padraoId || null,
     previsaoEmbarque: input.previsaoEmbarque ? parseLocalDate(input.previsaoEmbarque) : null,
     destinoCarga: input.destinoCarga.trim() || null,
     formaPagamentoId: input.formaPagamentoId || null,
