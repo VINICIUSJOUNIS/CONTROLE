@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Input, Label } from "@/components/ui/field";
+import { Input, Label, Select } from "@/components/ui/field";
 import { createCliente } from "@/app/(dashboard)/hedge/clientes/actions";
+import { COUNTRIES } from "@/lib/countries";
 import { Plus } from "lucide-react";
 
 export function NovoCliente({ compact = false }: { compact?: boolean }) {
@@ -90,11 +91,14 @@ export function NovoCliente({ compact = false }: { compact?: boolean }) {
             </div>
             <div>
               <Label>Pais</Label>
-              <Input
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                placeholder="Ex: Estados Unidos"
-              />
+              <Select value={country} onChange={(e) => setCountry(e.target.value)}>
+                <option value="">Selecione o pais</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.id} value={c.labelPt}>
+                    {c.labelPt}
+                  </option>
+                ))}
+              </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

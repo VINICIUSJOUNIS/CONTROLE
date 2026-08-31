@@ -19,6 +19,7 @@ import {
 } from "@/app/(dashboard)/hedge/contratos/actions";
 import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
+import { COUNTRIES } from "@/lib/countries";
 import {
   Cliente,
   Corretora,
@@ -289,11 +290,14 @@ export function ContratosTable({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Pais</Label>
-                  <Input
-                    value={form.country}
-                    onChange={(e) => setForm({ ...form, country: e.target.value })}
-                    placeholder="Ex: Estados Unidos"
-                  />
+                  <Select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
+                    <option value="">Selecione o pais</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.id} value={c.labelPt}>
+                        {c.labelPt}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
                 <div>
                   <Label>Valor US$</Label>

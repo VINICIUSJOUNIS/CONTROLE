@@ -94,6 +94,9 @@ export const countryNameToIsoCode: Record<string, string> = {
   "nicaragua": "558",
   "jamaica": "388",
   "trinidad e tobago": "780",
+  "palestina": "275",
+  "macedonia do norte": "807",
+  "siria": "760",
 };
 
 export function normalizeCountryName(value: string) {

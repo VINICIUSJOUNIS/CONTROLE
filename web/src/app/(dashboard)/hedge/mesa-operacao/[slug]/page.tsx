@@ -7,6 +7,7 @@ import {
   getConfirmacoesNegocio,
   getClientes,
   getCorretoras,
+  getTiposFrete,
   getTiposEmbalagem,
   getFormasPagamento,
   getDescricoesCafe,
@@ -61,17 +62,27 @@ export default async function MesaOperacaoEtapaPage({
 async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<ReturnType<typeof getContratosExportacao>> }) {
   await syncClientesFromVendasExternas();
 
-  const [confirmacoes, clientes, corretoras, tiposEmbalagem, formasPagamento, descricoesCafe, concluidas, previsoes] =
-    await Promise.all([
-      getConfirmacoesNegocio(),
-      getClientes(),
-      getCorretoras(),
-      getTiposEmbalagem(),
-      getFormasPagamento(),
-      getDescricoesCafe(),
-      getConcluidasPorEtapa("CONFIRMACAO_NEGOCIO"),
-      getPrevisoesPorEtapa("CONFIRMACAO_NEGOCIO"),
-    ]);
+  const [
+    confirmacoes,
+    clientes,
+    corretoras,
+    tiposFrete,
+    tiposEmbalagem,
+    formasPagamento,
+    descricoesCafe,
+    concluidas,
+    previsoes,
+  ] = await Promise.all([
+    getConfirmacoesNegocio(),
+    getClientes(),
+    getCorretoras(),
+    getTiposFrete(),
+    getTiposEmbalagem(),
+    getFormasPagamento(),
+    getDescricoesCafe(),
+    getConcluidasPorEtapa("CONFIRMACAO_NEGOCIO"),
+    getPrevisoesPorEtapa("CONFIRMACAO_NEGOCIO"),
+  ]);
 
   return (
     <Suspense>
@@ -80,6 +91,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
         confirmacoes={confirmacoes}
         clientes={clientes}
         corretoras={corretoras}
+        tiposFrete={tiposFrete}
         tiposEmbalagem={tiposEmbalagem}
         formasPagamento={formasPagamento}
         descricoesCafe={descricoesCafe}

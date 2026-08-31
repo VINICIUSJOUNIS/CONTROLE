@@ -107,7 +107,7 @@ export type ConfirmacaoNegocioInput = {
   corretoraId: string;
   clienteId: string;
   valorUsd: number;
-  frete: string;
+  tipoFreteId: string;
   tipoEmbalagemId: string;
   quantidadeSacas: number | null;
   descricaoCafeId: string;
@@ -129,7 +129,7 @@ function confirmacaoData(input: ConfirmacaoNegocioInput) {
     corretoraId: input.corretoraId || null,
     clienteId: input.clienteId || null,
     valorUsd: input.valorUsd,
-    frete: input.frete || null,
+    tipoFreteId: input.tipoFreteId || null,
     tipoEmbalagemId: input.tipoEmbalagemId || null,
     quantidadeSacas: input.quantidadeSacas,
     descricaoCafeId: input.descricaoCafeId || null,

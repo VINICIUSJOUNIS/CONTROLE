@@ -581,7 +581,8 @@ model ContratoConfirmacaoNegocio {
   cliente          Cliente?            @relation(fields: [clienteId], references: [id])
   clienteId        String?
   valorUsd         Decimal?            @db.Decimal(18, 2)
-  frete            String?
+  tipoFrete        TipoFrete?          @relation(fields: [tipoFreteId], references: [id])
+  tipoFreteId      String?
   tipoEmbalagem    TipoEmbalagem?      @relation(fields: [tipoEmbalagemId], references: [id])
   tipoEmbalagemId  String?
   quantidadeSacas  Int?
@@ -601,10 +602,22 @@ model ContratoConfirmacaoNegocio {
 
   @@index([corretoraId])
   @@index([clienteId])
+  @@index([tipoFreteId])
   @@index([tipoEmbalagemId])
   @@index([formaPagamentoId])
   @@index([descricaoCafeId])
   @@map("contrato_confirmacao_negocio")
+}
+
+// Lista de tipos de frete cadastraveis (ex: FOB, CIF), usada na ficha da
+// etapa Confirmacao de Negocio da Mesa de Operacao.
+model TipoFrete {
+  id                  String                       @id @default(uuid())
+  name                String                       @unique
+  confirmacoesNegocio ContratoConfirmacaoNegocio[]
+  createdAt           DateTime                     @default(now())
+
+  @@map("tipos_frete")
 }
 
 // Lista de tipos de embalagem cadastraveis (ex: Saca 60kg, Big bag), usada na

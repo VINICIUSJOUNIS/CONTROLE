@@ -19,6 +19,7 @@ import { COUNTRIES } from "@/lib/countries";
 import { updateContratoStatus, StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
 import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
+import { NovoTipoFrete } from "@/components/hedge/contratos/novo-tipo-frete";
 import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embalagem";
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
 import { NovaDescricaoCafe } from "@/components/hedge/contratos/nova-descricao-cafe";
@@ -34,7 +35,7 @@ function emptyForm(): ConfirmacaoNegocioInput {
     corretoraId: "",
     clienteId: "",
     valorUsd: 0,
-    frete: "",
+    tipoFreteId: "",
     tipoEmbalagemId: "",
     quantidadeSacas: null,
     descricaoCafeId: "",
@@ -57,7 +58,7 @@ function formFromData(data: ConfirmacaoNegocioData): ConfirmacaoNegocioInput {
     corretoraId: data.corretoraId ?? "",
     clienteId: data.clienteId ?? "",
     valorUsd: data.valorUsd ?? 0,
-    frete: data.frete ?? "",
+    tipoFreteId: data.tipoFreteId ?? "",
     tipoEmbalagemId: data.tipoEmbalagemId ?? "",
     quantidadeSacas: data.quantidadeSacas,
     descricaoCafeId: data.descricaoCafeId ?? "",
@@ -77,6 +78,7 @@ export function ConfirmacaoNegocioList({
   confirmacoes,
   clientes,
   corretoras,
+  tiposFrete,
   tiposEmbalagem,
   formasPagamento,
   descricoesCafe,
@@ -87,6 +89,7 @@ export function ConfirmacaoNegocioList({
   confirmacoes: Record<string, ConfirmacaoNegocioData>;
   clientes: Cliente[];
   corretoras: Corretora[];
+  tiposFrete: { id: string; name: string }[];
   tiposEmbalagem: { id: string; name: string }[];
   formasPagamento: { id: string; name: string }[];
   descricoesCafe: { id: string; name: string }[];
@@ -321,10 +324,10 @@ export function ConfirmacaoNegocioList({
                           </dd>
                         </div>
                       )}
-                      {dados.frete && (
+                      {dados.tipoFreteNome && (
                         <div className="flex justify-between gap-2">
                           <dt className="text-muted">Frete</dt>
-                          <dd>{dados.frete}</dd>
+                          <dd>{dados.tipoFreteNome}</dd>
                         </div>
                       )}
                       {dados.fixacaoTipo && (
@@ -497,11 +500,20 @@ export function ConfirmacaoNegocioList({
             <div className="grid grid-cols-4 gap-3">
               <div>
                 <Label>Frete</Label>
-                <Select value={form.frete} onChange={(e) => setForm({ ...form, frete: e.target.value })}>
-                  <option value="">Selecione...</option>
-                  <option value="FOB">FOB</option>
-                  <option value="CIF">CIF</option>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={form.tipoFreteId}
+                    onChange={(e) => setForm({ ...form, tipoFreteId: e.target.value })}
+                  >
+                    <option value="">Selecione...</option>
+                    {tiposFrete.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <NovoTipoFrete compact />
+                </div>
               </div>
               <div>
                 <Label>Fixação</Label>

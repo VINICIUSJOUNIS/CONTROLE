@@ -504,7 +504,7 @@ function ConfirmacaoNegocioResumo({ dados }: { dados: NonNullable<HistoricoAnter
         maximumFractionDigits: 2,
       })}`,
     ]);
-  if (dados.frete) linhas.push(["Frete", dados.frete]);
+  if (dados.tipoFreteNome) linhas.push(["Frete", dados.tipoFreteNome]);
   if (dados.fixacaoTipo) linhas.push(["Fixação", dados.fixacaoTipo === "BUYER" ? "Buyer" : "Seller"]);
   if (dados.dataFixacao) linhas.push(["Data da fixação", formatDate(dados.dataFixacao)]);
   if (dados.nivelBolsa != null) linhas.push(["Nível de bolsa", String(dados.nivelBolsa)]);
