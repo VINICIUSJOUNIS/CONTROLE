@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
-import { ContratoRow, ConfirmacaoNegocioData } from "@/lib/hedge-data";
+import { ContratoRow, ConfirmacaoNegocioData, ContratoAnexoData } from "@/lib/hedge-data";
 import {
   upsertConfirmacaoNegocio,
   createContratoComConfirmacao,
@@ -24,8 +24,9 @@ import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embala
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
 import { NovaDescricaoCafe } from "@/components/hedge/contratos/nova-descricao-cafe";
 import { PrevisaoEtapa } from "@/components/hedge/contratos/etapa-contratos-list";
+import { AnexosSection } from "@/components/hedge/contratos/anexos-section";
 import { alertaPrazo } from "@/lib/prazo";
-import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight, ChevronDown, AlertTriangle } from "lucide-react";
+import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight, ChevronDown, AlertTriangle, Paperclip } from "lucide-react";
 
 function emptyForm(): ConfirmacaoNegocioInput {
   return {
@@ -35,6 +36,9 @@ function emptyForm(): ConfirmacaoNegocioInput {
     corretoraId: "",
     clienteId: "",
     valorUsd: 0,
+    dataInicioContrato: "",
+    dataEstufagem: "",
+    dataEmbarque: "",
     tipoFreteId: "",
     tipoEmbalagemId: "",
     quantidadeSacas: null,
@@ -50,7 +54,7 @@ function emptyForm(): ConfirmacaoNegocioInput {
   };
 }
 
-function formFromData(data: ConfirmacaoNegocioData): ConfirmacaoNegocioInput {
+function formFromData(data: ConfirmacaoNegocioData, contrato: ContratoRow | undefined): ConfirmacaoNegocioInput {
   return {
     dataConfirmacao: data.dataConfirmacao ?? "",
     numeroContrato: data.numeroContrato ?? "",
@@ -58,6 +62,9 @@ function formFromData(data: ConfirmacaoNegocioData): ConfirmacaoNegocioInput {
     corretoraId: data.corretoraId ?? "",
     clienteId: data.clienteId ?? "",
     valorUsd: data.valorUsd ?? 0,
+    dataInicioContrato: contrato?.dataInicioContrato ?? "",
+    dataEstufagem: contrato?.dataEstufagem ?? "",
+    dataEmbarque: contrato?.dataEmbarque ?? "",
     tipoFreteId: data.tipoFreteId ?? "",
     tipoEmbalagemId: data.tipoEmbalagemId ?? "",
     quantidadeSacas: data.quantidadeSacas,
@@ -84,6 +91,7 @@ export function ConfirmacaoNegocioList({
   descricoesCafe,
   concluidas,
   previsoes,
+  anexos,
 }: {
   contratos: ContratoRow[];
   confirmacoes: Record<string, ConfirmacaoNegocioData>;
@@ -95,6 +103,7 @@ export function ConfirmacaoNegocioList({
   descricoesCafe: { id: string; name: string }[];
   concluidas: Record<string, boolean>;
   previsoes: Record<string, string>;
+  anexos: Record<string, ContratoAnexoData[]>;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -122,8 +131,18 @@ export function ConfirmacaoNegocioList({
 
   function openEdit(contratoId: string) {
     const existing = confirmacoes[contratoId];
+    const contrato = contratos.find((c) => c.id === contratoId);
     setEditingContratoId(contratoId);
-    setForm(existing ? formFromData(existing) : emptyForm());
+    if (existing) {
+      setForm(formFromData(existing, contrato));
+    } else {
+      setForm({
+        ...emptyForm(),
+        dataInicioContrato: contrato?.dataInicioContrato ?? "",
+        dataEstufagem: contrato?.dataEstufagem ?? "",
+        dataEmbarque: contrato?.dataEmbarque ?? "",
+      });
+    }
     setError(null);
     setOpen(true);
   }
@@ -215,6 +234,12 @@ export function ConfirmacaoNegocioList({
                   {!dados && (
                     <p className="shrink-0 text-xs text-muted">Confirmação ainda não preenchida</p>
                   )}
+                  {(anexos[item.id]?.length ?? 0) > 0 && (
+                    <span className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                      <Paperclip size={12} />
+                      {anexos[item.id]!.length}
+                    </span>
+                  )}
                   {(() => {
                     const previsao = previsoes[item.id];
                     const alerta = previsao ? alertaPrazo(previsao) : null;
@@ -288,6 +313,24 @@ export function ConfirmacaoNegocioList({
                         <dt className="text-muted">Confirmado em</dt>
                         <dd>{dados.dataConfirmacao ? formatDate(dados.dataConfirmacao) : "-"}</dd>
                       </div>
+                      {item.dataInicioContrato && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Início do contrato</dt>
+                          <dd>{formatDate(item.dataInicioContrato)}</dd>
+                        </div>
+                      )}
+                      {item.dataEstufagem && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Estufagem</dt>
+                          <dd>{formatDate(item.dataEstufagem)}</dd>
+                        </div>
+                      )}
+                      {item.dataEmbarque && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Embarque</dt>
+                          <dd>{formatDate(item.dataEmbarque)}</dd>
+                        </div>
+                      )}
                       {dados.numeroContrato && (
                         <div className="flex justify-between gap-2">
                           <dt className="text-muted">Contrato</dt>
@@ -397,6 +440,12 @@ export function ConfirmacaoNegocioList({
                     </p>
                   )}
 
+                  <AnexosSection
+                    contratoId={item.id}
+                    status="CONFIRMACAO_NEGOCIO"
+                    anexos={anexos[item.id] ?? []}
+                  />
+
                   <PrevisaoEtapa
                     contratoId={item.id}
                     status="CONFIRMACAO_NEGOCIO"
@@ -494,6 +543,33 @@ export function ConfirmacaoNegocioList({
                   </Select>
                   <NovoCliente compact />
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Data de Início do Contrato</Label>
+                <Input
+                  type="date"
+                  value={form.dataInicioContrato}
+                  onChange={(e) => setForm({ ...form, dataInicioContrato: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Data de Estufagem</Label>
+                <Input
+                  type="date"
+                  value={form.dataEstufagem}
+                  onChange={(e) => setForm({ ...form, dataEstufagem: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Data de Embarque</Label>
+                <Input
+                  type="date"
+                  value={form.dataEmbarque}
+                  onChange={(e) => setForm({ ...form, dataEmbarque: e.target.value })}
+                />
               </div>
             </div>
 

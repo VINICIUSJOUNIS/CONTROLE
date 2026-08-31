@@ -232,19 +232,18 @@ export async function getEnviosAmostra(): Promise<Record<string, EnvioAmostraDat
 
 export type ContratoAnexoData = {
   id: string;
+  etapa: StatusContratoValue;
   fileName: string;
   fileUrl: string;
   fileSize: number | null;
   uploadedAt: string;
 };
 
-// Anexos de um contrato numa etapa especifica (contrato assinado, amostra,
-// BL, etc), indexados por contratoId.
-export async function getContratoAnexosPorEtapa(
-  etapa: StatusContratoValue
-): Promise<Record<string, ContratoAnexoData[]>> {
+// Todos os anexos de cada contrato, de qualquer etapa - para que fiquem
+// sempre acessiveis independente de em qual etapa da Mesa de Operacao o
+// contrato esteja no momento. Indexados por contratoId.
+export async function getContratoAnexosPorContrato(): Promise<Record<string, ContratoAnexoData[]>> {
   const rows = await prisma.contratoAnexo.findMany({
-    where: { etapa },
     orderBy: { uploadedAt: "desc" },
   });
 
@@ -252,6 +251,7 @@ export async function getContratoAnexosPorEtapa(
   for (const r of rows) {
     const item = {
       id: r.id,
+      etapa: r.etapa,
       fileName: r.fileName,
       fileUrl: r.fileUrl,
       fileSize: r.fileSize,
@@ -325,7 +325,6 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
 
 export type HistoricoEtapaAnterior = {
   etapa: StatusContratoValue;
-  anexos: ContratoAnexoData[];
   previsao: string | null;
 };
 
@@ -335,9 +334,10 @@ export type HistoricoAnteriorItem = {
 };
 
 // Resumo do que ja foi preenchido nas etapas anteriores a `etapaAtual`
-// (Confirmacao de Negocio, anexos e previsoes de cada etapa ja passada),
-// indexado por contratoId - usado para expandir o "historico" de um
-// contrato na Mesa de Operacao.
+// (Confirmacao de Negocio e previsoes de cada etapa ja passada), indexado
+// por contratoId - usado para expandir o "historico" de um contrato na
+// Mesa de Operacao. Anexos nao entram aqui: ficam sempre visiveis, de
+// qualquer etapa, em getContratoAnexosPorContrato.
 export async function getHistoricoAnteriorPorContrato(
   etapaAtual: StatusContratoValue
 ): Promise<Record<string, HistoricoAnteriorItem>> {
@@ -345,11 +345,7 @@ export async function getHistoricoAnteriorPorContrato(
   const etapasAnteriores = statusOrder.slice(0, idx);
   if (etapasAnteriores.length === 0) return {};
 
-  const [anexosRows, previsoesRows, confirmacoes] = await Promise.all([
-    prisma.contratoAnexo.findMany({
-      where: { etapa: { in: etapasAnteriores } },
-      orderBy: { uploadedAt: "desc" },
-    }),
+  const [previsoesRows, confirmacoes] = await Promise.all([
     prisma.contratoEtapaPrevisao.findMany({ where: { etapa: { in: etapasAnteriores } } }),
     etapasAnteriores.includes("CONFIRMACAO_NEGOCIO")
       ? getConfirmacoesNegocio()
@@ -365,7 +361,7 @@ export async function getHistoricoAnteriorPorContrato(
   function etapaEntry(item: HistoricoAnteriorItem, etapa: StatusContratoValue) {
     let entry = item.porEtapa.find((e) => e.etapa === etapa);
     if (!entry) {
-      entry = { etapa, anexos: [], previsao: null };
+      entry = { etapa, previsao: null };
       item.porEtapa.push(entry);
     }
     return entry;
@@ -373,17 +369,6 @@ export async function getHistoricoAnteriorPorContrato(
 
   for (const [contratoId, dados] of Object.entries(confirmacoes)) {
     ensure(contratoId).confirmacaoNegocio = dados;
-  }
-
-  for (const r of anexosRows) {
-    const item = ensure(r.contratoId);
-    etapaEntry(item, r.etapa).anexos.push({
-      id: r.id,
-      fileName: r.fileName,
-      fileUrl: r.fileUrl,
-      fileSize: r.fileSize,
-      uploadedAt: r.uploadedAt.toISOString(),
-    });
   }
 
   for (const r of previsoesRows) {
@@ -414,6 +399,7 @@ export async function getContratosExportacao() {
   });
 
   return contratos.map((c) => {
+    const dataInicioContrato = c.dataInicioContrato ? toISODate(c.dataInicioContrato) : null;
     const dataEstufagem = c.dataEstufagem ? toISODate(c.dataEstufagem) : null;
     const dataEmbarque = c.dataEmbarque ? toISODate(c.dataEmbarque) : null;
     const dataChegada = c.dataChegada ? toISODate(c.dataChegada) : null;
@@ -448,6 +434,7 @@ export async function getContratosExportacao() {
       corretoraId: c.corretoraId,
       corretoraName: c.corretora?.name ?? null,
       valorUsd: Number(c.valorUsd),
+      dataInicioContrato,
       dataEstufagem,
       dataEmbarque,
       dataChegada,

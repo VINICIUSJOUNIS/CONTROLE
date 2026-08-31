@@ -511,6 +511,7 @@ model ContratoExportacao {
   corretoraId    String?
   country        String          @default("")
   valorUsd       Decimal         @default(0) @db.Decimal(18, 2)
+  dataInicioContrato DateTime?   @db.Date
   dataEstufagem  DateTime?       @db.Date
   dataEmbarque   DateTime?       @db.Date
   dataChegada    DateTime?       @db.Date

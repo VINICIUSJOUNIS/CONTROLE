@@ -11,7 +11,7 @@ import {
   getTiposEmbalagem,
   getFormasPagamento,
   getDescricoesCafe,
-  getContratoAnexosPorEtapa,
+  getContratoAnexosPorContrato,
   getPrevisoesPorEtapa,
   getConcluidasPorEtapa,
   getHistoricoAnteriorPorContrato,
@@ -72,6 +72,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
     descricoesCafe,
     concluidas,
     previsoes,
+    anexos,
   ] = await Promise.all([
     getConfirmacoesNegocio(),
     getClientes(),
@@ -82,6 +83,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
     getDescricoesCafe(),
     getConcluidasPorEtapa("CONFIRMACAO_NEGOCIO"),
     getPrevisoesPorEtapa("CONFIRMACAO_NEGOCIO"),
+    getContratoAnexosPorContrato(),
   ]);
 
   return (
@@ -97,6 +99,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
         descricoesCafe={descricoesCafe}
         concluidas={concluidas}
         previsoes={previsoes}
+        anexos={anexos}
       />
     </Suspense>
   );
@@ -110,7 +113,7 @@ async function EtapaGenerica({
   status: NonNullable<ReturnType<typeof slugToStatus>>;
 }) {
   const [anexos, previsoes, historico, concluidas] = await Promise.all([
-    getContratoAnexosPorEtapa(status),
+    getContratoAnexosPorContrato(),
     getPrevisoesPorEtapa(status),
     getHistoricoAnteriorPorContrato(status),
     getConcluidasPorEtapa(status),

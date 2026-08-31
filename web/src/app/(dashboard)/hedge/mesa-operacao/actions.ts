@@ -107,6 +107,9 @@ export type ConfirmacaoNegocioInput = {
   corretoraId: string;
   clienteId: string;
   valorUsd: number;
+  dataInicioContrato: string;
+  dataEstufagem: string;
+  dataEmbarque: string;
   tipoFreteId: string;
   tipoEmbalagemId: string;
   quantidadeSacas: number | null;
@@ -144,14 +147,32 @@ function confirmacaoData(input: ConfirmacaoNegocioInput) {
   };
 }
 
+// Data de inicio do contrato, estufagem e embarque sao campos gerais do
+// ContratoExportacao (usados em todas as etapas da Mesa de Operacao), mas
+// tambem ficam editaveis aqui na ficha de Confirmacao de Negocio para nao
+// obrigar o usuario a ir na tela de Contratos so para preenche-los.
+function contratoDatesData(input: ConfirmacaoNegocioInput) {
+  return {
+    dataInicioContrato: input.dataInicioContrato ? parseLocalDate(input.dataInicioContrato) : null,
+    dataEstufagem: input.dataEstufagem ? parseLocalDate(input.dataEstufagem) : null,
+    dataEmbarque: input.dataEmbarque ? parseLocalDate(input.dataEmbarque) : null,
+  };
+}
+
 export async function upsertConfirmacaoNegocio(contratoId: string, input: ConfirmacaoNegocioInput) {
   const data = confirmacaoData(input);
 
-  await prisma.contratoConfirmacaoNegocio.upsert({
-    where: { contratoId },
-    create: { contratoId, ...data },
-    update: data,
-  });
+  await prisma.$transaction([
+    prisma.contratoConfirmacaoNegocio.upsert({
+      where: { contratoId },
+      create: { contratoId, ...data },
+      update: data,
+    }),
+    prisma.contratoExportacao.update({
+      where: { id: contratoId },
+      data: contratoDatesData(input),
+    }),
+  ]);
 
   revalidateAll();
 }
@@ -174,6 +195,7 @@ export async function createContratoComConfirmacao(input: ConfirmacaoNegocioInpu
         country: input.destinoCarga.trim(),
         valorUsd: input.valorUsd,
         status: "CONFIRMACAO_NEGOCIO",
+        ...contratoDatesData(input),
       },
     });
 
