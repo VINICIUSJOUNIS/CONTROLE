@@ -11,6 +11,13 @@ export type CreateClienteInput = {
   phone: string;
 };
 
+function revalidateAll() {
+  revalidatePath("/hedge");
+  revalidatePath("/hedge/contratos");
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+  revalidatePath("/hedge/cadastros");
+}
+
 export async function createCliente(input: CreateClienteInput) {
   await prisma.cliente.create({
     data: {
@@ -22,6 +29,25 @@ export async function createCliente(input: CreateClienteInput) {
     },
   });
 
-  revalidatePath("/hedge");
-  revalidatePath("/hedge/contratos");
+  revalidateAll();
+}
+
+export async function updateCliente(id: string, input: CreateClienteInput) {
+  await prisma.cliente.update({
+    where: { id },
+    data: {
+      name: input.name,
+      city: input.city || null,
+      country: input.country,
+      email: input.email || null,
+      phone: input.phone || null,
+    },
+  });
+
+  revalidateAll();
+}
+
+export async function deleteCliente(id: string) {
+  await prisma.cliente.delete({ where: { id } });
+  revalidateAll();
 }

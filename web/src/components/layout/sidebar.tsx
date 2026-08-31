@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   Users,
   Send,
+  Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -95,6 +96,7 @@ const hedgeNavItems = [
   { href: "/hedge/mapa", label: "Mapa de Exportacao", icon: Globe2 },
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
   { href: "/hedge/alertas-prazos", label: "Alerta de Prazos", icon: AlertTriangle },
+  { href: "/hedge/cadastros", label: "Cadastros", icon: Settings2 },
 ];
 
 const planejamentoNavItems = [
