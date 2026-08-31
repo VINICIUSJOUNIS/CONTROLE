@@ -164,10 +164,12 @@ export type ContratoDatasInput = {
   dataInicioContrato: string;
   dataEstufagem: string;
   dataEmbarque: string;
+  dataChegada: string;
 };
 
-// Edicao rapida das 3 datas gerais do contrato direto no card de qualquer
-// etapa da Mesa de Operacao, sem precisar abrir a tela de Contratos.
+// Edicao rapida das datas gerais do contrato (inicio, estufagem, embarque
+// e chegada do navio) direto no card de qualquer etapa da Mesa de
+// Operacao, sem precisar abrir a tela de Contratos.
 export async function updateContratoDatas(id: string, input: ContratoDatasInput) {
   await prisma.contratoExportacao.update({
     where: { id },
@@ -175,6 +177,7 @@ export async function updateContratoDatas(id: string, input: ContratoDatasInput)
       dataInicioContrato: input.dataInicioContrato ? parseLocalDate(input.dataInicioContrato) : null,
       dataEstufagem: input.dataEstufagem ? parseLocalDate(input.dataEstufagem) : null,
       dataEmbarque: input.dataEmbarque ? parseLocalDate(input.dataEmbarque) : null,
+      dataChegada: input.dataChegada ? parseLocalDate(input.dataChegada) : null,
     },
   });
 

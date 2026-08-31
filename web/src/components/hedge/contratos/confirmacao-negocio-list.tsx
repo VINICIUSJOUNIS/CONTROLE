@@ -26,7 +26,17 @@ import { NovaDescricaoCafe } from "@/components/hedge/contratos/nova-descricao-c
 import { PrevisaoEtapa } from "@/components/hedge/contratos/etapa-contratos-list";
 import { AnexosSection } from "@/components/hedge/contratos/anexos-section";
 import { alertaPrazo } from "@/lib/prazo";
-import { Pencil, MapPin, Plus, ChevronLeft, ChevronRight, ChevronDown, AlertTriangle, Paperclip } from "lucide-react";
+import {
+  Pencil,
+  MapPin,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  AlertTriangle,
+  Paperclip,
+  Calendar,
+} from "lucide-react";
 
 function emptyForm(): ConfirmacaoNegocioInput {
   return {
@@ -39,6 +49,7 @@ function emptyForm(): ConfirmacaoNegocioInput {
     dataInicioContrato: "",
     dataEstufagem: "",
     dataEmbarque: "",
+    dataChegada: "",
     tipoFreteId: "",
     tipoEmbalagemId: "",
     quantidadeSacas: null,
@@ -65,6 +76,7 @@ function formFromData(data: ConfirmacaoNegocioData, contrato: ContratoRow | unde
     dataInicioContrato: contrato?.dataInicioContrato ?? "",
     dataEstufagem: contrato?.dataEstufagem ?? "",
     dataEmbarque: contrato?.dataEmbarque ?? "",
+    dataChegada: contrato?.dataChegada ?? "",
     tipoFreteId: data.tipoFreteId ?? "",
     tipoEmbalagemId: data.tipoEmbalagemId ?? "",
     quantidadeSacas: data.quantidadeSacas,
@@ -141,6 +153,7 @@ export function ConfirmacaoNegocioList({
         dataInicioContrato: contrato?.dataInicioContrato ?? "",
         dataEstufagem: contrato?.dataEstufagem ?? "",
         dataEmbarque: contrato?.dataEmbarque ?? "",
+        dataChegada: contrato?.dataChegada ?? "",
       });
     }
     setError(null);
@@ -230,6 +243,18 @@ export function ConfirmacaoNegocioList({
                   </div>
                   <p className="shrink-0 text-sm font-medium text-primary">
                     {formatCompactCurrency(item.valorUsd, "USD")}
+                  </p>
+                  <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                    <Calendar size={12} />
+                    Estufagem: {item.dataEstufagem ? formatDate(item.dataEstufagem) : "sem data"}
+                  </p>
+                  <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                    <Calendar size={12} />
+                    Embarque: {item.dataEmbarque ? formatDate(item.dataEmbarque) : "sem data"}
+                  </p>
+                  <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                    <Calendar size={12} />
+                    Chegada do navio: {item.dataChegada ? formatDate(item.dataChegada) : "sem data"}
                   </p>
                   {!dados && (
                     <p className="shrink-0 text-xs text-muted">Confirmação ainda não preenchida</p>
@@ -329,6 +354,12 @@ export function ConfirmacaoNegocioList({
                         <div className="flex justify-between gap-2">
                           <dt className="text-muted">Embarque</dt>
                           <dd>{formatDate(item.dataEmbarque)}</dd>
+                        </div>
+                      )}
+                      {item.dataChegada && (
+                        <div className="flex justify-between gap-2">
+                          <dt className="text-muted">Chegada do navio</dt>
+                          <dd>{formatDate(item.dataChegada)}</dd>
                         </div>
                       )}
                       {dados.numeroContrato && (
@@ -546,7 +577,7 @@ export function ConfirmacaoNegocioList({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               <div>
                 <Label>Data de Início do Contrato</Label>
                 <Input
@@ -569,6 +600,14 @@ export function ConfirmacaoNegocioList({
                   type="date"
                   value={form.dataEmbarque}
                   onChange={(e) => setForm({ ...form, dataEmbarque: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Chegada do Navio</Label>
+                <Input
+                  type="date"
+                  value={form.dataChegada}
+                  onChange={(e) => setForm({ ...form, dataChegada: e.target.value })}
                 />
               </div>
             </div>

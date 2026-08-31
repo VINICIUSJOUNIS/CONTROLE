@@ -16,7 +16,7 @@ import {
   upsertEnvioAmostra,
   EnvioAmostraInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
-import { statusOrder, statusLabels, relevantDateField, dateFieldLabels } from "@/lib/contrato-shared";
+import { statusOrder, statusLabels } from "@/lib/contrato-shared";
 import { alertaPrazo } from "@/lib/prazo";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/field";
@@ -102,14 +102,20 @@ export function DatasContratoSection({ contratoId, datas }: { contratoId: string
   }
 
   function handleBlur() {
-    if (!isValidOrEmpty(value.dataInicioContrato) || !isValidOrEmpty(value.dataEstufagem) || !isValidOrEmpty(value.dataEmbarque)) {
+    if (
+      !isValidOrEmpty(value.dataInicioContrato) ||
+      !isValidOrEmpty(value.dataEstufagem) ||
+      !isValidOrEmpty(value.dataEmbarque) ||
+      !isValidOrEmpty(value.dataChegada)
+    ) {
       setValue(datas);
       return;
     }
     if (
       value.dataInicioContrato === datas.dataInicioContrato &&
       value.dataEstufagem === datas.dataEstufagem &&
-      value.dataEmbarque === datas.dataEmbarque
+      value.dataEmbarque === datas.dataEmbarque &&
+      value.dataChegada === datas.dataChegada
     )
       return;
     startTransition(async () => {
@@ -119,7 +125,7 @@ export function DatasContratoSection({ contratoId, datas }: { contratoId: string
   }
 
   return (
-    <div className="mt-3 grid grid-cols-3 gap-3 border-t border-border pt-2">
+    <div className="mt-3 grid grid-cols-4 gap-3 border-t border-border pt-2">
       <label className="text-xs text-muted">
         Início do contrato
         <input
@@ -149,6 +155,17 @@ export function DatasContratoSection({ contratoId, datas }: { contratoId: string
           value={value.dataEmbarque}
           disabled={isPending}
           onChange={(e) => setValue({ ...value, dataEmbarque: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Chegada do navio
+        <input
+          type="date"
+          value={value.dataChegada}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, dataChegada: e.target.value })}
           onBlur={handleBlur}
           className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
         />
@@ -530,7 +547,6 @@ export function EtapaContratosList({
   const contratoParam = searchParams.get("contrato");
   const [, startTransition] = useTransition();
   const [expandedId, setExpandedId] = useState<string | null>(contratoParam);
-  const dateField = relevantDateField[status];
 
   useEffect(() => {
     if (contratoParam) {
@@ -553,7 +569,6 @@ export function EtapaContratosList({
   return (
     <div className="space-y-2">
       {contratos.map((item) => {
-        const dateValue = item[dateField];
         const isExpanded = expandedId === item.id;
         return (
           <Card key={item.id} id={`contrato-${item.id}`} className="overflow-hidden p-0">
@@ -579,9 +594,15 @@ export function EtapaContratosList({
                 </p>
                 <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
                   <Calendar size={12} />
-                  {dateValue
-                    ? `${dateFieldLabels[dateField]}: ${formatDate(dateValue)}`
-                    : `${dateFieldLabels[dateField]}: sem data`}
+                  Estufagem: {item.dataEstufagem ? formatDate(item.dataEstufagem) : "sem data"}
+                </p>
+                <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                  <Calendar size={12} />
+                  Embarque: {item.dataEmbarque ? formatDate(item.dataEmbarque) : "sem data"}
+                </p>
+                <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                  <Calendar size={12} />
+                  Chegada do navio: {item.dataChegada ? formatDate(item.dataChegada) : "sem data"}
                 </p>
                 {(anexos[item.id]?.length ?? 0) > 0 && (
                   <span className="flex shrink-0 items-center gap-1 text-xs text-muted">
@@ -629,6 +650,7 @@ export function EtapaContratosList({
                     dataInicioContrato: item.dataInicioContrato ?? "",
                     dataEstufagem: item.dataEstufagem ?? "",
                     dataEmbarque: item.dataEmbarque ?? "",
+                    dataChegada: item.dataChegada ?? "",
                   }}
                 />
 

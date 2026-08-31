@@ -110,6 +110,7 @@ export type ConfirmacaoNegocioInput = {
   dataInicioContrato: string;
   dataEstufagem: string;
   dataEmbarque: string;
+  dataChegada: string;
   tipoFreteId: string;
   tipoEmbalagemId: string;
   quantidadeSacas: number | null;
@@ -156,6 +157,7 @@ function contratoDatesData(input: ConfirmacaoNegocioInput) {
     dataInicioContrato: input.dataInicioContrato ? parseLocalDate(input.dataInicioContrato) : null,
     dataEstufagem: input.dataEstufagem ? parseLocalDate(input.dataEstufagem) : null,
     dataEmbarque: input.dataEmbarque ? parseLocalDate(input.dataEmbarque) : null,
+    dataChegada: input.dataChegada ? parseLocalDate(input.dataChegada) : null,
   };
 }
 

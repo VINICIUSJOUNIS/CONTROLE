@@ -352,7 +352,7 @@ export function ContratosTable({
                   />
                 </div>
                 <div>
-                  <Label>Data de chegada</Label>
+                  <Label>Chegada do navio</Label>
                   <Input
                     type="date"
                     value={form.dataChegada}
