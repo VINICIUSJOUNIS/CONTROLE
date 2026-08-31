@@ -42,6 +42,7 @@ function emptyForm(defaultClienteId: string, defaultCountry: string) {
     corretoraId: "",
     country: defaultCountry,
     valorUsd: "",
+    dataInicioContrato: "",
     dataEstufagem: "",
     dataEmbarque: "",
     dataChegada: "",
@@ -58,6 +59,7 @@ function formFromRow(row: ContratoRow) {
     corretoraId: row.corretoraId ?? "",
     country: row.country,
     valorUsd: String(row.valorUsd),
+    dataInicioContrato: row.dataInicioContrato ?? "",
     dataEstufagem: row.dataEstufagem ?? "",
     dataEmbarque: row.dataEmbarque ?? "",
     dataChegada: row.dataChegada ?? "",
@@ -179,6 +181,7 @@ export function ContratosTable({
       corretoraId: form.corretoraId || null,
       country: form.country.trim(),
       valorUsd: Number(form.valorUsd) || 0,
+      dataInicioContrato: form.dataInicioContrato,
       dataEstufagem: form.dataEstufagem,
       dataEmbarque: form.dataEmbarque,
       dataChegada: form.dataChegada,
@@ -323,7 +326,15 @@ export function ContratosTable({
                 </Select>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
+                <div>
+                  <Label>Data de início do contrato</Label>
+                  <Input
+                    type="date"
+                    value={form.dataInicioContrato}
+                    onChange={(e) => setForm({ ...form, dataInicioContrato: e.target.value })}
+                  />
+                </div>
                 <div>
                   <Label>Data de estufagem</Label>
                   <Input

@@ -69,6 +69,7 @@ export type ContratoFormInput = {
   corretoraId: string | null;
   country: string;
   valorUsd: number;
+  dataInicioContrato: string;
   dataEstufagem: string;
   dataEmbarque: string;
   dataChegada: string;
@@ -110,6 +111,7 @@ export async function createContrato(input: ContratoFormInput) {
       corretoraId: input.corretoraId,
       country: input.country,
       valorUsd: input.valorUsd,
+      dataInicioContrato: input.dataInicioContrato ? parseLocalDate(input.dataInicioContrato) : null,
       dataEstufagem: input.dataEstufagem ? parseLocalDate(input.dataEstufagem) : null,
       dataEmbarque: input.dataEmbarque ? parseLocalDate(input.dataEmbarque) : null,
       dataChegada: input.dataChegada ? parseLocalDate(input.dataChegada) : null,
@@ -131,6 +133,7 @@ export async function updateContrato(id: string, input: ContratoFormInput) {
       corretoraId: input.corretoraId,
       country: input.country,
       valorUsd: input.valorUsd,
+      dataInicioContrato: input.dataInicioContrato ? parseLocalDate(input.dataInicioContrato) : null,
       dataEstufagem: input.dataEstufagem ? parseLocalDate(input.dataEstufagem) : null,
       dataEmbarque: input.dataEmbarque ? parseLocalDate(input.dataEmbarque) : null,
       dataChegada: input.dataChegada ? parseLocalDate(input.dataChegada) : null,
@@ -155,4 +158,26 @@ export async function updateContratoStatus(id: string, status: StatusContratoVal
   });
 
   revalidateAll();
+}
+
+export type ContratoDatasInput = {
+  dataInicioContrato: string;
+  dataEstufagem: string;
+  dataEmbarque: string;
+};
+
+// Edicao rapida das 3 datas gerais do contrato direto no card de qualquer
+// etapa da Mesa de Operacao, sem precisar abrir a tela de Contratos.
+export async function updateContratoDatas(id: string, input: ContratoDatasInput) {
+  await prisma.contratoExportacao.update({
+    where: { id },
+    data: {
+      dataInicioContrato: input.dataInicioContrato ? parseLocalDate(input.dataInicioContrato) : null,
+      dataEstufagem: input.dataEstufagem ? parseLocalDate(input.dataEstufagem) : null,
+      dataEmbarque: input.dataEmbarque ? parseLocalDate(input.dataEmbarque) : null,
+    },
+  });
+
+  revalidateAll();
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
 }

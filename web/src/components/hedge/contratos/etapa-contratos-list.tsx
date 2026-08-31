@@ -6,6 +6,8 @@ import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format"
 import { ContratoRow, ContratoAnexoData, HistoricoAnteriorItem, EnvioAmostraData } from "@/lib/hedge-data";
 import {
   updateContratoStatus,
+  updateContratoDatas,
+  ContratoDatasInput,
   StatusContratoValue,
 } from "@/app/(dashboard)/hedge/contratos/actions";
 import {
@@ -83,6 +85,74 @@ export function PrevisaoEtapa({
           {alerta.label}
         </p>
       )}
+    </div>
+  );
+}
+
+// Edicao rapida das datas gerais do contrato (inicio, estufagem, embarque)
+// direto no card de qualquer etapa da Mesa de Operacao, sem precisar ir na
+// tela de Contratos - mesmo padrao de salvar-ao-perder-foco do PrevisaoEtapa.
+export function DatasContratoSection({ contratoId, datas }: { contratoId: string; datas: ContratoDatasInput }) {
+  const router = useRouter();
+  const [value, setValue] = useState(datas);
+  const [isPending, startTransition] = useTransition();
+
+  function isValidOrEmpty(v: string) {
+    return !v || (/^\d{4}-\d{2}-\d{2}$/.test(v) && Number(v.slice(0, 4)) >= 1900);
+  }
+
+  function handleBlur() {
+    if (!isValidOrEmpty(value.dataInicioContrato) || !isValidOrEmpty(value.dataEstufagem) || !isValidOrEmpty(value.dataEmbarque)) {
+      setValue(datas);
+      return;
+    }
+    if (
+      value.dataInicioContrato === datas.dataInicioContrato &&
+      value.dataEstufagem === datas.dataEstufagem &&
+      value.dataEmbarque === datas.dataEmbarque
+    )
+      return;
+    startTransition(async () => {
+      await updateContratoDatas(contratoId, value);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-3 gap-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Início do contrato
+        <input
+          type="date"
+          value={value.dataInicioContrato}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, dataInicioContrato: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Estufagem
+        <input
+          type="date"
+          value={value.dataEstufagem}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, dataEstufagem: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Embarque
+        <input
+          type="date"
+          value={value.dataEmbarque}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, dataEmbarque: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
     </div>
   );
 }
@@ -552,6 +622,15 @@ export function EtapaContratosList({
                 <HistoricoAnterior item={historico[item.id]} />
 
                 <AnexosSection contratoId={item.id} status={status} anexos={anexos[item.id] ?? []} />
+
+                <DatasContratoSection
+                  contratoId={item.id}
+                  datas={{
+                    dataInicioContrato: item.dataInicioContrato ?? "",
+                    dataEstufagem: item.dataEstufagem ?? "",
+                    dataEmbarque: item.dataEmbarque ?? "",
+                  }}
+                />
 
                 <PrevisaoEtapa contratoId={item.id} status={status} previsao={previsoes[item.id]} />
 
