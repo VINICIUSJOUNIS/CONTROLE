@@ -13,7 +13,6 @@ import {
   statusOrder,
   statusLabels,
   statusToSlug,
-  relevantDateField,
   buildMesaOperacaoSections,
 } from "@/lib/contrato-shared";
 import { Calendar, ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
@@ -177,8 +176,6 @@ function StatusRow({
 
       <div className="mt-2 flex flex-wrap gap-2">
         {items.map((item) => {
-          const dateField = relevantDateField[item.status as StatusContratoValue];
-          const dateValue = item[dateField];
           return (
             <div
               key={item.id}
@@ -194,7 +191,15 @@ function StatusRow({
               <p className="mt-1 font-medium text-primary">{formatCompactCurrency(item.valorUsd, "USD")}</p>
               <p className="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
                 <Calendar size={10} />
-                {dateValue ? formatDate(dateValue) : "sem data"}
+                Estufagem: {item.dataEstufagem ? formatDate(item.dataEstufagem) : "sem data"}
+              </p>
+              <p className="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
+                <Calendar size={10} />
+                Embarque: {item.dataEmbarque ? formatDate(item.dataEmbarque) : "sem data"}
+              </p>
+              <p className="mt-0.5 flex items-center gap-1 text-[10px] text-muted">
+                <Calendar size={10} />
+                Chegada: {item.dataChegada ? formatDate(item.dataChegada) : "sem data"}
               </p>
               <div className="mt-1.5 flex items-center justify-between border-t border-border pt-1">
                 <button
