@@ -409,26 +409,40 @@ export async function getAccOperations() {
         ? 0
         : Math.max(0, Number((contractedValueForeign - valorLiquidadoUSD).toFixed(2)));
 
-    // Juros pagos: se ha baixas registradas, e a soma dos juros de cada tranche
-    // (mais preciso - cada parte tem seu proprio prazo real). Sem baixas
-    // (comportamento de sempre, quitacao unica), usa o prazo entre a
-    // contratacao e a quitacao efetiva (ou o vencimento, enquanto nao quitado,
-    // como estimativa), convertido pela taxa de variacao cambial informada na
-    // quitacao (ou a taxa de fechamento, enquanto essa taxa nao for informada).
+    // Juros efetivamente pagos: so existe pagamento real se ha baixas
+    // registradas (soma dos juros de cada tranche, mais preciso - cada parte
+    // tem seu proprio prazo real) ou se o ACC ja foi quitado (closingDate
+    // preenchida). Enquanto em aberto e sem nenhuma baixa, nao foi pago
+    // nenhum juro ainda - jurosPagoValor fica zerado (antes usava o
+    // vencimento como se ja tivesse sido pago ate la, o que mostrava juros
+    // "pagos" iguais aos projetados mesmo sem ter havido nenhum pagamento).
     let jurosPagoUSD: number;
     let jurosPagoValor: number;
     let taxaConversaoJurosPagos: number;
+    // Componente de juros usado no custo total: igual ao juros pago quando ja
+    // houve pagamento real; enquanto em aberto, usa a projecao cheia do
+    // contrato (jurosValor) como estimativa do custo total esperado - custo
+    // total continua representando o custo projetado da operacao inteira,
+    // nao so o que ja foi desembolsado.
+    let jurosCustoValor: number;
     if (baixas.length > 0) {
       jurosPagoUSD = Number(baixas.reduce((s, b) => s + b.jurosUSD, 0).toFixed(2));
       jurosPagoValor = Number(baixas.reduce((s, b) => s + b.jurosValor, 0).toFixed(2));
       taxaConversaoJurosPagos = baixas[baixas.length - 1].closingRate;
-    } else {
-      const prazoRealDias = daysBetween(a.contractDate, a.closingDate ?? a.settlementDate);
+      jurosCustoValor = jurosPagoValor;
+    } else if (a.closingDate) {
+      const prazoRealDias = daysBetween(a.contractDate, a.closingDate);
       jurosPagoUSD = Number(
         (contractedValueForeign * (interestRate / 100) * (prazoRealDias / DIAS_ANO_BASE)).toFixed(2)
       );
       taxaConversaoJurosPagos = exchangeVariationValue > 0 ? exchangeVariationValue : closingRate;
       jurosPagoValor = Number((jurosPagoUSD * taxaConversaoJurosPagos).toFixed(2));
+      jurosCustoValor = jurosPagoValor;
+    } else {
+      jurosPagoUSD = 0;
+      jurosPagoValor = 0;
+      taxaConversaoJurosPagos = exchangeVariationValue > 0 ? exchangeVariationValue : closingRate;
+      jurosCustoValor = jurosValor;
     }
 
     // Valor do spread: (valor contratado x taxa spot) - valor recebido.
@@ -437,9 +451,10 @@ export async function getAccOperations() {
     // Taxa flat: percentual cobrado sobre o valor total liberado (receivedValueBRL).
     const flatFeeValor = Number((receivedValueBRL * (flatFeeRate / 100)).toFixed(2));
 
-    // Custo total: spread + juros pagos + IOF + tarifas + taxa flat + seguro + outras despesas.
+    // Custo total: spread + juros (pagos ou projetados, ver jurosCustoValor) + IOF
+    // + tarifas + taxa flat + seguro + outras despesas.
     const custoTotal = Number(
-      (spreadValor + jurosPagoValor + iof + bankFees + flatFeeValor + insuranceCost + otherCosts).toFixed(2)
+      (spreadValor + jurosCustoValor + iof + bankFees + flatFeeValor + insuranceCost + otherCosts).toFixed(2)
     );
 
     // Percentual final do juros do contrato: custo total / valor recebido.
