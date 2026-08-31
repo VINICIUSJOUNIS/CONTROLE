@@ -33,6 +33,12 @@ function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
 export function AccRelatorioView({ acc, monthlySchedule }: { acc: AccRow; monthlySchedule: AccMonthlyInterest[] }) {
   return (
     <div className="relative">
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 10mm; }
+        }
+      `}</style>
+
       <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
         <Image
           src="/nayme-logo.png"
@@ -72,12 +78,9 @@ export function AccRelatorioView({ acc, monthlySchedule }: { acc: AccRow; monthl
             <CardTitle className="print:text-xs">Dados do Contrato</CardTitle>
             <Badge variant={statusVariant[acc.status]}>{statusLabels[acc.status] ?? acc.status}</Badge>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 print:gap-2">
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 print:grid-cols-3 print:gap-2">
             <InfoItem label="Banco" value={acc.bankName} />
             <InfoItem label="Número do ACC" value={acc.accNumber} />
-            <InfoItem label="Contrato de Câmbio" value={acc.exchangeContractNumber} />
-            <InfoItem label="Exportador" value={acc.exporter} />
-            <InfoItem label="País" value={acc.country} />
             <InfoItem label="Moeda" value={acc.currency} />
             <InfoItem label="Valor Contratado" value={`US$ ${acc.contractedValueForeign.toLocaleString("pt-BR")}`} />
             <InfoItem label="Valor Recebido (R$)" value={formatCompactCurrency(acc.receivedValueBRL)} />
@@ -85,10 +88,6 @@ export function AccRelatorioView({ acc, monthlySchedule }: { acc: AccRow; monthl
             <InfoItem
               label="Taxa de Fechamento"
               value={acc.closingRate.toLocaleString("pt-BR", { minimumFractionDigits: 4 })}
-            />
-            <InfoItem
-              label="PTAX da Contratação"
-              value={acc.ptaxContracting.toLocaleString("pt-BR", { minimumFractionDigits: 4 })}
             />
             <InfoItem label="Spread Cambial" value={formatPercent(acc.exchangeSpread)} />
             <InfoItem label="Taxa de Juros" value={`${formatPercent(acc.interestRate)} a.a.`} />
@@ -118,7 +117,7 @@ export function AccRelatorioView({ acc, monthlySchedule }: { acc: AccRow; monthl
           <CardHeader>
             <CardTitle className="print:text-xs">Resumo Financeiro</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 print:gap-2">
+          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 print:grid-cols-4 print:gap-2">
             <InfoItem label="Spread (R$)" value={formatCompactCurrency(acc.spreadValor)} />
             <InfoItem label="Juros Projetados (US$)" value={`US$ ${acc.jurosValorUSD.toLocaleString("pt-BR")}`} />
             <InfoItem label="Juros Projetados (R$)" value={formatCompactCurrency(acc.jurosValor)} />
