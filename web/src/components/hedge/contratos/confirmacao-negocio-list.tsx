@@ -273,7 +273,8 @@ export function ConfirmacaoNegocioList({
                   )}
                   {(() => {
                     const previsao = previsoes[item.id];
-                    const alerta = previsao ? alertaPrazo(previsao) : null;
+                    const finalizado = statusEtapas[item.id] === "FINALIZADO";
+                    const alerta = previsao && !finalizado ? alertaPrazo(previsao) : null;
                     if (!alerta) return null;
                     return (
                       <span
@@ -480,6 +481,7 @@ export function ConfirmacaoNegocioList({
                     contratoId={item.id}
                     status="CONFIRMACAO_NEGOCIO"
                     previsao={previsoes[item.id]}
+                    etapaStatus={statusEtapas[item.id] ?? "NAO_INICIADO"}
                   />
 
                   <Checklist statusPorEtapa={checklist[item.id] ?? {}} />

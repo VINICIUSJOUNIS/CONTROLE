@@ -37,15 +37,18 @@ export function PrevisaoEtapa({
   contratoId,
   status,
   previsao,
+  etapaStatus,
 }: {
   contratoId: string;
   status: StatusContratoValue;
   previsao: string | undefined;
+  etapaStatus?: EtapaStatusValue;
 }) {
   const router = useRouter();
   const [value, setValue] = useState(previsao ?? "");
   const [isPending, startTransition] = useTransition();
-  const alerta = value ? alertaPrazo(value) : null;
+  // Etapa ja finalizada nao precisa mais de aviso de prazo/atraso.
+  const alerta = value && etapaStatus !== "FINALIZADO" ? alertaPrazo(value) : null;
 
   // So salva quando o campo perde o foco (nao a cada tecla) e so se a data
   // estiver completa e valida - digitar um ano parcial (ex: "2" -> "0002")
@@ -666,7 +669,8 @@ export function EtapaContratosList({
                 )}
                 {(() => {
                   const previsao = previsoes[item.id];
-                  const alerta = previsao ? alertaPrazo(previsao) : null;
+                  const finalizado = statusEtapas[item.id] === "FINALIZADO";
+                  const alerta = previsao && !finalizado ? alertaPrazo(previsao) : null;
                   if (!alerta) return null;
                   return (
                     <span
@@ -712,7 +716,12 @@ export function EtapaContratosList({
                   }}
                 />
 
-                <PrevisaoEtapa contratoId={item.id} status={status} previsao={previsoes[item.id]} />
+                <PrevisaoEtapa
+                  contratoId={item.id}
+                  status={status}
+                  previsao={previsoes[item.id]}
+                  etapaStatus={statusEtapas[item.id] ?? "NAO_INICIADO"}
+                />
 
                 {status === "ENVIO_AMOSTRA_PSS" && (
                   <EnvioAmostraSection

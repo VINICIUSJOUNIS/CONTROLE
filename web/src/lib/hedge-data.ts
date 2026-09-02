@@ -655,15 +655,22 @@ export type AlertaPrazoRow = {
 
 // Prazos previstos das etapas em que cada contrato esta atualmente (previsoes
 // de etapas ja ultrapassadas nao contam mais), ordenados do mais urgente para
-// o menos urgente - base da pagina "Alerta de Prazos".
+// o menos urgente - base da pagina "Alerta de Prazos". Etapas ja marcadas como
+// Finalizado no checklist nao geram mais alerta, mesmo que o contrato ainda
+// nao tenha avancado para a proxima etapa.
 export async function getAlertasPrazos(): Promise<AlertaPrazoRow[]> {
-  const rows = await prisma.contratoEtapaPrevisao.findMany({
-    include: { contrato: { include: { cliente: true } } },
-  });
+  const [rows, finalizadas] = await Promise.all([
+    prisma.contratoEtapaPrevisao.findMany({
+      include: { contrato: { include: { cliente: true } } },
+    }),
+    prisma.contratoEtapaConcluida.findMany({ where: { status: "FINALIZADO" } }),
+  ]);
+  const finalizadasSet = new Set(finalizadas.map((f) => `${f.contratoId}:${f.etapa}`));
 
   const alertas: AlertaPrazoRow[] = [];
   for (const r of rows) {
     if (r.contrato.status !== r.etapa) continue;
+    if (finalizadasSet.has(`${r.contratoId}:${r.etapa}`)) continue;
     const dataPrevisao = toISODate(r.dataPrevisao);
     const alerta = alertaPrazo(dataPrevisao);
     if (!alerta) continue;
