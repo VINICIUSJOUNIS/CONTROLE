@@ -123,6 +123,7 @@ export function AccRelatorioView({ acc, monthlySchedule }: { acc: AccRow; monthl
             <InfoItem label="Juros Projetados (R$)" value={formatCompactCurrency(acc.jurosValor)} />
             <InfoItem label="Juros Pagos (US$)" value={`US$ ${acc.jurosPagoUSD.toLocaleString("pt-BR")}`} />
             <InfoItem label="Juros Pagos (R$)" value={formatCompactCurrency(acc.jurosPagoValor)} />
+            <InfoItem label="Taxa Flat (R$)" value={formatCompactCurrency(acc.flatFeeValor)} />
             <InfoItem label="Custo Total (R$)" value={formatCompactCurrency(acc.custoTotal)} />
             <InfoItem label="% Custo Total" value={formatPercent(acc.percentualCustoTotal)} />
             <InfoItem
