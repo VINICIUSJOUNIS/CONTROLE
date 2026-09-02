@@ -1,9 +1,9 @@
 import { Topbar } from "@/components/layout/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
-import { getSales, getSaleReturns } from "@/lib/data";
+import { getSales, getSaleReturns, getKpis } from "@/lib/data";
 import { formatCurrency } from "@/lib/format";
-import { DollarSign } from "lucide-react";
+import { DollarSign, PiggyBank } from "lucide-react";
 
 const MESES_LABEL = [
   "Janeiro",
@@ -43,7 +43,7 @@ export default async function FaturamentoGerencialPage({
   searchParams: Promise<{ year?: string; month?: string; day?: string }>;
 }) {
   const { year = "", month = "", day = "" } = await searchParams;
-  const [allSales, allReturns] = await Promise.all([getSales(), getSaleReturns()]);
+  const [allSales, allReturns, kpis] = await Promise.all([getSales(), getSaleReturns(), getKpis()]);
   const years = Array.from(new Set(allSales.map((s) => s.saleDate.slice(0, 4)))).sort();
 
   const sales = allSales.filter((s) => matchesPeriod(s.saleDate, year, month, day));
@@ -63,7 +63,7 @@ export default async function FaturamentoGerencialPage({
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Faturamento Gerencial" subtitle="Resumo rápido para reunião — faturamento geral, mercado interno e externo" />
+      <Topbar title="Faturamento Gerencial" />
       <div className="space-y-6 p-6">
         <GerencialFilter years={years} />
 
@@ -83,6 +83,26 @@ export default async function FaturamentoGerencialPage({
             icon={DollarSign}
             tone="soft"
           />
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+            Posição atual — Empréstimos e ACC
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <KpiCard
+              label="Empréstimos em aberto (R$)"
+              value={formatCurrency(kpis.saldoDevedorLoans)}
+              icon={PiggyBank}
+              tone="teal"
+            />
+            <KpiCard
+              label="ACC em aberto (R$)"
+              value={formatCurrency(kpis.saldoDevedorAcc)}
+              icon={PiggyBank}
+              tone="green"
+            />
+          </div>
         </div>
       </div>
     </div>
