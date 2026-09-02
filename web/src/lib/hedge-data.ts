@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
-import { statusOrder, statusLabels } from "@/lib/contrato-shared";
+import { statusOrder, statusLabels, EtapaStatusValue } from "@/lib/contrato-shared";
 import { alertaPrazo, AlertaPrazo } from "@/lib/prazo";
 
 function toISODate(d: Date) {
@@ -276,10 +276,27 @@ export async function getPrevisoesPorEtapa(etapa: StatusContratoValue): Promise<
   return Object.fromEntries(rows.map((r) => [r.contratoId, toISODate(r.dataPrevisao)]));
 }
 
-// Contratos que ja marcaram a etapa como concluida - so esses podem avancar.
-export async function getConcluidasPorEtapa(etapa: StatusContratoValue): Promise<Record<string, boolean>> {
+// Status do contrato na etapa atual (Nao iniciado / Em processo / Finalizado),
+// indexado por contratoId - contratos sem linha ainda nao foram tocados
+// nessa etapa (Nao iniciado).
+export async function getStatusPorEtapa(etapa: StatusContratoValue): Promise<Record<string, EtapaStatusValue>> {
   const rows = await prisma.contratoEtapaConcluida.findMany({ where: { etapa } });
-  return Object.fromEntries(rows.map((r) => [r.contratoId, true]));
+  return Object.fromEntries(rows.map((r) => [r.contratoId, r.status as EtapaStatusValue]));
+}
+
+// Status de TODAS as etapas de cada contrato, indexado por contratoId e
+// depois por etapa - usado para montar o checklist completo da Mesa de
+// Operacao no card do contrato. Etapas sem linha ainda nao foram tocadas
+// (Nao iniciado).
+export async function getChecklistPorContrato(): Promise<
+  Record<string, Partial<Record<StatusContratoValue, EtapaStatusValue>>>
+> {
+  const rows = await prisma.contratoEtapaConcluida.findMany();
+  const porContrato: Record<string, Partial<Record<StatusContratoValue, EtapaStatusValue>>> = {};
+  for (const r of rows) {
+    (porContrato[r.contratoId] ??= {})[r.etapa as StatusContratoValue] = r.status as EtapaStatusValue;
+  }
+  return porContrato;
 }
 
 // Ficha da etapa "Confirmacao de Negocio", indexada por contratoId - campos

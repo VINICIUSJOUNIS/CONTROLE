@@ -12,11 +12,11 @@ import {
 } from "@/app/(dashboard)/hedge/contratos/actions";
 import {
   setPrevisaoEtapa,
-  setEtapaConcluida,
+  setEtapaStatus,
   upsertEnvioAmostra,
   EnvioAmostraInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
-import { statusOrder, statusLabels } from "@/lib/contrato-shared";
+import { statusOrder, statusLabels, etapaStatusOptions, etapaStatusLabels, EtapaStatusValue } from "@/lib/contrato-shared";
 import { alertaPrazo } from "@/lib/prazo";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/field";
@@ -347,40 +347,72 @@ function QuickUploadButton({ contratoId, status }: { contratoId: string; status:
   );
 }
 
-function ConcluidoCheckbox({
+const etapaStatusSelectClasses: Record<EtapaStatusValue, string> = {
+  NAO_INICIADO: "border-border bg-background text-muted",
+  EM_PROCESSO: "border-warning/30 bg-warning/10 text-warning",
+  FINALIZADO: "border-success/30 bg-success/10 text-success",
+};
+
+export function EtapaStatusSelect({
   contratoId,
   status,
-  concluida,
+  value,
 }: {
   contratoId: string;
   status: StatusContratoValue;
-  concluida: boolean;
+  value: EtapaStatusValue;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const label = status === "ASSINATURA_CONTRATO" ? "Assinado" : "Concluído";
 
-  function handleChange(checked: boolean) {
+  function handleChange(next: EtapaStatusValue) {
     startTransition(async () => {
-      await setEtapaConcluida(contratoId, status, checked);
+      await setEtapaStatus(contratoId, status, next);
       router.refresh();
     });
   }
 
   return (
-    <label
+    <select
       onClick={(e) => e.stopPropagation()}
-      className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted"
+      value={value}
+      disabled={isPending}
+      onChange={(e) => handleChange(e.target.value as EtapaStatusValue)}
+      className={`shrink-0 rounded-md border px-2 py-1 text-xs font-medium outline-none disabled:opacity-50 ${etapaStatusSelectClasses[value]}`}
     >
-      <input
-        type="checkbox"
-        checked={concluida}
-        disabled={isPending}
-        onChange={(e) => handleChange(e.target.checked)}
-        className="h-3.5 w-3.5 rounded border-border"
-      />
-      {label}
-    </label>
+      {etapaStatusOptions.map((s) => (
+        <option key={s} value={s}>
+          {etapaStatusLabels[s]}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export function Checklist({
+  statusPorEtapa,
+}: {
+  statusPorEtapa: Partial<Record<StatusContratoValue, EtapaStatusValue>>;
+}) {
+  return (
+    <div className="mt-3 border-t border-border pt-2">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Checklist</p>
+      <ul className="space-y-1">
+        {statusOrder.map((etapa) => {
+          const value = statusPorEtapa[etapa] ?? "NAO_INICIADO";
+          return (
+            <li key={etapa} className="flex items-center justify-between gap-2 text-xs">
+              <span>{statusLabels[etapa]}</span>
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 font-medium ${etapaStatusSelectClasses[value]}`}
+              >
+                {etapaStatusLabels[value]}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -528,7 +560,8 @@ export function EtapaContratosList({
   anexos,
   previsoes,
   historico,
-  concluidas,
+  statusEtapas,
+  checklist,
   enviosAmostra,
   tiposAmostra,
   transportadorasAmostra,
@@ -538,7 +571,8 @@ export function EtapaContratosList({
   anexos: Record<string, ContratoAnexoData[]>;
   previsoes: Record<string, string>;
   historico: Record<string, HistoricoAnteriorItem>;
-  concluidas: Record<string, boolean>;
+  statusEtapas: Record<string, EtapaStatusValue>;
+  checklist: Record<string, Partial<Record<StatusContratoValue, EtapaStatusValue>>>;
   enviosAmostra?: Record<string, EnvioAmostraData>;
   tiposAmostra?: { id: string; name: string }[];
   transportadorasAmostra?: { id: string; name: string }[];
@@ -630,7 +664,11 @@ export function EtapaContratosList({
 
               <div className="flex shrink-0 items-center gap-1">
                 <QuickUploadButton contratoId={item.id} status={status} />
-                <ConcluidoCheckbox contratoId={item.id} status={status} concluida={concluidas[item.id] ?? false} />
+                <EtapaStatusSelect
+                  contratoId={item.id}
+                  status={status}
+                  value={statusEtapas[item.id] ?? "NAO_INICIADO"}
+                />
                 <VoltarMenu contratoId={item.id} currentStatus={status} />
                 <AvancarMenu contratoId={item.id} currentStatus={status} />
               </div>
@@ -665,6 +703,8 @@ export function EtapaContratosList({
                     transportadorasAmostra={transportadorasAmostra ?? []}
                   />
                 )}
+
+                <Checklist statusPorEtapa={checklist[item.id] ?? {}} />
               </div>
             )}
           </Card>

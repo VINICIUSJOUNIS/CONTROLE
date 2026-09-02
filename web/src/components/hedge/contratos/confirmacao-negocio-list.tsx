@@ -11,10 +11,9 @@ import { ContratoRow, ConfirmacaoNegocioData, ContratoAnexoData } from "@/lib/he
 import {
   upsertConfirmacaoNegocio,
   createContratoComConfirmacao,
-  setEtapaConcluida,
   ConfirmacaoNegocioInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
-import { Cliente, Corretora, statusOrder } from "@/lib/contrato-shared";
+import { Cliente, Corretora, statusOrder, EtapaStatusValue } from "@/lib/contrato-shared";
 import { COUNTRIES } from "@/lib/countries";
 import { updateContratoStatus, StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
 import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
@@ -24,7 +23,7 @@ import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embala
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
 import { NovaPeneira } from "@/components/hedge/contratos/nova-peneira";
 import { NovoPadraoCafe } from "@/components/hedge/contratos/novo-padrao-cafe";
-import { PrevisaoEtapa } from "@/components/hedge/contratos/etapa-contratos-list";
+import { PrevisaoEtapa, EtapaStatusSelect, Checklist } from "@/components/hedge/contratos/etapa-contratos-list";
 import { AnexosSection } from "@/components/hedge/contratos/anexos-section";
 import { alertaPrazo } from "@/lib/prazo";
 import {
@@ -105,7 +104,8 @@ export function ConfirmacaoNegocioList({
   formasPagamento,
   peneiras,
   padroesCafe,
-  concluidas,
+  statusEtapas,
+  checklist,
   previsoes,
   anexos,
 }: {
@@ -118,7 +118,8 @@ export function ConfirmacaoNegocioList({
   formasPagamento: { id: string; name: string }[];
   peneiras: { id: string; name: string }[];
   padroesCafe: { id: string; name: string }[];
-  concluidas: Record<string, boolean>;
+  statusEtapas: Record<string, EtapaStatusValue>;
+  checklist: Record<string, Partial<Record<StatusContratoValue, EtapaStatusValue>>>;
   previsoes: Record<string, string>;
   anexos: Record<string, ContratoAnexoData[]>;
 }) {
@@ -298,24 +299,11 @@ export function ConfirmacaoNegocioList({
                   >
                     <Pencil size={14} />
                   </button>
-                  <label
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={concluidas[item.id] ?? false}
-                      disabled={isPending}
-                      onChange={(e) => {
-                        startTransition(async () => {
-                          await setEtapaConcluida(item.id, "CONFIRMACAO_NEGOCIO", e.target.checked);
-                          router.refresh();
-                        });
-                      }}
-                      className="h-3.5 w-3.5 rounded border-border"
-                    />
-                    Concluído
-                  </label>
+                  <EtapaStatusSelect
+                    contratoId={item.id}
+                    status="CONFIRMACAO_NEGOCIO"
+                    value={statusEtapas[item.id] ?? "NAO_INICIADO"}
+                  />
                   <button
                     onClick={() => moveStatus(item.id, -1)}
                     disabled={isPending || idx === 0}
@@ -493,6 +481,8 @@ export function ConfirmacaoNegocioList({
                     status="CONFIRMACAO_NEGOCIO"
                     previsao={previsoes[item.id]}
                   />
+
+                  <Checklist statusPorEtapa={checklist[item.id] ?? {}} />
                 </div>
               )}
             </Card>

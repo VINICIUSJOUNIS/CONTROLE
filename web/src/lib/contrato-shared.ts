@@ -168,6 +168,18 @@ export const dateFieldLabels: Record<"dataEstufagem" | "dataEmbarque" | "dataChe
   dataChegada: "Chegada",
 };
 
+// Status de cada etapa da Mesa de Operacao para um contrato, usado tanto no
+// seletor de status quanto no checklist do card do contrato.
+export type EtapaStatusValue = "NAO_INICIADO" | "EM_PROCESSO" | "FINALIZADO";
+
+export const etapaStatusOptions: EtapaStatusValue[] = ["NAO_INICIADO", "EM_PROCESSO", "FINALIZADO"];
+
+export const etapaStatusLabels: Record<EtapaStatusValue, string> = {
+  NAO_INICIADO: "Não iniciado",
+  EM_PROCESSO: "Em processo",
+  FINALIZADO: "Finalizado",
+};
+
 export const despesaLabels: Record<keyof DespesasContratoInput, string> = {
   despachante: "Despachante",
   certificados: "Certificados",

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { parseLocalDate } from "@/lib/date";
 import { StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
+import { EtapaStatusValue } from "@/lib/contrato-shared";
 
 function revalidateAll() {
   revalidatePath("/hedge");
@@ -57,15 +58,15 @@ export async function setPrevisaoEtapa(contratoId: string, etapa: StatusContrato
   revalidateAll();
 }
 
-export async function setEtapaConcluida(contratoId: string, etapa: StatusContratoValue, concluida: boolean) {
-  if (concluida) {
+export async function setEtapaStatus(contratoId: string, etapa: StatusContratoValue, status: EtapaStatusValue) {
+  if (status === "NAO_INICIADO") {
+    await prisma.contratoEtapaConcluida.deleteMany({ where: { contratoId, etapa } });
+  } else {
     await prisma.contratoEtapaConcluida.upsert({
       where: { contratoId_etapa: { contratoId, etapa } },
-      create: { contratoId, etapa },
-      update: {},
+      create: { contratoId, etapa, status },
+      update: { status },
     });
-  } else {
-    await prisma.contratoEtapaConcluida.deleteMany({ where: { contratoId, etapa } });
   }
 
   revalidateAll();

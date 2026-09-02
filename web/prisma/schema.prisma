@@ -748,15 +748,23 @@ model ContratoEtapaPrevisao {
   @@map("contrato_etapa_previsoes")
 }
 
-// Marca que o contrato concluiu o que precisava nessa etapa - so libera o
-// botao "Avancar" quando marcado. Uma linha por contrato+etapa; ausencia da
-// linha = ainda nao concluido.
+// Status do processo do contrato em cada etapa da Mesa de Operacao, usado no
+// checklist do card do contrato. Uma linha por contrato+etapa; ausencia da
+// linha = NAO_INICIADO (nunca foi tocada).
+enum EtapaStatus {
+  NAO_INICIADO
+  EM_PROCESSO
+  FINALIZADO
+}
+
 model ContratoEtapaConcluida {
   id         String             @id @default(uuid())
   contrato   ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
   contratoId String
   etapa      StatusContrato
+  status     EtapaStatus        @default(NAO_INICIADO)
   createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
 
   @@unique([contratoId, etapa])
   @@map("contrato_etapa_concluida")

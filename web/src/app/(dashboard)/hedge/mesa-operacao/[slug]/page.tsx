@@ -14,7 +14,8 @@ import {
   getPadroesCafe,
   getContratoAnexosPorContrato,
   getPrevisoesPorEtapa,
-  getConcluidasPorEtapa,
+  getStatusPorEtapa,
+  getChecklistPorContrato,
   getHistoricoAnteriorPorContrato,
   getEnviosAmostra,
   getTiposAmostra,
@@ -72,7 +73,8 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
     formasPagamento,
     peneiras,
     padroesCafe,
-    concluidas,
+    statusEtapas,
+    checklist,
     previsoes,
     anexos,
   ] = await Promise.all([
@@ -84,7 +86,8 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
     getFormasPagamento(),
     getPeneiras(),
     getPadroesCafe(),
-    getConcluidasPorEtapa("CONFIRMACAO_NEGOCIO"),
+    getStatusPorEtapa("CONFIRMACAO_NEGOCIO"),
+    getChecklistPorContrato(),
     getPrevisoesPorEtapa("CONFIRMACAO_NEGOCIO"),
     getContratoAnexosPorContrato(),
   ]);
@@ -101,7 +104,8 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
         formasPagamento={formasPagamento}
         peneiras={peneiras}
         padroesCafe={padroesCafe}
-        concluidas={concluidas}
+        statusEtapas={statusEtapas}
+        checklist={checklist}
         previsoes={previsoes}
         anexos={anexos}
       />
@@ -116,11 +120,12 @@ async function EtapaGenerica({
   contratos: Awaited<ReturnType<typeof getContratosExportacao>>;
   status: NonNullable<ReturnType<typeof slugToStatus>>;
 }) {
-  const [anexos, previsoes, historico, concluidas] = await Promise.all([
+  const [anexos, previsoes, historico, statusEtapas, checklist] = await Promise.all([
     getContratoAnexosPorContrato(),
     getPrevisoesPorEtapa(status),
     getHistoricoAnteriorPorContrato(status),
-    getConcluidasPorEtapa(status),
+    getStatusPorEtapa(status),
+    getChecklistPorContrato(),
   ]);
 
   if (status === "ENVIO_AMOSTRA_PSS") {
@@ -138,7 +143,8 @@ async function EtapaGenerica({
           anexos={anexos}
           previsoes={previsoes}
           historico={historico}
-          concluidas={concluidas}
+          statusEtapas={statusEtapas}
+          checklist={checklist}
           enviosAmostra={enviosAmostra}
           tiposAmostra={tiposAmostra}
           transportadorasAmostra={transportadorasAmostra}
@@ -155,7 +161,8 @@ async function EtapaGenerica({
         anexos={anexos}
         previsoes={previsoes}
         historico={historico}
-        concluidas={concluidas}
+        statusEtapas={statusEtapas}
+        checklist={checklist}
       />
     </Suspense>
   );
