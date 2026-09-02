@@ -18,6 +18,7 @@ import {
   Undo2,
   BarChart3,
   TrendingUp,
+  Gauge,
   ShieldCheck,
   Wallet,
   Target,
@@ -71,6 +72,7 @@ const navItems = [
 
 const faturamentoNavItems = [
   { href: "/faturamento", label: "Dashboard de Faturamento", icon: LayoutDashboard },
+  { href: "/faturamento/gerencial", label: "Faturamento Gerencial", icon: Gauge },
   { href: "/faturamento/vendas", label: "Vendas", icon: Receipt },
   { href: "/faturamento/devolucoes", label: "Devoluções", icon: Undo2 },
   { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },

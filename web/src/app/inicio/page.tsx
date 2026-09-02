@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Landmark, Scale, Receipt, ShieldCheck, ArrowRight, Target, Send } from "lucide-react";
+import { Landmark, Scale, Receipt, ShieldCheck, ArrowRight, Target, Send, Gauge } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -40,6 +40,12 @@ const modules = [
     label: "Transferência de Ordem",
     description: "Carta de transferencia de ordem de pagamento do exterior, no papel timbrado.",
     icon: Send,
+  },
+  {
+    href: "/faturamento/gerencial",
+    label: "Faturamento Gerencial",
+    description: "Filtros por ano, mes e dia. Faturamento geral, mercado interno e mercado externo.",
+    icon: Gauge,
   },
 ];
 
