@@ -389,29 +389,48 @@ export function EtapaStatusSelect({
   );
 }
 
+const checklistStatusClasses: Record<EtapaStatusValue, string> = {
+  NAO_INICIADO: "bg-danger/10 text-danger",
+  EM_PROCESSO: "bg-warning/10 text-warning",
+  FINALIZADO: "bg-success/10 text-success",
+};
+
 export function Checklist({
   statusPorEtapa,
 }: {
   statusPorEtapa: Partial<Record<StatusContratoValue, EtapaStatusValue>>;
 }) {
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="mt-3 border-t border-border pt-2">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Checklist</p>
-      <ul className="space-y-1">
-        {statusOrder.map((etapa) => {
-          const value = statusPorEtapa[etapa] ?? "NAO_INICIADO";
-          return (
-            <li key={etapa} className="flex items-center justify-between gap-2 text-xs">
-              <span>{statusLabels[etapa]}</span>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 font-medium ${etapaStatusSelectClasses[value]}`}
-              >
-                {etapaStatusLabels[value]}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted hover:text-foreground"
+      >
+        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+        Checklist
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-1">
+          {statusOrder.map((etapa) => {
+            const value = statusPorEtapa[etapa] ?? "NAO_INICIADO";
+            return (
+              <li key={etapa} className="flex items-center gap-2 text-xs">
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 font-medium ${checklistStatusClasses[value]}`}
+                >
+                  {etapaStatusLabels[value]}
+                </span>
+                <span>{statusLabels[etapa]}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
