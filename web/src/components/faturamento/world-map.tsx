@@ -176,7 +176,6 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
               --seq-2: #5fabb0;
               --seq-3: #2a8f97;
               --seq-4: #0e4a4f;
-              --seq-none: #e2e6e6;
               --map-stroke: rgba(11, 11, 11, 0.16);
               --hover-ring: var(--color-success);
             }
@@ -186,7 +185,6 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
               --seq-2: #2c7d84;
               --seq-3: #4fabb3;
               --seq-4: #8fd4d9;
-              --seq-none: #33393a;
               --map-stroke: rgba(255, 255, 255, 0.16);
             }
           `}</style>
@@ -231,7 +229,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                       const exported = Boolean(stat);
                       const cont = countryContinent(id);
                       const dimmed = continentFilter !== "todos" && cont !== continentFilter;
-                      const fill = stat ? `var(--seq-${seqStep(stat.valueBRL)})` : "var(--seq-none)";
+                      const fill = stat ? `var(--seq-${seqStep(stat.valueBRL)})` : "transparent";
                       const isHovered = hovered === id;
                       const geography = (
                         <Geography
@@ -294,7 +292,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded-sm border border-border" style={{ background: "var(--seq-none)" }} />
+                <span className="inline-block h-3 w-3 rounded-sm border border-border" style={{ background: "transparent" }} />
                 <span>Ainda não exportamos</span>
               </div>
             </div>
