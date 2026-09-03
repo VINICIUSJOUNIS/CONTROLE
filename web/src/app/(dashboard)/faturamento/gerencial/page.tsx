@@ -4,6 +4,7 @@ import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
 import { MonthlyBreakdown } from "@/components/faturamento/monthly-breakdown";
 import { YearComparison } from "@/components/faturamento/year-comparison";
 import { PrintButton } from "@/components/faturamento/print-button";
+import { LineChartCard } from "@/components/charts/line-chart-card";
 import { getSales, getSaleReturns } from "@/lib/data";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { DollarSign, Package } from "lucide-react";
@@ -201,6 +202,20 @@ export default async function FaturamentoGerencialPage({
         </div>
 
         <MonthlyBreakdown year={year} rows={monthlyRows} />
+
+        {monthlyRows.length > 0 && (
+          <LineChartCard
+            title={`Faturamento por mês — ${year}`}
+            data={monthlyRows}
+            xKey="label"
+            series={[
+              { key: "geral", name: "Geral", color: "#1c8388" },
+              { key: "interno", name: "Interno", color: "#74acb3" },
+              { key: "externo", name: "Externo", color: "#12b76a" },
+            ]}
+            valueFormat="currency"
+          />
+        )}
 
         <div className="space-y-3 print:break-inside-avoid">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
