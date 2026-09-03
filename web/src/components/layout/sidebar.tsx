@@ -82,7 +82,7 @@ const faturamentoNavItems = [
 
 const apresentacaoNavItems = [
   { href: "/faturamento/gerencial", label: "Faturamento", icon: Gauge },
-  { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
+  { href: "/faturamento/gerencial/paises", label: "Países Exportados", icon: MapPin },
 ];
 
 const creditoNavItems = [
