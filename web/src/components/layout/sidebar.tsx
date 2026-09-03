@@ -27,6 +27,7 @@ import {
   Undo2,
   Users,
   BarChart3,
+  Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -82,6 +83,7 @@ const faturamentoNavItems = [
 
 const apresentacaoNavItems = [
   { href: "/faturamento/gerencial", label: "Faturamento", icon: Gauge },
+  { href: "/faturamento/gerencial/volume-sacas", label: "Volume de Sacas", icon: Package },
   { href: "/faturamento/gerencial/paises", label: "Países Exportados", icon: MapPin },
 ];
 
