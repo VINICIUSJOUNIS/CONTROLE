@@ -171,21 +171,21 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
         <div className="map-viz-root grid gap-4 lg:grid-cols-[1fr_340px] print:grid-cols-1 print:gap-0">
           <style>{`
             .map-viz-root {
-              --seq-0: #d4ecec;
-              --seq-1: #a6d3d5;
-              --seq-2: #5fabb0;
-              --seq-3: #2a8f97;
-              --seq-4: #0e4a4f;
-              --map-stroke: rgba(11, 11, 11, 0.16);
+              --seq-0: #a6d3d5;
+              --seq-1: #5fabb0;
+              --seq-2: #2a8f97;
+              --seq-3: #0e4a4f;
+              --seq-4: #063136;
+              --map-stroke: rgba(11, 11, 11, 0.35);
               --hover-ring: var(--color-success);
             }
             .dark .map-viz-root {
-              --seq-0: #123638;
-              --seq-1: #1c5257;
-              --seq-2: #2c7d84;
-              --seq-3: #4fabb3;
-              --seq-4: #8fd4d9;
-              --map-stroke: rgba(255, 255, 255, 0.16);
+              --seq-0: #1c5257;
+              --seq-1: #2c7d84;
+              --seq-2: #4fabb3;
+              --seq-3: #8fd4d9;
+              --seq-4: #b3e6ea;
+              --map-stroke: rgba(255, 255, 255, 0.4);
             }
           `}</style>
 
