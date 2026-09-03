@@ -136,7 +136,7 @@ export default async function FaturamentoGerencialPage({
       containersAtual: containersFor(YEAR_ATUAL, mm),
     };
   }).filter((r) => {
-    const mesFuturo = YEAR_ATUAL === anoAtualCalendario && r.mesNum > mesAtualCalendario;
+    const mesFuturo = YEAR_ATUAL === anoAtualCalendario && r.mesNum >= mesAtualCalendario;
     if (mesFuturo && r.geralAtual === 0) return false;
     return r.geralAnterior !== 0 || r.geralAtual !== 0;
   });
