@@ -8,6 +8,10 @@ import { formatCompactCurrency, formatPercent } from "@/lib/format";
 
 const COMPARATIVO_YEARS = ["2023", "2024", "2025", "2026"];
 
+function pct(value: number | null) {
+  return value === null ? "-" : formatPercent(value);
+}
+
 export default async function ApresentacaoEmprestimoAccPage({
   searchParams,
 }: {
@@ -52,6 +56,7 @@ export default async function ApresentacaoEmprestimoAccPage({
                     <th className="px-4 py-2.5 font-medium">Valores Quitados (R$)</th>
                     <th className="px-4 py-2.5 font-medium">Taxa Empréstimos</th>
                     <th className="px-4 py-2.5 font-medium">Taxa ACC</th>
+                    <th className="px-4 py-2.5 font-medium">Taxa Média Ponderada</th>
                     <th className="px-4 py-2.5 font-medium">Spread ACC</th>
                   </tr>
                 </thead>
@@ -61,9 +66,10 @@ export default async function ApresentacaoEmprestimoAccPage({
                       <td className="px-4 py-2.5 font-medium">{row.year}</td>
                       <td className="px-4 py-2.5">{formatCompactCurrency(row.totalCaptado)}</td>
                       <td className="px-4 py-2.5">{formatCompactCurrency(row.valoresQuitados)}</td>
-                      <td className="px-4 py-2.5">{formatPercent(row.loanAvgRate)}</td>
-                      <td className="px-4 py-2.5">{formatPercent(row.accAvgRate)}</td>
-                      <td className="px-4 py-2.5">{formatPercent(row.spreadMedio)}</td>
+                      <td className="px-4 py-2.5">{pct(row.loanAvgRate)}</td>
+                      <td className="px-4 py-2.5">{pct(row.accAvgRate)}</td>
+                      <td className="px-4 py-2.5">{pct(row.taxaMediaPonderada)}</td>
+                      <td className="px-4 py-2.5">{pct(row.spreadMedio)}</td>
                     </tr>
                   ))}
                 </tbody>

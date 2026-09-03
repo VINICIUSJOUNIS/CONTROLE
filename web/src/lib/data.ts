@@ -886,17 +886,28 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
       loansQuitadosNoAno.reduce((s, l) => s + l.contractedValue, 0) +
       accQuitadosNoAno.reduce((s, a) => s + a.receivedValueBRL, 0);
 
-    const loanAvgRate = Number(
-      weightedAvg(
-        loansContratadosNoAno.map((l) => ({
-          rate: annualizedRate(l.interestRate, l.rateBasis),
-          weight: l.contractedValue,
-        }))
-      ).toFixed(2)
-    );
-    const accAvgRate = Number(
-      weightedAvg(accContratadosNoAno.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))).toFixed(2)
-    );
+    // null (em vez de 0) quando nao houve contrato no ano - 0,00% sugeriria uma
+    // taxa contratada a zero, quando na verdade nao ha nenhuma operacao pra
+    // calcular a media.
+    const loanAvgRate =
+      loansContratadosNoAno.length > 0
+        ? Number(
+            weightedAvg(
+              loansContratadosNoAno.map((l) => ({
+                rate: annualizedRate(l.interestRate, l.rateBasis),
+                weight: l.contractedValue,
+              }))
+            ).toFixed(2)
+          )
+        : null;
+    const accAvgRate =
+      accContratadosNoAno.length > 0
+        ? Number(
+            weightedAvg(
+              accContratadosNoAno.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))
+            ).toFixed(2)
+          )
+        : null;
     const spreadMedio =
       accContratadosNoAno.length > 0
         ? Number(
@@ -904,7 +915,22 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
               accContratadosNoAno.reduce((s, a) => s + a.exchangeSpread, 0) / accContratadosNoAno.length
             ).toFixed(4)
           )
-        : 0;
+        : null;
+
+    // Taxa media ponderada do ano: emprestimos e ACC juntos, ponderados pelo
+    // valor de cada operacao (nao a media simples de loanAvgRate/accAvgRate).
+    const taxaMediaPonderada =
+      loansContratadosNoAno.length + accContratadosNoAno.length > 0
+        ? Number(
+            weightedAvg([
+              ...loansContratadosNoAno.map((l) => ({
+                rate: annualizedRate(l.interestRate, l.rateBasis),
+                weight: l.contractedValue,
+              })),
+              ...accContratadosNoAno.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL })),
+            ]).toFixed(2)
+          )
+        : null;
 
     return {
       year,
@@ -912,6 +938,7 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
       valoresQuitados: Math.round(valoresQuitados),
       loanAvgRate,
       accAvgRate,
+      taxaMediaPonderada,
       spreadMedio,
     };
   });
