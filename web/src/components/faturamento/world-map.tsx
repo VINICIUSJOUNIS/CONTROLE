@@ -415,6 +415,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                                 <span className="min-w-0 flex-1 leading-snug break-words">{countryLabel(id)}</span>
                                 <span className="shrink-0 whitespace-nowrap text-right text-xs text-muted">
                                   {stat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc ·{" "}
+                                  {(stat.containers20 + stat.containers40).toLocaleString("pt-BR")} cnt ·{" "}
                                   {totalValueBRL > 0
                                     ? ((stat.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
                                         maximumFractionDigits: 1,
