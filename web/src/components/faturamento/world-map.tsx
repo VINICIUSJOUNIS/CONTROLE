@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
-import { geoCentroid } from "d3-geo";
+import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import worldData from "world-atlas/countries-110m.json";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/field";
@@ -273,26 +272,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                         </Geography>
                       );
 
-                      if (!exported || dimmed) return geography;
-
-                      const centroid = geoCentroid(geo);
-                      if (!Number.isFinite(centroid[0]) || !Number.isFinite(centroid[1])) return geography;
-
-                      return (
-                        <g key={geo.rsmKey}>
-                          {geography}
-                          <Marker coordinates={centroid as [number, number]}>
-                            <image
-                              href="/nayme-logo.png"
-                              x={-5}
-                              y={-5}
-                              width={10}
-                              height={10}
-                              style={{ pointerEvents: "none", filter: "grayscale(1)", opacity: 0.25 }}
-                            />
-                          </Marker>
-                        </g>
-                      );
+                      return geography;
                     })
                   }
                 </Geographies>
