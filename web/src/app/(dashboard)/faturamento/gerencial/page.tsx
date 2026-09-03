@@ -61,7 +61,6 @@ export default async function FaturamentoGerencialPage({
     internos.reduce((s, v) => s + v.valueBRL, 0) - returnsInternos.reduce((s, r) => s + r.valueBRL, 0);
   const totalExterno =
     externos.reduce((s, v) => s + v.valueBRL, 0) - returnsExternos.reduce((s, r) => s + r.valueBRL, 0);
-  const totalContainers = externos.reduce((s, v) => s + (v.containers20 ?? 0) + (v.containers40 ?? 0), 0);
   const pctInterno = totalGeral > 0 ? (totalInterno / totalGeral) * 100 : 0;
   const pctExterno = totalGeral > 0 ? (totalExterno / totalGeral) * 100 : 0;
 
@@ -79,13 +78,11 @@ export default async function FaturamentoGerencialPage({
           mInternos.reduce((s, v) => s + v.valueBRL, 0) - mReturnsInternos.reduce((s, r) => s + r.valueBRL, 0);
         const externo =
           mExternos.reduce((s, v) => s + v.valueBRL, 0) - mReturnsExternos.reduce((s, r) => s + r.valueBRL, 0);
-        const containers = mExternos.reduce((s, v) => s + (v.containers20 ?? 0) + (v.containers40 ?? 0), 0);
         return {
           label: MESES_LABEL[i],
           geral,
           interno,
           externo,
-          containers,
           pctInterno: geral > 0 ? (interno / geral) * 100 : 0,
           pctExterno: geral > 0 ? (externo / geral) * 100 : 0,
         };
@@ -122,15 +119,9 @@ export default async function FaturamentoGerencialPage({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <KpiCard label="% Mercado Interno" value={formatPercent(pctInterno, 1)} icon={Package} tone="green" />
           <KpiCard label="% Mercado Externo" value={formatPercent(pctExterno, 1)} icon={Package} tone="soft" />
-          <KpiCard
-            label="Contêineres (Mercado Externo)"
-            value={totalContainers.toLocaleString("pt-BR")}
-            icon={Package}
-            tone="teal"
-          />
         </div>
 
         <MonthlyBreakdown year={year} rows={monthlyRows} />
