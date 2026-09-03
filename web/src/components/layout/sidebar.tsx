@@ -13,10 +13,6 @@ import {
   FileText,
   LogOut,
   FileStack,
-  Receipt,
-  MapPin,
-  Undo2,
-  BarChart3,
   TrendingUp,
   Gauge,
   ShieldCheck,
@@ -24,7 +20,6 @@ import {
   Target,
   ChevronDown,
   AlertTriangle,
-  Users,
   Send,
   Settings2,
 } from "lucide-react";
@@ -73,12 +68,6 @@ const navItems = [
 const faturamentoNavItems = [
   { href: "/faturamento", label: "Dashboard de Faturamento", icon: LayoutDashboard },
   { href: "/faturamento/gerencial", label: "Faturamento", icon: Gauge },
-  { href: "/faturamento/vendas", label: "Vendas", icon: Receipt },
-  { href: "/faturamento/devolucoes", label: "Devoluções", icon: Undo2 },
-  { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
-  { href: "/faturamento/curva-abc", label: "Curva ABC", icon: BarChart3 },
-  { href: "/faturamento/relatorio", label: "Relatório Comparativo", icon: FileText },
-  { href: "/faturamento/relatorio-clientes", label: "Relatório de Clientes", icon: Users },
 ];
 
 const creditoNavItems = [

@@ -2,9 +2,9 @@ import { Topbar } from "@/components/layout/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
 import { MonthlyBreakdown } from "@/components/faturamento/monthly-breakdown";
-import { getSales, getSaleReturns, getKpis } from "@/lib/data";
+import { getSales, getSaleReturns } from "@/lib/data";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import { DollarSign, PiggyBank, Package } from "lucide-react";
+import { DollarSign, Package } from "lucide-react";
 
 const MESES_LABEL = [
   "Janeiro",
@@ -44,7 +44,7 @@ export default async function FaturamentoGerencialPage({
   searchParams: Promise<{ year?: string; month?: string; day?: string }>;
 }) {
   const { year = "", month = "", day = "" } = await searchParams;
-  const [allSales, allReturns, kpis] = await Promise.all([getSales(), getSaleReturns(), getKpis()]);
+  const [allSales, allReturns] = await Promise.all([getSales(), getSaleReturns()]);
   const years = Array.from(new Set(allSales.map((s) => s.saleDate.slice(0, 4)))).sort();
 
   const sales = allSales.filter((s) => matchesPeriod(s.saleDate, year, month, day));
@@ -134,26 +134,6 @@ export default async function FaturamentoGerencialPage({
         </div>
 
         <MonthlyBreakdown year={year} rows={monthlyRows} />
-
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-            Posição atual — Empréstimos e ACC
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <KpiCard
-              label="Empréstimos em aberto (R$)"
-              value={formatCurrency(kpis.saldoDevedorLoans)}
-              icon={PiggyBank}
-              tone="teal"
-            />
-            <KpiCard
-              label="ACC em aberto (R$)"
-              value={formatCurrency(kpis.saldoDevedorAcc)}
-              icon={PiggyBank}
-              tone="green"
-            />
-          </div>
-        </div>
       </div>
     </div>
   );
