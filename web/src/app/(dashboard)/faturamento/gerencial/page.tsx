@@ -105,6 +105,17 @@ export default async function FaturamentoGerencialPage({
     return mSales.reduce((s, v) => s + v.valueBRL, 0) - mReturns.reduce((s, r) => s + r.valueBRL, 0);
   }
 
+  function marketFor(y: string, mm: string, tipo: "INTERNO" | "EXTERNO") {
+    const mSales = allSales.filter((s) => s.clientType === tipo && matchesPeriod(s.saleDate, y, mm, ""));
+    const mReturns = allReturns.filter((r) => r.clientType === tipo && matchesPeriod(r.returnDate, y, mm, ""));
+    return mSales.reduce((s, v) => s + v.valueBRL, 0) - mReturns.reduce((s, r) => s + r.valueBRL, 0);
+  }
+
+  function containersFor(y: string, mm: string) {
+    const mExternos = allSales.filter((s) => s.clientType === "EXTERNO" && matchesPeriod(s.saleDate, y, mm, ""));
+    return mExternos.reduce((s, v) => s + (v.containers20 ?? 0) + (v.containers40 ?? 0), 0);
+  }
+
   const YEAR_ANTERIOR = "2025";
   const YEAR_ATUAL = "2026";
   const hoje = new Date();
@@ -112,11 +123,22 @@ export default async function FaturamentoGerencialPage({
   const mesAtualCalendario = hoje.getMonth() + 1;
   const comparisonRows = MESES_LABEL.map((label, i) => {
     const mm = String(i + 1).padStart(2, "0");
-    return { label, mesNum: i + 1, anterior: geralFor(YEAR_ANTERIOR, mm), atual: geralFor(YEAR_ATUAL, mm) };
+    return {
+      label,
+      mesNum: i + 1,
+      geralAnterior: geralFor(YEAR_ANTERIOR, mm),
+      geralAtual: geralFor(YEAR_ATUAL, mm),
+      internoAnterior: marketFor(YEAR_ANTERIOR, mm, "INTERNO"),
+      internoAtual: marketFor(YEAR_ATUAL, mm, "INTERNO"),
+      externoAnterior: marketFor(YEAR_ANTERIOR, mm, "EXTERNO"),
+      externoAtual: marketFor(YEAR_ATUAL, mm, "EXTERNO"),
+      containersAnterior: containersFor(YEAR_ANTERIOR, mm),
+      containersAtual: containersFor(YEAR_ATUAL, mm),
+    };
   }).filter((r) => {
     const mesFuturo = YEAR_ATUAL === anoAtualCalendario && r.mesNum > mesAtualCalendario;
-    if (mesFuturo && r.atual === 0) return false;
-    return r.anterior !== 0 || r.atual !== 0;
+    if (mesFuturo && r.geralAtual === 0) return false;
+    return r.geralAnterior !== 0 || r.geralAtual !== 0;
   });
 
   return (
