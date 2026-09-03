@@ -371,25 +371,34 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                       const totals = continentTotals.get(continent)!;
                       return (
                         <div key={continent}>
-                          <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-muted">
-                            <span
-                              className="h-2 w-2 shrink-0 rounded-full"
-                              style={{ background: CONTINENT_COLOR[continent] }}
-                            />
-                            {continent}
-                            <span className="font-normal">
-                              ({paisesDoContinente.length} · {totals.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}{" "}
-                              sc · {totals.containers.toLocaleString("pt-BR")} cnt ·{" "}
-                              {totalValueBRL > 0
-                                ? ((totals.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
-                                    maximumFractionDigits: 1,
-                                  })
-                                : 0}
-                              %)
-                            </span>
-                          </p>
                           <table className="w-full text-sm [font-variant-numeric:tabular-nums]">
                             <tbody>
+                              <tr className="text-xs font-semibold text-muted">
+                                <td className="py-0.5 pr-2">
+                                  <span className="flex items-center gap-1.5">
+                                    <span
+                                      className="h-2 w-2 shrink-0 rounded-full"
+                                      style={{ background: CONTINENT_COLOR[continent] }}
+                                    />
+                                    {continent}
+                                    <span className="font-normal">({paisesDoContinente.length})</span>
+                                  </span>
+                                </td>
+                                <td className="whitespace-nowrap py-0.5 pr-2 text-right">
+                                  {totals.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc
+                                </td>
+                                <td className="whitespace-nowrap py-0.5 pr-2 text-right">
+                                  {totals.containers.toLocaleString("pt-BR")} cnt
+                                </td>
+                                <td className="whitespace-nowrap py-0.5 text-right">
+                                  {totalValueBRL > 0
+                                    ? ((totals.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
+                                        maximumFractionDigits: 1,
+                                      })
+                                    : 0}
+                                  %
+                                </td>
+                              </tr>
                               {paisesDoContinente.map(([id, stat]) => (
                                 <tr key={id}>
                                   <td className="py-0.5 pl-3.5 pr-2">
