@@ -56,46 +56,46 @@ export function YearComparison({
         Comparativo — {yearAnterior} x {yearAtual}
       </p>
       <CardContent className={cn("overflow-x-auto pt-0 print:overflow-visible", !open && "hidden print:block")}>
-        <table className="w-full whitespace-nowrap text-xs [font-variant-numeric:tabular-nums] print:w-auto print:text-[7px]">
+        <table className="w-full whitespace-nowrap text-xs [font-variant-numeric:tabular-nums] print:text-[9px]">
           <thead>
-            <tr className="border-b border-border text-left text-[11px] text-muted print:text-[7px]">
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Mês</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Geral {yearAnterior}</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Geral {yearAtual}</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Var. Geral</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Interno {yearAnterior}</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Interno {yearAtual}</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Var. Interno</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Externo {yearAnterior}</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Externo {yearAtual}</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Var. Externo</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Cnt {yearAnterior}</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Cnt {yearAtual}</th>
-              <th className="px-2 py-1.5 font-medium print:px-1 print:py-0.5">Var. Cnt</th>
+            <tr className="border-b border-border text-left text-[11px] text-muted print:text-[9px]">
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Mês</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Geral {yearAnterior}</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Geral {yearAtual}</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Var. Geral</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Interno {yearAnterior}</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Interno {yearAtual}</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Var. Interno</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Externo {yearAnterior}</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Externo {yearAtual}</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Var. Externo</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Cnt {yearAnterior}</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Cnt {yearAtual}</th>
+              <th className="px-2 py-1.5 font-medium print:px-2 print:py-1">Var. Cnt</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.label} className="border-b border-border last:border-0">
-                <td className="px-2 py-1 font-medium print:px-1 print:py-0">{r.label}</td>
-                <td className="px-2 py-1 print:px-1 print:py-0">{formatCurrency(r.geralAnterior)}</td>
-                <td className="px-2 py-1 print:px-1 print:py-0">{formatCurrency(r.geralAtual)}</td>
-                <td className="px-2 py-1 print:px-1 print:py-0">
+                <td className="px-2 py-1 font-medium print:px-2 print:py-0.5">{r.label}</td>
+                <td className="px-2 py-1 print:px-2 print:py-0.5">{formatCurrency(r.geralAnterior)}</td>
+                <td className="px-2 py-1 print:px-2 print:py-0.5">{formatCurrency(r.geralAtual)}</td>
+                <td className="px-2 py-1 print:px-2 print:py-0.5">
                   <DeltaBadge anterior={r.geralAnterior} atual={r.geralAtual} />
                 </td>
-                <td className="px-2 py-1 print:px-1 print:py-0">{formatCurrency(r.internoAnterior)}</td>
-                <td className="px-2 py-1 print:px-1 print:py-0">{formatCurrency(r.internoAtual)}</td>
-                <td className="px-2 py-1 print:px-1 print:py-0">
+                <td className="px-2 py-1 print:px-2 print:py-0.5">{formatCurrency(r.internoAnterior)}</td>
+                <td className="px-2 py-1 print:px-2 print:py-0.5">{formatCurrency(r.internoAtual)}</td>
+                <td className="px-2 py-1 print:px-2 print:py-0.5">
                   <DeltaBadge anterior={r.internoAnterior} atual={r.internoAtual} />
                 </td>
-                <td className="px-2 py-1 print:px-1 print:py-0">{formatCurrency(r.externoAnterior)}</td>
-                <td className="px-2 py-1 print:px-1 print:py-0">{formatCurrency(r.externoAtual)}</td>
-                <td className="px-2 py-1 print:px-1 print:py-0">
+                <td className="px-2 py-1 print:px-2 print:py-0.5">{formatCurrency(r.externoAnterior)}</td>
+                <td className="px-2 py-1 print:px-2 print:py-0.5">{formatCurrency(r.externoAtual)}</td>
+                <td className="px-2 py-1 print:px-2 print:py-0.5">
                   <DeltaBadge anterior={r.externoAnterior} atual={r.externoAtual} />
                 </td>
-                <td className="px-2 py-1 print:px-1 print:py-0">{r.containersAnterior.toLocaleString("pt-BR")}</td>
-                <td className="px-2 py-1 print:px-1 print:py-0">{r.containersAtual.toLocaleString("pt-BR")}</td>
-                <td className="px-2 py-1 print:px-1 print:py-0">
+                <td className="px-2 py-1 print:px-2 print:py-0.5">{r.containersAnterior.toLocaleString("pt-BR")}</td>
+                <td className="px-2 py-1 print:px-2 print:py-0.5">{r.containersAtual.toLocaleString("pt-BR")}</td>
+                <td className="px-2 py-1 print:px-2 print:py-0.5">
                   <DeltaBadge anterior={r.containersAnterior} atual={r.containersAtual} />
                 </td>
               </tr>
