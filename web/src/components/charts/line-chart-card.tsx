@@ -59,9 +59,13 @@ export function LineChartCard({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          <LineChart data={data} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 4, right: 24, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: "var(--muted)" }} />
+            <XAxis
+              dataKey={xKey}
+              tick={{ fontSize: 11, fill: "var(--muted)" }}
+              padding={{ left: 12, right: 12 }}
+            />
             <YAxis
               tick={{ fontSize: 11, fill: "var(--muted)" }}
               tickFormatter={(value) => applyFormat(Number(value), valueFormat)}
