@@ -373,8 +373,8 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                         <div key={continent}>
                           <table className="w-full text-sm [font-variant-numeric:tabular-nums]">
                             <tbody>
-                              <tr className="text-xs font-bold">
-                                <td className="py-0.5 pr-2">
+                              <tr className="text-xs font-medium">
+                                <td className="py-0.5 pr-2 align-top">
                                   <span className="flex items-center gap-1.5">
                                     <span
                                       className="h-2 w-2 shrink-0 rounded-full"
@@ -384,13 +384,13 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                                     <span className="font-normal">({paisesDoContinente.length})</span>
                                   </span>
                                 </td>
-                                <td className="whitespace-nowrap py-0.5 pr-2 text-right">
+                                <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top">
                                   {totals.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc
                                 </td>
-                                <td className="whitespace-nowrap py-0.5 pr-2 text-right">
+                                <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top">
                                   {totals.containers.toLocaleString("pt-BR")} cnt
                                 </td>
-                                <td className="whitespace-nowrap py-0.5 text-right">
+                                <td className="whitespace-nowrap py-0.5 text-right align-top">
                                   {totalValueBRL > 0
                                     ? ((totals.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
                                         maximumFractionDigits: 1,
@@ -401,7 +401,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                               </tr>
                               {paisesDoContinente.map(([id, stat]) => (
                                 <tr key={id}>
-                                  <td className="py-0.5 pl-3.5 pr-2">
+                                  <td className="py-0.5 pl-3.5 pr-2 align-top">
                                     <span className="flex items-center gap-2">
                                       <span
                                         className="h-2.5 w-2.5 shrink-0 rounded-sm"
@@ -410,13 +410,13 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                                       <span className="min-w-0 leading-snug break-words">{countryLabel(id)}</span>
                                     </span>
                                   </td>
-                                  <td className="whitespace-nowrap py-0.5 pr-2 text-right text-xs text-muted">
+                                  <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top text-xs text-muted">
                                     {stat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc
                                   </td>
-                                  <td className="whitespace-nowrap py-0.5 pr-2 text-right text-xs text-muted">
+                                  <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top text-xs text-muted">
                                     {(stat.containers20 + stat.containers40).toLocaleString("pt-BR")} cnt
                                   </td>
-                                  <td className="whitespace-nowrap py-0.5 text-right text-xs text-muted">
+                                  <td className="whitespace-nowrap py-0.5 text-right align-top text-xs text-muted">
                                     {totalValueBRL > 0
                                       ? ((stat.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
                                           maximumFractionDigits: 1,
