@@ -5,6 +5,7 @@ import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import worldData from "world-atlas/countries-110m.json";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/field";
+import { PrintButton } from "@/components/faturamento/print-button";
 import { formatCurrency } from "@/lib/format";
 import { countryLabel, countryContinent, CONTINENTS, type Continent } from "@/lib/countries";
 import type { SaleRow } from "@/lib/data";
@@ -139,10 +140,10 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
   );
 
   return (
-    <Card>
+    <Card className="print:break-inside-avoid print:border-0 print:shadow-none">
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
         <CardTitle>Países para onde já exportamos</CardTitle>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
           <Select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="w-auto">
             <option value="todos">Todos os anos</option>
             {years.map((y) => (
@@ -163,6 +164,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
               </option>
             ))}
           </Select>
+          <PrintButton />
         </div>
       </CardHeader>
       <CardContent>
