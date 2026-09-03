@@ -171,7 +171,7 @@ export default async function FaturamentoGerencialPage({
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Faturamento" />
+      <Topbar title="Apresentação" />
       <div className="space-y-6 p-6">
         <div className="print:hidden">
           <GerencialFilter years={years} />
