@@ -214,6 +214,7 @@ export default async function FaturamentoGerencialPage({
               { key: "externo", name: "Externo", color: "#12b76a" },
             ]}
             valueFormat="currency"
+            lineType="linear"
           />
         )}
 
@@ -260,6 +261,47 @@ export default async function FaturamentoGerencialPage({
             />
           </div>
         </div>
+
+        {comparisonRows.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <LineChartCard
+              title={`Geral — ${YEAR_ANTERIOR} x ${YEAR_ATUAL}`}
+              data={comparisonRows}
+              xKey="label"
+              height={220}
+              lineType="linear"
+              series={[
+                { key: "geralAnterior", name: YEAR_ANTERIOR, color: "#94a3b8" },
+                { key: "geralAtual", name: YEAR_ATUAL, color: "#1c8388" },
+              ]}
+              valueFormat="currency"
+            />
+            <LineChartCard
+              title={`Interno — ${YEAR_ANTERIOR} x ${YEAR_ATUAL}`}
+              data={comparisonRows}
+              xKey="label"
+              height={220}
+              lineType="linear"
+              series={[
+                { key: "internoAnterior", name: YEAR_ANTERIOR, color: "#94a3b8" },
+                { key: "internoAtual", name: YEAR_ATUAL, color: "#74acb3" },
+              ]}
+              valueFormat="currency"
+            />
+            <LineChartCard
+              title={`Externo — ${YEAR_ANTERIOR} x ${YEAR_ATUAL}`}
+              data={comparisonRows}
+              xKey="label"
+              height={220}
+              lineType="linear"
+              series={[
+                { key: "externoAnterior", name: YEAR_ANTERIOR, color: "#94a3b8" },
+                { key: "externoAtual", name: YEAR_ATUAL, color: "#12b76a" },
+              ]}
+              valueFormat="currency"
+            />
+          </div>
+        )}
 
         <YearComparison yearAnterior={YEAR_ANTERIOR} yearAtual={YEAR_ATUAL} rows={comparisonRows} />
       </div>

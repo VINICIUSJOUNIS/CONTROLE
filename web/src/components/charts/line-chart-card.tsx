@@ -42,6 +42,7 @@ export function LineChartCard({
   series,
   height = 280,
   valueFormat = "none",
+  lineType = "monotone",
 }: {
   title: string;
   data: Record<string, unknown>[];
@@ -49,6 +50,7 @@ export function LineChartCard({
   series: Series[];
   height?: number;
   valueFormat?: ValueFormat;
+  lineType?: "monotone" | "linear";
 }) {
   return (
     <Card>
@@ -74,11 +76,14 @@ export function LineChartCard({
               }}
               formatter={(value) => applyFormat(Number(value), valueFormat)}
             />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Legend
+              wrapperStyle={{ fontSize: 12 }}
+              payload={series.map((s) => ({ value: s.name, type: "line", color: s.color }))}
+            />
             {series.map((s) => (
               <Line
                 key={s.key}
-                type="monotone"
+                type={lineType}
                 dataKey={s.key}
                 name={s.name}
                 stroke={s.color}
