@@ -173,7 +173,7 @@ export default async function FaturamentoGerencialPage({
           <PrintButton />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 print:break-inside-avoid">
           <KpiCard label="Faturamento Geral (R$)" value={formatCurrency(totalGeral)} icon={DollarSign} tone="teal" />
           <KpiCard
             label="Faturamento — Mercado Interno (R$)"
@@ -189,7 +189,7 @@ export default async function FaturamentoGerencialPage({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 print:break-inside-avoid">
           <KpiCard label="% Mercado Interno" value={formatPercent(pctInterno, 1)} icon={Package} tone="green" />
           <KpiCard label="% Mercado Externo" value={formatPercent(pctExterno, 1)} icon={Package} tone="soft" />
           <KpiCard
@@ -202,11 +202,11 @@ export default async function FaturamentoGerencialPage({
 
         <MonthlyBreakdown year={year} rows={monthlyRows} />
 
-        <div className="space-y-3">
+        <div className="space-y-3 print:break-inside-avoid">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
             Comparativo geral — {YEAR_ANTERIOR} x {YEAR_ATUAL}
           </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 print:break-inside-avoid">
             <KpiCard
               label={`Geral ${YEAR_ATUAL}`}
               value={formatCurrency(geralAtualTotal)}
