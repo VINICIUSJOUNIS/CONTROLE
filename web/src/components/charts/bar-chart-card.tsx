@@ -69,7 +69,7 @@ export function BarChartCard({
               }}
               formatter={(value) => applyFormat(Number(value), valueFormat)}
             />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Legend wrapperStyle={{ fontSize: 12 }} itemSorter={null} />
             {series.map((s) => (
               <Bar
                 key={s.key}

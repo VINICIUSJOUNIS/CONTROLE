@@ -859,6 +859,64 @@ export async function getYearlyComparison(modalidade?: ModalidadeFilter) {
   });
 }
 
+// Comparativo anual para um conjunto fixo de anos (usado na pagina Emprestimo e
+// ACC, dentro de Faturamento) - ao contrario de getYearlyComparison, os anos nao
+// vem de "quais anos tem contrato", entao um ano sem nenhum contrato novo mas com
+// quitacoes ainda aparece. Creditos tomados agrupa por ano de contratacao; valores
+// quitados agrupa por ano de quitacao (settlementDate do emprestimo / dataQuitacao
+// do ACC) - sao dois recortes de data diferentes de proposito.
+export async function getEmprestimoAccComparativoAnual(years: string[]) {
+  const [loans, accOperations] = await Promise.all([getLoans(), getAccOperations()]);
+
+  return years.map((year) => {
+    const loansContratadosNoAno = loans.filter((l) => l.contractDate.slice(0, 4) === year);
+    const accContratadosNoAno = accOperations.filter((a) => a.contractDate.slice(0, 4) === year);
+
+    const totalCaptado =
+      loansContratadosNoAno.reduce((s, l) => s + l.contractedValue, 0) +
+      accContratadosNoAno.reduce((s, a) => s + a.receivedValueBRL, 0);
+
+    const loansQuitadosNoAno = loans.filter(
+      (l) => l.status === "LIQUIDADO" && l.settlementDate && l.settlementDate.slice(0, 4) === year
+    );
+    const accQuitadosNoAno = accOperations.filter(
+      (a) => a.status === "LIQUIDADO" && a.dataQuitacao && a.dataQuitacao.slice(0, 4) === year
+    );
+    const valoresQuitados =
+      loansQuitadosNoAno.reduce((s, l) => s + l.contractedValue, 0) +
+      accQuitadosNoAno.reduce((s, a) => s + a.receivedValueBRL, 0);
+
+    const loanAvgRate = Number(
+      weightedAvg(
+        loansContratadosNoAno.map((l) => ({
+          rate: annualizedRate(l.interestRate, l.rateBasis),
+          weight: l.contractedValue,
+        }))
+      ).toFixed(2)
+    );
+    const accAvgRate = Number(
+      weightedAvg(accContratadosNoAno.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))).toFixed(2)
+    );
+    const spreadMedio =
+      accContratadosNoAno.length > 0
+        ? Number(
+            (
+              accContratadosNoAno.reduce((s, a) => s + a.exchangeSpread, 0) / accContratadosNoAno.length
+            ).toFixed(4)
+          )
+        : 0;
+
+    return {
+      year,
+      totalCaptado: Math.round(totalCaptado),
+      valoresQuitados: Math.round(valoresQuitados),
+      loanAvgRate,
+      accAvgRate,
+      spreadMedio,
+    };
+  });
+}
+
 function quarterKey(date: string) {
   const [year, month] = date.slice(0, 7).split("-").map(Number);
   const q = Math.floor((month - 1) / 3) + 1;
