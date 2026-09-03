@@ -68,6 +68,13 @@ export default async function FaturamentoGerencialPage({
   const pctInterno = totalGeral > 0 ? (totalInterno / totalGeral) * 100 : 0;
   const pctExterno = totalGeral > 0 ? (totalExterno / totalGeral) * 100 : 0;
 
+  const sacasGeral =
+    sales.reduce((s, v) => s + v.quantitySacas, 0) - returns.reduce((s, r) => s + r.quantitySacas, 0);
+  const sacasInterno =
+    internos.reduce((s, v) => s + v.quantitySacas, 0) - returnsInternos.reduce((s, r) => s + r.quantitySacas, 0);
+  const sacasExterno =
+    externos.reduce((s, v) => s + v.quantitySacas, 0) - returnsExternos.reduce((s, r) => s + r.quantitySacas, 0);
+
   const monthlyRows = year
     ? Array.from({ length: 12 }, (_, i) => {
         const mm = String(i + 1).padStart(2, "0");
@@ -186,6 +193,22 @@ export default async function FaturamentoGerencialPage({
             label="Faturamento — Mercado Externo (R$)"
             value={formatCurrency(totalExterno)}
             icon={DollarSign}
+            tone="soft"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 print:break-inside-avoid">
+          <KpiCard label="Volume (Sacas)" value={sacasGeral.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} icon={Package} tone="teal" />
+          <KpiCard
+            label="Volume — Mercado Interno (Sacas)"
+            value={sacasInterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+            icon={Package}
+            tone="green"
+          />
+          <KpiCard
+            label="Volume — Mercado Externo (Sacas)"
+            value={sacasExterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+            icon={Package}
             tone="soft"
           />
         </div>
