@@ -182,6 +182,8 @@ export default async function FaturamentoGerencialPage({
           <PrintButton />
         </div>
 
+        <WorldMap sales={sales} />
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 print:break-inside-avoid">
           <KpiCard label="Faturamento Geral (R$)" value={formatCurrency(totalGeral)} icon={DollarSign} tone="teal" />
           <KpiCard
@@ -224,8 +226,6 @@ export default async function FaturamentoGerencialPage({
             tone="teal"
           />
         </div>
-
-        <WorldMap sales={sales} />
 
         <MonthlyBreakdown year={year} rows={monthlyRows} />
 
