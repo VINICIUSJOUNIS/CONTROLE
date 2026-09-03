@@ -2,6 +2,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
 import { MonthlyBreakdown } from "@/components/faturamento/monthly-breakdown";
+import { YearComparison } from "@/components/faturamento/year-comparison";
 import { getSales, getSaleReturns } from "@/lib/data";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { DollarSign, Package } from "lucide-react";
@@ -98,6 +99,19 @@ export default async function FaturamentoGerencialPage({
       })
     : [];
 
+  function geralFor(y: string, mm: string) {
+    const mSales = allSales.filter((s) => matchesPeriod(s.saleDate, y, mm, ""));
+    const mReturns = allReturns.filter((r) => matchesPeriod(r.returnDate, y, mm, ""));
+    return mSales.reduce((s, v) => s + v.valueBRL, 0) - mReturns.reduce((s, r) => s + r.valueBRL, 0);
+  }
+
+  const YEAR_ANTERIOR = "2025";
+  const YEAR_ATUAL = "2026";
+  const comparisonRows = MESES_LABEL.map((label, i) => {
+    const mm = String(i + 1).padStart(2, "0");
+    return { label, anterior: geralFor(YEAR_ANTERIOR, mm), atual: geralFor(YEAR_ATUAL, mm) };
+  }).filter((r) => r.anterior !== 0 || r.atual !== 0);
+
   return (
     <div className="flex flex-col">
       <Topbar title="Faturamento Gerencial" />
@@ -134,6 +148,8 @@ export default async function FaturamentoGerencialPage({
         </div>
 
         <MonthlyBreakdown year={year} rows={monthlyRows} />
+
+        <YearComparison yearAnterior={YEAR_ANTERIOR} yearAtual={YEAR_ATUAL} rows={comparisonRows} />
       </div>
     </div>
   );
