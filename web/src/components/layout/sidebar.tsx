@@ -13,6 +13,7 @@ import {
   FileText,
   LogOut,
   FileStack,
+  MapPin,
   TrendingUp,
   Gauge,
   ShieldCheck,
@@ -67,6 +68,7 @@ const navItems = [
 
 const faturamentoNavItems = [
   { href: "/faturamento/gerencial", label: "Faturamento", icon: Gauge },
+  { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
 ];
 
 const creditoNavItems = [
