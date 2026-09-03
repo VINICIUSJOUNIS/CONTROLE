@@ -53,7 +53,7 @@ export function LineChartCard({
   lineType?: "monotone" | "linear";
 }) {
   return (
-    <Card>
+    <Card className="print:break-inside-avoid">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
