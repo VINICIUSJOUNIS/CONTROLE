@@ -388,27 +388,37 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                               %)
                             </span>
                           </p>
-                          <ul className="space-y-1 text-sm [font-variant-numeric:tabular-nums]">
-                            {paisesDoContinente.map(([id, stat]) => (
-                              <li key={id} className="flex items-center gap-2 pl-3.5">
-                                <span
-                                  className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                                  style={{ background: `var(--seq-${seqStep(stat.valueBRL)})` }}
-                                />
-                                <span className="min-w-0 flex-1 leading-snug break-words">{countryLabel(id)}</span>
-                                <span className="shrink-0 whitespace-nowrap text-right text-xs text-muted">
-                                  {stat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc ·{" "}
-                                  {(stat.containers20 + stat.containers40).toLocaleString("pt-BR")} cnt ·{" "}
-                                  {totalValueBRL > 0
-                                    ? ((stat.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
-                                        maximumFractionDigits: 1,
-                                      })
-                                    : 0}
-                                  %
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
+                          <table className="w-full text-sm [font-variant-numeric:tabular-nums]">
+                            <tbody>
+                              {paisesDoContinente.map(([id, stat]) => (
+                                <tr key={id}>
+                                  <td className="py-0.5 pl-3.5 pr-2">
+                                    <span className="flex items-center gap-2">
+                                      <span
+                                        className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                                        style={{ background: `var(--seq-${seqStep(stat.valueBRL)})` }}
+                                      />
+                                      <span className="min-w-0 leading-snug break-words">{countryLabel(id)}</span>
+                                    </span>
+                                  </td>
+                                  <td className="whitespace-nowrap py-0.5 pr-2 text-right text-xs text-muted">
+                                    {stat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc
+                                  </td>
+                                  <td className="whitespace-nowrap py-0.5 pr-2 text-right text-xs text-muted">
+                                    {(stat.containers20 + stat.containers40).toLocaleString("pt-BR")} cnt
+                                  </td>
+                                  <td className="whitespace-nowrap py-0.5 text-right text-xs text-muted">
+                                    {totalValueBRL > 0
+                                      ? ((stat.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
+                                          maximumFractionDigits: 1,
+                                        })
+                                      : 0}
+                                    %
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       );
                     })}
