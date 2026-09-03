@@ -155,7 +155,6 @@ export function Sidebar({
       <Link href="/inicio" className="flex items-center gap-2 px-5 py-5">
         <div>
           <p className="text-sm font-semibold text-white">Controle</p>
-          <p className="text-xs text-sidebar-foreground/70">{activeModule.label}</p>
         </div>
       </Link>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
