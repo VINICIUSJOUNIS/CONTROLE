@@ -41,8 +41,8 @@ export function MonthlyBreakdown({ year, rows }: { year: string; rows: MonthRow[
                 <th className="px-4 py-2.5 font-medium">Mercado Interno (R$)</th>
                 <th className="px-4 py-2.5 font-medium">% Interno</th>
                 <th className="px-4 py-2.5 font-medium">Mercado Externo (R$)</th>
-                <th className="px-4 py-2.5 font-medium">Contêineres</th>
                 <th className="px-4 py-2.5 font-medium">% Externo</th>
+                <th className="px-4 py-2.5 font-medium">Contêineres</th>
               </tr>
             </thead>
             <tbody>
@@ -53,8 +53,8 @@ export function MonthlyBreakdown({ year, rows }: { year: string; rows: MonthRow[
                   <td className="px-4 py-2.5">{formatCurrency(r.interno)}</td>
                   <td className="px-4 py-2.5">{formatPercent(r.pctInterno, 1)}</td>
                   <td className="px-4 py-2.5">{formatCurrency(r.externo)}</td>
-                  <td className="px-4 py-2.5">{r.containers.toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-2.5">{formatPercent(r.pctExterno, 1)}</td>
+                  <td className="px-4 py-2.5">{r.containers.toLocaleString("pt-BR")}</td>
                 </tr>
               ))}
             </tbody>
