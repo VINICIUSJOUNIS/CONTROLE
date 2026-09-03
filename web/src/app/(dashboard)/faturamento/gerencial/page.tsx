@@ -5,6 +5,7 @@ import { MonthlyBreakdown } from "@/components/faturamento/monthly-breakdown";
 import { YearComparison } from "@/components/faturamento/year-comparison";
 import { PrintButton } from "@/components/faturamento/print-button";
 import { LineChartCard } from "@/components/charts/line-chart-card";
+import { WorldMap } from "@/components/faturamento/world-map";
 import { getSales, getSaleReturns } from "@/lib/data";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { DollarSign, Package } from "lucide-react";
@@ -223,6 +224,8 @@ export default async function FaturamentoGerencialPage({
             tone="teal"
           />
         </div>
+
+        <WorldMap sales={sales} />
 
         <MonthlyBreakdown year={year} rows={monthlyRows} />
 
