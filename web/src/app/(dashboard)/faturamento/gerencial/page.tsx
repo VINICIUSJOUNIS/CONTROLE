@@ -141,6 +141,24 @@ export default async function FaturamentoGerencialPage({
     return r.geralAnterior !== 0 || r.geralAtual !== 0;
   });
 
+  const geralAnteriorTotal = geralFor(YEAR_ANTERIOR, "");
+  const geralAtualTotal = geralFor(YEAR_ATUAL, "");
+  const internoAnteriorTotal = marketFor(YEAR_ANTERIOR, "", "INTERNO");
+  const internoAtualTotal = marketFor(YEAR_ATUAL, "", "INTERNO");
+  const externoAnteriorTotal = marketFor(YEAR_ANTERIOR, "", "EXTERNO");
+  const externoAtualTotal = marketFor(YEAR_ATUAL, "", "EXTERNO");
+  const containersAnteriorTotal = containersFor(YEAR_ANTERIOR, "");
+  const containersAtualTotal = containersFor(YEAR_ATUAL, "");
+
+  function pctDelta(anterior: number, atual: number) {
+    return anterior !== 0 ? ((atual - anterior) / anterior) * 100 : null;
+  }
+
+  const deltaGeral = pctDelta(geralAnteriorTotal, geralAtualTotal);
+  const deltaInterno = pctDelta(internoAnteriorTotal, internoAtualTotal);
+  const deltaExterno = pctDelta(externoAnteriorTotal, externoAtualTotal);
+  const deltaContainers = pctDelta(containersAnteriorTotal, containersAtualTotal);
+
   return (
     <div className="flex flex-col">
       <Topbar title="Faturamento Gerencial" />
@@ -177,6 +195,50 @@ export default async function FaturamentoGerencialPage({
         </div>
 
         <MonthlyBreakdown year={year} rows={monthlyRows} />
+
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+            Comparativo geral — {YEAR_ANTERIOR} x {YEAR_ATUAL}
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              label={`Geral ${YEAR_ATUAL}`}
+              value={formatCurrency(geralAtualTotal)}
+              icon={DollarSign}
+              tone="teal"
+              trend={deltaGeral !== null ? formatPercent(Math.abs(deltaGeral), 1) : undefined}
+              trendLabel={`vs ${YEAR_ANTERIOR}`}
+              trendPositive={geralAtualTotal >= geralAnteriorTotal}
+            />
+            <KpiCard
+              label={`Interno ${YEAR_ATUAL}`}
+              value={formatCurrency(internoAtualTotal)}
+              icon={DollarSign}
+              tone="green"
+              trend={deltaInterno !== null ? formatPercent(Math.abs(deltaInterno), 1) : undefined}
+              trendLabel={`vs ${YEAR_ANTERIOR}`}
+              trendPositive={internoAtualTotal >= internoAnteriorTotal}
+            />
+            <KpiCard
+              label={`Externo ${YEAR_ATUAL}`}
+              value={formatCurrency(externoAtualTotal)}
+              icon={DollarSign}
+              tone="soft"
+              trend={deltaExterno !== null ? formatPercent(Math.abs(deltaExterno), 1) : undefined}
+              trendLabel={`vs ${YEAR_ANTERIOR}`}
+              trendPositive={externoAtualTotal >= externoAnteriorTotal}
+            />
+            <KpiCard
+              label={`Contêineres ${YEAR_ATUAL}`}
+              value={containersAtualTotal.toLocaleString("pt-BR")}
+              icon={Package}
+              tone="teal"
+              trend={deltaContainers !== null ? formatPercent(Math.abs(deltaContainers), 1) : undefined}
+              trendLabel={`vs ${YEAR_ANTERIOR}`}
+              trendPositive={containersAtualTotal >= containersAnteriorTotal}
+            />
+          </div>
+        </div>
 
         <YearComparison yearAnterior={YEAR_ANTERIOR} yearAtual={YEAR_ATUAL} rows={comparisonRows} />
       </div>
