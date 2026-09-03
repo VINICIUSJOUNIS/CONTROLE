@@ -23,7 +23,7 @@ function DeltaBadge({ anterior, atual }: { anterior: number; atual: number }) {
   const subiu = atual >= anterior;
   return (
     <span className={cn("inline-flex items-center gap-1 font-medium", subiu ? "text-success" : "text-danger")}>
-      {subiu ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+      {subiu ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
       {delta !== null ? formatPercent(Math.abs(delta), 1) : "-"}
     </span>
   );
@@ -54,46 +54,46 @@ export function YearComparison({
       </button>
       {open && (
         <CardContent className="overflow-x-auto pt-0">
-          <table className="w-full whitespace-nowrap text-sm">
+          <table className="w-full whitespace-nowrap text-xs [font-variant-numeric:tabular-nums]">
             <thead>
-              <tr className="border-b border-border text-left text-xs text-muted">
-                <th className="px-4 py-2.5 font-medium">Mês</th>
-                <th className="px-4 py-2.5 font-medium">Geral {yearAnterior}</th>
-                <th className="px-4 py-2.5 font-medium">Geral {yearAtual}</th>
-                <th className="px-4 py-2.5 font-medium">Var. Geral</th>
-                <th className="px-4 py-2.5 font-medium">Interno {yearAnterior}</th>
-                <th className="px-4 py-2.5 font-medium">Interno {yearAtual}</th>
-                <th className="px-4 py-2.5 font-medium">Var. Interno</th>
-                <th className="px-4 py-2.5 font-medium">Externo {yearAnterior}</th>
-                <th className="px-4 py-2.5 font-medium">Externo {yearAtual}</th>
-                <th className="px-4 py-2.5 font-medium">Var. Externo</th>
-                <th className="px-4 py-2.5 font-medium">Contêineres {yearAnterior}</th>
-                <th className="px-4 py-2.5 font-medium">Contêineres {yearAtual}</th>
-                <th className="px-4 py-2.5 font-medium">Var. Contêineres</th>
+              <tr className="border-b border-border text-left text-[11px] text-muted">
+                <th className="px-2 py-1.5 font-medium">Mês</th>
+                <th className="px-2 py-1.5 font-medium">Geral {yearAnterior}</th>
+                <th className="px-2 py-1.5 font-medium">Geral {yearAtual}</th>
+                <th className="px-2 py-1.5 font-medium">Var. Geral</th>
+                <th className="px-2 py-1.5 font-medium">Interno {yearAnterior}</th>
+                <th className="px-2 py-1.5 font-medium">Interno {yearAtual}</th>
+                <th className="px-2 py-1.5 font-medium">Var. Interno</th>
+                <th className="px-2 py-1.5 font-medium">Externo {yearAnterior}</th>
+                <th className="px-2 py-1.5 font-medium">Externo {yearAtual}</th>
+                <th className="px-2 py-1.5 font-medium">Var. Externo</th>
+                <th className="px-2 py-1.5 font-medium">Cnt {yearAnterior}</th>
+                <th className="px-2 py-1.5 font-medium">Cnt {yearAtual}</th>
+                <th className="px-2 py-1.5 font-medium">Var. Cnt</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.label} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2.5 font-medium">{r.label}</td>
-                  <td className="px-4 py-2.5">{formatCurrency(r.geralAnterior)}</td>
-                  <td className="px-4 py-2.5">{formatCurrency(r.geralAtual)}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-2 py-1 font-medium">{r.label}</td>
+                  <td className="px-2 py-1">{formatCurrency(r.geralAnterior)}</td>
+                  <td className="px-2 py-1">{formatCurrency(r.geralAtual)}</td>
+                  <td className="px-2 py-1">
                     <DeltaBadge anterior={r.geralAnterior} atual={r.geralAtual} />
                   </td>
-                  <td className="px-4 py-2.5">{formatCurrency(r.internoAnterior)}</td>
-                  <td className="px-4 py-2.5">{formatCurrency(r.internoAtual)}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-2 py-1">{formatCurrency(r.internoAnterior)}</td>
+                  <td className="px-2 py-1">{formatCurrency(r.internoAtual)}</td>
+                  <td className="px-2 py-1">
                     <DeltaBadge anterior={r.internoAnterior} atual={r.internoAtual} />
                   </td>
-                  <td className="px-4 py-2.5">{formatCurrency(r.externoAnterior)}</td>
-                  <td className="px-4 py-2.5">{formatCurrency(r.externoAtual)}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-2 py-1">{formatCurrency(r.externoAnterior)}</td>
+                  <td className="px-2 py-1">{formatCurrency(r.externoAtual)}</td>
+                  <td className="px-2 py-1">
                     <DeltaBadge anterior={r.externoAnterior} atual={r.externoAtual} />
                   </td>
-                  <td className="px-4 py-2.5">{r.containersAnterior.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-2.5">{r.containersAtual.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-2 py-1">{r.containersAnterior.toLocaleString("pt-BR")}</td>
+                  <td className="px-2 py-1">{r.containersAtual.toLocaleString("pt-BR")}</td>
+                  <td className="px-2 py-1">
                     <DeltaBadge anterior={r.containersAnterior} atual={r.containersAtual} />
                   </td>
                 </tr>
