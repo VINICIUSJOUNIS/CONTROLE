@@ -193,7 +193,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
 
           <div className="min-w-0 print:break-after-page">
             {rankedContinents.length > 0 && (
-              <div className="mb-3 flex flex-wrap gap-2 print:hidden">
+              <div className="mb-3 flex flex-wrap gap-2 print:mb-1 print:gap-1">
                 {rankedContinents.map((c) => {
                   const totals = continentTotals.get(c)!;
                   const pct = totalValueBRL > 0 ? (totals.valueBRL / totalValueBRL) * 100 : 0;
@@ -203,7 +203,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                       key={c}
                       type="button"
                       onClick={() => setContinentFilter(active ? "todos" : c)}
-                      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors print:px-1.5 print:py-0.5 print:text-[9px] ${
                         active ? "border-primary bg-primary/10" : "border-border hover:bg-background"
                       }`}
                     >
