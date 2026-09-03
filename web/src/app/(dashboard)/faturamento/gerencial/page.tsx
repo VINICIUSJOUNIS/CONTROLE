@@ -3,6 +3,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
 import { MonthlyBreakdown } from "@/components/faturamento/monthly-breakdown";
 import { YearComparison } from "@/components/faturamento/year-comparison";
+import { PrintButton } from "@/components/faturamento/print-button";
 import { getSales, getSaleReturns } from "@/lib/data";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { DollarSign, Package } from "lucide-react";
@@ -163,9 +164,14 @@ export default async function FaturamentoGerencialPage({
     <div className="flex flex-col">
       <Topbar title="Faturamento" />
       <div className="space-y-6 p-6">
-        <GerencialFilter years={years} />
+        <div className="print:hidden">
+          <GerencialFilter years={years} />
+        </div>
 
-        <p className="text-sm text-muted">{periodLabel(year, month, day)}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted">{periodLabel(year, month, day)}</p>
+          <PrintButton />
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <KpiCard label="Faturamento Geral (R$)" value={formatCurrency(totalGeral)} icon={DollarSign} tone="teal" />
