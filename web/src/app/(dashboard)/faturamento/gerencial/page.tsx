@@ -262,8 +262,10 @@ export default async function FaturamentoGerencialPage({
           </div>
         </div>
 
+        <YearComparison yearAnterior={YEAR_ANTERIOR} yearAtual={YEAR_ATUAL} rows={comparisonRows} />
+
         {comparisonRows.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="space-y-4">
             <LineChartCard
               title={`Geral — ${YEAR_ANTERIOR} x ${YEAR_ATUAL}`}
               data={comparisonRows}
@@ -300,10 +302,20 @@ export default async function FaturamentoGerencialPage({
               ]}
               valueFormat="currency"
             />
+            <LineChartCard
+              title={`Contêineres — ${YEAR_ANTERIOR} x ${YEAR_ATUAL}`}
+              data={comparisonRows}
+              xKey="label"
+              height={220}
+              lineType="linear"
+              series={[
+                { key: "containersAnterior", name: YEAR_ANTERIOR, color: "#94a3b8" },
+                { key: "containersAtual", name: YEAR_ATUAL, color: "#f2b84b" },
+              ]}
+              valueFormat="none"
+            />
           </div>
         )}
-
-        <YearComparison yearAnterior={YEAR_ANTERIOR} yearAtual={YEAR_ATUAL} rows={comparisonRows} />
       </div>
     </div>
   );
