@@ -916,6 +916,9 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
             ).toFixed(4)
           )
         : null;
+    // Valor efetivamente pago em spread cambial no ano (soma de spreadValor das
+    // operacoes de ACC contratadas no ano), nao so o percentual medio.
+    const valorSpread = Math.round(accContratadosNoAno.reduce((s, a) => s + a.spreadValor, 0));
 
     // Taxa media ponderada do ano: emprestimos e ACC juntos, ponderados pelo
     // valor de cada operacao (nao a media simples de loanAvgRate/accAvgRate).
@@ -940,6 +943,7 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
       accAvgRate,
       taxaMediaPonderada,
       spreadMedio,
+      valorSpread,
     };
   });
 }

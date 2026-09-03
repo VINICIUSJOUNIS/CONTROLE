@@ -58,6 +58,7 @@ export default async function ApresentacaoEmprestimoAccPage({
                     <th className="px-4 py-2.5 font-medium">Taxa ACC</th>
                     <th className="px-4 py-2.5 font-medium">Taxa Média Ponderada</th>
                     <th className="px-4 py-2.5 font-medium">Spread ACC</th>
+                    <th className="px-4 py-2.5 font-medium">Valor Pago em Spread (R$)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -70,6 +71,7 @@ export default async function ApresentacaoEmprestimoAccPage({
                       <td className="px-4 py-2.5">{pct(row.accAvgRate)}</td>
                       <td className="px-4 py-2.5">{pct(row.taxaMediaPonderada)}</td>
                       <td className="px-4 py-2.5">{pct(row.spreadMedio)}</td>
+                      <td className="px-4 py-2.5">{formatCompactCurrency(row.valorSpread)}</td>
                     </tr>
                   ))}
                 </tbody>
