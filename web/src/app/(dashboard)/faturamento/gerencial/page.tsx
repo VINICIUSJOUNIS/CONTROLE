@@ -7,39 +7,8 @@ import { PrintButton } from "@/components/faturamento/print-button";
 import { LineChartCard } from "@/components/charts/line-chart-card";
 import { getSales, getSaleReturns } from "@/lib/data";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import { MESES_LABEL, matchesPeriod, periodLabel } from "@/lib/gerencial-shared";
 import { DollarSign, Package } from "lucide-react";
-
-const MESES_LABEL = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
-
-function matchesPeriod(dateStr: string, year: string, month: string, day: string) {
-  if (!year) return true;
-  if (dateStr.slice(0, 4) !== year) return false;
-  if (!month) return true;
-  if (dateStr.slice(5, 7) !== month) return false;
-  if (!day) return true;
-  return dateStr.slice(8, 10) === day;
-}
-
-function periodLabel(year: string, month: string, day: string) {
-  if (!year) return "Todos os períodos";
-  if (!month) return `Ano de ${year}`;
-  const mesLabel = MESES_LABEL[Number(month) - 1];
-  if (!day) return `${mesLabel} de ${year}`;
-  return `${day}/${month}/${year}`;
-}
 
 export default async function FaturamentoGerencialPage({
   searchParams,
@@ -67,13 +36,6 @@ export default async function FaturamentoGerencialPage({
   const totalContainers = externos.reduce((s, v) => s + (v.containers20 ?? 0) + (v.containers40 ?? 0), 0);
   const pctInterno = totalGeral > 0 ? (totalInterno / totalGeral) * 100 : 0;
   const pctExterno = totalGeral > 0 ? (totalExterno / totalGeral) * 100 : 0;
-
-  const sacasGeral =
-    sales.reduce((s, v) => s + v.quantitySacas, 0) - returns.reduce((s, r) => s + r.quantitySacas, 0);
-  const sacasInterno =
-    internos.reduce((s, v) => s + v.quantitySacas, 0) - returnsInternos.reduce((s, r) => s + r.quantitySacas, 0);
-  const sacasExterno =
-    externos.reduce((s, v) => s + v.quantitySacas, 0) - returnsExternos.reduce((s, r) => s + r.quantitySacas, 0);
 
   const monthlyRows = year
     ? Array.from({ length: 12 }, (_, i) => {
@@ -193,22 +155,6 @@ export default async function FaturamentoGerencialPage({
             label="Faturamento — Mercado Externo (R$)"
             value={formatCurrency(totalExterno)}
             icon={DollarSign}
-            tone="soft"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 print:break-inside-avoid">
-          <KpiCard label="Volume (Sacas)" value={sacasGeral.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} icon={Package} tone="teal" />
-          <KpiCard
-            label="Volume — Mercado Interno (Sacas)"
-            value={sacasInterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
-            icon={Package}
-            tone="green"
-          />
-          <KpiCard
-            label="Volume — Mercado Externo (Sacas)"
-            value={sacasExterno.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
-            icon={Package}
             tone="soft"
           />
         </div>
