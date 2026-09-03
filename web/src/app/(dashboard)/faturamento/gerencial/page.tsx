@@ -5,7 +5,6 @@ import { MonthlyBreakdown } from "@/components/faturamento/monthly-breakdown";
 import { YearComparison } from "@/components/faturamento/year-comparison";
 import { PrintButton } from "@/components/faturamento/print-button";
 import { LineChartCard } from "@/components/charts/line-chart-card";
-import { WorldMap } from "@/components/faturamento/world-map";
 import { getSales, getSaleReturns } from "@/lib/data";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { DollarSign, Package } from "lucide-react";
@@ -181,8 +180,6 @@ export default async function FaturamentoGerencialPage({
           <p className="text-sm text-muted">{periodLabel(year, month, day)}</p>
           <PrintButton />
         </div>
-
-        <WorldMap sales={sales} />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 print:break-inside-avoid">
           <KpiCard label="Faturamento Geral (R$)" value={formatCurrency(totalGeral)} icon={DollarSign} tone="teal" />
