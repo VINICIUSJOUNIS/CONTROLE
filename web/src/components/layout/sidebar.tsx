@@ -78,8 +78,9 @@ const faturamentoNavItems = [
   { href: "/faturamento/curva-abc", label: "Curva ABC", icon: BarChart3 },
   { href: "/faturamento/relatorio", label: "Relatório Comparativo", icon: FileText },
   { href: "/faturamento/relatorio-clientes", label: "Relatório de Clientes", icon: Users },
-  { href: "/faturamento/gerencial", label: "Apresentação", icon: Gauge },
 ];
+
+const apresentacaoNavItems = [{ href: "/faturamento/gerencial", label: "Apresentação", icon: Gauge }];
 
 const creditoNavItems = [
   { href: "/credito", label: "Analise de Balanco", icon: LayoutDashboard },
@@ -118,6 +119,11 @@ const roleLabels: Record<string, string> = {
 
 const modules = [
   { match: (p: string) => p.startsWith("/credito"), label: "Analise de Credito", items: creditoNavItems },
+  {
+    match: (p: string) => p.startsWith("/faturamento/gerencial"),
+    label: "Apresentação",
+    items: apresentacaoNavItems,
+  },
   { match: (p: string) => p.startsWith("/faturamento"), label: "Faturamento", items: faturamentoNavItems },
   { match: (p: string) => p.startsWith("/hedge"), label: "Controle de Hedge", items: hedgeNavItems },
   {
