@@ -1,5 +1,5 @@
 import { Topbar } from "@/components/layout/topbar";
-import { KpiCard } from "@/components/dashboard/kpi-card";
+import { EmprestimosAccKpis } from "@/components/dashboard/emprestimos-acc-kpis";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
 import { ModalidadeFilter } from "@/components/dashboard/modalidade-filter";
 import { LineChartCard } from "@/components/charts/line-chart-card";
@@ -18,18 +18,8 @@ import {
   getYearlyComparison,
   ModalidadeFilter as ModalidadeFilterValue,
 } from "@/lib/data";
-import { formatCompactCurrency, formatDate, formatMonthLabel, formatPercent } from "@/lib/format";
-import { buildAmortizationSchedule } from "@/lib/amortization";
-import {
-  Wallet,
-  TrendingDown,
-  TrendingUp,
-  AlertTriangle,
-  CalendarClock,
-  PiggyBank,
-  Percent,
-  PieChart,
-} from "lucide-react";
+import { formatCompactCurrency, formatDate, formatMonthLabel } from "@/lib/format";
+import { proximaParcela } from "@/lib/amortization";
 
 const statusLabels: Record<string, string> = {
   ATIVO: "Ativo",
@@ -37,24 +27,6 @@ const statusLabels: Record<string, string> = {
   LIQUIDADO: "Liquidado",
   EM_ATRASO: "Em atraso",
 };
-
-// Proxima parcela ainda nao paga de um emprestimo (data e valor reais dela, nao a
-// data final do contrato nem o valor total contratado). Pode ser uma parcela em
-// atraso (vencimento no passado) - nesse caso e a mais urgente, nao a mais futura.
-function proximaParcela(
-  loan: Parameters<typeof buildAmortizationSchedule>[0] & {
-    parcelas: { numero: number; vencimento: string | null; paidAt: string | null }[];
-  }
-) {
-  const overrides: Record<number, string> = {};
-  const pagas = new Set<number>();
-  loan.parcelas.forEach((p) => {
-    if (p.vencimento) overrides[p.numero] = p.vencimento;
-    if (p.paidAt) pagas.add(p.numero);
-  });
-  const schedule = buildAmortizationSchedule(loan, overrides);
-  return schedule.find((row) => !pagas.has(row.numero)) ?? null;
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -157,87 +129,7 @@ export default async function DashboardPage({
           <ModalidadeFilter />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-          <KpiCard
-            label="Saldo devedor total"
-            value={formatCompactCurrency(kpis.saldoDevedorTotal)}
-            icon={Wallet}
-            tone="teal"
-          />
-          <KpiCard
-            label="Emprestimos em aberto"
-            value={formatCompactCurrency(kpis.saldoDevedorLoans)}
-            icon={PiggyBank}
-            tone="green"
-          />
-          <KpiCard
-            label="ACC em aberto (R$)"
-            value={formatCompactCurrency(kpis.saldoDevedorAcc)}
-            icon={PiggyBank}
-            tone="soft"
-          />
-          <KpiCard
-            label="ACC em aberto (US$)"
-            value={formatCompactCurrency(kpis.saldoDevedorAccUsd, "USD")}
-            icon={PiggyBank}
-            tone="teal"
-          />
-          <KpiCard
-            label="Total contratado"
-            value={formatCompactCurrency(kpis.totalContratadoGeral)}
-            icon={PiggyBank}
-            tone="green"
-          />
-          <KpiCard
-            label="Juros pagos"
-            value={formatCompactCurrency(kpis.jurosPagos)}
-            icon={TrendingDown}
-            tone="soft"
-          />
-          <KpiCard
-            label="Juros futuros"
-            value={formatCompactCurrency(kpis.jurosFuturos)}
-            icon={TrendingUp}
-            tone="teal"
-          />
-          <KpiCard
-            label="Operacoes ativas"
-            value={String(kpis.operacoesAtivas)}
-            icon={PiggyBank}
-            tone="green"
-          />
-          <KpiCard
-            label="Operacoes em atraso"
-            value={String(kpis.operacoesAtraso)}
-            icon={AlertTriangle}
-            trendPositive={false}
-            tone="soft"
-          />
-          <KpiCard
-            label="Exposicao cambial (ACC aberto)"
-            value={formatCompactCurrency(kpis.exposicaoCambial, "USD")}
-            icon={TrendingUp}
-            tone="teal"
-          />
-          <KpiCard
-            label="Proximo vencimento"
-            value={upcoming[0] ? formatDate(upcoming[0].vencimento) : "-"}
-            icon={CalendarClock}
-            tone="green"
-          />
-          <KpiCard
-            label="Custo medio ponderado da carteira"
-            value={formatPercent(kpis.custoMedioPonderado)}
-            icon={Percent}
-            tone="soft"
-          />
-          <KpiCard
-            label="Concentracao no maior banco"
-            value={formatPercent(kpis.concentracaoMaiorBanco, 1)}
-            icon={PieChart}
-            tone="teal"
-          />
-        </div>
+        <EmprestimosAccKpis range={range} modalidade={modalidade} />
 
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">

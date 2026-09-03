@@ -149,3 +149,21 @@ export function buildAmortizationSchedule(
     };
   });
 }
+
+// Proxima parcela ainda nao paga de um emprestimo (data e valor reais dela, nao a
+// data final do contrato nem o valor total contratado). Pode ser uma parcela em
+// atraso (vencimento no passado) - nesse caso e a mais urgente, nao a mais futura.
+export function proximaParcela(
+  loan: LoanForAmortization & {
+    parcelas: { numero: number; vencimento: string | null; paidAt: string | null }[];
+  }
+) {
+  const overrides: Record<number, string> = {};
+  const pagas = new Set<number>();
+  loan.parcelas.forEach((p) => {
+    if (p.vencimento) overrides[p.numero] = p.vencimento;
+    if (p.paidAt) pagas.add(p.numero);
+  });
+  const schedule = buildAmortizationSchedule(loan, overrides);
+  return schedule.find((row) => !pagas.has(row.numero)) ?? null;
+}
