@@ -6,7 +6,7 @@ export default function ApresentacaoEmprestimoAccPage() {
     <div className="flex flex-col">
       <Topbar title="Emprestimo e ACC" />
       <div className="p-6">
-        <EmprestimosAccKpis />
+        <EmprestimosAccKpis compact />
       </div>
     </div>
   );
