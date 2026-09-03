@@ -124,13 +124,15 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
     .filter(([id]) => continentFilter === "todos" || countryContinent(id) === continentFilter)
     .sort((a, b) => b[1].valueBRL - a[1].valueBRL);
 
-  const continentTotals = new Map<Continent, { valueBRL: number; count: number }>();
+  const continentTotals = new Map<Continent, { valueBRL: number; count: number; sacas: number; containers: number }>();
   for (const [id, stat] of statsByCountry) {
     const cont = countryContinent(id);
     if (!cont) continue;
-    const cur = continentTotals.get(cont) ?? { valueBRL: 0, count: 0 };
+    const cur = continentTotals.get(cont) ?? { valueBRL: 0, count: 0, sacas: 0, containers: 0 };
     cur.valueBRL += stat.valueBRL;
     cur.count += 1;
+    cur.sacas += stat.sacas;
+    cur.containers += stat.containers20 + stat.containers40;
     continentTotals.set(cont, cur);
   }
   const rankedContinents = CONTINENTS.filter((c) => continentTotals.has(c)).sort(
@@ -396,7 +398,8 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                             />
                             {continent}
                             <span className="font-normal">
-                              ({paisesDoContinente.length} ·{" "}
+                              ({paisesDoContinente.length} · {totals.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}{" "}
+                              sc · {totals.containers.toLocaleString("pt-BR")} cnt ·{" "}
                               {totalValueBRL > 0
                                 ? ((totals.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
                                     maximumFractionDigits: 1,
