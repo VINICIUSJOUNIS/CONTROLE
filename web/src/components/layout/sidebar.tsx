@@ -66,7 +66,6 @@ const navItems = [
 ];
 
 const faturamentoNavItems = [
-  { href: "/faturamento", label: "Dashboard de Faturamento", icon: LayoutDashboard },
   { href: "/faturamento/gerencial", label: "Faturamento", icon: Gauge },
 ];
 
