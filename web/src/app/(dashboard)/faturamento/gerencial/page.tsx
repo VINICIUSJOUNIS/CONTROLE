@@ -71,15 +71,20 @@ export default async function FaturamentoGerencialPage({
         const mExternos = mSales.filter((s) => s.clientType === "EXTERNO");
         const mReturnsInternos = mReturns.filter((r) => r.clientType === "INTERNO");
         const mReturnsExternos = mReturns.filter((r) => r.clientType === "EXTERNO");
+        const geral = mSales.reduce((s, v) => s + v.valueBRL, 0) - mReturns.reduce((s, r) => s + r.valueBRL, 0);
+        const interno =
+          mInternos.reduce((s, v) => s + v.valueBRL, 0) - mReturnsInternos.reduce((s, r) => s + r.valueBRL, 0);
+        const externo =
+          mExternos.reduce((s, v) => s + v.valueBRL, 0) - mReturnsExternos.reduce((s, r) => s + r.valueBRL, 0);
+        const containers = mExternos.reduce((s, v) => s + (v.containers20 ?? 0) + (v.containers40 ?? 0), 0);
         return {
           label: MESES_LABEL[i],
-          geral: mSales.reduce((s, v) => s + v.valueBRL, 0) - mReturns.reduce((s, r) => s + r.valueBRL, 0),
-          interno:
-            mInternos.reduce((s, v) => s + v.valueBRL, 0) -
-            mReturnsInternos.reduce((s, r) => s + r.valueBRL, 0),
-          externo:
-            mExternos.reduce((s, v) => s + v.valueBRL, 0) -
-            mReturnsExternos.reduce((s, r) => s + r.valueBRL, 0),
+          geral,
+          interno,
+          externo,
+          containers,
+          pctInterno: geral > 0 ? (interno / geral) * 100 : 0,
+          pctExterno: geral > 0 ? (externo / geral) * 100 : 0,
         };
       }).filter((_, i) => {
         const mm = String(i + 1).padStart(2, "0");
