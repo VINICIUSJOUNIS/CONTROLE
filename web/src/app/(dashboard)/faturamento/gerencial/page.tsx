@@ -207,7 +207,7 @@ export default async function FaturamentoGerencialPage({
               icon={DollarSign}
               tone="teal"
               trend={deltaGeral !== null ? formatPercent(Math.abs(deltaGeral), 1) : undefined}
-              trendLabel={`vs ${YEAR_ANTERIOR}`}
+              trendLabel={`vs ${formatCurrency(geralAnteriorTotal)} em ${YEAR_ANTERIOR}`}
               trendPositive={geralAtualTotal >= geralAnteriorTotal}
             />
             <KpiCard
@@ -216,7 +216,7 @@ export default async function FaturamentoGerencialPage({
               icon={DollarSign}
               tone="green"
               trend={deltaInterno !== null ? formatPercent(Math.abs(deltaInterno), 1) : undefined}
-              trendLabel={`vs ${YEAR_ANTERIOR}`}
+              trendLabel={`vs ${formatCurrency(internoAnteriorTotal)} em ${YEAR_ANTERIOR}`}
               trendPositive={internoAtualTotal >= internoAnteriorTotal}
             />
             <KpiCard
@@ -225,7 +225,7 @@ export default async function FaturamentoGerencialPage({
               icon={DollarSign}
               tone="soft"
               trend={deltaExterno !== null ? formatPercent(Math.abs(deltaExterno), 1) : undefined}
-              trendLabel={`vs ${YEAR_ANTERIOR}`}
+              trendLabel={`vs ${formatCurrency(externoAnteriorTotal)} em ${YEAR_ANTERIOR}`}
               trendPositive={externoAtualTotal >= externoAnteriorTotal}
             />
             <KpiCard
@@ -234,7 +234,7 @@ export default async function FaturamentoGerencialPage({
               icon={Package}
               tone="teal"
               trend={deltaContainers !== null ? formatPercent(Math.abs(deltaContainers), 1) : undefined}
-              trendLabel={`vs ${YEAR_ANTERIOR}`}
+              trendLabel={`vs ${containersAnteriorTotal.toLocaleString("pt-BR")} em ${YEAR_ANTERIOR}`}
               trendPositive={containersAtualTotal >= containersAnteriorTotal}
             />
           </div>
