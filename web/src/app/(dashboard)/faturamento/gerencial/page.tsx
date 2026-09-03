@@ -286,7 +286,7 @@ export default async function FaturamentoGerencialPage({
               lineType="linear"
               series={[
                 { key: "internoAnterior", name: YEAR_ANTERIOR, color: "#94a3b8" },
-                { key: "internoAtual", name: YEAR_ATUAL, color: "#74acb3" },
+                { key: "internoAtual", name: YEAR_ATUAL, color: "#1c8388" },
               ]}
               valueFormat="currency"
             />
@@ -298,7 +298,7 @@ export default async function FaturamentoGerencialPage({
               lineType="linear"
               series={[
                 { key: "externoAnterior", name: YEAR_ANTERIOR, color: "#94a3b8" },
-                { key: "externoAtual", name: YEAR_ATUAL, color: "#12b76a" },
+                { key: "externoAtual", name: YEAR_ATUAL, color: "#1c8388" },
               ]}
               valueFormat="currency"
             />
@@ -310,7 +310,7 @@ export default async function FaturamentoGerencialPage({
               lineType="linear"
               series={[
                 { key: "containersAnterior", name: YEAR_ANTERIOR, color: "#94a3b8" },
-                { key: "containersAtual", name: YEAR_ATUAL, color: "#f2b84b" },
+                { key: "containersAtual", name: YEAR_ATUAL, color: "#1c8388" },
               ]}
               valueFormat="none"
             />

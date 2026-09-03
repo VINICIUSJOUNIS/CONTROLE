@@ -65,7 +65,7 @@ export function LineChartCard({
             <YAxis
               tick={{ fontSize: 11, fill: "var(--muted)" }}
               tickFormatter={(value) => applyFormat(Number(value), valueFormat)}
-              width={valueFormat === "currency" ? 68 : valueFormat === "rate" ? 84 : 40}
+              width={valueFormat === "currency" ? 96 : valueFormat === "rate" ? 84 : 40}
             />
             <Tooltip
               contentStyle={{
