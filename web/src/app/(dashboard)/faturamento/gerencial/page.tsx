@@ -1,6 +1,7 @@
 import { Topbar } from "@/components/layout/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
+import { MonthlyBreakdown } from "@/components/faturamento/monthly-breakdown";
 import { getSales, getSaleReturns, getKpis } from "@/lib/data";
 import { formatCurrency } from "@/lib/format";
 import { DollarSign, PiggyBank } from "lucide-react";
@@ -61,6 +62,34 @@ export default async function FaturamentoGerencialPage({
   const totalExterno =
     externos.reduce((s, v) => s + v.valueBRL, 0) - returnsExternos.reduce((s, r) => s + r.valueBRL, 0);
 
+  const monthlyRows = year
+    ? Array.from({ length: 12 }, (_, i) => {
+        const mm = String(i + 1).padStart(2, "0");
+        const mSales = allSales.filter((s) => matchesPeriod(s.saleDate, year, mm, ""));
+        const mReturns = allReturns.filter((r) => matchesPeriod(r.returnDate, year, mm, ""));
+        const mInternos = mSales.filter((s) => s.clientType === "INTERNO");
+        const mExternos = mSales.filter((s) => s.clientType === "EXTERNO");
+        const mReturnsInternos = mReturns.filter((r) => r.clientType === "INTERNO");
+        const mReturnsExternos = mReturns.filter((r) => r.clientType === "EXTERNO");
+        return {
+          label: MESES_LABEL[i],
+          geral: mSales.reduce((s, v) => s + v.valueBRL, 0) - mReturns.reduce((s, r) => s + r.valueBRL, 0),
+          interno:
+            mInternos.reduce((s, v) => s + v.valueBRL, 0) -
+            mReturnsInternos.reduce((s, r) => s + r.valueBRL, 0),
+          externo:
+            mExternos.reduce((s, v) => s + v.valueBRL, 0) -
+            mReturnsExternos.reduce((s, r) => s + r.valueBRL, 0),
+        };
+      }).filter((_, i) => {
+        const mm = String(i + 1).padStart(2, "0");
+        return (
+          allSales.some((s) => matchesPeriod(s.saleDate, year, mm, "")) ||
+          allReturns.some((r) => matchesPeriod(r.returnDate, year, mm, ""))
+        );
+      })
+    : [];
+
   return (
     <div className="flex flex-col">
       <Topbar title="Faturamento Gerencial" />
@@ -84,6 +113,8 @@ export default async function FaturamentoGerencialPage({
             tone="soft"
           />
         </div>
+
+        <MonthlyBreakdown year={year} rows={monthlyRows} />
 
         <div className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
