@@ -76,10 +76,7 @@ export function LineChartCard({
               }}
               formatter={(value) => applyFormat(Number(value), valueFormat)}
             />
-            <Legend
-              wrapperStyle={{ fontSize: 12 }}
-              payload={series.map((s) => ({ value: s.name, type: "line", color: s.color }))}
-            />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
             {series.map((s) => (
               <Line
                 key={s.key}
