@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import worldData from "world-atlas/countries-110m.json";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -360,78 +360,81 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
               {rankedCountries.length === 0 ? (
                 <p className="text-xs text-muted">Nenhum país exportado neste filtro.</p>
               ) : (
-                <div className="space-y-3">
-                  {rankedContinents
-                    .filter((c) => continentFilter === "todos" || c === continentFilter)
-                    .map((continent) => {
-                      const paisesDoContinente = rankedCountries.filter(
-                        ([id]) => countryContinent(id) === continent
-                      );
-                      if (paisesDoContinente.length === 0) return null;
-                      const totals = continentTotals.get(continent)!;
-                      return (
-                        <div key={continent}>
-                          <table className="w-full text-sm [font-variant-numeric:tabular-nums]">
-                            <tbody>
-                              <tr className="text-xs font-medium">
-                                <td className="py-0.5 pr-2 align-top">
-                                  <span className="flex items-center gap-1.5">
+                <table className="w-full text-sm [font-variant-numeric:tabular-nums]">
+                  <tbody>
+                    {rankedContinents
+                      .filter((c) => continentFilter === "todos" || c === continentFilter)
+                      .map((continent, idx) => {
+                        const paisesDoContinente = rankedCountries.filter(
+                          ([id]) => countryContinent(id) === continent
+                        );
+                        if (paisesDoContinente.length === 0) return null;
+                        const totals = continentTotals.get(continent)!;
+                        return (
+                          <Fragment key={continent}>
+                            {idx > 0 && (
+                              <tr aria-hidden="true">
+                                <td colSpan={4} className="h-3" />
+                              </tr>
+                            )}
+                            <tr className="text-xs font-medium">
+                              <td className="py-0.5 pr-2 align-top">
+                                <span className="flex items-center gap-1.5">
+                                  <span
+                                    className="h-2 w-2 shrink-0 rounded-full"
+                                    style={{ background: CONTINENT_COLOR[continent] }}
+                                  />
+                                  {continent}
+                                  <span className="font-normal">({paisesDoContinente.length})</span>
+                                </span>
+                              </td>
+                              <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top">
+                                {totals.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc
+                              </td>
+                              <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top">
+                                {totals.containers.toLocaleString("pt-BR")} cnt
+                              </td>
+                              <td className="whitespace-nowrap py-0.5 text-right align-top">
+                                {totalValueBRL > 0
+                                  ? ((totals.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
+                                      maximumFractionDigits: 1,
+                                    })
+                                  : 0}
+                                %
+                              </td>
+                            </tr>
+                            {paisesDoContinente.map(([id, stat]) => (
+                              <tr key={id}>
+                                <td className="py-0.5 pl-3.5 pr-2 align-top">
+                                  <span className="flex items-center gap-2">
                                     <span
-                                      className="h-2 w-2 shrink-0 rounded-full"
-                                      style={{ background: CONTINENT_COLOR[continent] }}
+                                      className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                                      style={{ background: `var(--seq-${seqStep(stat.valueBRL)})` }}
                                     />
-                                    {continent}
-                                    <span className="font-normal">({paisesDoContinente.length})</span>
+                                    <span className="min-w-0 leading-snug break-words">{countryLabel(id)}</span>
                                   </span>
                                 </td>
-                                <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top">
-                                  {totals.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc
+                                <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top text-xs text-muted">
+                                  {stat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc
                                 </td>
-                                <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top">
-                                  {totals.containers.toLocaleString("pt-BR")} cnt
+                                <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top text-xs text-muted">
+                                  {(stat.containers20 + stat.containers40).toLocaleString("pt-BR")} cnt
                                 </td>
-                                <td className="whitespace-nowrap py-0.5 text-right align-top">
+                                <td className="whitespace-nowrap py-0.5 text-right align-top text-xs text-muted">
                                   {totalValueBRL > 0
-                                    ? ((totals.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
+                                    ? ((stat.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
                                         maximumFractionDigits: 1,
                                       })
                                     : 0}
                                   %
                                 </td>
                               </tr>
-                              {paisesDoContinente.map(([id, stat]) => (
-                                <tr key={id}>
-                                  <td className="py-0.5 pl-3.5 pr-2 align-top">
-                                    <span className="flex items-center gap-2">
-                                      <span
-                                        className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                                        style={{ background: `var(--seq-${seqStep(stat.valueBRL)})` }}
-                                      />
-                                      <span className="min-w-0 leading-snug break-words">{countryLabel(id)}</span>
-                                    </span>
-                                  </td>
-                                  <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top text-xs text-muted">
-                                    {stat.sacas.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} sc
-                                  </td>
-                                  <td className="whitespace-nowrap py-0.5 pr-2 text-right align-top text-xs text-muted">
-                                    {(stat.containers20 + stat.containers40).toLocaleString("pt-BR")} cnt
-                                  </td>
-                                  <td className="whitespace-nowrap py-0.5 text-right align-top text-xs text-muted">
-                                    {totalValueBRL > 0
-                                      ? ((stat.valueBRL / totalValueBRL) * 100).toLocaleString("pt-BR", {
-                                          maximumFractionDigits: 1,
-                                        })
-                                      : 0}
-                                    %
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      );
-                    })}
-                </div>
+                            ))}
+                          </Fragment>
+                        );
+                      })}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>
