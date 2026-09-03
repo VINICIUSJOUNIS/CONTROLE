@@ -3,8 +3,8 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
 import { MonthlyBreakdown } from "@/components/faturamento/monthly-breakdown";
 import { getSales, getSaleReturns, getKpis } from "@/lib/data";
-import { formatCurrency } from "@/lib/format";
-import { DollarSign, PiggyBank } from "lucide-react";
+import { formatCurrency, formatPercent } from "@/lib/format";
+import { DollarSign, PiggyBank, Package } from "lucide-react";
 
 const MESES_LABEL = [
   "Janeiro",
@@ -61,6 +61,9 @@ export default async function FaturamentoGerencialPage({
     internos.reduce((s, v) => s + v.valueBRL, 0) - returnsInternos.reduce((s, r) => s + r.valueBRL, 0);
   const totalExterno =
     externos.reduce((s, v) => s + v.valueBRL, 0) - returnsExternos.reduce((s, r) => s + r.valueBRL, 0);
+  const totalContainers = externos.reduce((s, v) => s + (v.containers20 ?? 0) + (v.containers40 ?? 0), 0);
+  const pctInterno = totalGeral > 0 ? (totalInterno / totalGeral) * 100 : 0;
+  const pctExterno = totalGeral > 0 ? (totalExterno / totalGeral) * 100 : 0;
 
   const monthlyRows = year
     ? Array.from({ length: 12 }, (_, i) => {
@@ -116,6 +119,17 @@ export default async function FaturamentoGerencialPage({
             value={formatCurrency(totalExterno)}
             icon={DollarSign}
             tone="soft"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <KpiCard label="% Mercado Interno" value={formatPercent(pctInterno, 1)} icon={Package} tone="green" />
+          <KpiCard label="% Mercado Externo" value={formatPercent(pctExterno, 1)} icon={Package} tone="soft" />
+          <KpiCard
+            label="Contêineres (Mercado Externo)"
+            value={totalContainers.toLocaleString("pt-BR")}
+            icon={Package}
+            tone="teal"
           />
         </div>
 
