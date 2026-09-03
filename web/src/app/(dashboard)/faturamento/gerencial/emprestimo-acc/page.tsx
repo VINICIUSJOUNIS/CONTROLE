@@ -2,8 +2,6 @@ import { Topbar } from "@/components/layout/topbar";
 import { EmprestimosAccKpis } from "@/components/dashboard/emprestimos-acc-kpis";
 import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChartCard } from "@/components/charts/bar-chart-card";
-import { LineChartCard } from "@/components/charts/line-chart-card";
 import { getAvailableYears, getEmprestimoAccComparativoAnual } from "@/lib/data";
 import { periodLabel } from "@/lib/gerencial-shared";
 import { formatCompactCurrency, formatPercent } from "@/lib/format";
@@ -72,38 +70,6 @@ export default async function ApresentacaoEmprestimoAccPage({
               </table>
             </CardContent>
           </Card>
-
-          <BarChartCard
-            title="Créditos Tomados x Valores Quitados por Ano"
-            data={comparativoAnual}
-            xKey="year"
-            series={[
-              { key: "totalCaptado", name: "Créditos Tomados", color: "#1c8388" },
-              { key: "valoresQuitados", name: "Valores Quitados", color: "#12b76a" },
-            ]}
-            valueFormat="currency"
-          />
-
-          <LineChartCard
-            title="Evolução da Taxa de Juros"
-            data={comparativoAnual}
-            xKey="year"
-            series={[
-              { key: "loanAvgRate", name: "Empréstimos", color: "#1c8388" },
-              { key: "accAvgRate", name: "ACC", color: "#12b76a" },
-            ]}
-            valueFormat="percent"
-            lineType="linear"
-          />
-
-          <LineChartCard
-            title="Evolução do Spread (ACC)"
-            data={comparativoAnual}
-            xKey="year"
-            series={[{ key: "spreadMedio", name: "Spread ACC", color: "#7a5af8" }]}
-            valueFormat="percent"
-            lineType="linear"
-          />
         </div>
       </div>
     </div>
