@@ -167,8 +167,8 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
           <PrintButton />
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="map-viz-root grid gap-4 lg:grid-cols-[1fr_340px]">
+      <CardContent className="print:p-2">
+        <div className="map-viz-root grid gap-4 lg:grid-cols-[1fr_340px] print:grid-cols-1 print:gap-0">
           <style>{`
             .map-viz-root {
               --seq-0: #d4ecec;
@@ -191,9 +191,9 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
             }
           `}</style>
 
-          <div className="min-w-0">
+          <div className="min-w-0 print:break-after-page">
             {rankedContinents.length > 0 && (
-              <div className="mb-3 flex flex-wrap gap-2">
+              <div className="mb-3 flex flex-wrap gap-2 print:hidden">
                 {rankedContinents.map((c) => {
                   const totals = continentTotals.get(c)!;
                   const pct = totalValueBRL > 0 ? (totals.valueBRL / totalValueBRL) * 100 : 0;
@@ -221,7 +221,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
               </div>
             )}
 
-            <div className="overflow-hidden rounded-lg border border-border bg-background">
+            <div className="overflow-hidden rounded-lg border border-border bg-background print:max-h-[520px]">
               <ComposableMap projection="geoEqualEarth" projectionConfig={{ scale: 150 }} style={{ width: "100%", height: "auto" }}>
                 <Geographies geography={worldData}>
                   {({ geographies }) =>
@@ -281,7 +281,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
               </ComposableMap>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted print:mt-1 print:text-[8px]">
               <div className="flex items-center gap-2">
                 <span>Faturamento (R$)</span>
                 <div className="flex overflow-hidden rounded-sm border border-border">
@@ -301,6 +301,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
           </div>
 
           <div className="min-w-0 space-y-3">
+            <div className="print:hidden">
             {hovered ? (
               <Card className="border-primary/40 bg-primary/5 p-3">
                 <div className="flex items-center gap-2">
@@ -354,6 +355,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
             ) : (
               <p className="text-xs text-muted">Passe o mouse sobre um país para ver o detalhe.</p>
             )}
+            </div>
 
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
