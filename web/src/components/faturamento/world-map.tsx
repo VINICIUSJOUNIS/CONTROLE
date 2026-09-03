@@ -373,7 +373,7 @@ export function WorldMap({ sales }: { sales: SaleRow[] }) {
                         <div key={continent}>
                           <table className="w-full text-sm [font-variant-numeric:tabular-nums]">
                             <tbody>
-                              <tr className="text-xs font-semibold text-muted">
+                              <tr className="text-xs font-bold">
                                 <td className="py-0.5 pr-2">
                                   <span className="flex items-center gap-1.5">
                                     <span
