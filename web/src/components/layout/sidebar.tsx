@@ -23,6 +23,10 @@ import {
   AlertTriangle,
   Send,
   Settings2,
+  Receipt,
+  Undo2,
+  Users,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -67,8 +71,14 @@ const navItems = [
 ];
 
 const faturamentoNavItems = [
-  { href: "/faturamento/gerencial", label: "Faturamento", icon: Gauge },
+  { href: "/faturamento", label: "Dashboard de Faturamento", icon: LayoutDashboard },
+  { href: "/faturamento/vendas", label: "Vendas", icon: Receipt },
+  { href: "/faturamento/devolucoes", label: "Devoluções", icon: Undo2 },
   { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
+  { href: "/faturamento/curva-abc", label: "Curva ABC", icon: BarChart3 },
+  { href: "/faturamento/relatorio", label: "Relatório Comparativo", icon: FileText },
+  { href: "/faturamento/relatorio-clientes", label: "Relatório de Clientes", icon: Users },
+  { href: "/faturamento/gerencial", label: "Apresentação", icon: Gauge },
 ];
 
 const creditoNavItems = [

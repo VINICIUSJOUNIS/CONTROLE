@@ -43,7 +43,7 @@ const modules = [
   },
   {
     href: "/faturamento/gerencial",
-    label: "Faturamento Gerencial",
+    label: "Apresentação",
     description: "Filtros por ano, mes e dia. Faturamento geral, mercado interno e mercado externo.",
     icon: Gauge,
   },
