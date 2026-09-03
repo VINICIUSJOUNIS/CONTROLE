@@ -80,7 +80,10 @@ const faturamentoNavItems = [
   { href: "/faturamento/relatorio-clientes", label: "Relatório de Clientes", icon: Users },
 ];
 
-const apresentacaoNavItems = [{ href: "/faturamento/gerencial", label: "Apresentação", icon: Gauge }];
+const apresentacaoNavItems = [
+  { href: "/faturamento/gerencial", label: "Faturamento", icon: Gauge },
+  { href: "/faturamento/paises", label: "Países Exportados", icon: MapPin },
+];
 
 const creditoNavItems = [
   { href: "/credito", label: "Analise de Balanco", icon: LayoutDashboard },
