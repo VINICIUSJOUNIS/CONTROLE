@@ -107,10 +107,17 @@ export default async function FaturamentoGerencialPage({
 
   const YEAR_ANTERIOR = "2025";
   const YEAR_ATUAL = "2026";
+  const hoje = new Date();
+  const anoAtualCalendario = String(hoje.getFullYear());
+  const mesAtualCalendario = hoje.getMonth() + 1;
   const comparisonRows = MESES_LABEL.map((label, i) => {
     const mm = String(i + 1).padStart(2, "0");
-    return { label, anterior: geralFor(YEAR_ANTERIOR, mm), atual: geralFor(YEAR_ATUAL, mm) };
-  }).filter((r) => r.anterior !== 0 || r.atual !== 0);
+    return { label, mesNum: i + 1, anterior: geralFor(YEAR_ANTERIOR, mm), atual: geralFor(YEAR_ATUAL, mm) };
+  }).filter((r) => {
+    const mesFuturo = YEAR_ATUAL === anoAtualCalendario && r.mesNum > mesAtualCalendario;
+    if (mesFuturo && r.atual === 0) return false;
+    return r.anterior !== 0 || r.atual !== 0;
+  });
 
   return (
     <div className="flex flex-col">
