@@ -876,16 +876,6 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
       loansContratadosNoAno.reduce((s, l) => s + l.contractedValue, 0) +
       accContratadosNoAno.reduce((s, a) => s + a.receivedValueBRL, 0);
 
-    const loansQuitadosNoAno = loans.filter(
-      (l) => l.status === "LIQUIDADO" && l.settlementDate && l.settlementDate.slice(0, 4) === year
-    );
-    const accQuitadosNoAno = accOperations.filter(
-      (a) => a.status === "LIQUIDADO" && a.dataQuitacao && a.dataQuitacao.slice(0, 4) === year
-    );
-    const valoresQuitados =
-      loansQuitadosNoAno.reduce((s, l) => s + l.contractedValue, 0) +
-      accQuitadosNoAno.reduce((s, a) => s + a.receivedValueBRL, 0);
-
     // Custo total (juros + IOF + tarifas + demais encargos) dos contratos
     // tomados no ano - emprestimos e ACC somados.
     const custoTotal =
@@ -944,7 +934,6 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
     return {
       year,
       totalCaptado: Math.round(totalCaptado),
-      valoresQuitados: Math.round(valoresQuitados),
       custoTotal: Math.round(custoTotal),
       loanAvgRate,
       accAvgRate,
