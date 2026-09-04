@@ -50,7 +50,7 @@ export default async function ApresentacaoEmprestimoAccPage({
             <CardContent className="overflow-x-auto p-0">
               <table className="w-full whitespace-nowrap text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted">
+                  <tr className="border-b border-border text-center text-xs text-muted">
                     <th className="px-4 py-2.5 font-medium">Ano</th>
                     <th className="px-4 py-2.5 font-medium">Créditos Tomados (R$)</th>
                     <th className="px-4 py-2.5 font-medium">Custo Total (R$)</th>
@@ -64,7 +64,7 @@ export default async function ApresentacaoEmprestimoAccPage({
                 </thead>
                 <tbody>
                   {comparativoAnual.map((row) => (
-                    <tr key={row.year} className="border-b border-border last:border-0">
+                    <tr key={row.year} className="border-b border-border text-center last:border-0">
                       <td className="px-4 py-2.5 font-medium">{row.year}</td>
                       <td className="px-4 py-2.5">{formatCompactCurrency(row.totalCaptado)}</td>
                       <td className="px-4 py-2.5">{formatCompactCurrency(row.custoTotal)}</td>
