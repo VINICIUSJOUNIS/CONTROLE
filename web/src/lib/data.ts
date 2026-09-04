@@ -881,6 +881,9 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
     const custoTotal =
       loansContratadosNoAno.reduce((s, l) => s + l.custoTotal, 0) +
       accContratadosNoAno.reduce((s, a) => s + a.custoTotal, 0);
+    // Custo total / valor captado no ano - ja ponderado por natureza (razao entre
+    // dois totais), sem precisar de pesos separados por contrato.
+    const custoMedioPonderado = totalCaptado > 0 ? Number(((custoTotal / totalCaptado) * 100).toFixed(2)) : null;
 
     // null (em vez de 0) quando nao houve contrato no ano - 0,00% sugeriria uma
     // taxa contratada a zero, quando na verdade nao ha nenhuma operacao pra
@@ -935,6 +938,7 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
       year,
       totalCaptado: Math.round(totalCaptado),
       custoTotal: Math.round(custoTotal),
+      custoMedioPonderado,
       loanAvgRate,
       accAvgRate,
       taxaMediaPonderada,

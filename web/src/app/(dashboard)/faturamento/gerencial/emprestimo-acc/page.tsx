@@ -54,6 +54,7 @@ export default async function ApresentacaoEmprestimoAccPage({
                     <th className="px-4 py-2.5 font-medium">Ano</th>
                     <th className="px-4 py-2.5 font-medium">Créditos Tomados (R$)</th>
                     <th className="px-4 py-2.5 font-medium">Custo Total (R$)</th>
+                    <th className="px-4 py-2.5 font-medium">Custo Médio Ponderado</th>
                     <th className="px-4 py-2.5 font-medium">Taxa Empréstimos</th>
                     <th className="px-4 py-2.5 font-medium">Taxa ACC</th>
                     <th className="px-4 py-2.5 font-medium">Taxa Média Ponderada</th>
@@ -67,6 +68,7 @@ export default async function ApresentacaoEmprestimoAccPage({
                       <td className="px-4 py-2.5 font-medium">{row.year}</td>
                       <td className="px-4 py-2.5">{formatCompactCurrency(row.totalCaptado)}</td>
                       <td className="px-4 py-2.5">{formatCompactCurrency(row.custoTotal)}</td>
+                      <td className="px-4 py-2.5">{pct(row.custoMedioPonderado)}</td>
                       <td className="px-4 py-2.5">{pct(row.loanAvgRate)}</td>
                       <td className="px-4 py-2.5">{pct(row.accAvgRate)}</td>
                       <td className="px-4 py-2.5">{pct(row.taxaMediaPonderada)}</td>
