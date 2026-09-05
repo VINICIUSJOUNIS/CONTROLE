@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Landmark, Scale, Receipt, ShieldCheck, ArrowRight, Target, Send, Gauge } from "lucide-react";
+import { Landmark, Scale, Receipt, ShieldCheck, Target, Send, Gauge } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -76,19 +76,12 @@ export default async function InicioPage() {
               <Link
                 key={m.href}
                 href={m.href}
-                className="group flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary"
+                className="group flex flex-col rounded-xl border border-border bg-card p-6 shadow-sm transition-colors hover:border-primary"
               >
-                <div>
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Icon size={22} />
-                  </div>
-                  <h2 className="text-base font-semibold">{m.label}</h2>
-                  <p className="mt-1.5 text-sm text-muted">{m.description}</p>
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Icon size={22} />
                 </div>
-                <div className="mt-6 flex items-center gap-1 text-sm font-medium text-primary">
-                  Acessar
-                  <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
-                </div>
+                <h2 className="text-base font-semibold">{m.label}</h2>
               </Link>
             );
           })}
