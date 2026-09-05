@@ -166,20 +166,25 @@ export async function getContasGarantidas() {
       const valorUtilizado = n(u.valorUtilizado);
       const dataInicio = u.dataInicio;
       const dataFim = u.dataFim;
-      const { dias, juros, iof, iofAdicional, valorAPagar } = calcUso(
-        valorUtilizado,
-        taxaJurosPercent,
-        dataInicio,
-        dataFim,
-        hoje
-      );
+      const calc = calcUso(valorUtilizado, taxaJurosPercent, dataInicio, dataFim, hoje);
+      // jurosReal/iofReal: valores reais informados (ex: extrato do banco) no
+      // lugar do calculo - usado para importar historico onde o juros/IOF
+      // exato ja e conhecido, sem depender da taxa contratada atual. Quando
+      // iofReal esta preenchido, iofAdicional nao se aplica separado (ja
+      // esta embutido no valor informado).
+      const jurosReal = u.jurosReal != null ? n(u.jurosReal) : null;
+      const iofReal = u.iofReal != null ? n(u.iofReal) : null;
+      const juros = jurosReal ?? calc.juros;
+      const iof = iofReal ?? calc.iof;
+      const iofAdicional = iofReal != null ? 0 : calc.iofAdicional;
+      const valorAPagar = Number((juros + iof + iofAdicional).toFixed(2));
       return {
         id: u.id,
         valorUtilizado,
         dataInicio: dataInicio.toISOString().slice(0, 10),
         dataFim: dataFim ? dataFim.toISOString().slice(0, 10) : null,
         emAberto: dataFim === null,
-        dias,
+        dias: calc.dias,
         juros,
         iof,
         iofAdicional,

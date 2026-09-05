@@ -400,6 +400,11 @@ model ContaGarantidaUso {
   contaGarantida   ContaGarantida @relation(fields: [contaGarantidaId], references: [id], onDelete: Cascade)
   contaGarantidaId String
   valorUtilizado   Decimal        @db.Decimal(18, 2)
+  // Juros/IOF reais informados (ex: extrato do banco), usados no lugar do
+  // calculo por valorUtilizado+dias+taxa quando preenchidos. Nulo (o caso
+  // normal) mantem o comportamento de sempre - juros/IOF calculados.
+  jurosReal        Decimal?       @db.Decimal(18, 2)
+  iofReal          Decimal?       @db.Decimal(18, 2)
   dataInicio       DateTime       @db.Date
   dataFim          DateTime?      @db.Date
   observacao       String?
