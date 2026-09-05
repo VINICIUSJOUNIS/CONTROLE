@@ -305,39 +305,6 @@ export function ContaGarantidaView({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          label="Limite Contratado Total"
-          value={formatCompactCurrency(totais.limite)}
-          icon={Wallet}
-          tone="teal"
-        />
-        <KpiCard
-          label="Valor Utilizado Total"
-          value={formatCompactCurrency(totais.utilizado)}
-          icon={TrendingUp}
-          tone="soft"
-        />
-        <KpiCard
-          label="Valor Disponível Total"
-          value={formatCompactCurrency(totais.disponivel)}
-          icon={PiggyBank}
-          tone="green"
-        />
-        <KpiCard
-          label="Valor a Pagar no Período"
-          value={formatCompactCurrency(totais.aPagar)}
-          icon={Wallet}
-          tone="teal"
-        />
-        <KpiCard
-          label="Taxa Média Ponderada"
-          value={`${formatPercent(taxaMediaPonderada)} a.m.`}
-          icon={Percent}
-          tone="soft"
-        />
-      </div>
-
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-3">
           <Select value={bankFilter} onChange={(e) => setBankFilter(e.target.value)} className="w-auto">
@@ -469,6 +436,39 @@ export function ContaGarantidaView({
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          label="Limite Contratado Total"
+          value={formatCompactCurrency(totais.limite)}
+          icon={Wallet}
+          tone="teal"
+        />
+        <KpiCard
+          label="Valor Utilizado Total"
+          value={formatCompactCurrency(totais.utilizado)}
+          icon={TrendingUp}
+          tone="soft"
+        />
+        <KpiCard
+          label="Valor Disponível Total"
+          value={formatCompactCurrency(totais.disponivel)}
+          icon={PiggyBank}
+          tone="green"
+        />
+        <KpiCard
+          label="Valor a Pagar no Período"
+          value={formatCompactCurrency(totais.aPagar)}
+          icon={Wallet}
+          tone="teal"
+        />
+        <KpiCard
+          label="Taxa Média Ponderada"
+          value={`${formatPercent(taxaMediaPonderada)} a.m.`}
+          icon={Percent}
+          tone="soft"
+        />
       </div>
 
       <Card>
