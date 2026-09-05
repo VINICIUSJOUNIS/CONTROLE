@@ -8,7 +8,7 @@ export function PrintButton() {
     <>
       <style>{`
         @media print {
-          @page { size: A4 landscape; margin: 8mm; }
+          @page { size: 297mm 210mm; margin: 8mm; }
         }
       `}</style>
       <Button variant="outline" size="sm" onClick={() => window.print()} className="print:hidden">

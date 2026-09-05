@@ -82,7 +82,7 @@ option {
 
 @media print {
   @page {
-    size: A4 landscape;
+    size: 297mm 210mm;
     margin: 8mm;
   }
 
