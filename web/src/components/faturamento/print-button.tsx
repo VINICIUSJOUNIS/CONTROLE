@@ -5,9 +5,16 @@ import { Printer } from "lucide-react";
 
 export function PrintButton() {
   return (
-    <Button variant="outline" size="sm" onClick={() => window.print()} className="print:hidden">
-      <Printer size={14} />
-      Imprimir / PDF
-    </Button>
+    <>
+      <style>{`
+        @media print {
+          @page { size: A4 landscape; margin: 8mm; }
+        }
+      `}</style>
+      <Button variant="outline" size="sm" onClick={() => window.print()} className="print:hidden">
+        <Printer size={14} />
+        Imprimir / PDF
+      </Button>
+    </>
   );
 }
