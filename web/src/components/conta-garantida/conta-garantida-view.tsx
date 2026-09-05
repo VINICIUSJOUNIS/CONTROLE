@@ -93,6 +93,25 @@ function daysBetweenLocal(a: Date, b: Date) {
   return Math.max(0, Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
+const MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+function lastDayOfMonth(year: string, month: string) {
+  return new Date(Number(year), Number(month), 0).getDate();
+}
+
 // Decompoe o custo total ja calculado de cada utilizacao (juros/iof, lineares
 // nos dias de uso) em fatias por mes calendario, proporcional aos dias de uso
 // dentro de cada mes. O IOF adicional e um encargo unico na utilizacao, entao
@@ -165,9 +184,24 @@ export function ContaGarantidaView({
 
   const [bankFilter, setBankFilter] = useState("todos");
   const [statusFilter, setStatusFilter] = useState<(typeof statusUsoOptions)[number]["value"]>("todos");
-  const [fromFilter, setFromFilter] = useState("");
-  const [toFilter, setToFilter] = useState("");
-  const filtersActive = bankFilter !== "todos" || statusFilter !== "todos" || !!fromFilter || !!toFilter;
+  const [yearFilter, setYearFilter] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
+  const filtersActive = bankFilter !== "todos" || statusFilter !== "todos" || !!yearFilter;
+
+  const anosDisponiveis = useMemo(
+    () =>
+      Array.from(new Set(initialContas.flatMap((c) => c.usos.map((u) => u.dataInicio.slice(0, 4))))).sort(),
+    [initialContas]
+  );
+
+  // Ano/mes viram um intervalo de data de inicio (dataInicio da utilizacao) -
+  // so ano: o ano inteiro; ano + mes: so aquele mes.
+  const fromFilter = yearFilter ? `${yearFilter}-${monthFilter || "01"}-01` : "";
+  const toFilter = yearFilter
+    ? monthFilter
+      ? `${yearFilter}-${monthFilter}-${String(lastDayOfMonth(yearFilter, monthFilter)).padStart(2, "0")}`
+      : `${yearFilter}-12-31`
+    : "";
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -373,8 +407,8 @@ export function ContaGarantidaView({
   function clearFilters() {
     setBankFilter("todos");
     setStatusFilter("todos");
-    setFromFilter("");
-    setToFilter("");
+    setYearFilter("");
+    setMonthFilter("");
   }
 
   return (
@@ -477,17 +511,41 @@ export function ContaGarantidaView({
             ))}
           </Select>
           <div>
-            <Label>Início de</Label>
-            <Input
-              type="date"
-              value={fromFilter}
-              onChange={(e) => setFromFilter(e.target.value)}
+            <Label>Ano</Label>
+            <Select
+              value={yearFilter}
+              onChange={(e) => {
+                setYearFilter(e.target.value);
+                setMonthFilter("");
+              }}
               className="w-auto"
-            />
+            >
+              <option value="">Todos os anos</option>
+              {anosDisponiveis.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </Select>
           </div>
           <div>
-            <Label>Início até</Label>
-            <Input type="date" value={toFilter} onChange={(e) => setToFilter(e.target.value)} className="w-auto" />
+            <Label>Mês</Label>
+            <Select
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              disabled={!yearFilter}
+              className="w-auto"
+            >
+              <option value="">Todos os meses</option>
+              {MESES.map((label, i) => {
+                const value = String(i + 1).padStart(2, "0");
+                return (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                );
+              })}
+            </Select>
           </div>
           {filtersActive && (
             <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
