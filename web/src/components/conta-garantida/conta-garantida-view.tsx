@@ -7,10 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { LineChartCard } from "@/components/charts/line-chart-card";
-import { BarChartCard } from "@/components/charts/bar-chart-card";
-import { PieChartCard } from "@/components/charts/pie-chart-card";
-import { formatCompactCurrency, formatCurrency, formatMonthLabel, formatPercent } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatPercent } from "@/lib/format";
 import { ContaGarantidaRow, ContaGarantidaUsoRow } from "@/lib/data";
 import {
   createContaGarantida,
@@ -69,30 +66,6 @@ function formFromUso(contaGarantidaId: string, uso: ContaGarantidaUsoRow) {
   };
 }
 
-type EvolucaoSerie = { key: string; name: string; color: string };
-type Evolucao = { data: Record<string, unknown>[]; series: EvolucaoSerie[] };
-
-function parseISODateLocal(value: string) {
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function monthKeyLocal(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function firstOfMonthLocal(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-function endOfMonthLocal(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
-}
-
-function daysBetweenLocal(a: Date, b: Date) {
-  return Math.max(0, Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24)));
-}
-
 const MESES = [
   "Janeiro",
   "Fevereiro",
@@ -112,57 +85,6 @@ function lastDayOfMonth(year: string, month: string) {
   return new Date(Number(year), Number(month), 0).getDate();
 }
 
-// Decompoe o custo total ja calculado de cada utilizacao (juros/iof, lineares
-// nos dias de uso) em fatias por mes calendario, proporcional aos dias de uso
-// dentro de cada mes. O IOF adicional e um encargo unico na utilizacao, entao
-// entra inteiro no mes de inicio dela.
-function custoMensalDeUsos(contas: { usos: ContaGarantidaUsoRow[] }[]) {
-  const porMes = new Map<string, { juros: number; iof: number; iofAdicional: number }>();
-  const hoje = new Date();
-
-  for (const c of contas) {
-    for (const u of c.usos) {
-      if (u.dias <= 0) continue;
-      const inicio = parseISODateLocal(u.dataInicio);
-      const fim = u.dataFim ? parseISODateLocal(u.dataFim) : hoje;
-      if (fim < inicio) continue;
-
-      let diasAcumulados = 0;
-      let primeiroMes = true;
-      let cursor = firstOfMonthLocal(inicio);
-      while (cursor <= fim) {
-        const fimMes = endOfMonthLocal(cursor);
-        const ateData = fimMes < fim ? fimMes : fim;
-        const totalAteFim = daysBetweenLocal(inicio, ateData);
-        const diasNoMes = Math.max(0, totalAteFim - diasAcumulados);
-        diasAcumulados = totalAteFim;
-
-        const key = monthKeyLocal(cursor);
-        const cur = porMes.get(key) ?? { juros: 0, iof: 0, iofAdicional: 0 };
-        const fracao = diasNoMes / u.dias;
-        cur.juros += u.juros * fracao;
-        cur.iof += u.iof * fracao;
-        if (primeiroMes) {
-          cur.iofAdicional += u.iofAdicional;
-          primeiroMes = false;
-        }
-        porMes.set(key, cur);
-
-        cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
-      }
-    }
-  }
-
-  return [...porMes.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([month, v]) => ({
-      month: formatMonthLabel(month),
-      juros: Number(v.juros.toFixed(2)),
-      iof: Number(v.iof.toFixed(2)),
-      iofAdicional: Number(v.iofAdicional.toFixed(2)),
-    }));
-}
-
 const statusUsoOptions = [
   { value: "todos", label: "Todas as utilizações" },
   { value: "aberto", label: "Em aberto" },
@@ -172,11 +94,9 @@ const statusUsoOptions = [
 export function ContaGarantidaView({
   banks,
   initialContas,
-  evolucao,
 }: {
   banks: Bank[];
   initialContas: ContaGarantidaRow[];
-  evolucao: Evolucao;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -259,34 +179,6 @@ export function ContaGarantidaView({
     const soma = filteredContas.reduce((s, c) => s + c.taxaJurosPercent * c.valorUtilizado, 0);
     return Number((soma / pesoTotal).toFixed(2));
   }, [filteredContas]);
-
-  const bankChartData = useMemo(
-    () =>
-      filteredContas.map((c) => ({
-        banco: c.bankName,
-        limiteContratado: c.limiteContratado,
-        valorUtilizado: c.valorUtilizado,
-      })),
-    [filteredContas]
-  );
-
-  const custoChartData = useMemo(() => {
-    const juros = filteredContas.reduce((s, c) => s + c.jurosPeriodo, 0);
-    const iof = filteredContas.reduce((s, c) => s + c.iofPeriodo, 0);
-    const iofAdicional = filteredContas.reduce((s, c) => s + c.iofAdicionalPeriodo, 0);
-    return [
-      { name: "Juros", value: Number(juros.toFixed(2)), color: "#1c8388" },
-      { name: "IOF", value: Number(iof.toFixed(2)), color: "#d68c2b" },
-      { name: "IOF Adicional", value: Number(iofAdicional.toFixed(2)), color: "#f04438" },
-    ].filter((d) => d.value > 0);
-  }, [filteredContas]);
-
-  const custoMensalData = useMemo(() => custoMensalDeUsos(filteredContas), [filteredContas]);
-
-  const evolucaoSeries = useMemo(
-    () => (bankFilter === "todos" ? evolucao.series : evolucao.series.filter((s) => s.key === bankFilter)),
-    [evolucao.series, bankFilter]
-  );
 
   function openCreate() {
     setEditingId(null);
@@ -445,49 +337,6 @@ export function ContaGarantidaView({
           tone="soft"
         />
       </div>
-
-      {initialContas.length > 0 && (
-        <>
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <LineChartCard
-                title="Evolução do valor utilizado"
-                data={evolucao.data}
-                xKey="month"
-                series={evolucaoSeries}
-                valueFormat="currency"
-              />
-            </div>
-            <PieChartCard title="Composição do custo (juros x IOF)" data={custoChartData} />
-          </div>
-
-          <BarChartCard
-            title="Limite Contratado x Valor Utilizado por Banco"
-            data={bankChartData}
-            xKey="banco"
-            series={[
-              { key: "limiteContratado", name: "Limite Contratado", color: "#a8c5c8" },
-              { key: "valorUtilizado", name: "Valor Utilizado", color: "#1c8388" },
-            ]}
-            valueFormat="currency"
-          />
-
-          {custoMensalData.length > 0 && (
-            <BarChartCard
-              title="Custo Mensal (Juros x IOF x IOF Adicional)"
-              data={custoMensalData}
-              xKey="month"
-              stacked
-              series={[
-                { key: "juros", name: "Juros", color: "#1c8388" },
-                { key: "iof", name: "IOF", color: "#d68c2b" },
-                { key: "iofAdicional", name: "IOF Adicional", color: "#f04438" },
-              ]}
-              valueFormat="currency"
-            />
-          )}
-        </>
-      )}
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-3">
