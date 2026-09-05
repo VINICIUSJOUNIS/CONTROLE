@@ -78,7 +78,7 @@ function formFromUso(contaGarantidaId: string, uso: ContaGarantidaUsoRow) {
   };
 }
 
-const MESES = [
+export const MESES = [
   "Janeiro",
   "Fevereiro",
   "Março",
@@ -93,7 +93,7 @@ const MESES = [
   "Dezembro",
 ];
 
-function lastDayOfMonth(year: string, month: string) {
+export function lastDayOfMonth(year: string, month: string) {
   return new Date(Number(year), Number(month), 0).getDate();
 }
 

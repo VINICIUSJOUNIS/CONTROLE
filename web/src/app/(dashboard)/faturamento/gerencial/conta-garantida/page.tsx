@@ -1,15 +1,15 @@
 import { Topbar } from "@/components/layout/topbar";
-import { ContaGarantidaView } from "@/components/conta-garantida/conta-garantida-view";
-import { getBanks, getContasGarantidas } from "@/lib/data";
+import { ContaGarantidaResumo } from "@/components/conta-garantida/conta-garantida-resumo";
+import { getContasGarantidas } from "@/lib/data";
 
 export default async function ApresentacaoContaGarantidaPage() {
-  const [banks, contas] = await Promise.all([getBanks(), getContasGarantidas()]);
+  const contas = await getContasGarantidas();
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Conta Garantida" subtitle="Limite contratado e utilização por banco" />
+      <Topbar title="Conta Garantida" />
       <div className="space-y-6 p-6">
-        <ContaGarantidaView banks={banks} initialContas={contas} />
+        <ContaGarantidaResumo initialContas={contas} />
       </div>
     </div>
   );
