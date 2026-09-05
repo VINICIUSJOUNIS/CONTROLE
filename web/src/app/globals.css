@@ -103,6 +103,13 @@ option {
   thead {
     display: table-header-group;
   }
+
+  /* Containers com scroll horizontal (tabelas largas) escondem o excesso via
+     scroll na tela, mas na impressao nao ha como rolar - sem isso, as
+     colunas que passam da largura do container ficam cortadas. */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
 }
 
 ::-webkit-scrollbar {
