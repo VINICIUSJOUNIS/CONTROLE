@@ -86,6 +86,7 @@ const apresentacaoNavItems = [
   { href: "/faturamento/gerencial/volume-sacas", label: "Volume de Sacas", icon: Package },
   { href: "/faturamento/gerencial/paises", label: "Países Exportados", icon: MapPin },
   { href: "/faturamento/gerencial/emprestimo-acc", label: "Emprestimo e ACC", icon: Landmark },
+  { href: "/faturamento/gerencial/conta-garantida", label: "Conta Garantida", icon: Wallet },
 ];
 
 const creditoNavItems = [
