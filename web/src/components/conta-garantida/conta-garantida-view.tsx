@@ -124,9 +124,32 @@ export function computeComparativoCustoMensal(initialContas: ContaGarantidaRow[]
     }
     return Number(total.toFixed(2));
   }
+  // Ponderada pelo custo (valorAPagar) de cada conta no mes, nao pelo valor
+  // utilizado - o historico importado tem valorUtilizado=0, entao a taxa
+  // ficaria indefinida se pesasse por ele.
+  function custoMedioPonderadoNoMes(ano: string, mm: string) {
+    const month = `${ano}-${mm}`;
+    let pesoTotal = 0;
+    let soma = 0;
+    for (const c of initialContas) {
+      for (const u of c.usos) {
+        if (u.dataInicio.slice(0, 7) === month) {
+          pesoTotal += u.valorAPagar;
+          soma += c.taxaJurosPercent * u.valorAPagar;
+        }
+      }
+    }
+    return pesoTotal > 0 ? Number((soma / pesoTotal).toFixed(2)) : null;
+  }
   const linhas = MESES.map((label, i) => {
     const mm = String(i + 1).padStart(2, "0");
-    return { label, y2025: custoNoMes("2025", mm), y2026: custoNoMes("2026", mm) };
+    return {
+      label,
+      y2025: custoNoMes("2025", mm),
+      y2026: custoNoMes("2026", mm),
+      custoMedioPonderado2025: custoMedioPonderadoNoMes("2025", mm),
+      custoMedioPonderado2026: custoMedioPonderadoNoMes("2026", mm),
+    };
   }).filter((r) => r.y2025 > 0 || r.y2026 > 0);
   return linhas;
 }
@@ -647,6 +670,8 @@ export function ContaGarantidaView({
                   <th className="px-4 py-2.5 font-medium">Custo Final 2025</th>
                   <th className="px-4 py-2.5 font-medium">Custo Final 2026</th>
                   <th className="px-4 py-2.5 font-medium">Variação</th>
+                  <th className="px-4 py-2.5 font-medium">Custo Médio Ponderado 2025</th>
+                  <th className="px-4 py-2.5 font-medium">Custo Médio Ponderado 2026</th>
                 </tr>
               </thead>
               <tbody>
@@ -657,6 +682,12 @@ export function ContaGarantidaView({
                     <td className="px-4 py-2.5">{formatCurrency(r.y2026)}</td>
                     <td className="px-4 py-2.5">
                       <DeltaBadge anterior={r.y2025} atual={r.y2026} />
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {r.custoMedioPonderado2025 === null ? "-" : formatPercent(r.custoMedioPonderado2025)}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {r.custoMedioPonderado2026 === null ? "-" : formatPercent(r.custoMedioPonderado2026)}
                     </td>
                   </tr>
                 ))}

@@ -147,6 +147,8 @@ export function ContaGarantidaResumo({ initialContas }: { initialContas: ContaGa
                   <th className="px-4 py-2.5 font-medium">Custo Final 2025</th>
                   <th className="px-4 py-2.5 font-medium">Custo Final 2026</th>
                   <th className="px-4 py-2.5 font-medium">Variação</th>
+                  <th className="px-4 py-2.5 font-medium">Custo Médio Ponderado 2025</th>
+                  <th className="px-4 py-2.5 font-medium">Custo Médio Ponderado 2026</th>
                 </tr>
               </thead>
               <tbody>
@@ -157,6 +159,12 @@ export function ContaGarantidaResumo({ initialContas }: { initialContas: ContaGa
                     <td className="px-4 py-2.5">{formatCurrency(r.y2026)}</td>
                     <td className="px-4 py-2.5">
                       <DeltaBadge anterior={r.y2025} atual={r.y2026} />
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {r.custoMedioPonderado2025 === null ? "-" : formatPercent(r.custoMedioPonderado2025)}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {r.custoMedioPonderado2026 === null ? "-" : formatPercent(r.custoMedioPonderado2026)}
                     </td>
                   </tr>
                 ))}
