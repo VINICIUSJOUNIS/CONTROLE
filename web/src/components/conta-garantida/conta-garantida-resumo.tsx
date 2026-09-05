@@ -1,11 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label, Select } from "@/components/ui/field";
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { formatCompactCurrency, formatPercent } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatPercent } from "@/lib/format";
 import { ContaGarantidaRow } from "@/lib/data";
-import { MESES, lastDayOfMonth } from "@/components/conta-garantida/conta-garantida-view";
+import {
+  MESES,
+  lastDayOfMonth,
+  DeltaBadge,
+  computeComparativoCustoMensal,
+} from "@/components/conta-garantida/conta-garantida-view";
 import { Wallet, PiggyBank, TrendingUp, Percent } from "lucide-react";
 
 // Versao resumida de Conta Garantida (so filtro de Ano/Mes + KPIs), usada em
@@ -56,6 +62,8 @@ export function ContaGarantidaResumo({ initialContas }: { initialContas: ContaGa
     const soma = filteredContas.reduce((s, c) => s + c.taxaJurosPercent * c.jurosPeriodo, 0);
     return Number((soma / pesoTotal).toFixed(2));
   }, [filteredContas]);
+
+  const comparativoCustoMensal = useMemo(() => computeComparativoCustoMensal(initialContas), [initialContas]);
 
   return (
     <div className="space-y-4">
@@ -125,6 +133,38 @@ export function ContaGarantidaResumo({ initialContas }: { initialContas: ContaGa
           tone="soft"
         />
       </div>
+
+      {comparativoCustoMensal.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Comparativo de Custos — Meses de 2025 x 2026</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto p-0">
+            <table className="w-full whitespace-nowrap text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-muted">
+                  <th className="px-4 py-2.5 font-medium">Mês</th>
+                  <th className="px-4 py-2.5 font-medium">Custo Final 2025</th>
+                  <th className="px-4 py-2.5 font-medium">Custo Final 2026</th>
+                  <th className="px-4 py-2.5 font-medium">Variação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparativoCustoMensal.map((r) => (
+                  <tr key={r.label} className="border-b border-border last:border-0">
+                    <td className="px-4 py-2.5 font-medium">{r.label}</td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2025)}</td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2026)}</td>
+                    <td className="px-4 py-2.5">
+                      <DeltaBadge anterior={r.y2025} atual={r.y2026} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

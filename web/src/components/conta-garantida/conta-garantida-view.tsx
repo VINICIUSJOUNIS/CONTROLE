@@ -97,7 +97,7 @@ export function lastDayOfMonth(year: string, month: string) {
   return new Date(Number(year), Number(month), 0).getDate();
 }
 
-function DeltaBadge({ anterior, atual }: { anterior: number; atual: number }) {
+export function DeltaBadge({ anterior, atual }: { anterior: number; atual: number }) {
   // Sem base em 2025 (anterior = 0), a variacao percentual nao existe (divisao
   // por zero) - mostra so "Novo", sem seta, em vez de uma seta sem numero.
   if (anterior === 0) {
@@ -111,6 +111,24 @@ function DeltaBadge({ anterior, atual }: { anterior: number; atual: number }) {
       {formatPercent(Math.abs(delta), 1)}
     </span>
   );
+}
+
+export function computeComparativoCustoMensal(initialContas: ContaGarantidaRow[]) {
+  function custoNoMes(ano: string, mm: string) {
+    const month = `${ano}-${mm}`;
+    let total = 0;
+    for (const c of initialContas) {
+      for (const u of c.usos) {
+        if (u.dataInicio.slice(0, 7) === month) total += u.valorAPagar;
+      }
+    }
+    return Number(total.toFixed(2));
+  }
+  const linhas = MESES.map((label, i) => {
+    const mm = String(i + 1).padStart(2, "0");
+    return { label, y2025: custoNoMes("2025", mm), y2026: custoNoMes("2026", mm) };
+  }).filter((r) => r.y2025 > 0 || r.y2026 > 0);
+  return linhas;
 }
 
 const statusUsoOptions = [
@@ -254,25 +272,7 @@ export function ContaGarantidaView({
   // um saldo, entao nao tem ambiguidade de "carregar pra frente" como
   // utilizacao/saldo tinha). Sempre com todas as contas/utilizacoes
   // (initialContas), independente dos filtros do topo da pagina.
-  const comparativoCustoMensal = useMemo(() => {
-    function custoNoMes(ano: string, mm: string) {
-      const month = `${ano}-${mm}`;
-      let total = 0;
-      for (const c of initialContas) {
-        for (const u of c.usos) {
-          if (u.dataInicio.slice(0, 7) === month) total += u.valorAPagar;
-        }
-      }
-      return Number(total.toFixed(2));
-    }
-
-    const linhas = MESES.map((label, i) => {
-      const mm = String(i + 1).padStart(2, "0");
-      return { label, y2025: custoNoMes("2025", mm), y2026: custoNoMes("2026", mm) };
-    }).filter((r) => r.y2025 > 0 || r.y2026 > 0);
-
-    return linhas;
-  }, [initialContas]);
+  const comparativoCustoMensal = useMemo(() => computeComparativoCustoMensal(initialContas), [initialContas]);
 
   function openCreate() {
     setEditingId(null);
