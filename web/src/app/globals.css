@@ -93,6 +93,16 @@ option {
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+
+  table {
+    break-inside: auto;
+  }
+  tr {
+    break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
 }
 
 ::-webkit-scrollbar {
