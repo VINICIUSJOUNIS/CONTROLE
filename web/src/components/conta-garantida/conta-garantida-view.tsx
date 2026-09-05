@@ -413,6 +413,46 @@ export function ContaGarantidaView({
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-end gap-4 rounded-lg border border-border bg-card p-3">
+        <div>
+          <Label>Ano</Label>
+          <Select
+            value={yearFilter}
+            onChange={(e) => {
+              setYearFilter(e.target.value);
+              setMonthFilter("");
+            }}
+            className="w-auto"
+          >
+            <option value="">Todos os anos</option>
+            {anosDisponiveis.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <Label>Mês</Label>
+          <Select
+            value={monthFilter}
+            onChange={(e) => setMonthFilter(e.target.value)}
+            disabled={!yearFilter}
+            className="w-auto"
+          >
+            <option value="">Todos os meses</option>
+            {MESES.map((label, i) => {
+              const value = String(i + 1).padStart(2, "0");
+              return (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              );
+            })}
+          </Select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Limite Contratado Total"
@@ -510,43 +550,6 @@ export function ContaGarantidaView({
               </option>
             ))}
           </Select>
-          <div>
-            <Label>Ano</Label>
-            <Select
-              value={yearFilter}
-              onChange={(e) => {
-                setYearFilter(e.target.value);
-                setMonthFilter("");
-              }}
-              className="w-auto"
-            >
-              <option value="">Todos os anos</option>
-              {anosDisponiveis.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <Label>Mês</Label>
-            <Select
-              value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
-              disabled={!yearFilter}
-              className="w-auto"
-            >
-              <option value="">Todos os meses</option>
-              {MESES.map((label, i) => {
-                const value = String(i + 1).padStart(2, "0");
-                return (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                );
-              })}
-            </Select>
-          </div>
           {filtersActive && (
             <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
               Limpar filtros
