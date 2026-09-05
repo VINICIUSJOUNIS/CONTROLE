@@ -2,7 +2,7 @@
 
 import { Fragment, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
@@ -20,7 +20,19 @@ import {
   ContaGarantidaUsoFormInput,
 } from "@/app/(dashboard)/conta-garantida/actions";
 import { NovoBanco } from "@/components/bancos/novo-banco";
-import { Plus, Pencil, Trash2, Wallet, PiggyBank, TrendingUp, ChevronDown, ChevronRight, Percent } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Wallet,
+  PiggyBank,
+  TrendingUp,
+  ChevronDown,
+  ChevronRight,
+  Percent,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 
 type Bank = { id: string; name: string; color: string };
 
@@ -83,6 +95,17 @@ const MESES = [
 
 function lastDayOfMonth(year: string, month: string) {
   return new Date(Number(year), Number(month), 0).getDate();
+}
+
+function DeltaBadge({ anterior, atual }: { anterior: number; atual: number }) {
+  const delta = anterior !== 0 ? ((atual - anterior) / anterior) * 100 : null;
+  const subiu = atual >= anterior;
+  return (
+    <span className={`inline-flex items-center gap-1 font-medium ${subiu ? "text-danger" : "text-success"}`}>
+      {subiu ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+      {delta !== null ? formatPercent(Math.abs(delta), 1) : "-"}
+    </span>
+  );
 }
 
 const statusUsoOptions = [
@@ -180,6 +203,46 @@ export function ContaGarantidaView({
     const soma = filteredContas.reduce((s, c) => s + c.taxaJurosPercent * c.jurosPeriodo, 0);
     return Number((soma / pesoTotal).toFixed(2));
   }, [filteredContas]);
+
+  // Comparativo 2025 x 2026 por banco - sempre com todas as contas/utilizacoes
+  // (initialContas), independente dos filtros de banco/status/ano/mes do topo,
+  // pra comparar os dois anos inteiros lado a lado.
+  const comparativoAnual = useMemo(() => {
+    function totaisDoAno(usos: ContaGarantidaUsoRow[], ano: string) {
+      const doAno = usos.filter((u) => u.dataInicio.slice(0, 4) === ano);
+      return {
+        juros: Number(doAno.reduce((s, u) => s + u.juros, 0).toFixed(2)),
+        iof: Number(doAno.reduce((s, u) => s + u.iof + u.iofAdicional, 0).toFixed(2)),
+        valorAPagar: Number(doAno.reduce((s, u) => s + u.valorAPagar, 0).toFixed(2)),
+      };
+    }
+
+    const linhas = initialContas
+      .map((c) => ({
+        bankName: c.bankName,
+        y2025: totaisDoAno(c.usos, "2025"),
+        y2026: totaisDoAno(c.usos, "2026"),
+      }))
+      .filter((r) => r.y2025.valorAPagar > 0 || r.y2026.valorAPagar > 0);
+
+    const total = linhas.reduce(
+      (acc, r) => ({
+        y2025: {
+          juros: acc.y2025.juros + r.y2025.juros,
+          iof: acc.y2025.iof + r.y2025.iof,
+          valorAPagar: acc.y2025.valorAPagar + r.y2025.valorAPagar,
+        },
+        y2026: {
+          juros: acc.y2026.juros + r.y2026.juros,
+          iof: acc.y2026.iof + r.y2026.iof,
+          valorAPagar: acc.y2026.valorAPagar + r.y2026.valorAPagar,
+        },
+      }),
+      { y2025: { juros: 0, iof: 0, valorAPagar: 0 }, y2026: { juros: 0, iof: 0, valorAPagar: 0 } }
+    );
+
+    return { linhas, total };
+  }, [initialContas]);
 
   function openCreate() {
     setEditingId(null);
@@ -471,6 +534,75 @@ export function ContaGarantidaView({
           tone="soft"
         />
       </div>
+
+      {comparativoAnual.linhas.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Comparativo — 2025 x 2026</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto p-0">
+            <table className="w-full whitespace-nowrap text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-muted">
+                  <th className="px-4 py-2.5 font-medium">Banco</th>
+                  <th className="px-4 py-2.5 font-medium">Juros 2025</th>
+                  <th className="px-4 py-2.5 font-medium">Juros 2026</th>
+                  <th className="px-4 py-2.5 font-medium">Var. Juros</th>
+                  <th className="px-4 py-2.5 font-medium">IOF 2025</th>
+                  <th className="px-4 py-2.5 font-medium">IOF 2026</th>
+                  <th className="px-4 py-2.5 font-medium">Var. IOF</th>
+                  <th className="px-4 py-2.5 font-medium">Total a Pagar 2025</th>
+                  <th className="px-4 py-2.5 font-medium">Total a Pagar 2026</th>
+                  <th className="px-4 py-2.5 font-medium">Var. Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparativoAnual.linhas.map((r) => (
+                  <tr key={r.bankName} className="border-b border-border last:border-0">
+                    <td className="px-4 py-2.5 font-medium">{r.bankName}</td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2025.juros)}</td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2026.juros)}</td>
+                    <td className="px-4 py-2.5">
+                      <DeltaBadge anterior={r.y2025.juros} atual={r.y2026.juros} />
+                    </td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2025.iof)}</td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2026.iof)}</td>
+                    <td className="px-4 py-2.5">
+                      <DeltaBadge anterior={r.y2025.iof} atual={r.y2026.iof} />
+                    </td>
+                    <td className="px-4 py-2.5 font-medium">{formatCurrency(r.y2025.valorAPagar)}</td>
+                    <td className="px-4 py-2.5 font-medium">{formatCurrency(r.y2026.valorAPagar)}</td>
+                    <td className="px-4 py-2.5">
+                      <DeltaBadge anterior={r.y2025.valorAPagar} atual={r.y2026.valorAPagar} />
+                    </td>
+                  </tr>
+                ))}
+                <tr className="border-b border-border font-semibold last:border-0">
+                  <td className="px-4 py-2.5">Total</td>
+                  <td className="px-4 py-2.5">{formatCurrency(comparativoAnual.total.y2025.juros)}</td>
+                  <td className="px-4 py-2.5">{formatCurrency(comparativoAnual.total.y2026.juros)}</td>
+                  <td className="px-4 py-2.5">
+                    <DeltaBadge anterior={comparativoAnual.total.y2025.juros} atual={comparativoAnual.total.y2026.juros} />
+                  </td>
+                  <td className="px-4 py-2.5">{formatCurrency(comparativoAnual.total.y2025.iof)}</td>
+                  <td className="px-4 py-2.5">{formatCurrency(comparativoAnual.total.y2026.iof)}</td>
+                  <td className="px-4 py-2.5">
+                    <DeltaBadge anterior={comparativoAnual.total.y2025.iof} atual={comparativoAnual.total.y2026.iof} />
+                  </td>
+                  <td className="px-4 py-2.5">{formatCurrency(comparativoAnual.total.y2025.valorAPagar)}</td>
+                  <td className="px-4 py-2.5">{formatCurrency(comparativoAnual.total.y2026.valorAPagar)}</td>
+                  <td className="px-4 py-2.5">
+                    <DeltaBadge
+                      anterior={comparativoAnual.total.y2025.valorAPagar}
+                      atual={comparativoAnual.total.y2026.valorAPagar}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="max-h-[70vh] overflow-auto p-0">
