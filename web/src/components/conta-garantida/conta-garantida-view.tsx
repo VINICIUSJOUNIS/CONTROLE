@@ -244,28 +244,40 @@ export function ContaGarantidaView({
     return { linhas, total };
   }, [initialContas]);
 
-  // Utilizacao (valorUtilizado) mes a mes, 2025 x 2026 - soma de todas as
-  // contas, considerando uma utilizacao "do mes" se o periodo dela (inicio a
-  // fim) toca aquele mes, igual a antiga getContaGarantidaEvolucao. Sempre com
-  // todas as contas/utilizacoes (initialContas), independente dos filtros do
-  // topo da pagina.
+  // Utilizacao final de cada mes, 2025 x 2026: por conta, pega o valor da
+  // ultima utilizacao lancada ate o fim daquele mes (carry-forward - a conta
+  // garantida e rotativa e as utilizacoes se sucedem em periodos curtos, entao
+  // somar todas as que "tocam" o mes conta o mesmo saque varias vezes, gerando
+  // um valor bem maior que o proprio limite contratado. Isso reproduz a
+  // utilizacao final de cada conta no mes e soma entre as contas). Nao projeta
+  // mes futuro (sem lancamento ainda) alem do mes atual. Sempre com todas as
+  // contas/utilizacoes (initialContas), independente dos filtros do topo da
+  // pagina.
   const comparativoUtilizacaoMensal = useMemo(() => {
-    const todosUsos = initialContas.flatMap((c) => c.usos);
+    const hojeMonth = todayISO().slice(0, 7);
 
-    function utilizadoNoMes(ano: string, mm: string) {
+    function lastDay(ano: string, mm: string) {
+      return new Date(Number(ano), Number(mm), 0).toISOString().slice(0, 10);
+    }
+
+    function utilizacaoFinalNoMes(ano: string, mm: string) {
       const month = `${ano}-${mm}`;
-      return Number(
-        todosUsos
-          .filter((u) => u.dataInicio.slice(0, 7) <= month && (!u.dataFim || u.dataFim.slice(0, 7) >= month))
-          .reduce((s, u) => s + u.valorUtilizado, 0)
-          .toFixed(2)
-      );
+      if (month > hojeMonth) return null;
+      const cutoff = lastDay(ano, mm);
+      let total = 0;
+      for (const c of initialContas) {
+        const anteriores = c.usos.filter((u) => u.dataInicio <= cutoff);
+        if (anteriores.length === 0) continue;
+        const ultima = anteriores.reduce((a, b) => (b.dataInicio > a.dataInicio ? b : a));
+        total += ultima.valorUtilizado;
+      }
+      return Number(total.toFixed(2));
     }
 
     const linhas = MESES.map((label, i) => {
       const mm = String(i + 1).padStart(2, "0");
-      return { label, y2025: utilizadoNoMes("2025", mm), y2026: utilizadoNoMes("2026", mm) };
-    }).filter((r) => r.y2025 > 0 || r.y2026 > 0);
+      return { label, y2025: utilizacaoFinalNoMes("2025", mm), y2026: utilizacaoFinalNoMes("2026", mm) };
+    }).filter((r) => (r.y2025 ?? 0) > 0 || (r.y2026 ?? 0) > 0);
 
     return linhas;
   }, [initialContas]);
@@ -640,8 +652,8 @@ export function ContaGarantidaView({
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted">
                   <th className="px-4 py-2.5 font-medium">Mês</th>
-                  <th className="px-4 py-2.5 font-medium">Utilização 2025</th>
-                  <th className="px-4 py-2.5 font-medium">Utilização 2026</th>
+                  <th className="px-4 py-2.5 font-medium">Utilização Final 2025</th>
+                  <th className="px-4 py-2.5 font-medium">Utilização Final 2026</th>
                   <th className="px-4 py-2.5 font-medium">Variação</th>
                 </tr>
               </thead>
@@ -649,10 +661,14 @@ export function ContaGarantidaView({
                 {comparativoUtilizacaoMensal.map((r) => (
                   <tr key={r.label} className="border-b border-border last:border-0">
                     <td className="px-4 py-2.5 font-medium">{r.label}</td>
-                    <td className="px-4 py-2.5">{formatCurrency(r.y2025)}</td>
-                    <td className="px-4 py-2.5">{formatCurrency(r.y2026)}</td>
+                    <td className="px-4 py-2.5">{r.y2025 === null ? "-" : formatCurrency(r.y2025)}</td>
+                    <td className="px-4 py-2.5">{r.y2026 === null ? "-" : formatCurrency(r.y2026)}</td>
                     <td className="px-4 py-2.5">
-                      <DeltaBadge anterior={r.y2025} atual={r.y2026} />
+                      {r.y2025 === null || r.y2026 === null ? (
+                        <span className="text-muted">-</span>
+                      ) : (
+                        <DeltaBadge anterior={r.y2025} atual={r.y2026} />
+                      )}
                     </td>
                   </tr>
                 ))}
