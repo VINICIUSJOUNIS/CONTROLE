@@ -98,12 +98,17 @@ function lastDayOfMonth(year: string, month: string) {
 }
 
 function DeltaBadge({ anterior, atual }: { anterior: number; atual: number }) {
-  const delta = anterior !== 0 ? ((atual - anterior) / anterior) * 100 : null;
+  // Sem base em 2025 (anterior = 0), a variacao percentual nao existe (divisao
+  // por zero) - mostra so "Novo", sem seta, em vez de uma seta sem numero.
+  if (anterior === 0) {
+    return atual === 0 ? <span className="text-muted">-</span> : <span className="text-muted">Novo</span>;
+  }
+  const delta = ((atual - anterior) / anterior) * 100;
   const subiu = atual >= anterior;
   return (
     <span className={`inline-flex items-center gap-1 font-medium ${subiu ? "text-danger" : "text-success"}`}>
       {subiu ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-      {delta !== null ? formatPercent(Math.abs(delta), 1) : "-"}
+      {formatPercent(Math.abs(delta), 1)}
     </span>
   );
 }
@@ -244,40 +249,27 @@ export function ContaGarantidaView({
     return { linhas, total };
   }, [initialContas]);
 
-  // Utilizacao final de cada mes, 2025 x 2026: por conta, pega o valor da
-  // ultima utilizacao lancada ate o fim daquele mes (carry-forward - a conta
-  // garantida e rotativa e as utilizacoes se sucedem em periodos curtos, entao
-  // somar todas as que "tocam" o mes conta o mesmo saque varias vezes, gerando
-  // um valor bem maior que o proprio limite contratado. Isso reproduz a
-  // utilizacao final de cada conta no mes e soma entre as contas). Nao projeta
-  // mes futuro (sem lancamento ainda) alem do mes atual. Sempre com todas as
-  // contas/utilizacoes (initialContas), independente dos filtros do topo da
-  // pagina.
-  const comparativoUtilizacaoMensal = useMemo(() => {
-    const hojeMonth = todayISO().slice(0, 7);
-
-    function lastDay(ano: string, mm: string) {
-      return new Date(Number(ano), Number(mm), 0).toISOString().slice(0, 10);
-    }
-
-    function utilizacaoFinalNoMes(ano: string, mm: string) {
+  // Custo final (juros + IOF + IOF adicional) de cada mes, 2025 x 2026 - soma
+  // de todas as contas, por mes de inicio da utilizacao (custo e um fluxo, nao
+  // um saldo, entao nao tem ambiguidade de "carregar pra frente" como
+  // utilizacao/saldo tinha). Sempre com todas as contas/utilizacoes
+  // (initialContas), independente dos filtros do topo da pagina.
+  const comparativoCustoMensal = useMemo(() => {
+    function custoNoMes(ano: string, mm: string) {
       const month = `${ano}-${mm}`;
-      if (month > hojeMonth) return null;
-      const cutoff = lastDay(ano, mm);
       let total = 0;
       for (const c of initialContas) {
-        const anteriores = c.usos.filter((u) => u.dataInicio <= cutoff);
-        if (anteriores.length === 0) continue;
-        const ultima = anteriores.reduce((a, b) => (b.dataInicio > a.dataInicio ? b : a));
-        total += ultima.valorUtilizado;
+        for (const u of c.usos) {
+          if (u.dataInicio.slice(0, 7) === month) total += u.valorAPagar;
+        }
       }
       return Number(total.toFixed(2));
     }
 
     const linhas = MESES.map((label, i) => {
       const mm = String(i + 1).padStart(2, "0");
-      return { label, y2025: utilizacaoFinalNoMes("2025", mm), y2026: utilizacaoFinalNoMes("2026", mm) };
-    }).filter((r) => (r.y2025 ?? 0) > 0 || (r.y2026 ?? 0) > 0);
+      return { label, y2025: custoNoMes("2025", mm), y2026: custoNoMes("2026", mm) };
+    }).filter((r) => r.y2025 > 0 || r.y2026 > 0);
 
     return linhas;
   }, [initialContas]);
@@ -642,33 +634,29 @@ export function ContaGarantidaView({
         </Card>
       )}
 
-      {comparativoUtilizacaoMensal.length > 0 && (
+      {comparativoCustoMensal.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Comparativo de Utilização — Meses de 2025 x 2026</CardTitle>
+            <CardTitle>Comparativo de Custos — Meses de 2025 x 2026</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">
             <table className="w-full whitespace-nowrap text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted">
                   <th className="px-4 py-2.5 font-medium">Mês</th>
-                  <th className="px-4 py-2.5 font-medium">Utilização Final 2025</th>
-                  <th className="px-4 py-2.5 font-medium">Utilização Final 2026</th>
+                  <th className="px-4 py-2.5 font-medium">Custo Final 2025</th>
+                  <th className="px-4 py-2.5 font-medium">Custo Final 2026</th>
                   <th className="px-4 py-2.5 font-medium">Variação</th>
                 </tr>
               </thead>
               <tbody>
-                {comparativoUtilizacaoMensal.map((r) => (
+                {comparativoCustoMensal.map((r) => (
                   <tr key={r.label} className="border-b border-border last:border-0">
                     <td className="px-4 py-2.5 font-medium">{r.label}</td>
-                    <td className="px-4 py-2.5">{r.y2025 === null ? "-" : formatCurrency(r.y2025)}</td>
-                    <td className="px-4 py-2.5">{r.y2026 === null ? "-" : formatCurrency(r.y2026)}</td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2025)}</td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2026)}</td>
                     <td className="px-4 py-2.5">
-                      {r.y2025 === null || r.y2026 === null ? (
-                        <span className="text-muted">-</span>
-                      ) : (
-                        <DeltaBadge anterior={r.y2025} atual={r.y2026} />
-                      )}
+                      <DeltaBadge anterior={r.y2025} atual={r.y2026} />
                     </td>
                   </tr>
                 ))}
