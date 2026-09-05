@@ -169,14 +169,15 @@ export function ContaGarantidaView({
     );
   }, [filteredContas]);
 
-  // Media simples mistura contas com valor utilizado pequeno e grande no mesmo
-  // peso; a taxa media ponderada pesa cada conta pelo valor efetivamente
-  // utilizado (e o que de fato acumula juros), a mesma convencao de
-  // weightedAvg usada para o custo medio da carteira de emprestimos.
+  // Pesa cada conta pelo juros gerado no periodo filtrado (jurosPeriodo), nao
+  // pelo saldo em aberto hoje - isso reflete os meses efetivamente utilizados
+  // (incluindo utilizacoes ja encerradas e o historico com juros/IOF reais
+  // importados, que nao tem valorUtilizado), em vez de zerar sempre que nao
+  // ha nenhuma utilizacao aberto no momento.
   const taxaMediaPonderada = useMemo(() => {
-    const pesoTotal = filteredContas.reduce((s, c) => s + c.valorUtilizado, 0);
+    const pesoTotal = filteredContas.reduce((s, c) => s + c.jurosPeriodo, 0);
     if (pesoTotal <= 0) return 0;
-    const soma = filteredContas.reduce((s, c) => s + c.taxaJurosPercent * c.valorUtilizado, 0);
+    const soma = filteredContas.reduce((s, c) => s + c.taxaJurosPercent * c.jurosPeriodo, 0);
     return Number((soma / pesoTotal).toFixed(2));
   }, [filteredContas]);
 
