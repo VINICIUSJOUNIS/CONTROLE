@@ -244,6 +244,32 @@ export function ContaGarantidaView({
     return { linhas, total };
   }, [initialContas]);
 
+  // Utilizacao (valorUtilizado) mes a mes, 2025 x 2026 - soma de todas as
+  // contas, considerando uma utilizacao "do mes" se o periodo dela (inicio a
+  // fim) toca aquele mes, igual a antiga getContaGarantidaEvolucao. Sempre com
+  // todas as contas/utilizacoes (initialContas), independente dos filtros do
+  // topo da pagina.
+  const comparativoUtilizacaoMensal = useMemo(() => {
+    const todosUsos = initialContas.flatMap((c) => c.usos);
+
+    function utilizadoNoMes(ano: string, mm: string) {
+      const month = `${ano}-${mm}`;
+      return Number(
+        todosUsos
+          .filter((u) => u.dataInicio.slice(0, 7) <= month && (!u.dataFim || u.dataFim.slice(0, 7) >= month))
+          .reduce((s, u) => s + u.valorUtilizado, 0)
+          .toFixed(2)
+      );
+    }
+
+    const linhas = MESES.map((label, i) => {
+      const mm = String(i + 1).padStart(2, "0");
+      return { label, y2025: utilizadoNoMes("2025", mm), y2026: utilizadoNoMes("2026", mm) };
+    }).filter((r) => r.y2025 > 0 || r.y2026 > 0);
+
+    return linhas;
+  }, [initialContas]);
+
   function openCreate() {
     setEditingId(null);
     setForm(emptyForm(banks[0]?.id ?? ""));
@@ -598,6 +624,38 @@ export function ContaGarantidaView({
                     />
                   </td>
                 </tr>
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {comparativoUtilizacaoMensal.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Comparativo de Utilização — Meses de 2025 x 2026</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto p-0">
+            <table className="w-full whitespace-nowrap text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-muted">
+                  <th className="px-4 py-2.5 font-medium">Mês</th>
+                  <th className="px-4 py-2.5 font-medium">Utilização 2025</th>
+                  <th className="px-4 py-2.5 font-medium">Utilização 2026</th>
+                  <th className="px-4 py-2.5 font-medium">Variação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparativoUtilizacaoMensal.map((r) => (
+                  <tr key={r.label} className="border-b border-border last:border-0">
+                    <td className="px-4 py-2.5 font-medium">{r.label}</td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2025)}</td>
+                    <td className="px-4 py-2.5">{formatCurrency(r.y2026)}</td>
+                    <td className="px-4 py-2.5">
+                      <DeltaBadge anterior={r.y2025} atual={r.y2026} />
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </CardContent>
