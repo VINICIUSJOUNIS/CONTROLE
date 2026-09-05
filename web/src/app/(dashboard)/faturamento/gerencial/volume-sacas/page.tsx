@@ -3,6 +3,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
 import { MonthlyBreakdownSacas } from "@/components/faturamento/monthly-breakdown-sacas";
 import { YearComparisonSacas } from "@/components/faturamento/year-comparison-sacas";
+import { PrintButton } from "@/components/faturamento/print-button";
 import { LineChartCard } from "@/components/charts/line-chart-card";
 import { getSales, getSaleReturns } from "@/lib/data";
 import { formatPercent } from "@/lib/format";
@@ -123,9 +124,14 @@ export default async function ApresentacaoVolumeSacasPage({
     <div className="flex flex-col">
       <Topbar title="Volume de Sacas" />
       <div className="space-y-6 p-6">
-        <GerencialFilter years={years} />
+        <div className="print:hidden">
+          <GerencialFilter years={years} />
+        </div>
 
-        <p className="text-sm text-muted">{periodLabel(year, month, day)}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted">{periodLabel(year, month, day)}</p>
+          <PrintButton />
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <KpiCard

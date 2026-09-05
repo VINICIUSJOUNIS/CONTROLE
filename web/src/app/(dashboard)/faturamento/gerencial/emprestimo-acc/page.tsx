@@ -1,6 +1,7 @@
 import { Topbar } from "@/components/layout/topbar";
 import { EmprestimosAccKpis } from "@/components/dashboard/emprestimos-acc-kpis";
 import { GerencialFilter } from "@/components/faturamento/gerencial-filter";
+import { PrintButton } from "@/components/faturamento/print-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAvailableYears, getEmprestimoAccComparativoAnual } from "@/lib/data";
 import { periodLabel } from "@/lib/gerencial-shared";
@@ -32,9 +33,14 @@ export default async function ApresentacaoEmprestimoAccPage({
     <div className="flex flex-col">
       <Topbar title="Emprestimo e ACC" />
       <div className="space-y-6 p-6">
-        <GerencialFilter years={years} />
+        <div className="print:hidden">
+          <GerencialFilter years={years} />
+        </div>
 
-        <p className="text-sm text-muted">{periodLabel(year, month, day)}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted">{periodLabel(year, month, day)}</p>
+          <PrintButton />
+        </div>
 
         <EmprestimosAccKpis range={range} compact />
 
