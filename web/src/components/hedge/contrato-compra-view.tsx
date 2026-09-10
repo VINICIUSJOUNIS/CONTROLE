@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/field";
@@ -55,7 +56,8 @@ export type ContratoCompraCafeSalvo = {
 // Dados fixos do comprador — sempre a Nayme neste contrato de compra.
 const COMPRADOR = {
   nome: "NAYME EXPORTADORA DE CAFÉ LTDA",
-  endereco: "AVENIDA BARÃO DO RIO BRANCO, 90 - LETRA B - BAIXADA",
+  endereco1: "AVENIDA BARÃO DO RIO BRANCO",
+  endereco2: "Nro: 90 - Complemento: LETRA B - Bairro: BAIXADA",
   cidade: "MANHUAÇU - CEP: 36902-030",
   cnpj: "27.404.965/0001-04",
   telefone: "(33) 3331-6090",
@@ -580,6 +582,29 @@ export function ContratoCompraView({ initialContratos }: { initialContratos: Con
   );
 }
 
+// Linha de duas colunas no mesmo padrao do documento original: coluna
+// esquerda com largura fixa (nao encolhe com o rotulo da direita mesmo
+// quando o texto da esquerda e longo) e coluna direita alinhada a direita.
+function Row({ left, right }: { left: ReactNode; right?: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[3fr_2fr] gap-3">
+      <div>{left}</div>
+      <div>{right}</div>
+    </div>
+  );
+}
+
+// Campo do lado direito no mesmo padrao do documento original: rotulo em
+// negrito alinhado a esquerda do bloco, valor alinhado a direita da pagina.
+function RightField({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <span className="flex w-full justify-between gap-2">
+      <b className="shrink-0">{label}</b>
+      <span className="text-right">{value}</span>
+    </span>
+  );
+}
+
 function ContratoPreview({
   form,
   quantidadeKg,
@@ -593,125 +618,218 @@ function ContratoPreview({
   valorTotalLivre: number;
   className?: string;
 }) {
+  const valorLivreNum = toNumber(form.valorLivrePorSaca);
+  const valorFaturadoNum = toNumber(form.valorFaturadoPorSaca);
+
   return (
     <div
-      className={`w-full bg-white px-10 py-8 text-[11px] leading-snug text-[#1c2b36] print:h-[297mm] print:w-[210mm] print:px-12 print:py-10 ${className}`}
+      className={`w-full bg-white px-8 py-6 text-[10.5px] leading-snug text-[#1c2b36] print:h-[297mm] print:w-[210mm] print:px-10 print:py-8 ${className}`}
     >
-      <div className="mb-3 text-center">
-        <p className="text-sm font-bold">{COMPRADOR.nome}</p>
-        <p>{COMPRADOR.endereco}</p>
-        <p>{COMPRADOR.cidade}</p>
-        <p>
-          CNPJ: {COMPRADOR.cnpj} &nbsp;&nbsp; Telefone: {COMPRADOR.telefone}
-        </p>
-      </div>
-
-      <div className="mb-2 flex justify-between border-y border-[#1c2b36] py-1 font-semibold">
-        <span>Contrato: {form.numeroContrato || "____"}</span>
-        <span>CONTRATO DE COMPRA</span>
-        <span>Data: {formatDataBR(form.dataContrato)}</span>
-      </div>
-
-      <div className="mb-2 flex justify-between">
-        <span>Tipo de Operação: {form.tipoOperacao}</span>
-        <span>Modalidade: {form.modalidade}</span>
-      </div>
-      <p className="mb-3">Referência: {form.referenciaPagamento}</p>
-
-      <div className="mb-3 space-y-0.5">
-        <div className="flex justify-between">
-          <span>
-            Vendedor: {form.codigoVendedor} - {form.nomeVendedor}
-          </span>
-          <span>CNPJ/CPF: {form.cnpjVendedor}</span>
+      <div className="relative mb-2 flex justify-center">
+        <Image
+          src="/nayme-logo-oc.png"
+          alt="Nayme Exportadora de Café"
+          width={422}
+          height={168}
+          className="absolute left-0 top-0 h-14 w-auto"
+        />
+        <div className="text-center">
+          <p className="text-[15px] font-bold">{COMPRADOR.nome}</p>
+          <p>{COMPRADOR.endereco1}</p>
+          <p>{COMPRADOR.endereco2}</p>
+          <p>{COMPRADOR.cidade}</p>
+          <p>
+            CNPJ: {COMPRADOR.cnpj} &nbsp;&nbsp;&nbsp; Telefone: {COMPRADOR.telefone}
+          </p>
         </div>
-        <div className="flex justify-between">
-          <span>Referência: {form.nomeVendedor}</span>
-          <span>Insc. Estadual: {form.inscricaoEstadualVendedor}</span>
-        </div>
+      </div>
+      <div className="mb-1 border-b border-[#1c2b36]" />
+
+      <div className="mb-2 flex items-center justify-between bg-[#c9c9c9] px-2 py-1.5">
+        <span>
+          Contrato: <b>{form.numeroContrato || "____"}</b>
+        </span>
+        <span className="text-[13px] font-bold">CONTRATO DE COMPRA</span>
+        <span>
+          Data: <b>{formatDataBR(form.dataContrato)}</b>
+        </span>
+      </div>
+
+      <div className="mb-0.5 flex justify-between">
+        <span>
+          Tipo de Operação: <b>{form.tipoOperacao}</b>
+        </span>
+        <span>
+          Modalidade: <b>{form.modalidade}</b>
+        </span>
+      </div>
+      <p className="mb-1">
+        Referência: <b>{form.referenciaPagamento}</b>
+      </p>
+      <div className="mb-1 border-b border-[#1c2b36]" />
+
+      <div className="mb-0.5 space-y-0.5 pt-1">
+        <Row
+          left={
+            <span>
+              <b>Vendedor:</b> {form.codigoVendedor} - {form.nomeVendedor}
+            </span>
+          }
+          right={<RightField label="CNPJ/CPF:" value={form.cnpjVendedor} />}
+        />
+        <Row
+          left={
+            <span>
+              <b>Referência:</b> {form.nomeVendedor}
+            </span>
+          }
+          right={<RightField label="Insc. Estadual:" value={form.inscricaoEstadualVendedor} />}
+        />
         {form.enderecoVendedor.split("\n").map((linha, i) => (
-          <div key={i} className="flex justify-between">
-            <span>{linha}</span>
-            {i === 0 && <span>Grupo: {form.grupoVendedor}</span>}
-          </div>
+          <Row key={i} left={<span>{linha}</span>} right={i === 0 && <RightField label="Grupo:" value={form.grupoVendedor} />} />
         ))}
       </div>
+      <div className="mb-1 border-b border-[#1c2b36]" />
 
-      <div className="mb-3 space-y-0.5">
+      <div className="mb-0.5 space-y-0.5 pt-1">
+        <Row
+          left={
+            <span>
+              <b>Corretor:</b> {form.corretor}
+            </span>
+          }
+          right={<RightField label="Comissão:" value={`${form.comissaoCorretor}%`} />}
+        />
+        <Row
+          left={
+            <span>
+              <b>Agente:</b> {form.agente}
+            </span>
+          }
+          right={<RightField label="Comissão:" value={`${form.comissaoAgente}%`} />}
+        />
+      </div>
+      <div className="mb-1 border-b border-[#1c2b36]" />
+
+      <div className="mb-0.5 space-y-0.5 pt-1">
+        <Row
+          left={
+            <span>
+              <b>Descrição:</b> {form.descricaoProduto}
+            </span>
+          }
+          right={<RightField label="Safra:" value={form.safra} />}
+        />
         <p>
-          Corretor: {form.corretor} &nbsp;&nbsp;&nbsp; Comissão: {form.comissaoCorretor}%
-        </p>
-        <p>
-          Agente: {form.agente} &nbsp;&nbsp;&nbsp; Comissão: {form.comissaoAgente}%
-        </p>
-      </div>
-
-      <div className="mb-3 flex justify-between">
-        <span>Descrição: {form.descricaoProduto}</span>
-        <span>Safra: {form.safra}</span>
-      </div>
-      <div className="mb-3 flex justify-between">
-        <span>Padrão: {form.padrao}</span>
-        <span>Bebida: {form.bebida}</span>
-      </div>
-
-      <p className="mb-1 font-semibold">Dados do Faturamento</p>
-      <div className="mb-3 space-y-0.5 border-t border-[#1c2b36]/30 pt-1">
-        <div className="flex justify-between">
-          <span>Tipo de embalagem: {form.tipoEmbalagem}</span>
-          <span>Valor livre por saca: {formatBR(Number(form.valorLivrePorSaca.replace(/\./g, "").replace(",", ".")) || 0)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Quantidade de sacas: {form.quantidadeSacas || 0}</span>
-          <span>Valor faturado por saca: {formatBR(Number(form.valorFaturadoPorSaca.replace(/\./g, "").replace(",", ".")) || 0)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Quantidade em Kg: {formatBR(quantidadeKg)}</span>
-          <span>Valor total da nota: {formatBR(valorTotalNota)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Crédito de ICMS: {form.creditoIcms}</span>
-          <span></span>
-        </div>
-        <div className="flex justify-between">
-          <span>Condição pagamento: {form.condicaoPagamento}</span>
-          <span>Valor total livre: {formatBR(valorTotalLivre)}</span>
-        </div>
-      </div>
-
-      <p className="mb-1 font-semibold">Dados bancários do fornecedor</p>
-      <div className="mb-3 space-y-0.5 border-t border-[#1c2b36]/30 pt-1">
-        <p>Banco: {form.banco}</p>
-        <p>
-          Agência: {form.agencia} &nbsp;&nbsp; Conta: {form.conta}
+          <b>Padrão:</b> {form.padrao} &nbsp;&nbsp;&nbsp; <b>Bebida:</b> {form.bebida}
         </p>
       </div>
+      <div className="mb-1 border-b border-[#1c2b36]" />
 
-      <p className="mb-3">Observações do contrato: {form.observacoes}</p>
-      <p className="mb-3">Local de retirada: {form.localRetirada}</p>
+      <p className="mb-1 mt-1 font-bold">Dados do Faturamento</p>
+      <div className="mb-0.5 space-y-0.5">
+        <Row
+          left={
+            <span>
+              <b>Tipo de embalagem:</b> {form.tipoEmbalagem}
+            </span>
+          }
+          right={<RightField label="Valor livre por saca:" value={formatBR(valorLivreNum)} />}
+        />
+        <Row
+          left={
+            <span>
+              <b>Quantidade de sacas:</b> {form.quantidadeSacas || 0}
+            </span>
+          }
+          right={<RightField label="Valor faturado por saca:" value={formatBR(valorFaturadoNum)} />}
+        />
+        <Row
+          left={
+            <span>
+              <b>Quantidade em Kg:</b> {formatBR(quantidadeKg)}
+            </span>
+          }
+          right={
+            <RightField
+              label="Valor total da nota:"
+              value={<span className="border-t border-[#1c2b36]">{formatBR(valorTotalNota)}</span>}
+            />
+          }
+        />
+        <Row left={null} right={<RightField label="Crédito de ICMS:" value={form.creditoIcms} />} />
+        <Row
+          left={
+            <span>
+              <b>Condição pagamento:</b> {form.condicaoPagamento}
+            </span>
+          }
+          right={
+            <RightField
+              label="Valor total livre:"
+              value={<span className="border-t border-[#1c2b36]">{formatBR(valorTotalLivre)}</span>}
+            />
+          }
+        />
+      </div>
+      <div className="mb-1 mt-1 border-b border-[#1c2b36]" />
 
-      <p className="mb-1 font-semibold">Local de Entrega</p>
-      <div className="mb-6 space-y-0.5 border-t border-[#1c2b36]/30 pt-1">
-        <div className="flex justify-between">
-          <span>Código: {form.codigoLocalEntrega}</span>
-          <span>Previsão de entrega: {formatDataBR(form.previsaoEntrega)}</span>
-        </div>
-        <p>Nome: {form.nomeLocalEntrega}</p>
-        <p>CNPJ: {form.cnpjLocalEntrega}</p>
-        <p>End.: {form.enderecoLocalEntrega}</p>
-        <p>Cidade: {form.cidadeLocalEntrega}</p>
+      <p className="mb-1 font-bold">Dados bancários do fornecedor</p>
+      <div className="mb-1 space-y-0.5">
+        <p>
+          <b>Banco:</b> {form.banco}
+        </p>
+        <p>
+          <b>Agência:</b> {form.agencia} &nbsp;&nbsp;&nbsp; <b>Conta:</b> {form.conta}
+        </p>
+      </div>
+      <div className="mb-1 border-b border-[#1c2b36]" />
+
+      <p className="font-bold">Observações do contrato:</p>
+      <p className="min-h-8">{form.observacoes}</p>
+      <div className="mb-1 h-16 print:h-24" />
+
+      <div className="border-b border-[#1c2b36]" />
+      <p className="my-1">
+        <b>Local de retirada:</b> {form.localRetirada}
+      </p>
+      <div className="mb-1 border-b border-[#1c2b36]" />
+
+      <p className="mb-1 mt-1 font-bold">Local de Entrega</p>
+      <div className="mb-6 space-y-0.5">
+        <Row
+          left={
+            <span>
+              <b>Código:</b> {form.codigoLocalEntrega}
+            </span>
+          }
+          right={<RightField label="Previsão de entrega:" value={formatDataBR(form.previsaoEntrega)} />}
+        />
+        <p>
+          <b>Nome:</b> {form.nomeLocalEntrega}
+        </p>
+        <p>
+          <b>CNPJ:</b> {form.cnpjLocalEntrega}
+        </p>
+        <p>
+          <b>End.:</b> {form.enderecoLocalEntrega}
+        </p>
+        <p>
+          <b>Cidade:</b> {form.cidadeLocalEntrega}
+        </p>
       </div>
 
-      <div className="mt-10 grid grid-cols-2 gap-10 text-center text-[10px]">
+      <div className="mt-16 grid grid-cols-2 gap-10 text-center">
         <div>
-          <div className="border-t border-[#1c2b36] pt-2">{COMPRADOR.nome}</div>
+          <div className="border-t border-[#1c2b36] pt-1 font-bold">{COMPRADOR.nome}</div>
           <p>ASSINATURA DO COMPRADOR</p>
         </div>
         <div>
-          <div className="border-t border-[#1c2b36] pt-2">{form.nomeVendedor || "____________"}</div>
+          <div className="border-t border-[#1c2b36] pt-1 font-bold">{form.nomeVendedor || "____________"}</div>
           <p>ASSINATURA DO VENDEDOR</p>
         </div>
       </div>
+      <p className="mt-4 text-right text-[9px] text-[#1c2b36]/60">Impresso por SAP Business One</p>
     </div>
   );
 }
