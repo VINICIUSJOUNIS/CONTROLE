@@ -28,6 +28,7 @@ import {
   Users,
   BarChart3,
   Package,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -97,6 +98,7 @@ const creditoNavItems = [
 const hedgeNavItems = [
   { href: "/hedge", label: "Dashboard", icon: ShieldCheck },
   { href: "/hedge/contratos", label: "Contratos", icon: FileStack },
+  { href: "/hedge/contrato-compra", label: "Contrato de Compra", icon: ClipboardList },
   {
     href: "/hedge/mesa-operacao",
     label: "Mesa de Operacao",

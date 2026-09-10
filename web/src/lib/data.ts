@@ -125,6 +125,53 @@ export async function getTransferenciasOrdem() {
   }));
 }
 
+// Contratos de Compra de cafe (OC) ja salvos - para reabrir/editar ou
+// reimprimir sem redigitar tudo de novo.
+export async function getContratosCompraCafe() {
+  const lista = await prisma.contratoCompraCafe.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+  return lista.map((c) => ({
+    id: c.id,
+    numeroContrato: c.numeroContrato,
+    dataContrato: c.dataContrato.toISOString().slice(0, 10),
+    tipoOperacao: c.tipoOperacao,
+    modalidade: c.modalidade,
+    referenciaPagamento: c.referenciaPagamento,
+    codigoVendedor: c.codigoVendedor,
+    nomeVendedor: c.nomeVendedor,
+    cnpjVendedor: c.cnpjVendedor,
+    enderecoVendedor: c.enderecoVendedor,
+    inscricaoEstadualVendedor: c.inscricaoEstadualVendedor,
+    grupoVendedor: c.grupoVendedor,
+    corretor: c.corretor,
+    comissaoCorretor: n(c.comissaoCorretor),
+    agente: c.agente,
+    comissaoAgente: n(c.comissaoAgente),
+    descricaoProduto: c.descricaoProduto,
+    safra: c.safra,
+    padrao: c.padrao,
+    bebida: c.bebida,
+    tipoEmbalagem: c.tipoEmbalagem,
+    valorLivrePorSaca: n(c.valorLivrePorSaca),
+    quantidadeSacas: c.quantidadeSacas,
+    valorFaturadoPorSaca: n(c.valorFaturadoPorSaca),
+    creditoIcms: c.creditoIcms,
+    condicaoPagamento: c.condicaoPagamento,
+    banco: c.banco,
+    agencia: c.agencia,
+    conta: c.conta,
+    observacoes: c.observacoes,
+    localRetirada: c.localRetirada,
+    codigoLocalEntrega: c.codigoLocalEntrega,
+    previsaoEntrega: c.previsaoEntrega ? c.previsaoEntrega.toISOString().slice(0, 10) : "",
+    nomeLocalEntrega: c.nomeLocalEntrega,
+    cnpjLocalEntrega: c.cnpjLocalEntrega,
+    enderecoLocalEntrega: c.enderecoLocalEntrega,
+    cidadeLocalEntrega: c.cidadeLocalEntrega,
+  }));
+}
+
 // Aliquotas oficiais de IOF sobre credito para pessoa juridica (Decreto 6.306/2007,
 // com alteracoes) - diaria sobre o saldo usado + adicional fixo. Retomadas em
 // 17/07/2025 apos decisao do STF que derrubou a alta temporaria (que tinha ido

@@ -130,6 +130,62 @@ model TransferenciaOrdem {
   @@map("transferencias_ordem")
 }
 
+// Um Contrato de Compra de cafe (OC) preenchido - reproduz o layout do
+// contrato de compra emitido pelo fornecedor (ex: SAP Business One), para
+// gerar/imprimir o mesmo documento preenchido internamente e poder reabrir
+// e editar mais tarde.
+model ContratoCompraCafe {
+  id                        String    @id @default(uuid())
+  numeroContrato            String
+  dataContrato              DateTime  @db.Date
+  tipoOperacao              String    @default("FÍSICO")
+  modalidade                String    @default("POSTO")
+  referenciaPagamento       String
+
+  codigoVendedor            String
+  nomeVendedor              String
+  cnpjVendedor              String
+  enderecoVendedor          String
+  inscricaoEstadualVendedor String
+  grupoVendedor             String
+
+  corretor                  String
+  comissaoCorretor          Decimal   @default(0) @db.Decimal(6, 2)
+  agente                    String
+  comissaoAgente            Decimal   @default(0) @db.Decimal(6, 2)
+
+  descricaoProduto          String
+  safra                     String
+  padrao                    String
+  bebida                    String
+
+  tipoEmbalagem             String
+  valorLivrePorSaca         Decimal   @db.Decimal(18, 2)
+  quantidadeSacas           Int
+  valorFaturadoPorSaca      Decimal   @db.Decimal(18, 2)
+  creditoIcms               String
+  condicaoPagamento         String
+
+  banco                     String
+  agencia                   String
+  conta                     String
+
+  observacoes               String
+  localRetirada             String
+
+  codigoLocalEntrega        String
+  previsaoEntrega           DateTime? @db.Date
+  nomeLocalEntrega          String
+  cnpjLocalEntrega          String
+  enderecoLocalEntrega      String
+  cidadeLocalEntrega        String
+
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  @@map("contratos_compra_cafe")
+}
+
 model Loan {
   id                 String             @id @default(uuid())
   bank               Bank               @relation(fields: [bankId], references: [id])
