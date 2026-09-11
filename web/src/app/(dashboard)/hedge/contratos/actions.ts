@@ -184,3 +184,26 @@ export async function updateContratoDatas(id: string, input: ContratoDatasInput)
   revalidateAll();
   revalidatePath("/hedge/mesa-operacao/[slug]", "page");
 }
+
+export type CustosEstufagemInput = {
+  armazem: string;
+  freteTerrestre: string;
+  embalagens: string;
+};
+
+// Edicao rapida dos custos de armazenagem, transporte rodoviario e
+// embalagens direto no card da etapa Estufagem/Carregamento da Mesa de
+// Operacao, sem precisar abrir a tela de Contratos.
+export async function updateCustosEstufagem(id: string, input: CustosEstufagemInput) {
+  await prisma.contratoExportacao.update({
+    where: { id },
+    data: {
+      armazem: Number(input.armazem) || 0,
+      freteTerrestre: Number(input.freteTerrestre) || 0,
+      embalagens: Number(input.embalagens) || 0,
+    },
+  });
+
+  revalidateAll();
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+}

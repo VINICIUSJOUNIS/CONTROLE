@@ -15,6 +15,8 @@ import {
   updateContratoStatus,
   updateContratoDatas,
   ContratoDatasInput,
+  updateCustosEstufagem,
+  CustosEstufagemInput,
   StatusContratoValue,
 } from "@/app/(dashboard)/hedge/contratos/actions";
 import {
@@ -190,6 +192,76 @@ export function DatasContratoSection({ contratoId, datas }: { contratoId: string
           value={value.dataChegada}
           disabled={isPending}
           onChange={(e) => setValue({ ...value, dataChegada: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+    </div>
+  );
+}
+
+// Edicao rapida dos custos de armazenagem, transporte rodoviario e
+// embalagens direto no card da etapa Estufagem/Carregamento, sem precisar
+// ir na tela de Contratos - mesmo padrao de salvar-ao-perder-foco do
+// DatasContratoSection acima.
+function CustosEstufagemSection({
+  contratoId,
+  custos,
+}: {
+  contratoId: string;
+  custos: CustosEstufagemInput;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(custos);
+  const [isPending, startTransition] = useTransition();
+
+  function handleBlur() {
+    if (
+      value.armazem === custos.armazem &&
+      value.freteTerrestre === custos.freteTerrestre &&
+      value.embalagens === custos.embalagens
+    )
+      return;
+    startTransition(async () => {
+      await updateCustosEstufagem(contratoId, value);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-3 gap-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Armazenagem (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.armazem}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, armazem: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Transporte rodoviário (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.freteTerrestre}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, freteTerrestre: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Embalagens (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.embalagens}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, embalagens: e.target.value })}
           onBlur={handleBlur}
           className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
         />
@@ -943,6 +1015,17 @@ export function EtapaContratosList({
                   previsao={previsoes[item.id]}
                   etapaStatus={statusEtapas[item.id] ?? "NAO_INICIADO"}
                 />
+
+                {status === "ESTUFAGEM_CARREGAMENTO" && (
+                  <CustosEstufagemSection
+                    contratoId={item.id}
+                    custos={{
+                      armazem: String(item.despesas.armazem),
+                      freteTerrestre: String(item.despesas.freteTerrestre),
+                      embalagens: String(item.despesas.embalagens),
+                    }}
+                  />
+                )}
 
                 {status === "ENVIO_AMOSTRA_PSS" && (
                   <EnvioAmostraSection
