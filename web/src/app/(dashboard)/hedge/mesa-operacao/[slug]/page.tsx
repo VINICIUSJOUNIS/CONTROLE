@@ -24,6 +24,7 @@ import {
   getFornecedoresMarcacaoSacaria,
   getFichasTransporteRodoviario,
   getTransportadorasRodoviarias,
+  getEmbalagensPorContrato,
   syncClientesFromVendasExternas,
 } from "@/lib/hedge-data";
 import { slugToStatus, statusLabels } from "@/lib/contrato-shared";
@@ -181,10 +182,13 @@ async function EtapaGenerica({
   }
 
   if (status === "ESTUFAGEM_CARREGAMENTO") {
-    const [fichasTransporteRodoviario, transportadorasRodoviarias] = await Promise.all([
-      getFichasTransporteRodoviario(),
-      getTransportadorasRodoviarias(),
-    ]);
+    const [fichasTransporteRodoviario, transportadorasRodoviarias, embalagensPorContrato, tiposEmbalagem] =
+      await Promise.all([
+        getFichasTransporteRodoviario(),
+        getTransportadorasRodoviarias(),
+        getEmbalagensPorContrato(),
+        getTiposEmbalagem(),
+      ]);
 
     return (
       <Suspense>
@@ -198,6 +202,8 @@ async function EtapaGenerica({
           checklist={checklist}
           fichasTransporteRodoviario={fichasTransporteRodoviario}
           transportadorasRodoviarias={transportadorasRodoviarias}
+          embalagensPorContrato={embalagensPorContrato}
+          tiposEmbalagem={tiposEmbalagem}
         />
       </Suspense>
     );

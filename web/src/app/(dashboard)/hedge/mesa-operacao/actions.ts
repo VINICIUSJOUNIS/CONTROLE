@@ -106,6 +106,45 @@ export async function upsertTransporteRodoviario(contratoId: string, input: Tran
   revalidateAll();
 }
 
+export type EmbalagemLinhaInput = {
+  tipoEmbalagemId: string;
+  quantidade: string;
+  valorUnitario: string;
+};
+
+// Linhas de embalagem da etapa "Estufagem/Carregamento" - varias por
+// contrato (um por tipo de embalagem usado no carregamento). O custo de
+// "Embalagens" e calculado sozinho a partir da soma de quantidade x valor
+// unitario de todas as linhas.
+export async function addContratoEmbalagem(contratoId: string, input: EmbalagemLinhaInput) {
+  await prisma.contratoEmbalagem.create({
+    data: {
+      contratoId,
+      tipoEmbalagemId: input.tipoEmbalagemId || null,
+      quantidade: Number(input.quantidade) || 0,
+      valorUnitario: Number(input.valorUnitario) || 0,
+    },
+  });
+  revalidateAll();
+}
+
+export async function updateContratoEmbalagem(id: string, input: EmbalagemLinhaInput) {
+  await prisma.contratoEmbalagem.update({
+    where: { id },
+    data: {
+      tipoEmbalagemId: input.tipoEmbalagemId || null,
+      quantidade: Number(input.quantidade) || 0,
+      valorUnitario: Number(input.valorUnitario) || 0,
+    },
+  });
+  revalidateAll();
+}
+
+export async function deleteContratoEmbalagem(id: string) {
+  await prisma.contratoEmbalagem.delete({ where: { id } });
+  revalidateAll();
+}
+
 export async function setPrevisaoEtapa(contratoId: string, etapa: StatusContratoValue, dataPrevisao: string) {
   if (!dataPrevisao) {
     await prisma.contratoEtapaPrevisao.deleteMany({ where: { contratoId, etapa } });

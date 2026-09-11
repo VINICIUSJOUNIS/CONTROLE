@@ -12,6 +12,7 @@ import {
   MarcacaoSacariaData,
   TransportadoraRodoviariaData,
   TransporteRodoviarioData,
+  EmbalagemLinha,
 } from "@/lib/hedge-data";
 import {
   updateContratoStatus,
@@ -28,10 +29,13 @@ import {
   upsertEnvioAmostra,
   upsertMarcacaoSacaria,
   upsertTransporteRodoviario,
+  addContratoEmbalagem,
+  deleteContratoEmbalagem,
   setContratoFinalizado,
   EnvioAmostraInput,
   MarcacaoSacariaInput,
   TransporteRodoviarioInput,
+  EmbalagemLinhaInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import {
   statusOrder,
@@ -58,6 +62,8 @@ import {
   Upload,
   AlertTriangle,
   CheckCircle2,
+  Plus,
+  X,
 } from "lucide-react";
 
 
@@ -221,7 +227,7 @@ function CustosEstufagemSection({
   const [isPending, startTransition] = useTransition();
 
   function handleBlur() {
-    if (value.armazem === custos.armazem && value.embalagens === custos.embalagens) return;
+    if (value.armazem === custos.armazem) return;
     startTransition(async () => {
       await updateCustosEstufagem(contratoId, value);
       router.refresh();
@@ -229,7 +235,7 @@ function CustosEstufagemSection({
   }
 
   return (
-    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+    <div className="mt-3 border-t border-border pt-2">
       <label className="text-xs text-muted">
         Armazenagem (R$)
         <input
@@ -242,18 +248,121 @@ function CustosEstufagemSection({
           className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
         />
       </label>
-      <label className="text-xs text-muted">
-        Embalagens (R$)
+    </div>
+  );
+}
+
+function emptyEmbalagemForm(): EmbalagemLinhaInput {
+  return { tipoEmbalagemId: "", quantidade: "", valorUnitario: "" };
+}
+
+// Linhas de embalagem do contrato (uma por tipo usado no carregamento) - o
+// custo de "Embalagens" e a soma de quantidade x valor unitario de todas as
+// linhas, atualizando sozinho conforme linhas sao adicionadas/removidas.
+function EmbalagensSection({
+  contratoId,
+  linhas,
+  tiposEmbalagem,
+}: {
+  contratoId: string;
+  linhas: EmbalagemLinha[];
+  tiposEmbalagem: { id: string; name: string }[];
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [novo, setNovo] = useState<EmbalagemLinhaInput>(emptyEmbalagemForm());
+
+  function handleAdd() {
+    if (!novo.tipoEmbalagemId || !novo.quantidade) return;
+    startTransition(async () => {
+      await addContratoEmbalagem(contratoId, novo);
+      setNovo(emptyEmbalagemForm());
+      router.refresh();
+    });
+  }
+
+  function handleDelete(id: string) {
+    startTransition(async () => {
+      await deleteContratoEmbalagem(id);
+      router.refresh();
+    });
+  }
+
+  const total = linhas.reduce((sum, l) => sum + l.subtotal, 0);
+
+  return (
+    <div className="mt-3 border-t border-border pt-2">
+      <p className="mb-1 text-xs font-medium text-muted">Embalagens</p>
+
+      {linhas.length > 0 && (
+        <div className="mb-2 space-y-1">
+          {linhas.map((l) => (
+            <div key={l.id} className="flex items-center justify-between gap-2 text-xs">
+              <span className="min-w-0 flex-1 truncate">
+                {l.tipoEmbalagemNome ?? "Sem tipo"} — {l.quantidade} x {formatCurrency(l.valorUnitario)}
+              </span>
+              <span className="shrink-0 text-muted">{formatCurrency(l.subtotal)}</span>
+              <button
+                onClick={() => handleDelete(l.id)}
+                disabled={isPending}
+                className="shrink-0 rounded p-0.5 text-muted hover:bg-danger/10 hover:text-danger"
+                title="Excluir"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-[1fr_70px_100px_auto] items-center gap-2">
+        <Select
+          value={novo.tipoEmbalagemId}
+          disabled={isPending}
+          onChange={(e) => setNovo({ ...novo, tipoEmbalagemId: e.target.value })}
+        >
+          <option value="">Tipo de embalagem...</option>
+          {tiposEmbalagem.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </Select>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          placeholder="Qtd"
+          value={novo.quantidade}
+          disabled={isPending}
+          onChange={(e) => setNovo({ ...novo, quantidade: e.target.value })}
+          className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+        />
         <input
           type="number"
           step="0.01"
-          value={value.embalagens}
+          placeholder="Valor unit. (R$)"
+          value={novo.valorUnitario}
           disabled={isPending}
-          onChange={(e) => setValue({ ...value, embalagens: e.target.value })}
-          onBlur={handleBlur}
-          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+          onChange={(e) => setNovo({ ...novo, valorUnitario: e.target.value })}
+          className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
         />
-      </label>
+        <button
+          onClick={handleAdd}
+          disabled={isPending}
+          className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs text-primary hover:bg-primary/10 disabled:opacity-50"
+        >
+          <Plus size={14} />
+          Adicionar
+        </button>
+      </div>
+
+      {linhas.length > 0 && (
+        <div className="mt-2 flex justify-between border-t border-border pt-1 text-xs font-semibold">
+          <span>Total embalagens</span>
+          <span className="text-danger">{formatCurrency(total)}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -1014,6 +1123,8 @@ export function EtapaContratosList({
   fornecedoresMarcacaoSacaria,
   fichasTransporteRodoviario,
   transportadorasRodoviarias,
+  embalagensPorContrato,
+  tiposEmbalagem,
 }: {
   contratos: ContratoRow[];
   status: StatusContratoValue;
@@ -1029,6 +1140,8 @@ export function EtapaContratosList({
   fornecedoresMarcacaoSacaria?: FornecedorMarcacaoSacaria[];
   fichasTransporteRodoviario?: Record<string, TransporteRodoviarioData>;
   transportadorasRodoviarias?: TransportadoraRodoviariaData[];
+  embalagensPorContrato?: Record<string, EmbalagemLinha[]>;
+  tiposEmbalagem?: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1161,15 +1274,17 @@ export function EtapaContratosList({
                   <>
                     <CustosEstufagemSection
                       contratoId={item.id}
-                      custos={{
-                        armazem: String(item.despesas.armazem),
-                        embalagens: String(item.despesas.embalagens),
-                      }}
+                      custos={{ armazem: String(item.despesas.armazem) }}
                     />
                     <TransporteRodoviarioSection
                       contratoId={item.id}
                       dados={fichasTransporteRodoviario?.[item.id]}
                       transportadoras={transportadorasRodoviarias ?? []}
+                    />
+                    <EmbalagensSection
+                      contratoId={item.id}
+                      linhas={embalagensPorContrato?.[item.id] ?? []}
+                      tiposEmbalagem={tiposEmbalagem ?? []}
                     />
                   </>
                 )}

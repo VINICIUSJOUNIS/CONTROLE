@@ -382,6 +382,40 @@ export async function getFichasTransporteRodoviario(): Promise<Record<string, Tr
   return result;
 }
 
+export type EmbalagemLinha = {
+  id: string;
+  tipoEmbalagemId: string | null;
+  tipoEmbalagemNome: string | null;
+  quantidade: number;
+  valorUnitario: number;
+  subtotal: number;
+};
+
+// Linhas de embalagem do contrato (etapa Estufagem/Carregamento), indexadas
+// por contratoId - um contrato pode ter mais de uma linha (tipos de
+// embalagem diferentes no mesmo carregamento).
+export async function getEmbalagensPorContrato(): Promise<Record<string, EmbalagemLinha[]>> {
+  const rows = await prisma.contratoEmbalagem.findMany({
+    include: { tipoEmbalagem: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const result: Record<string, EmbalagemLinha[]> = {};
+  for (const r of rows) {
+    const quantidade = r.quantidade;
+    const valorUnitario = Number(r.valorUnitario);
+    (result[r.contratoId] ??= []).push({
+      id: r.id,
+      tipoEmbalagemId: r.tipoEmbalagemId,
+      tipoEmbalagemNome: r.tipoEmbalagem?.name ?? null,
+      quantidade,
+      valorUnitario,
+      subtotal: Number((quantidade * valorUnitario).toFixed(2)),
+    });
+  }
+  return result;
+}
+
 export type ContratoAnexoData = {
   id: string;
   etapa: StatusContratoValue;
@@ -577,6 +611,7 @@ export async function getContratosExportacao() {
       confirmacaoNegocio: true,
       fichaMarcacaoSacaria: { include: { fornecedor: { include: { precos: true } } } },
       fichaTransporteRodoviario: { include: { transportadora: { include: { itens: true } } } },
+      embalagensDetalhadas: true,
     },
     orderBy: { createdAt: "desc" },
   });
@@ -628,6 +663,18 @@ export async function getContratosExportacao() {
         .filter((i) => fichaTransporte.itensSelecionadosIds.includes(i.id))
         .reduce((sum, i) => sum + Number(i.precoPorContainer), 0);
       despesas.freteTerrestre = Number((somaItens * fichaTransporte.quantidadeContainers).toFixed(2));
+    }
+
+    // Quando ja existem linhas de embalagem lancadas (etapa
+    // Estufagem/Carregamento), o custo passa a ser a soma de quantidade x
+    // valor unitario de cada linha, substituindo o valor manual de
+    // "Embalagens".
+    if (c.embalagensDetalhadas.length > 0) {
+      despesas.embalagens = Number(
+        c.embalagensDetalhadas
+          .reduce((sum, e) => sum + e.quantidade * Number(e.valorUnitario), 0)
+          .toFixed(2)
+      );
     }
 
     // O valor do AWB e o valor da nota fiscal (ficha de Envio de Amostra)

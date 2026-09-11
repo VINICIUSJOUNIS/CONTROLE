@@ -201,20 +201,17 @@ export async function updateFreteEntregaSacaria(id: string, valor: string) {
 
 export type CustosEstufagemInput = {
   armazem: string;
-  embalagens: string;
 };
 
-// Edicao rapida dos custos de armazenagem e embalagens direto no card da
-// etapa Estufagem/Carregamento da Mesa de Operacao, sem precisar abrir a
-// tela de Contratos. O transporte rodoviario e calculado a parte, a partir
-// da transportadora e dos itens da tabela dela escolhidos (ver
-// upsertTransporteRodoviario).
+// Edicao rapida do custo de armazenagem direto no card da etapa
+// Estufagem/Carregamento da Mesa de Operacao, sem precisar abrir a tela de
+// Contratos. O transporte rodoviario e as embalagens sao calculados a
+// parte (ver upsertTransporteRodoviario e addContratoEmbalagem).
 export async function updateCustosEstufagem(id: string, input: CustosEstufagemInput) {
   await prisma.contratoExportacao.update({
     where: { id },
     data: {
       armazem: Number(input.armazem) || 0,
-      embalagens: Number(input.embalagens) || 0,
     },
   });
 

@@ -595,6 +595,7 @@ model ContratoExportacao {
   fichaEnvioAmostra  ContratoEnvioAmostra?
   fichaMarcacaoSacaria ContratoMarcacaoSacaria?
   fichaTransporteRodoviario ContratoTransporteRodoviario?
+  embalagensDetalhadas      ContratoEmbalagem[]
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?
@@ -703,6 +704,7 @@ model TipoEmbalagem {
   id                  String                       @id @default(uuid())
   name                String                       @unique
   confirmacoesNegocio ContratoConfirmacaoNegocio[]
+  embalagensContrato  ContratoEmbalagem[]
   createdAt           DateTime                     @default(now())
 
   @@map("tipos_embalagem")
@@ -888,6 +890,27 @@ model ContratoTransporteRodoviario {
 
   @@index([transportadoraId])
   @@map("contrato_transporte_rodoviario")
+}
+
+// Uma linha de embalagem do contrato (etapa Estufagem/Carregamento) - tipo,
+// quantidade e valor unitario. Um contrato pode ter varias linhas (por
+// exemplo, mais de um tipo de embalagem usado no mesmo carregamento); o
+// custo de "Embalagens" passa a ser a soma de quantidade x valor unitario
+// de todas as linhas, substituindo o valor manual desse item.
+model ContratoEmbalagem {
+  id              String             @id @default(uuid())
+  contrato        ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId      String
+  tipoEmbalagem   TipoEmbalagem?     @relation(fields: [tipoEmbalagemId], references: [id])
+  tipoEmbalagemId String?
+  quantidade      Int                @default(0)
+  valorUnitario   Decimal            @default(0) @db.Decimal(18, 2)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([contratoId])
+  @@index([tipoEmbalagemId])
+  @@map("contrato_embalagens")
 }
 
 // Documentos anexados a um contrato em qualquer etapa da Mesa de Operacao
