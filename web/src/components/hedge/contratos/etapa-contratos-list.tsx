@@ -547,7 +547,11 @@ function AvancarMenu({ contratoId, currentStatus }: { contratoId: string; curren
   );
 }
 
-function ConfirmacaoNegocioResumo({ dados }: { dados: NonNullable<HistoricoAnteriorItem["confirmacaoNegocio"]> }) {
+export function ConfirmacaoNegocioResumo({
+  dados,
+}: {
+  dados: NonNullable<HistoricoAnteriorItem["confirmacaoNegocio"]>;
+}) {
   const linhas: [string, string][] = [];
   if (dados.dataConfirmacao) linhas.push(["Confirmado em", formatDate(dados.dataConfirmacao)]);
   if (dados.numeroContrato) linhas.push(["Contrato", dados.numeroContrato]);
