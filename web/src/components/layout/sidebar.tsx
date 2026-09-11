@@ -30,6 +30,7 @@ import {
   Package,
   ClipboardList,
   CheckCircle2,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -106,6 +107,7 @@ const hedgeNavItems = [
     icon: Ship,
     subItems: mesaOperacaoSubItems,
   },
+  { href: "/hedge/calendario-estufagens", label: "Calendário de Estufagens", icon: CalendarDays },
   { href: "/hedge/contratos-finalizados", label: "Contratos Finalizados", icon: CheckCircle2 },
   { href: "/hedge/mapa", label: "Mapa de Exportacao", icon: Globe2 },
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
