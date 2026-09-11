@@ -90,7 +90,7 @@ function EnvioAmostraResumo({ dados }: { dados: EnvioAmostraData }) {
   const linhas: [string, string][] = [];
   if (dados.tipoAmostraNome) linhas.push(["Tipo de amostra", dados.tipoAmostraNome]);
   if (dados.transportadoraNome) linhas.push(["Envio por", dados.transportadoraNome]);
-  if (dados.cteNumero) linhas.push(["AWB de envio", dados.cteNumero]);
+  if (dados.cteNumero) linhas.push(["AWB de envio de amostra", dados.cteNumero]);
   if (dados.cteValor != null) linhas.push(["Valor do AWB", formatCurrency(dados.cteValor)]);
   if (dados.notaFiscalNumero) linhas.push(["Nota fiscal de envio", dados.notaFiscalNumero]);
   if (dados.notaFiscalValor != null)

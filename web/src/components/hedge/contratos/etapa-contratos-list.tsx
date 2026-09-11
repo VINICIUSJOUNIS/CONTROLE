@@ -356,7 +356,7 @@ function EnvioAmostraSection({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <p className="mb-1 text-xs font-medium text-muted">AWB de Envio</p>
+          <p className="mb-1 text-xs font-medium text-muted">AWB de Envio de Amostra</p>
           <input
             value={form.cteNumero}
             disabled={isPending}
