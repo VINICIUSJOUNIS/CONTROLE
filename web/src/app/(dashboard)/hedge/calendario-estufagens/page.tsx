@@ -1,17 +1,23 @@
 import { Topbar } from "@/components/layout/topbar";
 import { CalendarioEstufagensView } from "@/components/hedge/contratos/calendario-estufagens-view";
-import { getContratosExportacao } from "@/lib/hedge-data";
+import { getContratosExportacao, getConfirmacoesNegocio } from "@/lib/hedge-data";
 
 export default async function CalendarioEstufagensPage() {
-  const contratos = await getContratosExportacao();
+  const [contratos, confirmacoes] = await Promise.all([
+    getContratosExportacao(),
+    getConfirmacoesNegocio(),
+  ]);
 
+  // A quantidade de sacas do calendario vem da ficha de Confirmacao de
+  // Negocio (preenchida no inicio do processo) - so cai para o campo de
+  // Recebimento do contrato se aquela ficha ainda nao foi preenchida.
   const rows = contratos.map((c) => ({
     id: c.id,
     contractNumber: c.contractNumber,
     clienteName: c.clienteName,
     dataEstufagem: c.dataEstufagem,
     dataEmbarque: c.dataEmbarque,
-    quantSacas: c.quantSacas,
+    quantSacas: confirmacoes[c.id]?.quantidadeSacas ?? c.quantSacas,
   }));
 
   return (
