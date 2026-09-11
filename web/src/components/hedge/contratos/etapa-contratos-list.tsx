@@ -265,7 +265,7 @@ function EnvioAmostraSection({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <p className="mb-1 text-xs font-medium text-muted">CT-e de Envio</p>
+          <p className="mb-1 text-xs font-medium text-muted">AWB de Envio</p>
           <input
             value={form.cteNumero}
             disabled={isPending}
@@ -275,7 +275,7 @@ function EnvioAmostraSection({
           />
         </div>
         <div>
-          <p className="mb-1 text-xs font-medium text-muted">Valor do CT-e (R$)</p>
+          <p className="mb-1 text-xs font-medium text-muted">Valor do AWB (R$)</p>
           <input
             type="number"
             step="0.01"

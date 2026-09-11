@@ -425,7 +425,7 @@ export async function getContratosExportacaoCountByStatus() {
 
 export async function getContratosExportacao() {
   const contratos = await prisma.contratoExportacao.findMany({
-    include: { cliente: true, corretora: true },
+    include: { cliente: true, corretora: true, fichaEnvioAmostra: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -450,8 +450,17 @@ export async function getContratosExportacao() {
     const despesas = Object.fromEntries(
       despesaFields.map((field) => [field, Number(c[field])])
     ) as Record<(typeof despesaFields)[number], number>;
+    // O valor do AWB e o valor da nota fiscal (ficha de Envio de Amostra)
+    // compoem o custo total do contrato junto com as demais despesas.
+    const valorAwb = c.fichaEnvioAmostra?.cteValor != null ? Number(c.fichaEnvioAmostra.cteValor) : 0;
+    const valorNotaFiscalAmostra =
+      c.fichaEnvioAmostra?.notaFiscalValor != null ? Number(c.fichaEnvioAmostra.notaFiscalValor) : 0;
     const custoTotalDespesas = Number(
-      despesaFields.reduce((sum, field) => sum + Number(c[field]), 0).toFixed(2)
+      (
+        despesaFields.reduce((sum, field) => sum + Number(c[field]), 0) +
+        valorAwb +
+        valorNotaFiscalAmostra
+      ).toFixed(2)
     );
 
     return {
@@ -475,6 +484,8 @@ export async function getContratosExportacao() {
       dataFinalizacao: c.dataFinalizacao ? toISODate(c.dataFinalizacao) : null,
       createdAt: c.createdAt.toISOString(),
       despesas,
+      valorAwb,
+      valorNotaFiscalAmostra,
       custoTotalDespesas,
       quantSacas: c.quantSacas,
       adiantamentoUsd: Number(c.adiantamentoUsd),

@@ -94,6 +94,9 @@ function DespesasResumo({ item }: { item: ContratoRow }) {
   const linhas = despesaKeys
     .filter((k) => item.despesas[k] > 0)
     .map((k): [string, string] => [despesaLabels[k], formatCurrency(item.despesas[k])]);
+  if (item.valorAwb > 0) linhas.push(["Valor do AWB", formatCurrency(item.valorAwb)]);
+  if (item.valorNotaFiscalAmostra > 0)
+    linhas.push(["Valor da nota fiscal (amostra)", formatCurrency(item.valorNotaFiscalAmostra)]);
 
   if (linhas.length === 0) return null;
 
@@ -119,8 +122,8 @@ function EnvioAmostraResumo({ dados }: { dados: EnvioAmostraData }) {
   const linhas: [string, string][] = [];
   if (dados.tipoAmostraNome) linhas.push(["Tipo de amostra", dados.tipoAmostraNome]);
   if (dados.transportadoraNome) linhas.push(["Envio por", dados.transportadoraNome]);
-  if (dados.cteNumero) linhas.push(["CT-e de envio", dados.cteNumero]);
-  if (dados.cteValor != null) linhas.push(["Valor do CT-e", formatCurrency(dados.cteValor)]);
+  if (dados.cteNumero) linhas.push(["AWB de envio", dados.cteNumero]);
+  if (dados.cteValor != null) linhas.push(["Valor do AWB", formatCurrency(dados.cteValor)]);
   if (dados.notaFiscalNumero) linhas.push(["Nota fiscal de envio", dados.notaFiscalNumero]);
   if (dados.notaFiscalValor != null)
     linhas.push(["Valor da nota fiscal", formatCurrency(dados.notaFiscalValor)]);
