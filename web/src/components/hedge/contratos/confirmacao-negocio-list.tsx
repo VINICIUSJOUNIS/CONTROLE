@@ -23,7 +23,12 @@ import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embala
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
 import { NovaPeneira } from "@/components/hedge/contratos/nova-peneira";
 import { NovoPadraoCafe } from "@/components/hedge/contratos/novo-padrao-cafe";
-import { PrevisaoEtapa, EtapaStatusSelect, Checklist } from "@/components/hedge/contratos/etapa-contratos-list";
+import {
+  PrevisaoEtapa,
+  EtapaStatusSelect,
+  CustosResumo,
+  Checklist,
+} from "@/components/hedge/contratos/etapa-contratos-list";
 import { AnexosSection } from "@/components/hedge/contratos/anexos-section";
 import { alertaPrazo } from "@/lib/prazo";
 import {
@@ -249,6 +254,9 @@ export function ConfirmacaoNegocioList({
                   </div>
                   <p className="shrink-0 text-sm font-medium text-primary">
                     {formatCompactCurrency(item.valorUsd, "USD")}
+                  </p>
+                  <p className="shrink-0 text-xs font-medium text-danger">
+                    Custo: {formatCompactCurrency(item.custoTotalDespesas)}
                   </p>
                   <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
                     <Calendar size={12} />
@@ -483,6 +491,8 @@ export function ConfirmacaoNegocioList({
                     previsao={previsoes[item.id]}
                     etapaStatus={statusEtapas[item.id] ?? "NAO_INICIADO"}
                   />
+
+                  <CustosResumo item={item} />
 
                   <Checklist statusPorEtapa={checklist[item.id] ?? {}} />
                 </div>

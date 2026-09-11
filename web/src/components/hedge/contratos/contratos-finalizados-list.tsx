@@ -13,14 +13,10 @@ import {
 } from "@/lib/hedge-data";
 import { StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
 import { setContratoFinalizado } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
-import {
-  despesaLabels,
-  despesaKeys,
-  statusLabels,
-  EtapaStatusValue,
-} from "@/lib/contrato-shared";
+import { statusLabels, EtapaStatusValue } from "@/lib/contrato-shared";
 import {
   ConfirmacaoNegocioResumo,
+  CustosResumo,
   Checklist,
 } from "@/components/hedge/contratos/etapa-contratos-list";
 import { AnexosSection } from "@/components/hedge/contratos/anexos-section";
@@ -86,34 +82,6 @@ function RecebimentoResumo({ item }: { item: ContratoRow }) {
       {item.obsRecebimento && (
         <p className="mt-1 text-xs text-muted">Obs: {item.obsRecebimento}</p>
       )}
-    </div>
-  );
-}
-
-function DespesasResumo({ item }: { item: ContratoRow }) {
-  const linhas = despesaKeys
-    .filter((k) => item.despesas[k] > 0)
-    .map((k): [string, string] => [despesaLabels[k], formatCurrency(item.despesas[k])]);
-  if (item.valorAwb > 0) linhas.push(["Valor do AWB", formatCurrency(item.valorAwb)]);
-  if (item.valorNotaFiscalAmostra > 0)
-    linhas.push(["Valor da nota fiscal (amostra)", formatCurrency(item.valorNotaFiscalAmostra)]);
-
-  if (linhas.length === 0) return null;
-
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Despesas</p>
-        <p className="text-xs font-semibold">{formatCurrency(item.custoTotalDespesas)}</p>
-      </div>
-      <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs sm:grid-cols-3">
-        {linhas.map(([label, value]) => (
-          <div key={label} className="flex justify-between gap-2">
-            <dt className="text-muted">{label}</dt>
-            <dd className="text-right">{value}</dd>
-          </div>
-        ))}
-      </dl>
     </div>
   );
 }
@@ -227,6 +195,9 @@ export function ContratosFinalizadosList({
                     <p className="shrink-0 text-sm font-medium text-primary">
                       {formatCompactCurrency(item.valorUsd, "USD")}
                     </p>
+                    <p className="shrink-0 text-xs font-medium text-danger">
+                      Custo: {formatCompactCurrency(item.custoTotalDespesas)}
+                    </p>
                     <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
                       <Calendar size={12} />
                       Finalizado em: {item.dataFinalizacao ? formatDate(item.dataFinalizacao) : "-"}
@@ -249,7 +220,7 @@ export function ContratosFinalizadosList({
                     {confirmacao && <ConfirmacaoNegocioResumo dados={confirmacao} />}
                     {envioAmostra && <EnvioAmostraResumo dados={envioAmostra} />}
                     <RecebimentoResumo item={item} />
-                    <DespesasResumo item={item} />
+                    <CustosResumo item={item} />
 
                     <AnexosSection
                       contratoId={item.id}

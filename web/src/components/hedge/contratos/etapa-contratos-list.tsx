@@ -17,7 +17,15 @@ import {
   setContratoFinalizado,
   EnvioAmostraInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
-import { statusOrder, statusLabels, etapaStatusOptions, etapaStatusLabels, EtapaStatusValue } from "@/lib/contrato-shared";
+import {
+  statusOrder,
+  statusLabels,
+  etapaStatusOptions,
+  etapaStatusLabels,
+  EtapaStatusValue,
+  despesaLabels,
+  despesaKeys,
+} from "@/lib/contrato-shared";
 import { alertaPrazo } from "@/lib/prazo";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/field";
@@ -439,6 +447,40 @@ const checklistStatusClasses: Record<EtapaStatusValue, string> = {
   FINALIZADO: "bg-success/10 text-success",
 };
 
+// Discriminacao de todos os custos do contrato (despesas lancadas em
+// Contratos + AWB e nota fiscal da ficha de Envio de Amostra) e o total -
+// atualiza sozinho conforme as informacoes vao sendo preenchidas em cada
+// etapa, sem precisar editar nada aqui.
+export function CustosResumo({ item }: { item: ContratoRow }) {
+  const linhas = despesaKeys
+    .filter((k) => item.despesas[k] > 0)
+    .map((k): [string, string] => [despesaLabels[k], formatCurrency(item.despesas[k])]);
+  if (item.valorAwb > 0) linhas.push(["Valor do AWB", formatCurrency(item.valorAwb)]);
+  if (item.valorNotaFiscalAmostra > 0)
+    linhas.push(["Valor da nota fiscal (amostra)", formatCurrency(item.valorNotaFiscalAmostra)]);
+
+  return (
+    <div className="mt-3 border-t border-border pt-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Custos</p>
+        <p className="text-xs font-semibold text-danger">{formatCurrency(item.custoTotalDespesas)}</p>
+      </div>
+      {linhas.length === 0 ? (
+        <p className="mt-1 text-xs text-muted">Nenhum custo lançado ainda.</p>
+      ) : (
+        <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs sm:grid-cols-3">
+          {linhas.map(([label, value]) => (
+            <div key={label} className="flex justify-between gap-2">
+              <dt className="text-muted">{label}</dt>
+              <dd className="text-right">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+}
+
 export function Checklist({
   statusPorEtapa,
 }: {
@@ -694,6 +736,9 @@ export function EtapaContratosList({
                 <p className="shrink-0 text-sm font-medium text-primary">
                   {formatCompactCurrency(item.valorUsd, "USD")}
                 </p>
+                <p className="shrink-0 text-xs font-medium text-danger">
+                  Custo: {formatCompactCurrency(item.custoTotalDespesas)}
+                </p>
                 <p className="flex shrink-0 items-center gap-1 text-xs text-muted">
                   <Calendar size={12} />
                   Estufagem: {item.dataEstufagem ? formatDate(item.dataEstufagem) : "sem data"}
@@ -780,6 +825,8 @@ export function EtapaContratosList({
                 {status === "ENVIO_BL_ORIGINAL_TELEX" && (
                   <ContratoFinalizadoSection contratoId={item.id} finalizado={item.contratoFinalizado} />
                 )}
+
+                <CustosResumo item={item} />
 
                 <Checklist statusPorEtapa={checklist[item.id] ?? {}} />
               </div>
