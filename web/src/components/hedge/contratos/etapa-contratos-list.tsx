@@ -10,6 +10,8 @@ import {
   EnvioAmostraData,
   FornecedorMarcacaoSacaria,
   MarcacaoSacariaData,
+  TransportadoraRodoviariaData,
+  TransporteRodoviarioData,
 } from "@/lib/hedge-data";
 import {
   updateContratoStatus,
@@ -25,9 +27,11 @@ import {
   setEtapaStatus,
   upsertEnvioAmostra,
   upsertMarcacaoSacaria,
+  upsertTransporteRodoviario,
   setContratoFinalizado,
   EnvioAmostraInput,
   MarcacaoSacariaInput,
+  TransporteRodoviarioInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import {
   statusOrder,
@@ -217,12 +221,7 @@ function CustosEstufagemSection({
   const [isPending, startTransition] = useTransition();
 
   function handleBlur() {
-    if (
-      value.armazem === custos.armazem &&
-      value.freteTerrestre === custos.freteTerrestre &&
-      value.embalagens === custos.embalagens
-    )
-      return;
+    if (value.armazem === custos.armazem && value.embalagens === custos.embalagens) return;
     startTransition(async () => {
       await updateCustosEstufagem(contratoId, value);
       router.refresh();
@@ -230,7 +229,7 @@ function CustosEstufagemSection({
   }
 
   return (
-    <div className="mt-3 grid grid-cols-3 gap-3 border-t border-border pt-2">
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
       <label className="text-xs text-muted">
         Armazenagem (R$)
         <input
@@ -239,18 +238,6 @@ function CustosEstufagemSection({
           value={value.armazem}
           disabled={isPending}
           onChange={(e) => setValue({ ...value, armazem: e.target.value })}
-          onBlur={handleBlur}
-          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
-        />
-      </label>
-      <label className="text-xs text-muted">
-        Transporte rodoviário (R$)
-        <input
-          type="number"
-          step="0.01"
-          value={value.freteTerrestre}
-          disabled={isPending}
-          onChange={(e) => setValue({ ...value, freteTerrestre: e.target.value })}
           onBlur={handleBlur}
           className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
         />
@@ -267,6 +254,130 @@ function CustosEstufagemSection({
           className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
         />
       </label>
+    </div>
+  );
+}
+
+function TransporteRodoviarioSection({
+  contratoId,
+  dados,
+  transportadoras,
+}: {
+  contratoId: string;
+  dados: TransporteRodoviarioData | undefined;
+  transportadoras: TransportadoraRodoviariaData[];
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [transportadoraId, setTransportadoraId] = useState(dados?.transportadoraId ?? "");
+  const [itensSelecionadosIds, setItensSelecionadosIds] = useState<string[]>(
+    dados?.itensSelecionadosIds ?? []
+  );
+  const [quantidade, setQuantidade] = useState(String(dados?.quantidadeContainers ?? 1));
+
+  function save(patch: Partial<TransporteRodoviarioInput>) {
+    const next: TransporteRodoviarioInput = {
+      transportadoraId,
+      itensSelecionadosIds,
+      quantidadeContainers: Number(quantidade) || 1,
+      ...patch,
+    };
+    startTransition(async () => {
+      await upsertTransporteRodoviario(contratoId, next);
+      router.refresh();
+    });
+  }
+
+  function handleTransportadoraChange(next: string) {
+    setTransportadoraId(next);
+    setItensSelecionadosIds([]);
+    save({ transportadoraId: next, itensSelecionadosIds: [] });
+  }
+
+  function toggleItem(itemId: string) {
+    const next = itensSelecionadosIds.includes(itemId)
+      ? itensSelecionadosIds.filter((id) => id !== itemId)
+      : [...itensSelecionadosIds, itemId];
+    setItensSelecionadosIds(next);
+    save({ itensSelecionadosIds: next });
+  }
+
+  function handleQuantidadeBlur() {
+    if (quantidade === String(dados?.quantidadeContainers ?? 1)) return;
+    save({});
+  }
+
+  const transportadoraSelecionada = transportadoras.find((t) => t.id === transportadoraId);
+  const itens = transportadoraSelecionada?.itens ?? [];
+  const custoTotal = itens
+    .filter((i) => itensSelecionadosIds.includes(i.id))
+    .reduce((sum, i) => sum + i.precoPorContainer, 0) * (Number(quantidade) || 1);
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-border pt-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Transportadora rodoviária</p>
+          <Select
+            value={transportadoraId}
+            disabled={isPending}
+            onChange={(e) => handleTransportadoraChange(e.target.value)}
+          >
+            <option value="">Selecione...</option>
+            {transportadoras.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Quantidade de containers</p>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={quantidade}
+            disabled={isPending}
+            onChange={(e) => setQuantidade(e.target.value)}
+            onBlur={handleQuantidadeBlur}
+            className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+
+      {transportadoraId && (
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Itens da tabela</p>
+          {itens.length === 0 ? (
+            <p className="text-xs text-muted">Esta transportadora ainda não tem itens cadastrados.</p>
+          ) : (
+            <div className="space-y-1 rounded-md border border-border p-2">
+              {itens.map((item) => (
+                <label key={item.id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={itensSelecionadosIds.includes(item.id)}
+                      disabled={isPending}
+                      onChange={() => toggleItem(item.id)}
+                    />
+                    {item.descricao}
+                  </span>
+                  <span className="shrink-0 text-muted">{formatCurrency(item.precoPorContainer)}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {itensSelecionadosIds.length > 0 && (
+        <div className="flex justify-between rounded-md border border-border bg-border/10 p-2 text-xs font-semibold">
+          <span>Custo do transporte rodoviário</span>
+          <span className="text-danger">{formatCurrency(custoTotal)}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -901,6 +1012,8 @@ export function EtapaContratosList({
   transportadorasAmostra,
   fichasMarcacaoSacaria,
   fornecedoresMarcacaoSacaria,
+  fichasTransporteRodoviario,
+  transportadorasRodoviarias,
 }: {
   contratos: ContratoRow[];
   status: StatusContratoValue;
@@ -914,6 +1027,8 @@ export function EtapaContratosList({
   transportadorasAmostra?: { id: string; name: string }[];
   fichasMarcacaoSacaria?: Record<string, MarcacaoSacariaData>;
   fornecedoresMarcacaoSacaria?: FornecedorMarcacaoSacaria[];
+  fichasTransporteRodoviario?: Record<string, TransporteRodoviarioData>;
+  transportadorasRodoviarias?: TransportadoraRodoviariaData[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1043,14 +1158,20 @@ export function EtapaContratosList({
                 />
 
                 {status === "ESTUFAGEM_CARREGAMENTO" && (
-                  <CustosEstufagemSection
-                    contratoId={item.id}
-                    custos={{
-                      armazem: String(item.despesas.armazem),
-                      freteTerrestre: String(item.despesas.freteTerrestre),
-                      embalagens: String(item.despesas.embalagens),
-                    }}
-                  />
+                  <>
+                    <CustosEstufagemSection
+                      contratoId={item.id}
+                      custos={{
+                        armazem: String(item.despesas.armazem),
+                        embalagens: String(item.despesas.embalagens),
+                      }}
+                    />
+                    <TransporteRodoviarioSection
+                      contratoId={item.id}
+                      dados={fichasTransporteRodoviario?.[item.id]}
+                      transportadoras={transportadorasRodoviarias ?? []}
+                    />
+                  </>
                 )}
 
                 {status === "ENVIO_AMOSTRA_PSS" && (

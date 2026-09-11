@@ -80,6 +80,32 @@ export async function upsertMarcacaoSacaria(contratoId: string, input: MarcacaoS
   revalidateAll();
 }
 
+export type TransporteRodoviarioInput = {
+  transportadoraId: string;
+  itensSelecionadosIds: string[];
+  quantidadeContainers: number;
+};
+
+// Ficha da etapa "Estufagem/Carregamento": transportadora e itens da tabela
+// dela (rota, pre stacking, kit de forracao etc) escolhidos para este
+// contrato - o custo do transporte rodoviario e calculado sozinho a partir
+// da soma dos itens escolhidos vezes a quantidade de containers.
+export async function upsertTransporteRodoviario(contratoId: string, input: TransporteRodoviarioInput) {
+  const data = {
+    transportadoraId: input.transportadoraId || null,
+    itensSelecionadosIds: input.itensSelecionadosIds,
+    quantidadeContainers: input.quantidadeContainers > 0 ? input.quantidadeContainers : 1,
+  };
+
+  await prisma.contratoTransporteRodoviario.upsert({
+    where: { contratoId },
+    create: { contratoId, ...data },
+    update: data,
+  });
+
+  revalidateAll();
+}
+
 export async function setPrevisaoEtapa(contratoId: string, etapa: StatusContratoValue, dataPrevisao: string) {
   if (!dataPrevisao) {
     await prisma.contratoEtapaPrevisao.deleteMany({ where: { contratoId, etapa } });

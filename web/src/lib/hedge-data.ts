@@ -312,6 +312,76 @@ export async function getFichasMarcacaoSacaria(): Promise<Record<string, Marcaca
   return result;
 }
 
+export type ItemTabelaTransportadoraData = {
+  id: string;
+  descricao: string;
+  precoPorContainer: number;
+};
+
+export type TransportadoraRodoviariaData = {
+  id: string;
+  name: string;
+  itens: ItemTabelaTransportadoraData[];
+};
+
+// Transportadoras rodoviarias e a respectiva tabela de preco (rotas, pre
+// stacking, kit de forracao etc, por container), usadas no cadastro e na
+// etapa Estufagem/Carregamento.
+export async function getTransportadorasRodoviarias(): Promise<TransportadoraRodoviariaData[]> {
+  const transportadoras = await prisma.transportadoraRodoviaria.findMany({
+    include: { itens: { orderBy: { createdAt: "asc" } } },
+    orderBy: { name: "asc" },
+  });
+
+  return transportadoras.map((t) => ({
+    id: t.id,
+    name: t.name,
+    itens: t.itens.map((i) => ({
+      id: i.id,
+      descricao: i.descricao,
+      precoPorContainer: Number(i.precoPorContainer),
+    })),
+  }));
+}
+
+export type TransporteRodoviarioData = {
+  transportadoraId: string | null;
+  transportadoraNome: string | null;
+  itensSelecionadosIds: string[];
+  itensSelecionados: ItemTabelaTransportadoraData[];
+  quantidadeContainers: number;
+  custoTotal: number;
+};
+
+// Ficha da etapa "Estufagem/Carregamento", indexada por contratoId -
+// transportadora e itens da tabela dela escolhidos, com o custo ja
+// calculado (soma dos itens x quantidade de containers).
+export async function getFichasTransporteRodoviario(): Promise<Record<string, TransporteRodoviarioData>> {
+  const rows = await prisma.contratoTransporteRodoviario.findMany({
+    include: { transportadora: { include: { itens: true } } },
+  });
+
+  const result: Record<string, TransporteRodoviarioData> = {};
+  for (const r of rows) {
+    const itensSelecionados = (r.transportadora?.itens ?? [])
+      .filter((i) => r.itensSelecionadosIds.includes(i.id))
+      .map((i) => ({ id: i.id, descricao: i.descricao, precoPorContainer: Number(i.precoPorContainer) }));
+    const custoTotal = Number(
+      (itensSelecionados.reduce((sum, i) => sum + i.precoPorContainer, 0) * r.quantidadeContainers).toFixed(2)
+    );
+
+    result[r.contratoId] = {
+      transportadoraId: r.transportadoraId,
+      transportadoraNome: r.transportadora?.name ?? null,
+      itensSelecionadosIds: r.itensSelecionadosIds,
+      itensSelecionados,
+      quantidadeContainers: r.quantidadeContainers,
+      custoTotal,
+    };
+  }
+  return result;
+}
+
 export type ContratoAnexoData = {
   id: string;
   etapa: StatusContratoValue;
@@ -506,6 +576,7 @@ export async function getContratosExportacao() {
       fichaEnvioAmostra: true,
       confirmacaoNegocio: true,
       fichaMarcacaoSacaria: { include: { fornecedor: { include: { precos: true } } } },
+      fichaTransporteRodoviario: { include: { transportadora: { include: { itens: true } } } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -545,6 +616,18 @@ export async function getContratosExportacao() {
     if (precoPorSacaMarcacao != null) {
       const quantidadeSacas = c.confirmacaoNegocio?.quantidadeSacas ?? c.quantSacas ?? 0;
       despesas.marcacaoSacaria = Number((Number(precoPorSacaMarcacao) * quantidadeSacas).toFixed(2));
+    }
+
+    // Quando a transportadora e os itens da tabela dela ja foram escolhidos
+    // (etapa Estufagem/Carregamento), o custo passa a ser calculado (soma
+    // dos itens x quantidade de containers), substituindo o valor manual de
+    // "Transporte terrestre".
+    const fichaTransporte = c.fichaTransporteRodoviario;
+    if (fichaTransporte && fichaTransporte.itensSelecionadosIds.length > 0) {
+      const somaItens = (fichaTransporte.transportadora?.itens ?? [])
+        .filter((i) => fichaTransporte.itensSelecionadosIds.includes(i.id))
+        .reduce((sum, i) => sum + Number(i.precoPorContainer), 0);
+      despesas.freteTerrestre = Number((somaItens * fichaTransporte.quantidadeContainers).toFixed(2));
     }
 
     // O valor do AWB e o valor da nota fiscal (ficha de Envio de Amostra)

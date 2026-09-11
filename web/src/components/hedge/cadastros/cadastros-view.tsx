@@ -6,7 +6,8 @@ import { ClientesTable, ClienteRow } from "@/components/hedge/cadastros/clientes
 import { CorretorasTable, CorretoraRow } from "@/components/hedge/cadastros/corretoras-table";
 import { CatalogoSimplesTable } from "@/components/hedge/cadastros/catalogo-simples-table";
 import { FornecedoresMarcacaoSacariaTable } from "@/components/hedge/cadastros/fornecedores-marcacao-sacaria-table";
-import { FornecedorMarcacaoSacaria } from "@/lib/hedge-data";
+import { TransportadorasRodoviariasTable } from "@/components/hedge/cadastros/transportadoras-rodoviarias-table";
+import { FornecedorMarcacaoSacaria, TransportadoraRodoviariaData } from "@/lib/hedge-data";
 import {
   createTipoFrete,
   updateTipoFrete,
@@ -56,6 +57,7 @@ const tabs = [
   { key: "peneira", label: "Peneira" },
   { key: "padrao", label: "Padrão" },
   { key: "marcacaoSacaria", label: "Fornecedor de Marcação" },
+  { key: "transportadoraRodoviaria", label: "Transportadora Rodoviária" },
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
@@ -71,6 +73,7 @@ export function CadastrosView({
   peneiras,
   padroesCafe,
   fornecedoresMarcacaoSacaria,
+  transportadorasRodoviarias,
 }: {
   clientes: ClienteRow[];
   corretoras: CorretoraRow[];
@@ -82,6 +85,7 @@ export function CadastrosView({
   peneiras: Item[];
   padroesCafe: Item[];
   fornecedoresMarcacaoSacaria: FornecedorMarcacaoSacaria[];
+  transportadorasRodoviarias: TransportadoraRodoviariaData[];
 }) {
   const [tab, setTab] = useState<TabKey>("clientes");
 
@@ -176,6 +180,9 @@ export function CadastrosView({
       )}
       {tab === "marcacaoSacaria" && (
         <FornecedoresMarcacaoSacariaTable fornecedores={fornecedoresMarcacaoSacaria} />
+      )}
+      {tab === "transportadoraRodoviaria" && (
+        <TransportadorasRodoviariasTable transportadoras={transportadorasRodoviarias} />
       )}
     </div>
   );

@@ -594,6 +594,7 @@ model ContratoExportacao {
   etapasConcluidas   ContratoEtapaConcluida[]
   fichaEnvioAmostra  ContratoEnvioAmostra?
   fichaMarcacaoSacaria ContratoMarcacaoSacaria?
+  fichaTransporteRodoviario ContratoTransporteRodoviario?
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?
@@ -838,6 +839,55 @@ model ContratoMarcacaoSacaria {
 
   @@index([fornecedorId])
   @@map("contrato_marcacao_sacaria")
+}
+
+// Transportadoras rodoviarias cadastraveis, usadas na etapa
+// Estufagem/Carregamento da Mesa de Operacao.
+model TransportadoraRodoviaria {
+  id        String                         @id @default(uuid())
+  name      String                         @unique
+  itens     ItemTabelaTransportadora[]
+  fichas    ContratoTransporteRodoviario[]
+  createdAt DateTime                       @default(now())
+
+  @@map("transportadoras_rodoviarias")
+}
+
+// Item da tabela de preco de uma transportadora rodoviaria - rota
+// (coleta/estufagem/entrega por tamanho de container), pre stacking, kit de
+// forracao, ou qualquer outro item cobrado por container. Sem categorias
+// fixas: cada transportadora cadastra livremente os itens da propria tabela.
+model ItemTabelaTransportadora {
+  id                String                   @id @default(uuid())
+  transportadora    TransportadoraRodoviaria @relation(fields: [transportadoraId], references: [id], onDelete: Cascade)
+  transportadoraId  String
+  descricao         String
+  precoPorContainer Decimal                  @default(0) @db.Decimal(18, 2)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@index([transportadoraId])
+  @@map("itens_tabela_transportadora")
+}
+
+// Ficha da etapa "Estufagem/Carregamento" - transportadora e itens da
+// tabela dela escolhidos para este contrato (rota, pre stacking, kit de
+// forracao etc). O custo de "Transporte rodoviario" passa a ser a soma dos
+// itens escolhidos vezes a quantidade de containers, substituindo o valor
+// manual desse item.
+model ContratoTransporteRodoviario {
+  id                   String                    @id @default(uuid())
+  contrato             ContratoExportacao        @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId           String                    @unique
+  transportadora       TransportadoraRodoviaria? @relation(fields: [transportadoraId], references: [id])
+  transportadoraId     String?
+  itensSelecionadosIds String[]                  @default([])
+  quantidadeContainers Int                       @default(1)
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  @@index([transportadoraId])
+  @@map("contrato_transporte_rodoviario")
 }
 
 // Documentos anexados a um contrato em qualquer etapa da Mesa de Operacao
