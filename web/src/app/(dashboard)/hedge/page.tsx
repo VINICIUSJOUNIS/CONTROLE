@@ -33,7 +33,6 @@ const statusVariant: Record<string, "default" | "success" | "danger" | "warning"
   ENVIO_DOCUMENTOS_BANCO_CLIENTE: "warning",
   RECEBIMENTO_CLIENTE: "warning",
   ENVIO_BL_ORIGINAL_TELEX: "warning",
-  LIBERACAO_CARGA: "success",
   A_LIQUIDAR: "warning",
   LIQUIDADA: "success",
 };

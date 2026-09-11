@@ -14,6 +14,7 @@ import {
   setPrevisaoEtapa,
   setEtapaStatus,
   upsertEnvioAmostra,
+  setContratoFinalizado,
   EnvioAmostraInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import { statusOrder, statusLabels, etapaStatusOptions, etapaStatusLabels, EtapaStatusValue } from "@/lib/contrato-shared";
@@ -30,6 +31,7 @@ import {
   Paperclip,
   Upload,
   AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 
 
@@ -310,6 +312,45 @@ function EnvioAmostraSection({
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function ContratoFinalizadoSection({
+  contratoId,
+  finalizado,
+}: {
+  contratoId: string;
+  finalizado: boolean;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function handleChange(checked: boolean) {
+    const mensagem = checked
+      ? "Deseja realmente finalizar o contrato? Ele vai sair da Mesa de Operação e passar para Contratos Finalizados."
+      : "Deseja realmente reabrir o contrato? Ele vai voltar a aparecer na Mesa de Operação.";
+    if (!window.confirm(mensagem)) return;
+
+    startTransition(async () => {
+      await setContratoFinalizado(contratoId, checked);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 border-t border-border pt-2">
+      <label className="flex items-center gap-2 text-xs font-medium">
+        <input
+          type="checkbox"
+          checked={finalizado}
+          disabled={isPending}
+          onChange={(e) => handleChange(e.target.checked)}
+          className="size-4 rounded border-border accent-success"
+        />
+        <CheckCircle2 size={14} className={finalizado ? "text-success" : "text-muted"} />
+        Contrato Finalizado
+      </label>
     </div>
   );
 }
@@ -730,6 +771,10 @@ export function EtapaContratosList({
                     tiposAmostra={tiposAmostra ?? []}
                     transportadorasAmostra={transportadorasAmostra ?? []}
                   />
+                )}
+
+                {status === "ENVIO_BL_ORIGINAL_TELEX" && (
+                  <ContratoFinalizadoSection contratoId={item.id} finalizado={item.contratoFinalizado} />
                 )}
 
                 <Checklist statusPorEtapa={checklist[item.id] ?? {}} />

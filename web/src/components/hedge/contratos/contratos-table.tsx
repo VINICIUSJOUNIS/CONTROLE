@@ -488,8 +488,8 @@ export function ContratosTable({
                     )}
                   </td>
                   <td className="px-4 py-2.5">
-                    <Badge variant={row.status === "LIBERACAO_CARGA" ? "success" : "neutral"}>
-                      {statusLabels[row.status]}
+                    <Badge variant={row.contratoFinalizado ? "success" : "neutral"}>
+                      {row.contratoFinalizado ? "Contrato finalizado" : statusLabels[row.status]}
                     </Badge>
                   </td>
                   <td className="px-4 py-2.5">

@@ -37,7 +37,7 @@ export default async function MesaOperacaoEtapaPage({
   if (!status) notFound();
 
   const contratos = await getContratosExportacao();
-  const items = contratos.filter((c) => c.status === status);
+  const items = contratos.filter((c) => c.status === status && !c.contratoFinalizado);
 
   return (
     <div className="flex flex-col">

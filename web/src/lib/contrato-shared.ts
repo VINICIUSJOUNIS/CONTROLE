@@ -4,8 +4,10 @@ import {
   RecebimentoContratoInput,
 } from "@/app/(dashboard)/hedge/contratos/actions";
 
-// As 20 etapas da Mesa de Operacao, na ordem em que sao cumpridas no processo
-// de exportacao (lista fornecida pela area de operacoes).
+// As etapas da Mesa de Operacao, na ordem em que sao cumpridas no processo
+// de exportacao (lista fornecida pela area de operacoes). A etapa "Liberacao
+// da carga" foi substituida pelo campo "Contrato Finalizado" preenchido em
+// ENVIO_BL_ORIGINAL_TELEX, entao nao entra mais nessa lista.
 export const statusOrder: StatusContratoValue[] = [
   "CONFIRMACAO_NEGOCIO",
   "ASSINATURA_CONTRATO",
@@ -27,7 +29,6 @@ export const statusOrder: StatusContratoValue[] = [
   "ENVIO_DOCUMENTOS_BANCO_CLIENTE",
   "RECEBIMENTO_CLIENTE",
   "ENVIO_BL_ORIGINAL_TELEX",
-  "LIBERACAO_CARGA",
 ];
 
 // Agrupamentos de etapas exibidos como uma unica secao expansivel na Mesa de
@@ -71,7 +72,6 @@ export const mesaOperacaoGroups: MesaOperacaoGroup[] = [
       "ENVIO_DOCUMENTOS_BANCO_CLIENTE",
       "RECEBIMENTO_CLIENTE",
       "ENVIO_BL_ORIGINAL_TELEX",
-      "LIBERACAO_CARGA",
     ],
   },
 ];

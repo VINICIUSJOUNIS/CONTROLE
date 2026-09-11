@@ -415,7 +415,11 @@ export async function getContratosExportacaoCount() {
 }
 
 export async function getContratosExportacaoCountByStatus() {
-  const rows = await prisma.contratoExportacao.groupBy({ by: ["status"], _count: true });
+  const rows = await prisma.contratoExportacao.groupBy({
+    by: ["status"],
+    where: { contratoFinalizado: false },
+    _count: true,
+  });
   return Object.fromEntries(rows.map((r) => [r.status, r._count])) as Record<string, number>;
 }
 
@@ -467,6 +471,8 @@ export async function getContratosExportacao() {
       dataChegada,
       status: c.status,
       prazoVencido,
+      contratoFinalizado: c.contratoFinalizado,
+      dataFinalizacao: c.dataFinalizacao ? toISODate(c.dataFinalizacao) : null,
       createdAt: c.createdAt.toISOString(),
       despesas,
       custoTotalDespesas,
@@ -508,9 +514,9 @@ export async function getExportDashboard() {
   const contratos = await getContratosExportacao();
 
   const totalContratos = contratos.length;
-  const emAndamento = contratos.filter((c) => c.status !== "LIBERACAO_CARGA").length;
-  const concluidos = contratos.filter((c) => c.status === "LIBERACAO_CARGA").length;
-  const vencidos = contratos.filter((c) => c.prazoVencido);
+  const emAndamento = contratos.filter((c) => !c.contratoFinalizado).length;
+  const concluidos = contratos.filter((c) => c.contratoFinalizado).length;
+  const vencidos = contratos.filter((c) => c.prazoVencido && !c.contratoFinalizado);
   const prazosVencidos = vencidos.length;
 
   const hoje = toISODate(new Date());
@@ -573,7 +579,7 @@ async function getProximosVencimentos(contratos: ContratoRow[]) {
   const operations = await getHedgeOperations();
 
   const doContrato = contratos
-    .filter((c) => c.status !== "LIBERACAO_CARGA" && !c.prazoVencido)
+    .filter((c) => !c.contratoFinalizado && !c.prazoVencido)
     .map((c) => {
       const relevantField = dataFieldByStatus[c.status];
       const vencimento =

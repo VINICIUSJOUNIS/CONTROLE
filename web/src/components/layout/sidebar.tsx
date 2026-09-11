@@ -29,6 +29,7 @@ import {
   BarChart3,
   Package,
   ClipboardList,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -105,6 +106,7 @@ const hedgeNavItems = [
     icon: Ship,
     subItems: mesaOperacaoSubItems,
   },
+  { href: "/hedge/contratos-finalizados", label: "Contratos Finalizados", icon: CheckCircle2 },
   { href: "/hedge/mapa", label: "Mapa de Exportacao", icon: Globe2 },
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
   { href: "/hedge/alertas-prazos", label: "Alerta de Prazos", icon: AlertTriangle },

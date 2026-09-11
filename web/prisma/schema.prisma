@@ -580,6 +580,12 @@ model ContratoExportacao {
   dataChegada    DateTime?       @db.Date
   status         StatusContrato  @default(CONFIRMACAO_NEGOCIO)
 
+  // Marca o contrato como finalizado (preenchido na etapa "Envio do BL" da
+  // Mesa de Operacao). Contratos finalizados saem da Mesa de Operacao e
+  // passam a aparecer no menu "Contratos Finalizados".
+  contratoFinalizado Boolean     @default(false)
+  dataFinalizacao    DateTime?   @db.Date
+
   // Dados proprios (independentes dos campos gerais do contrato acima) preenchidos
   // na etapa "Confirmacao de Negocio" da Mesa de Operacao.
   confirmacaoNegocio ContratoConfirmacaoNegocio?
@@ -627,6 +633,7 @@ model ContratoExportacao {
 
   @@index([clienteId])
   @@index([status])
+  @@index([contratoFinalizado])
   @@map("contratos_exportacao")
 }
 

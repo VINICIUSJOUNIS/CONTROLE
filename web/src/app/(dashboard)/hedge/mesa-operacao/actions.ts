@@ -11,6 +11,22 @@ function revalidateAll() {
   revalidatePath("/hedge/contratos");
   revalidatePath("/hedge/mesa-operacao");
   revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+  revalidatePath("/hedge/contratos-finalizados");
+}
+
+// Marca/desmarca o contrato como finalizado - preenchido na etapa "Envio do
+// BL" (ultima etapa da Mesa de Operacao). Contratos finalizados saem da Mesa
+// de Operacao e passam a aparecer no menu "Contratos Finalizados".
+export async function setContratoFinalizado(contratoId: string, finalizado: boolean) {
+  await prisma.contratoExportacao.update({
+    where: { id: contratoId },
+    data: {
+      contratoFinalizado: finalizado,
+      dataFinalizacao: finalizado ? new Date() : null,
+    },
+  });
+
+  revalidateAll();
 }
 
 export type EnvioAmostraInput = {
