@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
-import { statusOrder, statusLabels, EtapaStatusValue } from "@/lib/contrato-shared";
+import {
+  statusOrder,
+  statusLabels,
+  EtapaStatusValue,
+  FaixaCoresMarcacaoValue,
+  faixaCoresOrder,
+} from "@/lib/contrato-shared";
 import { alertaPrazo, AlertaPrazo } from "@/lib/prazo";
 
 function toISODate(d: Date) {
@@ -237,6 +243,74 @@ export async function getEnviosAmostra(): Promise<Record<string, EnvioAmostraDat
   );
 }
 
+export type FornecedorMarcacaoSacaria = {
+  id: string;
+  name: string;
+  precos: Record<FaixaCoresMarcacaoValue, number>;
+};
+
+// Fornecedores de marcacao de sacaria e a respectiva tabela de preco por
+// saca (uma por faixa de cores), usados no cadastro e na etapa Aprovacao
+// da Arte de Sacaria.
+export async function getFornecedoresMarcacaoSacaria(): Promise<FornecedorMarcacaoSacaria[]> {
+  const fornecedores = await prisma.fornecedorMarcacaoSacaria.findMany({
+    include: { precos: true },
+    orderBy: { name: "asc" },
+  });
+
+  return fornecedores.map((f) => {
+    const precosPorFaixa = new Map(f.precos.map((p) => [p.faixaCores, Number(p.precoPorSaca)]));
+    return {
+      id: f.id,
+      name: f.name,
+      precos: Object.fromEntries(
+        faixaCoresOrder.map((faixa) => [faixa, precosPorFaixa.get(faixa) ?? 0])
+      ) as Record<FaixaCoresMarcacaoValue, number>,
+    };
+  });
+}
+
+export type MarcacaoSacariaData = {
+  fornecedorId: string | null;
+  fornecedorNome: string | null;
+  faixaCores: FaixaCoresMarcacaoValue | null;
+  precoPorSaca: number | null;
+  quantidadeSacas: number;
+  custoTotal: number;
+};
+
+// Ficha da etapa "Aprovacao da Arte de Sacaria", indexada por contratoId -
+// fornecedor e faixa de cores escolhidos, com o custo ja calculado
+// (preco por saca x quantidade de sacas do contrato).
+export async function getFichasMarcacaoSacaria(): Promise<Record<string, MarcacaoSacariaData>> {
+  const rows = await prisma.contratoMarcacaoSacaria.findMany({
+    include: {
+      fornecedor: { include: { precos: true } },
+      contrato: { include: { confirmacaoNegocio: true } },
+    },
+  });
+
+  const result: Record<string, MarcacaoSacariaData> = {};
+  for (const r of rows) {
+    const quantidadeSacas = r.contrato.confirmacaoNegocio?.quantidadeSacas ?? r.contrato.quantSacas ?? 0;
+    const precoPorSaca =
+      r.faixaCores != null
+        ? (r.fornecedor?.precos.find((p) => p.faixaCores === r.faixaCores)?.precoPorSaca ?? null)
+        : null;
+    const precoPorSacaNum = precoPorSaca != null ? Number(precoPorSaca) : null;
+
+    result[r.contratoId] = {
+      fornecedorId: r.fornecedorId,
+      fornecedorNome: r.fornecedor?.name ?? null,
+      faixaCores: (r.faixaCores as FaixaCoresMarcacaoValue) ?? null,
+      precoPorSaca: precoPorSacaNum,
+      quantidadeSacas,
+      custoTotal: precoPorSacaNum != null ? Number((precoPorSacaNum * quantidadeSacas).toFixed(2)) : 0,
+    };
+  }
+  return result;
+}
+
 export type ContratoAnexoData = {
   id: string;
   etapa: StatusContratoValue;
@@ -425,7 +499,13 @@ export async function getContratosExportacaoCountByStatus() {
 
 export async function getContratosExportacao() {
   const contratos = await prisma.contratoExportacao.findMany({
-    include: { cliente: true, corretora: true, fichaEnvioAmostra: true },
+    include: {
+      cliente: true,
+      corretora: true,
+      fichaEnvioAmostra: true,
+      confirmacaoNegocio: true,
+      fichaMarcacaoSacaria: { include: { fornecedor: { include: { precos: true } } } },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -450,6 +530,22 @@ export async function getContratosExportacao() {
     const despesas = Object.fromEntries(
       despesaFields.map((field) => [field, Number(c[field])])
     ) as Record<(typeof despesaFields)[number], number>;
+
+    // Quando o fornecedor e a faixa de cores da marcacao de sacaria ja foram
+    // escolhidos (etapa Aprovacao da Arte de Sacaria), o custo passa a ser
+    // calculado (preco por saca x quantidade de sacas), substituindo o valor
+    // manual de "Marcacao de sacaria".
+    const fichaMarcacao = c.fichaMarcacaoSacaria;
+    const precoPorSacaMarcacao =
+      fichaMarcacao?.faixaCores != null
+        ? (fichaMarcacao.fornecedor?.precos.find((p) => p.faixaCores === fichaMarcacao.faixaCores)
+            ?.precoPorSaca ?? null)
+        : null;
+    if (precoPorSacaMarcacao != null) {
+      const quantidadeSacas = c.confirmacaoNegocio?.quantidadeSacas ?? c.quantSacas ?? 0;
+      despesas.marcacaoSacaria = Number((Number(precoPorSacaMarcacao) * quantidadeSacas).toFixed(2));
+    }
+
     // O valor do AWB e o valor da nota fiscal (ficha de Envio de Amostra)
     // compoem o custo total do contrato junto com as demais despesas.
     const valorAwb = c.fichaEnvioAmostra?.cteValor != null ? Number(c.fichaEnvioAmostra.cteValor) : 0;
@@ -457,7 +553,7 @@ export async function getContratosExportacao() {
       c.fichaEnvioAmostra?.notaFiscalValor != null ? Number(c.fichaEnvioAmostra.notaFiscalValor) : 0;
     const custoTotalDespesas = Number(
       (
-        despesaFields.reduce((sum, field) => sum + Number(c[field]), 0) +
+        despesaFields.reduce((sum, field) => sum + despesas[field], 0) +
         valorAwb +
         valorNotaFiscalAmostra
       ).toFixed(2)

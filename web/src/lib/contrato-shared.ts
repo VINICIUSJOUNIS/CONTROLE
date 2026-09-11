@@ -244,3 +244,31 @@ export function emptyRecebimentoForm(): Record<keyof RecebimentoContratoInput, s
     obsRecebimento: "",
   };
 }
+
+// Faixas de cores da tabela de preco de marcacao de sacaria, usada na etapa
+// Aprovacao da Arte de Sacaria da Mesa de Operacao.
+export type FaixaCoresMarcacaoValue =
+  | "UMA_COR"
+  | "DUAS_CORES"
+  | "TRES_CORES"
+  | "QUATRO_CORES"
+  | "CINCO_CORES"
+  | "MAIS_DE_CINCO_CORES";
+
+export const faixaCoresOrder: FaixaCoresMarcacaoValue[] = [
+  "UMA_COR",
+  "DUAS_CORES",
+  "TRES_CORES",
+  "QUATRO_CORES",
+  "CINCO_CORES",
+  "MAIS_DE_CINCO_CORES",
+];
+
+export const faixaCoresLabels: Record<FaixaCoresMarcacaoValue, string> = {
+  UMA_COR: "1 cor",
+  DUAS_CORES: "2 cores",
+  TRES_CORES: "3 cores",
+  QUATRO_CORES: "4 cores",
+  CINCO_CORES: "5 cores",
+  MAIS_DE_CINCO_CORES: "Acima de 5 cores",
+};

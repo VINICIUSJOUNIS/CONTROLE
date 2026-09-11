@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { ClientesTable, ClienteRow } from "@/components/hedge/cadastros/clientes-table";
 import { CorretorasTable, CorretoraRow } from "@/components/hedge/cadastros/corretoras-table";
 import { CatalogoSimplesTable } from "@/components/hedge/cadastros/catalogo-simples-table";
+import { FornecedoresMarcacaoSacariaTable } from "@/components/hedge/cadastros/fornecedores-marcacao-sacaria-table";
+import { FornecedorMarcacaoSacaria } from "@/lib/hedge-data";
 import {
   createTipoFrete,
   updateTipoFrete,
@@ -53,6 +55,7 @@ const tabs = [
   { key: "transportadora", label: "Transportadora de Amostra" },
   { key: "peneira", label: "Peneira" },
   { key: "padrao", label: "Padrão" },
+  { key: "marcacaoSacaria", label: "Fornecedor de Marcação" },
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
@@ -67,6 +70,7 @@ export function CadastrosView({
   transportadorasAmostra,
   peneiras,
   padroesCafe,
+  fornecedoresMarcacaoSacaria,
 }: {
   clientes: ClienteRow[];
   corretoras: CorretoraRow[];
@@ -77,6 +81,7 @@ export function CadastrosView({
   transportadorasAmostra: Item[];
   peneiras: Item[];
   padroesCafe: Item[];
+  fornecedoresMarcacaoSacaria: FornecedorMarcacaoSacaria[];
 }) {
   const [tab, setTab] = useState<TabKey>("clientes");
 
@@ -168,6 +173,9 @@ export function CadastrosView({
           updateAction={updatePadraoCafe}
           deleteAction={deletePadraoCafe}
         />
+      )}
+      {tab === "marcacaoSacaria" && (
+        <FornecedoresMarcacaoSacariaTable fornecedores={fornecedoresMarcacaoSacaria} />
       )}
     </div>
   );

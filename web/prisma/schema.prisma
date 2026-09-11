@@ -593,6 +593,7 @@ model ContratoExportacao {
   previsoesEtapa     ContratoEtapaPrevisao[]
   etapasConcluidas   ContratoEtapaConcluida[]
   fichaEnvioAmostra  ContratoEnvioAmostra?
+  fichaMarcacaoSacaria ContratoMarcacaoSacaria?
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?
@@ -781,6 +782,61 @@ model ContratoEnvioAmostra {
   @@index([tipoAmostraId])
   @@index([transportadoraId])
   @@map("contrato_envio_amostra")
+}
+
+// Faixas de cores usadas na tabela de preco de marcacao de sacaria.
+enum FaixaCoresMarcacao {
+  UMA_COR
+  DUAS_CORES
+  TRES_CORES
+  QUATRO_CORES
+  CINCO_CORES
+  MAIS_DE_CINCO_CORES
+}
+
+// Fornecedores de marcacao de sacaria cadastraveis, usados na etapa
+// Aprovacao da Arte de Sacaria da Mesa de Operacao.
+model FornecedorMarcacaoSacaria {
+  id        String                       @id @default(uuid())
+  name      String                       @unique
+  precos    TabelaPrecoMarcacaoSacaria[]
+  fichas    ContratoMarcacaoSacaria[]
+  createdAt DateTime                     @default(now())
+
+  @@map("fornecedores_marcacao_sacaria")
+}
+
+// Tabela de preco de cada fornecedor de marcacao de sacaria - um preco por
+// saca para cada faixa de cores (1 cor, 2 cores, ..., acima de 5 cores).
+model TabelaPrecoMarcacaoSacaria {
+  id           String                    @id @default(uuid())
+  fornecedor   FornecedorMarcacaoSacaria @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+  fornecedorId String
+  faixaCores   FaixaCoresMarcacao
+  precoPorSaca Decimal                   @default(0) @db.Decimal(18, 4)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@unique([fornecedorId, faixaCores])
+  @@map("tabela_preco_marcacao_sacaria")
+}
+
+// Ficha da etapa "Aprovacao da Arte de Sacaria" - fornecedor e faixa de
+// cores escolhidos para a marcacao da sacaria deste contrato. O custo
+// (preco por saca x quantidade de sacas do contrato) compoe o custo total
+// do contrato no lugar do valor manual de "Marcacao de sacaria".
+model ContratoMarcacaoSacaria {
+  id           String                     @id @default(uuid())
+  contrato     ContratoExportacao         @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId   String                     @unique
+  fornecedor   FornecedorMarcacaoSacaria? @relation(fields: [fornecedorId], references: [id])
+  fornecedorId String?
+  faixaCores   FaixaCoresMarcacao?
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  @@index([fornecedorId])
+  @@map("contrato_marcacao_sacaria")
 }
 
 // Documentos anexados a um contrato em qualquer etapa da Mesa de Operacao

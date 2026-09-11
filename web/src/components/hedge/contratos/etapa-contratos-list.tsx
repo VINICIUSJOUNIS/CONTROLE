@@ -3,7 +3,14 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
-import { ContratoRow, ContratoAnexoData, HistoricoAnteriorItem, EnvioAmostraData } from "@/lib/hedge-data";
+import {
+  ContratoRow,
+  ContratoAnexoData,
+  HistoricoAnteriorItem,
+  EnvioAmostraData,
+  FornecedorMarcacaoSacaria,
+  MarcacaoSacariaData,
+} from "@/lib/hedge-data";
 import {
   updateContratoStatus,
   updateContratoDatas,
@@ -14,8 +21,10 @@ import {
   setPrevisaoEtapa,
   setEtapaStatus,
   upsertEnvioAmostra,
+  upsertMarcacaoSacaria,
   setContratoFinalizado,
   EnvioAmostraInput,
+  MarcacaoSacariaInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import {
   statusOrder,
@@ -25,6 +34,8 @@ import {
   EtapaStatusValue,
   despesaLabels,
   despesaKeys,
+  faixaCoresOrder,
+  faixaCoresLabels,
 } from "@/lib/contrato-shared";
 import { alertaPrazo } from "@/lib/prazo";
 import { Card } from "@/components/ui/card";
@@ -324,6 +335,100 @@ function EnvioAmostraSection({
   );
 }
 
+function MarcacaoSacariaSection({
+  contratoId,
+  dados,
+  fornecedores,
+}: {
+  contratoId: string;
+  dados: MarcacaoSacariaData | undefined;
+  fornecedores: FornecedorMarcacaoSacaria[];
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [form, setForm] = useState<MarcacaoSacariaInput>(() => ({
+    fornecedorId: dados?.fornecedorId ?? "",
+    faixaCores: dados?.faixaCores ?? "",
+  }));
+
+  function handleChange(patch: Partial<MarcacaoSacariaInput>) {
+    const next = { ...form, ...patch };
+    setForm(next);
+    startTransition(async () => {
+      await upsertMarcacaoSacaria(contratoId, next);
+      router.refresh();
+    });
+  }
+
+  const fornecedorSelecionado = fornecedores.find((f) => f.id === form.fornecedorId);
+  const precoPorSaca =
+    fornecedorSelecionado && form.faixaCores ? fornecedorSelecionado.precos[form.faixaCores] : null;
+  const quantidadeSacas = dados?.quantidadeSacas ?? 0;
+  const custoTotal = precoPorSaca != null ? precoPorSaca * quantidadeSacas : null;
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-border pt-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Fornecedor da marcação</p>
+          <Select
+            value={form.fornecedorId}
+            disabled={isPending}
+            onChange={(e) => handleChange({ fornecedorId: e.target.value })}
+          >
+            <option value="">Selecione...</option>
+            {fornecedores.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Quantidade de cores</p>
+          <Select
+            value={form.faixaCores}
+            disabled={isPending}
+            onChange={(e) => handleChange({ faixaCores: e.target.value as MarcacaoSacariaInput["faixaCores"] })}
+          >
+            <option value="">Selecione...</option>
+            {faixaCoresOrder.map((faixa) => (
+              <option key={faixa} value={faixa}>
+                {faixaCoresLabels[faixa]}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </div>
+
+      {form.fornecedorId && form.faixaCores && (
+        <div className="rounded-md border border-border bg-border/10 p-2 text-xs">
+          {precoPorSaca ? (
+            <>
+              <div className="flex justify-between">
+                <span className="text-muted">Preço por saca</span>
+                <span>{formatCurrency(precoPorSaca)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Quantidade de sacas</span>
+                <span>{quantidadeSacas}</span>
+              </div>
+              <div className="mt-1 flex justify-between border-t border-border pt-1 font-semibold">
+                <span>Custo da marcação</span>
+                <span className="text-danger">{formatCurrency(custoTotal ?? 0)}</span>
+              </div>
+            </>
+          ) : (
+            <p className="text-muted">
+              Este fornecedor ainda não tem preço cadastrado para {faixaCoresLabels[form.faixaCores]}.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ContratoFinalizadoSection({
   contratoId,
   finalizado,
@@ -450,8 +555,11 @@ const checklistStatusClasses: Record<EtapaStatusValue, string> = {
 // Discriminacao de todos os custos do contrato (despesas lancadas em
 // Contratos + AWB e nota fiscal da ficha de Envio de Amostra) e o total -
 // atualiza sozinho conforme as informacoes vao sendo preenchidas em cada
-// etapa, sem precisar editar nada aqui.
+// etapa, sem precisar editar nada aqui. Mesmo padrao de tabela retratil do
+// Checklist logo abaixo.
 export function CustosResumo({ item }: { item: ContratoRow }) {
+  const [open, setOpen] = useState(false);
+
   const linhas = despesaKeys
     .filter((k) => item.despesas[k] > 0)
     .map((k): [string, string] => [despesaLabels[k], formatCurrency(item.despesas[k])]);
@@ -461,21 +569,40 @@ export function CustosResumo({ item }: { item: ContratoRow }) {
 
   return (
     <div className="mt-3 border-t border-border pt-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Custos</p>
-        <p className="text-xs font-semibold text-danger">{formatCurrency(item.custoTotalDespesas)}</p>
-      </div>
-      {linhas.length === 0 ? (
-        <p className="mt-1 text-xs text-muted">Nenhum custo lançado ainda.</p>
-      ) : (
-        <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs sm:grid-cols-3">
-          {linhas.map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-2">
-              <dt className="text-muted">{label}</dt>
-              <dd className="text-right">{value}</dd>
-            </div>
-          ))}
-        </dl>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className="flex w-full items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted hover:text-foreground"
+      >
+        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+        Custos
+        <span className="ml-auto text-danger">{formatCurrency(item.custoTotalDespesas)}</span>
+      </button>
+      {open && (
+        <table className="mt-2 w-full text-xs">
+          <tbody>
+            {linhas.length === 0 ? (
+              <tr>
+                <td className="py-1 text-muted" colSpan={2}>
+                  Nenhum custo lançado ainda.
+                </td>
+              </tr>
+            ) : (
+              linhas.map(([label, value]) => (
+                <tr key={label} className="border-b border-border/60 last:border-0">
+                  <td className="py-1 pr-2 text-muted">{label}</td>
+                  <td className="py-1 text-right">{value}</td>
+                </tr>
+              ))
+            )}
+            <tr className="font-semibold">
+              <td className="py-1 pr-2">Total</td>
+              <td className="py-1 text-right text-danger">{formatCurrency(item.custoTotalDespesas)}</td>
+            </tr>
+          </tbody>
+        </table>
       )}
     </div>
   );
@@ -674,6 +801,8 @@ export function EtapaContratosList({
   enviosAmostra,
   tiposAmostra,
   transportadorasAmostra,
+  fichasMarcacaoSacaria,
+  fornecedoresMarcacaoSacaria,
 }: {
   contratos: ContratoRow[];
   status: StatusContratoValue;
@@ -685,6 +814,8 @@ export function EtapaContratosList({
   enviosAmostra?: Record<string, EnvioAmostraData>;
   tiposAmostra?: { id: string; name: string }[];
   transportadorasAmostra?: { id: string; name: string }[];
+  fichasMarcacaoSacaria?: Record<string, MarcacaoSacariaData>;
+  fornecedoresMarcacaoSacaria?: FornecedorMarcacaoSacaria[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -819,6 +950,14 @@ export function EtapaContratosList({
                     dados={enviosAmostra?.[item.id]}
                     tiposAmostra={tiposAmostra ?? []}
                     transportadorasAmostra={transportadorasAmostra ?? []}
+                  />
+                )}
+
+                {status === "APROVACAO_ARTE_SACARIA" && (
+                  <MarcacaoSacariaSection
+                    contratoId={item.id}
+                    dados={fichasMarcacaoSacaria?.[item.id]}
+                    fornecedores={fornecedoresMarcacaoSacaria ?? []}
                   />
                 )}
 

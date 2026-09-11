@@ -9,6 +9,7 @@ import {
   getTransportadorasAmostra,
   getPeneiras,
   getPadroesCafe,
+  getFornecedoresMarcacaoSacaria,
 } from "@/lib/hedge-data";
 import { CadastrosView } from "@/components/hedge/cadastros/cadastros-view";
 
@@ -23,6 +24,7 @@ export default async function CadastrosPage() {
     transportadorasAmostra,
     peneiras,
     padroesCafe,
+    fornecedoresMarcacaoSacaria,
   ] = await Promise.all([
     getClientes(),
     getCorretoras(),
@@ -33,6 +35,7 @@ export default async function CadastrosPage() {
     getTransportadorasAmostra(),
     getPeneiras(),
     getPadroesCafe(),
+    getFornecedoresMarcacaoSacaria(),
   ]);
 
   return (
@@ -52,6 +55,7 @@ export default async function CadastrosPage() {
           transportadorasAmostra={transportadorasAmostra}
           peneiras={peneiras}
           padroesCafe={padroesCafe}
+          fornecedoresMarcacaoSacaria={fornecedoresMarcacaoSacaria}
         />
       </div>
     </div>

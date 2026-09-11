@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { parseLocalDate } from "@/lib/date";
 import { StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
-import { EtapaStatusValue } from "@/lib/contrato-shared";
+import { EtapaStatusValue, FaixaCoresMarcacaoValue } from "@/lib/contrato-shared";
 
 function revalidateAll() {
   revalidatePath("/hedge");
@@ -49,6 +49,29 @@ export async function upsertEnvioAmostra(contratoId: string, input: EnvioAmostra
   };
 
   await prisma.contratoEnvioAmostra.upsert({
+    where: { contratoId },
+    create: { contratoId, ...data },
+    update: data,
+  });
+
+  revalidateAll();
+}
+
+export type MarcacaoSacariaInput = {
+  fornecedorId: string;
+  faixaCores: FaixaCoresMarcacaoValue | "";
+};
+
+// Ficha da etapa "Aprovacao da Arte de Sacaria": fornecedor e faixa de cores
+// escolhidos para a marcacao da sacaria - o custo e calculado sozinho a
+// partir da tabela de preco do fornecedor.
+export async function upsertMarcacaoSacaria(contratoId: string, input: MarcacaoSacariaInput) {
+  const data = {
+    fornecedorId: input.fornecedorId || null,
+    faixaCores: input.faixaCores || null,
+  };
+
+  await prisma.contratoMarcacaoSacaria.upsert({
     where: { contratoId },
     create: { contratoId, ...data },
     update: data,

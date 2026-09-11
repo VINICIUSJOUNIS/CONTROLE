@@ -20,6 +20,8 @@ import {
   getEnviosAmostra,
   getTiposAmostra,
   getTransportadorasAmostra,
+  getFichasMarcacaoSacaria,
+  getFornecedoresMarcacaoSacaria,
   syncClientesFromVendasExternas,
 } from "@/lib/hedge-data";
 import { slugToStatus, statusLabels } from "@/lib/contrato-shared";
@@ -148,6 +150,29 @@ async function EtapaGenerica({
           enviosAmostra={enviosAmostra}
           tiposAmostra={tiposAmostra}
           transportadorasAmostra={transportadorasAmostra}
+        />
+      </Suspense>
+    );
+  }
+
+  if (status === "APROVACAO_ARTE_SACARIA") {
+    const [fichasMarcacaoSacaria, fornecedoresMarcacaoSacaria] = await Promise.all([
+      getFichasMarcacaoSacaria(),
+      getFornecedoresMarcacaoSacaria(),
+    ]);
+
+    return (
+      <Suspense>
+        <EtapaContratosList
+          contratos={contratos}
+          status={status}
+          anexos={anexos}
+          previsoes={previsoes}
+          historico={historico}
+          statusEtapas={statusEtapas}
+          checklist={checklist}
+          fichasMarcacaoSacaria={fichasMarcacaoSacaria}
+          fornecedoresMarcacaoSacaria={fornecedoresMarcacaoSacaria}
         />
       </Suspense>
     );
