@@ -40,6 +40,7 @@ export type DespesasContratoInput = {
   armazem: number;
   envioAmostra: number;
   marcacaoSacaria: number;
+  freteEntregaSacaria: number;
   envioDocumentacao: number;
   telexRelease: number;
   legalizacao: number;
@@ -179,6 +180,19 @@ export async function updateContratoDatas(id: string, input: ContratoDatasInput)
       dataEmbarque: input.dataEmbarque ? parseLocalDate(input.dataEmbarque) : null,
       dataChegada: input.dataChegada ? parseLocalDate(input.dataChegada) : null,
     },
+  });
+
+  revalidateAll();
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+}
+
+// Edicao rapida do frete de entrega da sacaria direto no card da etapa
+// Aprovacao da Arte de Sacaria da Mesa de Operacao, sem precisar abrir a
+// tela de Contratos.
+export async function updateFreteEntregaSacaria(id: string, valor: string) {
+  await prisma.contratoExportacao.update({
+    where: { id },
+    data: { freteEntregaSacaria: Number(valor) || 0 },
   });
 
   revalidateAll();

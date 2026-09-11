@@ -17,6 +17,7 @@ import {
   ContratoDatasInput,
   updateCustosEstufagem,
   CustosEstufagemInput,
+  updateFreteEntregaSacaria,
   StatusContratoValue,
 } from "@/app/(dashboard)/hedge/contratos/actions";
 import {
@@ -366,7 +367,7 @@ function EnvioAmostraSection({
           />
         </div>
         <div>
-          <p className="mb-1 text-xs font-medium text-muted">Valor do AWB (R$)</p>
+          <p className="mb-1 text-xs font-medium text-muted">Valor do AWB de Envio de Amostra (R$)</p>
           <input
             type="number"
             step="0.01"
@@ -411,10 +412,12 @@ function MarcacaoSacariaSection({
   contratoId,
   dados,
   fornecedores,
+  freteEntregaSacaria,
 }: {
   contratoId: string;
   dados: MarcacaoSacariaData | undefined;
   fornecedores: FornecedorMarcacaoSacaria[];
+  freteEntregaSacaria: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -422,12 +425,21 @@ function MarcacaoSacariaSection({
     fornecedorId: dados?.fornecedorId ?? "",
     faixaCores: dados?.faixaCores ?? "",
   }));
+  const [frete, setFrete] = useState(freteEntregaSacaria);
 
   function handleChange(patch: Partial<MarcacaoSacariaInput>) {
     const next = { ...form, ...patch };
     setForm(next);
     startTransition(async () => {
       await upsertMarcacaoSacaria(contratoId, next);
+      router.refresh();
+    });
+  }
+
+  function handleFreteBlur() {
+    if (frete === freteEntregaSacaria) return;
+    startTransition(async () => {
+      await updateFreteEntregaSacaria(contratoId, frete);
       router.refresh();
     });
   }
@@ -471,6 +483,19 @@ function MarcacaoSacariaSection({
             ))}
           </Select>
         </div>
+      </div>
+
+      <div>
+        <p className="mb-1 text-xs font-medium text-muted">Frete de entrega de sacaria (R$)</p>
+        <input
+          type="number"
+          step="0.01"
+          value={frete}
+          disabled={isPending}
+          onChange={(e) => setFrete(e.target.value)}
+          onBlur={handleFreteBlur}
+          className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+        />
       </div>
 
       {form.fornecedorId && form.faixaCores && (
@@ -635,7 +660,8 @@ export function CustosResumo({ item }: { item: ContratoRow }) {
   const linhas = despesaKeys
     .filter((k) => item.despesas[k] > 0)
     .map((k): [string, string] => [despesaLabels[k], formatCurrency(item.despesas[k])]);
-  if (item.valorAwb > 0) linhas.push(["Valor do AWB", formatCurrency(item.valorAwb)]);
+  if (item.valorAwb > 0)
+    linhas.push(["Valor do AWB de envio de amostra", formatCurrency(item.valorAwb)]);
   if (item.valorNotaFiscalAmostra > 0)
     linhas.push(["Valor da nota fiscal (amostra)", formatCurrency(item.valorNotaFiscalAmostra)]);
 
@@ -1041,6 +1067,7 @@ export function EtapaContratosList({
                     contratoId={item.id}
                     dados={fichasMarcacaoSacaria?.[item.id]}
                     fornecedores={fornecedoresMarcacaoSacaria ?? []}
+                    freteEntregaSacaria={String(item.despesas.freteEntregaSacaria)}
                   />
                 )}
 

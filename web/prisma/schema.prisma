@@ -621,6 +621,7 @@ model ContratoExportacao {
   armazem                  Decimal @default(0) @db.Decimal(18, 2)
   envioAmostra             Decimal @default(0) @db.Decimal(18, 2)
   marcacaoSacaria          Decimal @default(0) @db.Decimal(18, 2)
+  freteEntregaSacaria      Decimal @default(0) @db.Decimal(18, 2)
   envioDocumentacao        Decimal @default(0) @db.Decimal(18, 2)
   telexRelease             Decimal @default(0) @db.Decimal(18, 2)
   legalizacao              Decimal @default(0) @db.Decimal(18, 2)

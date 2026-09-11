@@ -134,6 +134,7 @@ const despesaFields = [
   "armazem",
   "envioAmostra",
   "marcacaoSacaria",
+  "freteEntregaSacaria",
   "envioDocumentacao",
   "telexRelease",
   "legalizacao",
