@@ -142,12 +142,14 @@ model ContratoCompraCafe {
   modalidade                String    @default("POSTO")
   referenciaPagamento       String
 
-  codigoVendedor            String
-  nomeVendedor              String
-  cnpjVendedor              String
-  enderecoVendedor          String
-  inscricaoEstadualVendedor String
-  grupoVendedor             String
+  // A Nayme e sempre a vendedora neste contrato — estes campos descrevem a
+  // contraparte, que e sempre a compradora.
+  codigoComprador            String
+  nomeComprador              String
+  cnpjComprador              String
+  enderecoComprador          String
+  inscricaoEstadualComprador String
+  grupoComprador             String
 
   corretor                  String
   comissaoCorretor          Decimal   @default(0) @db.Decimal(6, 2)

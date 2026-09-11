@@ -10,12 +10,12 @@ export type ContratoCompraCafeInput = {
   tipoOperacao: string;
   modalidade: string;
   referenciaPagamento: string;
-  codigoVendedor: string;
-  nomeVendedor: string;
-  cnpjVendedor: string;
-  enderecoVendedor: string;
-  inscricaoEstadualVendedor: string;
-  grupoVendedor: string;
+  codigoComprador: string;
+  nomeComprador: string;
+  cnpjComprador: string;
+  enderecoComprador: string;
+  inscricaoEstadualComprador: string;
+  grupoComprador: string;
   corretor: string;
   comissaoCorretor: number;
   agente: string;

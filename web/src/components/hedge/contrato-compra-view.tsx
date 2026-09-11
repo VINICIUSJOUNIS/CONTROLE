@@ -20,12 +20,12 @@ export type ContratoCompraCafeSalvo = {
   tipoOperacao: string;
   modalidade: string;
   referenciaPagamento: string;
-  codigoVendedor: string;
-  nomeVendedor: string;
-  cnpjVendedor: string;
-  enderecoVendedor: string;
-  inscricaoEstadualVendedor: string;
-  grupoVendedor: string;
+  codigoComprador: string;
+  nomeComprador: string;
+  cnpjComprador: string;
+  enderecoComprador: string;
+  inscricaoEstadualComprador: string;
+  grupoComprador: string;
   corretor: string;
   comissaoCorretor: number;
   agente: string;
@@ -53,8 +53,8 @@ export type ContratoCompraCafeSalvo = {
   cidadeLocalEntrega: string;
 };
 
-// Dados fixos do comprador — sempre a Nayme neste contrato de compra.
-const COMPRADOR = {
+// Dados fixos do vendedor — a Nayme e sempre a vendedora neste contrato de compra.
+const VENDEDOR = {
   nome: "NAYME EXPORTADORA DE CAFÉ LTDA",
   endereco1: "AVENIDA BARÃO DO RIO BRANCO",
   endereco2: "Nro: 90 - Complemento: LETRA B - Bairro: BAIXADA",
@@ -70,12 +70,12 @@ function emptyForm() {
     tipoOperacao: "FÍSICO",
     modalidade: "POSTO",
     referenciaPagamento: "",
-    codigoVendedor: "",
-    nomeVendedor: "",
-    cnpjVendedor: "",
-    enderecoVendedor: "",
-    inscricaoEstadualVendedor: "",
-    grupoVendedor: "103 - CAFÉ - Pessoa jurídica",
+    codigoComprador: "",
+    nomeComprador: "",
+    cnpjComprador: "",
+    enderecoComprador: "",
+    inscricaoEstadualComprador: "",
+    grupoComprador: "103 - CAFÉ - Pessoa jurídica",
     corretor: "",
     comissaoCorretor: "0,00",
     agente: "",
@@ -128,12 +128,12 @@ function salvoParaForm(c: ContratoCompraCafeSalvo): FormState {
     tipoOperacao: c.tipoOperacao,
     modalidade: c.modalidade,
     referenciaPagamento: c.referenciaPagamento,
-    codigoVendedor: c.codigoVendedor,
-    nomeVendedor: c.nomeVendedor,
-    cnpjVendedor: c.cnpjVendedor,
-    enderecoVendedor: c.enderecoVendedor,
-    inscricaoEstadualVendedor: c.inscricaoEstadualVendedor,
-    grupoVendedor: c.grupoVendedor,
+    codigoComprador: c.codigoComprador,
+    nomeComprador: c.nomeComprador,
+    cnpjComprador: c.cnpjComprador,
+    enderecoComprador: c.enderecoComprador,
+    inscricaoEstadualComprador: c.inscricaoEstadualComprador,
+    grupoComprador: c.grupoComprador,
     corretor: c.corretor,
     comissaoCorretor: formatBR(c.comissaoCorretor),
     agente: c.agente,
@@ -190,12 +190,12 @@ export function ContratoCompraView({ initialContratos }: { initialContratos: Con
       tipoOperacao: form.tipoOperacao,
       modalidade: form.modalidade,
       referenciaPagamento: form.referenciaPagamento,
-      codigoVendedor: form.codigoVendedor,
-      nomeVendedor: form.nomeVendedor,
-      cnpjVendedor: form.cnpjVendedor,
-      enderecoVendedor: form.enderecoVendedor,
-      inscricaoEstadualVendedor: form.inscricaoEstadualVendedor,
-      grupoVendedor: form.grupoVendedor,
+      codigoComprador: form.codigoComprador,
+      nomeComprador: form.nomeComprador,
+      cnpjComprador: form.cnpjComprador,
+      enderecoComprador: form.enderecoComprador,
+      inscricaoEstadualComprador: form.inscricaoEstadualComprador,
+      grupoComprador: form.grupoComprador,
       corretor: form.corretor,
       comissaoCorretor: toNumber(form.comissaoCorretor),
       agente: form.agente,
@@ -292,35 +292,35 @@ export function ContratoCompraView({ initialContratos }: { initialContratos: Con
 
           <Card>
             <CardHeader>
-              <CardTitle>Vendedor (fornecedor)</CardTitle>
+              <CardTitle>Comprador</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Código</Label>
-                  <Input value={form.codigoVendedor} onChange={(e) => set("codigoVendedor", e.target.value)} />
+                  <Input value={form.codigoComprador} onChange={(e) => set("codigoComprador", e.target.value)} />
                 </div>
                 <div>
                   <Label>CNPJ/CPF</Label>
-                  <Input value={form.cnpjVendedor} onChange={(e) => set("cnpjVendedor", e.target.value)} />
+                  <Input value={form.cnpjComprador} onChange={(e) => set("cnpjComprador", e.target.value)} />
                 </div>
               </div>
               <div>
                 <Label>Nome / Razão social</Label>
-                <Input value={form.nomeVendedor} onChange={(e) => set("nomeVendedor", e.target.value)} />
+                <Input value={form.nomeComprador} onChange={(e) => set("nomeComprador", e.target.value)} />
               </div>
               <div>
                 <Label>Endereço (rua, bairro, cidade/UF)</Label>
-                <Textarea rows={2} value={form.enderecoVendedor} onChange={(e) => set("enderecoVendedor", e.target.value)} />
+                <Textarea rows={2} value={form.enderecoComprador} onChange={(e) => set("enderecoComprador", e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Insc. Estadual</Label>
-                  <Input value={form.inscricaoEstadualVendedor} onChange={(e) => set("inscricaoEstadualVendedor", e.target.value)} />
+                  <Input value={form.inscricaoEstadualComprador} onChange={(e) => set("inscricaoEstadualComprador", e.target.value)} />
                 </div>
                 <div>
                   <Label>Grupo</Label>
-                  <Input value={form.grupoVendedor} onChange={(e) => set("grupoVendedor", e.target.value)} />
+                  <Input value={form.grupoComprador} onChange={(e) => set("grupoComprador", e.target.value)} />
                 </div>
               </div>
             </CardContent>
@@ -532,7 +532,7 @@ export function ContratoCompraView({ initialContratos }: { initialContratos: Con
                     >
                       <FileText size={14} className="shrink-0 text-muted" />
                       <span className="min-w-0 flex-1 truncate">
-                        {c.numeroContrato || "(sem número)"} — {c.nomeVendedor || "?"}
+                        {c.numeroContrato || "(sem número)"} — {c.nomeComprador || "?"}
                       </span>
                       <span className="shrink-0 text-xs text-muted">
                         {c.quantidadeSacas} sc
@@ -634,12 +634,12 @@ function ContratoPreview({
           className="absolute left-0 top-0 h-14 w-auto"
         />
         <div className="text-center">
-          <p className="text-[15px] font-bold">{COMPRADOR.nome}</p>
-          <p>{COMPRADOR.endereco1}</p>
-          <p>{COMPRADOR.endereco2}</p>
-          <p>{COMPRADOR.cidade}</p>
+          <p className="text-[15px] font-bold">{VENDEDOR.nome}</p>
+          <p>{VENDEDOR.endereco1}</p>
+          <p>{VENDEDOR.endereco2}</p>
+          <p>{VENDEDOR.cidade}</p>
           <p>
-            CNPJ: {COMPRADOR.cnpj} &nbsp;&nbsp;&nbsp; Telefone: {COMPRADOR.telefone}
+            CNPJ: {VENDEDOR.cnpj} &nbsp;&nbsp;&nbsp; Telefone: {VENDEDOR.telefone}
           </p>
         </div>
       </div>
@@ -672,21 +672,21 @@ function ContratoPreview({
         <Row
           left={
             <span>
-              <b>Vendedor:</b> {form.codigoVendedor} - {form.nomeVendedor}
+              <b>Comprador:</b> {form.codigoComprador} - {form.nomeComprador}
             </span>
           }
-          right={<RightField label="CNPJ/CPF:" value={form.cnpjVendedor} />}
+          right={<RightField label="CNPJ/CPF:" value={form.cnpjComprador} />}
         />
         <Row
           left={
             <span>
-              <b>Referência:</b> {form.nomeVendedor}
+              <b>Referência:</b> {form.nomeComprador}
             </span>
           }
-          right={<RightField label="Insc. Estadual:" value={form.inscricaoEstadualVendedor} />}
+          right={<RightField label="Insc. Estadual:" value={form.inscricaoEstadualComprador} />}
         />
-        {form.enderecoVendedor.split("\n").map((linha, i) => (
-          <Row key={i} left={<span>{linha}</span>} right={i === 0 && <RightField label="Grupo:" value={form.grupoVendedor} />} />
+        {form.enderecoComprador.split("\n").map((linha, i) => (
+          <Row key={i} left={<span>{linha}</span>} right={i === 0 && <RightField label="Grupo:" value={form.grupoComprador} />} />
         ))}
       </div>
       <div className="mb-1 border-b border-[#1c2b36]" />
@@ -821,11 +821,11 @@ function ContratoPreview({
 
       <div className="mt-16 grid grid-cols-2 gap-10 text-center">
         <div>
-          <div className="border-t border-[#1c2b36] pt-1 font-bold">{COMPRADOR.nome}</div>
+          <div className="border-t border-[#1c2b36] pt-1 font-bold">{form.nomeComprador || "____________"}</div>
           <p>ASSINATURA DO COMPRADOR</p>
         </div>
         <div>
-          <div className="border-t border-[#1c2b36] pt-1 font-bold">{form.nomeVendedor || "____________"}</div>
+          <div className="border-t border-[#1c2b36] pt-1 font-bold">{VENDEDOR.nome}</div>
           <p>ASSINATURA DO VENDEDOR</p>
         </div>
       </div>
