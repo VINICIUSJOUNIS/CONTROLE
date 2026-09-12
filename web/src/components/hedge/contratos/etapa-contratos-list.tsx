@@ -13,6 +13,12 @@ import {
   TransportadoraRodoviariaData,
   TransporteRodoviarioData,
   EmbalagemLinha,
+  ArmadorData,
+  TaxasLocaisArmadorData,
+  EmpresaFreteMaritimoData,
+  FreteMaritimoData,
+  CertificadoLinha,
+  AwbDocumentacaoData,
 } from "@/lib/hedge-data";
 import {
   updateContratoStatus,
@@ -21,6 +27,13 @@ import {
   updateCustosEstufagem,
   CustosEstufagemInput,
   updateFreteEntregaSacaria,
+  updateCustosRecebimentoBL,
+  CustosRecebimentoBLInput,
+  updateCustosEnvioDocumentos,
+  CustosEnvioDocumentosInput,
+  updateCustoFinanciamento,
+  updateCustosTraducaoLegalizacao,
+  CustosTraducaoLegalizacaoInput,
   StatusContratoValue,
 } from "@/app/(dashboard)/hedge/contratos/actions";
 import {
@@ -32,10 +45,19 @@ import {
   addContratoEmbalagem,
   deleteContratoEmbalagem,
   setContratoFinalizado,
+  upsertTaxasLocaisArmador,
+  upsertFreteMaritimo,
+  addContratoCertificado,
+  deleteContratoCertificado,
+  upsertAwbDocumentacao,
   EnvioAmostraInput,
   MarcacaoSacariaInput,
   TransporteRodoviarioInput,
   EmbalagemLinhaInput,
+  TaxasLocaisArmadorInput,
+  FreteMaritimoInput,
+  CertificadoLinhaInput,
+  AwbDocumentacaoInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import {
   statusOrder,
@@ -487,6 +509,603 @@ function TransporteRodoviarioSection({
           <span className="text-danger">{formatCurrency(custoTotal)}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+// Edicao rapida da correcao de BL (se aplicavel) e das taxas portuarias
+// direto no card da etapa Recebimento do BL, mesmo padrao de
+// salvar-ao-perder-foco do CustosEstufagemSection acima. As taxas locais do
+// armador e o frete maritimo tem secoes proprias logo abaixo.
+function CustosRecebimentoBLSection({
+  contratoId,
+  custos,
+}: {
+  contratoId: string;
+  custos: CustosRecebimentoBLInput;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(custos);
+  const [isPending, startTransition] = useTransition();
+
+  function handleBlur() {
+    if (value.correcaoBL === custos.correcaoBL && value.despesasPortuarias === custos.despesasPortuarias) return;
+    startTransition(async () => {
+      await updateCustosRecebimentoBL(contratoId, value);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Correção de BL (se aplicável) (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.correcaoBL}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, correcaoBL: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Taxas portuárias (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.despesasPortuarias}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, despesasPortuarias: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+    </div>
+  );
+}
+
+function TaxasLocaisArmadorSection({
+  contratoId,
+  dados,
+  armadores,
+}: {
+  contratoId: string;
+  dados: TaxasLocaisArmadorData | undefined;
+  armadores: ArmadorData[];
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [armadorId, setArmadorId] = useState(dados?.armadorId ?? "");
+  const [itensSelecionadosIds, setItensSelecionadosIds] = useState<string[]>(
+    dados?.itensSelecionadosIds ?? []
+  );
+  const [quantidade, setQuantidade] = useState(String(dados?.quantidadeContainers ?? 1));
+
+  function save(patch: Partial<TaxasLocaisArmadorInput>) {
+    const next: TaxasLocaisArmadorInput = {
+      armadorId,
+      itensSelecionadosIds,
+      quantidadeContainers: Number(quantidade) || 1,
+      ...patch,
+    };
+    startTransition(async () => {
+      await upsertTaxasLocaisArmador(contratoId, next);
+      router.refresh();
+    });
+  }
+
+  function handleArmadorChange(next: string) {
+    setArmadorId(next);
+    setItensSelecionadosIds([]);
+    save({ armadorId: next, itensSelecionadosIds: [] });
+  }
+
+  function toggleItem(itemId: string) {
+    const next = itensSelecionadosIds.includes(itemId)
+      ? itensSelecionadosIds.filter((id) => id !== itemId)
+      : [...itensSelecionadosIds, itemId];
+    setItensSelecionadosIds(next);
+    save({ itensSelecionadosIds: next });
+  }
+
+  function handleQuantidadeBlur() {
+    if (quantidade === String(dados?.quantidadeContainers ?? 1)) return;
+    save({});
+  }
+
+  const armadorSelecionado = armadores.find((a) => a.id === armadorId);
+  const itens = armadorSelecionado?.itens ?? [];
+  const custoTotal = itens
+    .filter((i) => itensSelecionadosIds.includes(i.id))
+    .reduce((sum, i) => sum + i.precoPorContainer, 0) * (Number(quantidade) || 1);
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-border pt-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Armador</p>
+          <Select
+            value={armadorId}
+            disabled={isPending}
+            onChange={(e) => handleArmadorChange(e.target.value)}
+          >
+            <option value="">Selecione...</option>
+            {armadores.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Quantidade de containers</p>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={quantidade}
+            disabled={isPending}
+            onChange={(e) => setQuantidade(e.target.value)}
+            onBlur={handleQuantidadeBlur}
+            className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+
+      {armadorId && (
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Taxas locais do armador</p>
+          {itens.length === 0 ? (
+            <p className="text-xs text-muted">Este armador ainda não tem itens cadastrados.</p>
+          ) : (
+            <div className="space-y-1 rounded-md border border-border p-2">
+              {itens.map((item) => (
+                <label key={item.id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={itensSelecionadosIds.includes(item.id)}
+                      disabled={isPending}
+                      onChange={() => toggleItem(item.id)}
+                    />
+                    {item.descricao}
+                  </span>
+                  <span className="shrink-0 text-muted">{formatCurrency(item.precoPorContainer)}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {itensSelecionadosIds.length > 0 && (
+        <div className="flex justify-between rounded-md border border-border bg-border/10 p-2 text-xs font-semibold">
+          <span>Custo das taxas locais do armador</span>
+          <span className="text-danger">{formatCurrency(custoTotal)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FreteMaritimoSection({
+  contratoId,
+  dados,
+  empresas,
+}: {
+  contratoId: string;
+  dados: FreteMaritimoData | undefined;
+  empresas: EmpresaFreteMaritimoData[];
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [empresaId, setEmpresaId] = useState(dados?.empresaId ?? "");
+  const [itensSelecionadosIds, setItensSelecionadosIds] = useState<string[]>(
+    dados?.itensSelecionadosIds ?? []
+  );
+  const [quantidade, setQuantidade] = useState(String(dados?.quantidadeContainers ?? 1));
+
+  function save(patch: Partial<FreteMaritimoInput>) {
+    const next: FreteMaritimoInput = {
+      empresaId,
+      itensSelecionadosIds,
+      quantidadeContainers: Number(quantidade) || 1,
+      ...patch,
+    };
+    startTransition(async () => {
+      await upsertFreteMaritimo(contratoId, next);
+      router.refresh();
+    });
+  }
+
+  function handleEmpresaChange(next: string) {
+    setEmpresaId(next);
+    setItensSelecionadosIds([]);
+    save({ empresaId: next, itensSelecionadosIds: [] });
+  }
+
+  function toggleItem(itemId: string) {
+    const next = itensSelecionadosIds.includes(itemId)
+      ? itensSelecionadosIds.filter((id) => id !== itemId)
+      : [...itensSelecionadosIds, itemId];
+    setItensSelecionadosIds(next);
+    save({ itensSelecionadosIds: next });
+  }
+
+  function handleQuantidadeBlur() {
+    if (quantidade === String(dados?.quantidadeContainers ?? 1)) return;
+    save({});
+  }
+
+  const empresaSelecionada = empresas.find((e) => e.id === empresaId);
+  const itens = empresaSelecionada?.itens ?? [];
+  const custoTotal = itens
+    .filter((i) => itensSelecionadosIds.includes(i.id))
+    .reduce((sum, i) => sum + i.precoPorContainer, 0) * (Number(quantidade) || 1);
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-border pt-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Empresa de frete marítimo</p>
+          <Select
+            value={empresaId}
+            disabled={isPending}
+            onChange={(e) => handleEmpresaChange(e.target.value)}
+          >
+            <option value="">Selecione...</option>
+            {empresas.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Quantidade de containers</p>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={quantidade}
+            disabled={isPending}
+            onChange={(e) => setQuantidade(e.target.value)}
+            onBlur={handleQuantidadeBlur}
+            className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+
+      {empresaId && (
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted">Frete marítimo (se aplicável)</p>
+          {itens.length === 0 ? (
+            <p className="text-xs text-muted">Esta empresa ainda não tem itens cadastrados.</p>
+          ) : (
+            <div className="space-y-1 rounded-md border border-border p-2">
+              {itens.map((item) => (
+                <label key={item.id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={itensSelecionadosIds.includes(item.id)}
+                      disabled={isPending}
+                      onChange={() => toggleItem(item.id)}
+                    />
+                    {item.descricao}
+                  </span>
+                  <span className="shrink-0 text-muted">{formatCurrency(item.precoPorContainer)}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {itensSelecionadosIds.length > 0 && (
+        <div className="flex justify-between rounded-md border border-border bg-border/10 p-2 text-xs font-semibold">
+          <span>Custo do frete marítimo</span>
+          <span className="text-danger">{formatCurrency(custoTotal)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function emptyCertificadoForm(): CertificadoLinhaInput {
+  return { descricao: "", valor: "" };
+}
+
+// Certificados do contrato (etapa Envio dos documentos para aprovacao) - um
+// contrato pode ter varios (fitossanitario, origem, qualidade etc). O
+// custo de "Certificados" e a soma do valor de todos, atualizando sozinho
+// conforme certificados sao adicionados/removidos - mesmo padrao da
+// EmbalagensSection.
+function CertificadosSection({
+  contratoId,
+  linhas,
+}: {
+  contratoId: string;
+  linhas: CertificadoLinha[];
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [novo, setNovo] = useState<CertificadoLinhaInput>(emptyCertificadoForm());
+
+  function handleAdd() {
+    if (!novo.descricao.trim()) return;
+    startTransition(async () => {
+      await addContratoCertificado(contratoId, novo);
+      setNovo(emptyCertificadoForm());
+      router.refresh();
+    });
+  }
+
+  function handleDelete(id: string) {
+    startTransition(async () => {
+      await deleteContratoCertificado(id);
+      router.refresh();
+    });
+  }
+
+  const total = linhas.reduce((sum, l) => sum + l.valor, 0);
+
+  return (
+    <div className="mt-3 border-t border-border pt-2">
+      <p className="mb-1 text-xs font-medium text-muted">Certificados</p>
+
+      {linhas.length > 0 && (
+        <div className="mb-2 space-y-1">
+          {linhas.map((l) => (
+            <div key={l.id} className="flex items-center justify-between gap-2 text-xs">
+              <span className="min-w-0 flex-1 truncate">{l.descricao}</span>
+              <span className="shrink-0 text-muted">{formatCurrency(l.valor)}</span>
+              <button
+                onClick={() => handleDelete(l.id)}
+                disabled={isPending}
+                className="shrink-0 rounded p-0.5 text-muted hover:bg-danger/10 hover:text-danger"
+                title="Excluir"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-[1fr_100px_auto] items-center gap-2">
+        <input
+          value={novo.descricao}
+          disabled={isPending}
+          onChange={(e) => setNovo({ ...novo, descricao: e.target.value })}
+          placeholder="Ex: Certificado fitossanitário"
+          className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+        />
+        <input
+          type="number"
+          step="0.01"
+          placeholder="Valor (R$)"
+          value={novo.valor}
+          disabled={isPending}
+          onChange={(e) => setNovo({ ...novo, valor: e.target.value })}
+          className="h-8 w-full rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+        />
+        <button
+          onClick={handleAdd}
+          disabled={isPending}
+          className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs text-primary hover:bg-primary/10 disabled:opacity-50"
+        >
+          <Plus size={14} />
+          Adicionar
+        </button>
+      </div>
+
+      {linhas.length > 0 && (
+        <div className="mt-2 flex justify-between border-t border-border pt-1 text-xs font-semibold">
+          <span>Total certificados</span>
+          <span className="text-danger">{formatCurrency(total)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Edicao rapida do custo de despachante e da fumigacao (se aplicavel)
+// direto no card da etapa Envio dos documentos para aprovacao, mesmo
+// padrao de salvar-ao-perder-foco do CustosEstufagemSection. Os
+// certificados tem secao propria logo acima.
+function CustosEnvioDocumentosSection({
+  contratoId,
+  custos,
+}: {
+  contratoId: string;
+  custos: CustosEnvioDocumentosInput;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(custos);
+  const [isPending, startTransition] = useTransition();
+
+  function handleBlur() {
+    if (value.despachante === custos.despachante && value.fumigacao === custos.fumigacao) return;
+    startTransition(async () => {
+      await updateCustosEnvioDocumentos(contratoId, value);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Despachante (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.despachante}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, despachante: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Fumigação (se aplicável) (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.fumigacao}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, fumigacao: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+    </div>
+  );
+}
+
+// Edicao rapida do custo de financiamento direto no card da etapa Envio
+// para financiamento (RTS), mesmo padrao de salvar-ao-perder-foco do
+// CustosEstufagemSection. O AWB de envio dos documentos tem secao propria
+// logo abaixo.
+function CustoFinanciamentoSection({
+  contratoId,
+  financiamentoRts,
+}: {
+  contratoId: string;
+  financiamentoRts: string;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(financiamentoRts);
+  const [isPending, startTransition] = useTransition();
+
+  function handleBlur() {
+    if (value === financiamentoRts) return;
+    startTransition(async () => {
+      await updateCustoFinanciamento(contratoId, value);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Custo de financiamento (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value}
+          disabled={isPending}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+    </div>
+  );
+}
+
+// Ficha da etapa "Envio para financiamento (RTS)": numero e valor do AWB
+// usado para o envio dos documentos - o valor passa a compor o custo de
+// "Envio de documentacao (Pierdoc/Cliente)".
+function AwbDocumentacaoSection({
+  contratoId,
+  dados,
+}: {
+  contratoId: string;
+  dados: AwbDocumentacaoData | undefined;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [form, setForm] = useState<AwbDocumentacaoInput>({
+    awbNumero: dados?.awbNumero ?? "",
+    awbValor: dados?.awbValor != null ? String(dados.awbValor) : "",
+  });
+
+  function handleBlur() {
+    startTransition(async () => {
+      await upsertAwbDocumentacao(contratoId, form);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Número do AWB de envio dos documentos
+        <input
+          value={form.awbNumero}
+          disabled={isPending}
+          onChange={(e) => setForm({ ...form, awbNumero: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Valor do AWB (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={form.awbValor}
+          disabled={isPending}
+          onChange={(e) => setForm({ ...form, awbValor: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+    </div>
+  );
+}
+
+// Edicao rapida do custo de traducao e de legalizacao (se aplicavel)
+// direto no card da etapa Traducao e pedido de legalizacao, mesmo padrao
+// de salvar-ao-perder-foco do CustosEstufagemSection.
+function CustosTraducaoLegalizacaoSection({
+  contratoId,
+  custos,
+}: {
+  contratoId: string;
+  custos: CustosTraducaoLegalizacaoInput;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(custos);
+  const [isPending, startTransition] = useTransition();
+
+  function handleBlur() {
+    if (value.traducao === custos.traducao && value.legalizacao === custos.legalizacao) return;
+    startTransition(async () => {
+      await updateCustosTraducaoLegalizacao(contratoId, value);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Tradução (se aplicável) (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.traducao}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, traducao: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Legalização (se aplicável) (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.legalizacao}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, legalizacao: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
     </div>
   );
 }
@@ -1125,6 +1744,12 @@ export function EtapaContratosList({
   transportadorasRodoviarias,
   embalagensPorContrato,
   tiposEmbalagem,
+  fichasTaxasLocaisArmador,
+  armadores,
+  fichasFreteMaritimo,
+  empresasFreteMaritimo,
+  certificadosPorContrato,
+  fichasAwbDocumentacao,
 }: {
   contratos: ContratoRow[];
   status: StatusContratoValue;
@@ -1142,6 +1767,12 @@ export function EtapaContratosList({
   transportadorasRodoviarias?: TransportadoraRodoviariaData[];
   embalagensPorContrato?: Record<string, EmbalagemLinha[]>;
   tiposEmbalagem?: { id: string; name: string }[];
+  fichasTaxasLocaisArmador?: Record<string, TaxasLocaisArmadorData>;
+  armadores?: ArmadorData[];
+  fichasFreteMaritimo?: Record<string, FreteMaritimoData>;
+  empresasFreteMaritimo?: EmpresaFreteMaritimoData[];
+  certificadosPorContrato?: Record<string, CertificadoLinha[]>;
+  fichasAwbDocumentacao?: Record<string, AwbDocumentacaoData>;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1304,6 +1935,67 @@ export function EtapaContratosList({
                     dados={fichasMarcacaoSacaria?.[item.id]}
                     fornecedores={fornecedoresMarcacaoSacaria ?? []}
                     freteEntregaSacaria={String(item.despesas.freteEntregaSacaria)}
+                  />
+                )}
+
+                {status === "RECEBIMENTO_BL" && (
+                  <>
+                    <CustosRecebimentoBLSection
+                      contratoId={item.id}
+                      custos={{
+                        correcaoBL: String(item.despesas.correcaoBL),
+                        despesasPortuarias: String(item.despesas.despesasPortuarias),
+                      }}
+                    />
+                    <TaxasLocaisArmadorSection
+                      contratoId={item.id}
+                      dados={fichasTaxasLocaisArmador?.[item.id]}
+                      armadores={armadores ?? []}
+                    />
+                    <FreteMaritimoSection
+                      contratoId={item.id}
+                      dados={fichasFreteMaritimo?.[item.id]}
+                      empresas={empresasFreteMaritimo ?? []}
+                    />
+                  </>
+                )}
+
+                {status === "ENVIO_DOCUMENTOS_APROVACAO" && (
+                  <>
+                    <CustosEnvioDocumentosSection
+                      contratoId={item.id}
+                      custos={{
+                        despachante: String(item.despesas.despachante),
+                        fumigacao: String(item.despesas.fumigacao),
+                      }}
+                    />
+                    <CertificadosSection
+                      contratoId={item.id}
+                      linhas={certificadosPorContrato?.[item.id] ?? []}
+                    />
+                  </>
+                )}
+
+                {status === "ENVIO_FINANCIAMENTO_RTS" && (
+                  <>
+                    <CustoFinanciamentoSection
+                      contratoId={item.id}
+                      financiamentoRts={String(item.despesas.financiamentoRts)}
+                    />
+                    <AwbDocumentacaoSection
+                      contratoId={item.id}
+                      dados={fichasAwbDocumentacao?.[item.id]}
+                    />
+                  </>
+                )}
+
+                {status === "TRADUCAO_PEDIDO_LEGALIZACAO" && (
+                  <CustosTraducaoLegalizacaoSection
+                    contratoId={item.id}
+                    custos={{
+                      traducao: String(item.despesas.traducao),
+                      legalizacao: String(item.despesas.legalizacao),
+                    }}
                   />
                 )}
 

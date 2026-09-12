@@ -25,6 +25,12 @@ import {
   getFichasTransporteRodoviario,
   getTransportadorasRodoviarias,
   getEmbalagensPorContrato,
+  getFichasTaxasLocaisArmador,
+  getArmadores,
+  getFichasFreteMaritimo,
+  getEmpresasFreteMaritimo,
+  getCertificadosPorContrato,
+  getFichasAwbDocumentacao,
   syncClientesFromVendasExternas,
 } from "@/lib/hedge-data";
 import { slugToStatus, statusLabels } from "@/lib/contrato-shared";
@@ -204,6 +210,71 @@ async function EtapaGenerica({
           transportadorasRodoviarias={transportadorasRodoviarias}
           embalagensPorContrato={embalagensPorContrato}
           tiposEmbalagem={tiposEmbalagem}
+        />
+      </Suspense>
+    );
+  }
+
+  if (status === "RECEBIMENTO_BL") {
+    const [fichasTaxasLocaisArmador, armadores, fichasFreteMaritimo, empresasFreteMaritimo] = await Promise.all([
+      getFichasTaxasLocaisArmador(),
+      getArmadores(),
+      getFichasFreteMaritimo(),
+      getEmpresasFreteMaritimo(),
+    ]);
+
+    return (
+      <Suspense>
+        <EtapaContratosList
+          contratos={contratos}
+          status={status}
+          anexos={anexos}
+          previsoes={previsoes}
+          historico={historico}
+          statusEtapas={statusEtapas}
+          checklist={checklist}
+          fichasTaxasLocaisArmador={fichasTaxasLocaisArmador}
+          armadores={armadores}
+          fichasFreteMaritimo={fichasFreteMaritimo}
+          empresasFreteMaritimo={empresasFreteMaritimo}
+        />
+      </Suspense>
+    );
+  }
+
+  if (status === "ENVIO_DOCUMENTOS_APROVACAO") {
+    const certificadosPorContrato = await getCertificadosPorContrato();
+
+    return (
+      <Suspense>
+        <EtapaContratosList
+          contratos={contratos}
+          status={status}
+          anexos={anexos}
+          previsoes={previsoes}
+          historico={historico}
+          statusEtapas={statusEtapas}
+          checklist={checklist}
+          certificadosPorContrato={certificadosPorContrato}
+        />
+      </Suspense>
+    );
+  }
+
+  if (status === "ENVIO_FINANCIAMENTO_RTS") {
+    const fichasAwbDocumentacao = await getFichasAwbDocumentacao();
+
+    return (
+      <Suspense>
+        <EtapaContratosList
+          contratos={contratos}
+          status={status}
+          anexos={anexos}
+          previsoes={previsoes}
+          historico={historico}
+          statusEtapas={statusEtapas}
+          checklist={checklist}
+          fichasAwbDocumentacao={fichasAwbDocumentacao}
         />
       </Suspense>
     );

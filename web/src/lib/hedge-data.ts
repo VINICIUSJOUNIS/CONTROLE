@@ -127,6 +127,7 @@ const despesaFields = [
   "freteTerrestre",
   "freteMaritimo",
   "taxasLocaisArmador",
+  "correcaoBL",
   "fumigacao",
   "embalagens",
   "inspecao",
@@ -137,6 +138,7 @@ const despesaFields = [
   "freteEntregaSacaria",
   "envioDocumentacao",
   "telexRelease",
+  "traducao",
   "legalizacao",
   "financiamentoRts",
   "diariaContainerDetention",
@@ -416,6 +418,183 @@ export async function getEmbalagensPorContrato(): Promise<Record<string, Embalag
   return result;
 }
 
+export type ItemTabelaArmadorData = {
+  id: string;
+  descricao: string;
+  precoPorContainer: number;
+};
+
+export type ArmadorData = {
+  id: string;
+  name: string;
+  itens: ItemTabelaArmadorData[];
+};
+
+// Armadores e a respectiva tabela de taxas locais (por container), usados
+// no cadastro e na etapa Recebimento do BL.
+export async function getArmadores(): Promise<ArmadorData[]> {
+  const armadores = await prisma.armador.findMany({
+    include: { itens: { orderBy: { createdAt: "asc" } } },
+    orderBy: { name: "asc" },
+  });
+
+  return armadores.map((a) => ({
+    id: a.id,
+    name: a.name,
+    itens: a.itens.map((i) => ({
+      id: i.id,
+      descricao: i.descricao,
+      precoPorContainer: Number(i.precoPorContainer),
+    })),
+  }));
+}
+
+export type TaxasLocaisArmadorData = {
+  armadorId: string | null;
+  armadorNome: string | null;
+  itensSelecionadosIds: string[];
+  itensSelecionados: ItemTabelaArmadorData[];
+  quantidadeContainers: number;
+  custoTotal: number;
+};
+
+// Ficha da etapa "Recebimento do BL", indexada por contratoId - armador e
+// itens da tabela dele escolhidos, com o custo ja calculado (soma dos
+// itens x quantidade de containers).
+export async function getFichasTaxasLocaisArmador(): Promise<Record<string, TaxasLocaisArmadorData>> {
+  const rows = await prisma.contratoTaxasLocaisArmador.findMany({
+    include: { armador: { include: { itens: true } } },
+  });
+
+  const result: Record<string, TaxasLocaisArmadorData> = {};
+  for (const r of rows) {
+    const itensSelecionados = (r.armador?.itens ?? [])
+      .filter((i) => r.itensSelecionadosIds.includes(i.id))
+      .map((i) => ({ id: i.id, descricao: i.descricao, precoPorContainer: Number(i.precoPorContainer) }));
+    const custoTotal = Number(
+      (itensSelecionados.reduce((sum, i) => sum + i.precoPorContainer, 0) * r.quantidadeContainers).toFixed(2)
+    );
+
+    result[r.contratoId] = {
+      armadorId: r.armadorId,
+      armadorNome: r.armador?.name ?? null,
+      itensSelecionadosIds: r.itensSelecionadosIds,
+      itensSelecionados,
+      quantidadeContainers: r.quantidadeContainers,
+      custoTotal,
+    };
+  }
+  return result;
+}
+
+export type ItemTabelaFreteMaritimoData = {
+  id: string;
+  descricao: string;
+  precoPorContainer: number;
+};
+
+export type EmpresaFreteMaritimoData = {
+  id: string;
+  name: string;
+  itens: ItemTabelaFreteMaritimoData[];
+};
+
+// Empresas de frete maritimo e a respectiva tabela de preco (por
+// container), usadas no cadastro e na etapa Recebimento do BL.
+export async function getEmpresasFreteMaritimo(): Promise<EmpresaFreteMaritimoData[]> {
+  const empresas = await prisma.empresaFreteMaritimo.findMany({
+    include: { itens: { orderBy: { createdAt: "asc" } } },
+    orderBy: { name: "asc" },
+  });
+
+  return empresas.map((e) => ({
+    id: e.id,
+    name: e.name,
+    itens: e.itens.map((i) => ({
+      id: i.id,
+      descricao: i.descricao,
+      precoPorContainer: Number(i.precoPorContainer),
+    })),
+  }));
+}
+
+export type FreteMaritimoData = {
+  empresaId: string | null;
+  empresaNome: string | null;
+  itensSelecionadosIds: string[];
+  itensSelecionados: ItemTabelaFreteMaritimoData[];
+  quantidadeContainers: number;
+  custoTotal: number;
+};
+
+// Ficha da etapa "Recebimento do BL", indexada por contratoId - empresa de
+// frete maritimo e itens da tabela dela escolhidos, com o custo ja
+// calculado (soma dos itens x quantidade de containers).
+export async function getFichasFreteMaritimo(): Promise<Record<string, FreteMaritimoData>> {
+  const rows = await prisma.contratoFreteMaritimo.findMany({
+    include: { empresa: { include: { itens: true } } },
+  });
+
+  const result: Record<string, FreteMaritimoData> = {};
+  for (const r of rows) {
+    const itensSelecionados = (r.empresa?.itens ?? [])
+      .filter((i) => r.itensSelecionadosIds.includes(i.id))
+      .map((i) => ({ id: i.id, descricao: i.descricao, precoPorContainer: Number(i.precoPorContainer) }));
+    const custoTotal = Number(
+      (itensSelecionados.reduce((sum, i) => sum + i.precoPorContainer, 0) * r.quantidadeContainers).toFixed(2)
+    );
+
+    result[r.contratoId] = {
+      empresaId: r.empresaId,
+      empresaNome: r.empresa?.name ?? null,
+      itensSelecionadosIds: r.itensSelecionadosIds,
+      itensSelecionados,
+      quantidadeContainers: r.quantidadeContainers,
+      custoTotal,
+    };
+  }
+  return result;
+}
+
+export type CertificadoLinha = {
+  id: string;
+  descricao: string;
+  valor: number;
+};
+
+// Certificados emitidos do contrato (etapa Envio dos documentos para
+// aprovacao), indexados por contratoId - um contrato pode ter mais de um
+// certificado (fitossanitario, origem, qualidade etc).
+export async function getCertificadosPorContrato(): Promise<Record<string, CertificadoLinha[]>> {
+  const rows = await prisma.contratoCertificado.findMany({
+    orderBy: { createdAt: "asc" },
+  });
+
+  const result: Record<string, CertificadoLinha[]> = {};
+  for (const r of rows) {
+    (result[r.contratoId] ??= []).push({
+      id: r.id,
+      descricao: r.descricao,
+      valor: Number(r.valor),
+    });
+  }
+  return result;
+}
+
+export type AwbDocumentacaoData = {
+  awbNumero: string | null;
+  awbValor: number;
+};
+
+// Ficha da etapa "Envio para financiamento (RTS)", indexada por contratoId -
+// numero e valor do AWB usado para o envio dos documentos.
+export async function getFichasAwbDocumentacao(): Promise<Record<string, AwbDocumentacaoData>> {
+  const rows = await prisma.contratoAwbDocumentacao.findMany();
+  return Object.fromEntries(
+    rows.map((r) => [r.contratoId, { awbNumero: r.awbNumero, awbValor: Number(r.awbValor) }])
+  );
+}
+
 export type ContratoAnexoData = {
   id: string;
   etapa: StatusContratoValue;
@@ -612,6 +791,10 @@ export async function getContratosExportacao() {
       fichaMarcacaoSacaria: { include: { fornecedor: { include: { precos: true } } } },
       fichaTransporteRodoviario: { include: { transportadora: { include: { itens: true } } } },
       embalagensDetalhadas: true,
+      fichaTaxasLocaisArmador: { include: { armador: { include: { itens: true } } } },
+      fichaFreteMaritimo: { include: { empresa: { include: { itens: true } } } },
+      certificadosDetalhados: true,
+      fichaAwbDocumentacao: true,
     },
     orderBy: { createdAt: "desc" },
   });
@@ -675,6 +858,47 @@ export async function getContratosExportacao() {
           .reduce((sum, e) => sum + e.quantidade * Number(e.valorUnitario), 0)
           .toFixed(2)
       );
+    }
+
+    // Quando o armador e os itens da tabela dele ja foram escolhidos (etapa
+    // Recebimento do BL), o custo passa a ser calculado (soma dos itens x
+    // quantidade de containers), substituindo o valor manual de "Taxas
+    // locais por armador".
+    const fichaArmador = c.fichaTaxasLocaisArmador;
+    if (fichaArmador && fichaArmador.itensSelecionadosIds.length > 0) {
+      const somaItens = (fichaArmador.armador?.itens ?? [])
+        .filter((i) => fichaArmador.itensSelecionadosIds.includes(i.id))
+        .reduce((sum, i) => sum + Number(i.precoPorContainer), 0);
+      despesas.taxasLocaisArmador = Number((somaItens * fichaArmador.quantidadeContainers).toFixed(2));
+    }
+
+    // Quando a empresa de frete maritimo e os itens da tabela dela ja foram
+    // escolhidos (etapa Recebimento do BL), o custo passa a ser calculado
+    // (soma dos itens x quantidade de containers), substituindo o valor
+    // manual de "Frete maritimo".
+    const fichaFrete = c.fichaFreteMaritimo;
+    if (fichaFrete && fichaFrete.itensSelecionadosIds.length > 0) {
+      const somaItens = (fichaFrete.empresa?.itens ?? [])
+        .filter((i) => fichaFrete.itensSelecionadosIds.includes(i.id))
+        .reduce((sum, i) => sum + Number(i.precoPorContainer), 0);
+      despesas.freteMaritimo = Number((somaItens * fichaFrete.quantidadeContainers).toFixed(2));
+    }
+
+    // Quando ja existem certificados lancados (etapa Envio dos documentos
+    // para aprovacao), o custo passa a ser a soma do valor de cada um,
+    // substituindo o valor manual de "Certificados".
+    if (c.certificadosDetalhados.length > 0) {
+      despesas.certificados = Number(
+        c.certificadosDetalhados.reduce((sum, cert) => sum + Number(cert.valor), 0).toFixed(2)
+      );
+    }
+
+    // Quando o AWB de envio dos documentos ja foi lancado (etapa Envio para
+    // financiamento (RTS)), o valor dele passa a compor o custo de "Envio de
+    // documentacao (Pierdoc/Cliente)", substituindo o valor manual desse
+    // item.
+    if (c.fichaAwbDocumentacao) {
+      despesas.envioDocumentacao = Number(c.fichaAwbDocumentacao.awbValor);
     }
 
     // O valor do AWB e o valor da nota fiscal (ficha de Envio de Amostra)

@@ -72,15 +72,15 @@ model Profile {
 }
 
 model Bank {
-  id                   String                @id @default(uuid())
-  name                 String                @unique
-  color                String
-  loans                Loan[]
-  accOperations        AccOperation[]
-  contasGarantidas     ContaGarantida[]
-  transferChannel      BankTransferChannel?
-  transferenciasOrdem  TransferenciaOrdem[]
-  createdAt            DateTime              @default(now())
+  id                  String               @id @default(uuid())
+  name                String               @unique
+  color               String
+  loans               Loan[]
+  accOperations       AccOperation[]
+  contasGarantidas    ContaGarantida[]
+  transferChannel     BankTransferChannel?
+  transferenciasOrdem TransferenciaOrdem[]
+  createdAt           DateTime             @default(now())
 
   @@map("banks")
 }
@@ -135,12 +135,12 @@ model TransferenciaOrdem {
 // gerar/imprimir o mesmo documento preenchido internamente e poder reabrir
 // e editar mais tarde.
 model ContratoCompraCafe {
-  id                        String    @id @default(uuid())
-  numeroContrato            String
-  dataContrato              DateTime  @db.Date
-  tipoOperacao              String    @default("FÍSICO")
-  modalidade                String    @default("POSTO")
-  referenciaPagamento       String
+  id                  String   @id @default(uuid())
+  numeroContrato      String
+  dataContrato        DateTime @db.Date
+  tipoOperacao        String   @default("FÍSICO")
+  modalidade          String   @default("POSTO")
+  referenciaPagamento String
 
   // A Nayme e sempre a vendedora neste contrato — estes campos descrevem a
   // contraparte, que e sempre a compradora.
@@ -151,39 +151,39 @@ model ContratoCompraCafe {
   inscricaoEstadualComprador String
   grupoComprador             String
 
-  corretor                  String
-  comissaoCorretor          Decimal   @default(0) @db.Decimal(6, 2)
-  agente                    String
-  comissaoAgente            Decimal   @default(0) @db.Decimal(6, 2)
+  corretor         String
+  comissaoCorretor Decimal @default(0) @db.Decimal(6, 2)
+  agente           String
+  comissaoAgente   Decimal @default(0) @db.Decimal(6, 2)
 
-  descricaoProduto          String
-  safra                     String
-  padrao                    String
-  bebida                    String
+  descricaoProduto String
+  safra            String
+  padrao           String
+  bebida           String
 
-  tipoEmbalagem             String
-  valorLivrePorSaca         Decimal   @db.Decimal(18, 2)
-  quantidadeSacas           Int
-  valorFaturadoPorSaca      Decimal   @db.Decimal(18, 2)
-  creditoIcms               String
-  condicaoPagamento         String
+  tipoEmbalagem        String
+  valorLivrePorSaca    Decimal @db.Decimal(18, 2)
+  quantidadeSacas      Int
+  valorFaturadoPorSaca Decimal @db.Decimal(18, 2)
+  creditoIcms          String
+  condicaoPagamento    String
 
-  banco                     String
-  agencia                   String
-  conta                     String
+  banco   String
+  agencia String
+  conta   String
 
-  observacoes               String
-  localRetirada             String
+  observacoes   String
+  localRetirada String
 
-  codigoLocalEntrega        String
-  previsaoEntrega           DateTime? @db.Date
-  nomeLocalEntrega          String
-  cnpjLocalEntrega          String
-  enderecoLocalEntrega      String
-  cidadeLocalEntrega        String
+  codigoLocalEntrega   String
+  previsaoEntrega      DateTime? @db.Date
+  nomeLocalEntrega     String
+  cnpjLocalEntrega     String
+  enderecoLocalEntrega String
+  cidadeLocalEntrega   String
 
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("contratos_compra_cafe")
 }
@@ -255,25 +255,25 @@ model FinancialStatement {
   sourceFileName String
 
   // DRE
-  receitaBruta                    Decimal @db.Decimal(18, 2)
-  deducoes                        Decimal @db.Decimal(18, 2)
-  receitaLiquida                  Decimal @db.Decimal(18, 2)
-  cmv                             Decimal @db.Decimal(18, 2)
-  lucroBruto                      Decimal @db.Decimal(18, 2)
-  outrasReceitasOperacionais      Decimal @default(0) @db.Decimal(18, 2)
-  despesasGerais                  Decimal @default(0) @db.Decimal(18, 2)
-  despesasComerciais              Decimal @default(0) @db.Decimal(18, 2)
-  despesasTributarias             Decimal @default(0) @db.Decimal(18, 2)
-  depreciacaoAmortizacao          Decimal @db.Decimal(18, 2)
-  outrasDespesasOperacionais      Decimal @default(0) @db.Decimal(18, 2)
-  resultadoAtividade              Decimal @db.Decimal(18, 2) // EBIT
-  receitasFinanceiras             Decimal @default(0) @db.Decimal(18, 2)
-  despesasFinanceiras             Decimal @default(0) @db.Decimal(18, 2)
-  variacaoCambial                 Decimal @default(0) @db.Decimal(18, 2)
-  resultadoNaoOperacional         Decimal @default(0) @db.Decimal(18, 2)
-  impostoRenda                    Decimal @db.Decimal(18, 2)
-  participacoes                   Decimal @default(0) @db.Decimal(18, 2)
-  lucroLiquido                    Decimal @db.Decimal(18, 2)
+  receitaBruta               Decimal @db.Decimal(18, 2)
+  deducoes                   Decimal @db.Decimal(18, 2)
+  receitaLiquida             Decimal @db.Decimal(18, 2)
+  cmv                        Decimal @db.Decimal(18, 2)
+  lucroBruto                 Decimal @db.Decimal(18, 2)
+  outrasReceitasOperacionais Decimal @default(0) @db.Decimal(18, 2)
+  despesasGerais             Decimal @default(0) @db.Decimal(18, 2)
+  despesasComerciais         Decimal @default(0) @db.Decimal(18, 2)
+  despesasTributarias        Decimal @default(0) @db.Decimal(18, 2)
+  depreciacaoAmortizacao     Decimal @db.Decimal(18, 2)
+  outrasDespesasOperacionais Decimal @default(0) @db.Decimal(18, 2)
+  resultadoAtividade         Decimal @db.Decimal(18, 2) // EBIT
+  receitasFinanceiras        Decimal @default(0) @db.Decimal(18, 2)
+  despesasFinanceiras        Decimal @default(0) @db.Decimal(18, 2)
+  variacaoCambial            Decimal @default(0) @db.Decimal(18, 2)
+  resultadoNaoOperacional    Decimal @default(0) @db.Decimal(18, 2)
+  impostoRenda               Decimal @db.Decimal(18, 2)
+  participacoes              Decimal @default(0) @db.Decimal(18, 2)
+  lucroLiquido               Decimal @db.Decimal(18, 2)
 
   // Ativo Circulante
   caixaEquivalentes               Decimal @db.Decimal(18, 2)
@@ -285,32 +285,32 @@ model FinancialStatement {
   outrosAtivosNaoOperacionaisCirc Decimal @default(0) @db.Decimal(18, 2)
 
   // Ativo Nao Circulante
-  contasReceberColigadas          Decimal @default(0) @db.Decimal(18, 2)
-  investimentos                   Decimal @default(0) @db.Decimal(18, 2)
-  imobilizado                     Decimal @default(0) @db.Decimal(18, 2)
-  intangivel                      Decimal @default(0) @db.Decimal(18, 2)
-  outrosAtivosNaoCirculantes      Decimal @default(0) @db.Decimal(18, 2)
+  contasReceberColigadas     Decimal @default(0) @db.Decimal(18, 2)
+  investimentos              Decimal @default(0) @db.Decimal(18, 2)
+  imobilizado                Decimal @default(0) @db.Decimal(18, 2)
+  intangivel                 Decimal @default(0) @db.Decimal(18, 2)
+  outrosAtivosNaoCirculantes Decimal @default(0) @db.Decimal(18, 2)
 
   // Passivo Circulante
-  fornecedores                    Decimal @db.Decimal(18, 2)
-  salariosEncargos                Decimal @default(0) @db.Decimal(18, 2)
-  impostosContribuicoes           Decimal @default(0) @db.Decimal(18, 2)
-  emprestimosCurtoPrazo           Decimal @db.Decimal(18, 2)
-  irAPagar                        Decimal @default(0) @db.Decimal(18, 2)
-  emprestimosColigadasCP          Decimal @default(0) @db.Decimal(18, 2)
-  dividendosAPagar                Decimal @default(0) @db.Decimal(18, 2)
-  adiantamentosClientes           Decimal @default(0) @db.Decimal(18, 2)
-  outrosPassivosCirc              Decimal @default(0) @db.Decimal(18, 2)
+  fornecedores           Decimal @db.Decimal(18, 2)
+  salariosEncargos       Decimal @default(0) @db.Decimal(18, 2)
+  impostosContribuicoes  Decimal @default(0) @db.Decimal(18, 2)
+  emprestimosCurtoPrazo  Decimal @db.Decimal(18, 2)
+  irAPagar               Decimal @default(0) @db.Decimal(18, 2)
+  emprestimosColigadasCP Decimal @default(0) @db.Decimal(18, 2)
+  dividendosAPagar       Decimal @default(0) @db.Decimal(18, 2)
+  adiantamentosClientes  Decimal @default(0) @db.Decimal(18, 2)
+  outrosPassivosCirc     Decimal @default(0) @db.Decimal(18, 2)
 
   // Passivo Nao Circulante
-  emprestimosLongoPrazo           Decimal @db.Decimal(18, 2)
-  outrosPassivosNaoCirc           Decimal @default(0) @db.Decimal(18, 2)
+  emprestimosLongoPrazo Decimal @db.Decimal(18, 2)
+  outrosPassivosNaoCirc Decimal @default(0) @db.Decimal(18, 2)
 
   // Patrimonio Liquido
-  capitalSocial                   Decimal @default(0) @db.Decimal(18, 2)
-  reservas                        Decimal @default(0) @db.Decimal(18, 2)
-  lucrosPrejuizosAcumulados       Decimal @default(0) @db.Decimal(18, 2)
-  outrosResultadosAbrangentes     Decimal @default(0) @db.Decimal(18, 2)
+  capitalSocial               Decimal @default(0) @db.Decimal(18, 2)
+  reservas                    Decimal @default(0) @db.Decimal(18, 2)
+  lucrosPrejuizosAcumulados   Decimal @default(0) @db.Decimal(18, 2)
+  outrosResultadosAbrangentes Decimal @default(0) @db.Decimal(18, 2)
 
   // Exposicao cambial - nem todo balancete discrimina moeda estrangeira separadamente
   ativosMoedaEstrangeira   Decimal? @db.Decimal(18, 2)
@@ -327,39 +327,39 @@ model FinancialStatement {
 }
 
 model AccOperation {
-  id                     String    @id @default(uuid())
-  bank                   Bank      @relation(fields: [bankId], references: [id])
+  id                     String     @id @default(uuid())
+  bank                   Bank       @relation(fields: [bankId], references: [id])
   bankId                 String
-  accNumber              String    @unique
+  accNumber              String     @unique
   exchangeContractNumber String
   exporter               String
   foreignClient          String
   invoice                String
   country                String
   currency               Currency
-  invoiceValue           Decimal   @db.Decimal(18, 2)
-  contractedValueForeign Decimal   @db.Decimal(18, 2)
-  receivedValueBRL       Decimal   @db.Decimal(18, 2)
-  spotRate               Decimal   @db.Decimal(10, 4)
-  closingRate            Decimal   @db.Decimal(10, 4)
-  ptaxContracting        Decimal   @db.Decimal(10, 4)
-  ptaxSettlement         Decimal   @db.Decimal(10, 4)
-  contractDate           DateTime  @db.Date
-  closingDate            DateTime? @db.Date
-  settlementDate         DateTime  @db.Date
-  interestRate           Decimal   @db.Decimal(6, 2)
-  iof                    Decimal   @db.Decimal(18, 2)
-  exchangeSpread         Decimal   @db.Decimal(10, 4)
-  exchangeVariationValue Decimal   @default(0) @db.Decimal(10, 4)
-  bankFees               Decimal   @db.Decimal(18, 2)
-  flatFeeRate            Decimal   @default(0) @db.Decimal(6, 2)
-  hasInsurance           Boolean   @default(false)
-  insuranceCost          Decimal   @default(0) @db.Decimal(18, 2)
-  otherCosts             Decimal   @default(0) @db.Decimal(18, 2)
-  status                 AccStatus @default(EM_ABERTO)
+  invoiceValue           Decimal    @db.Decimal(18, 2)
+  contractedValueForeign Decimal    @db.Decimal(18, 2)
+  receivedValueBRL       Decimal    @db.Decimal(18, 2)
+  spotRate               Decimal    @db.Decimal(10, 4)
+  closingRate            Decimal    @db.Decimal(10, 4)
+  ptaxContracting        Decimal    @db.Decimal(10, 4)
+  ptaxSettlement         Decimal    @db.Decimal(10, 4)
+  contractDate           DateTime   @db.Date
+  closingDate            DateTime?  @db.Date
+  settlementDate         DateTime   @db.Date
+  interestRate           Decimal    @db.Decimal(6, 2)
+  iof                    Decimal    @db.Decimal(18, 2)
+  exchangeSpread         Decimal    @db.Decimal(10, 4)
+  exchangeVariationValue Decimal    @default(0) @db.Decimal(10, 4)
+  bankFees               Decimal    @db.Decimal(18, 2)
+  flatFeeRate            Decimal    @default(0) @db.Decimal(6, 2)
+  hasInsurance           Boolean    @default(false)
+  insuranceCost          Decimal    @default(0) @db.Decimal(18, 2)
+  otherCosts             Decimal    @default(0) @db.Decimal(18, 2)
+  status                 AccStatus  @default(EM_ABERTO)
   baixas                 AccBaixa[]
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
 
   @@index([bankId])
   @@index([status])
@@ -391,19 +391,19 @@ model AccBaixa {
 // sentido para cliente externo; valueUSD idem (cliente interno fatura so em
 // R$).
 model Sale {
-  id            String     @id @default(uuid())
-  clientName    String
-  clientType    ClientType
-  quantityKg    Decimal    @db.Decimal(18, 2)
-  country       String?
-  containers20  Int?
-  containers40  Int?
-  saleDate      DateTime   @db.Date
-  valueBRL      Decimal    @db.Decimal(18, 2)
-  valueUSD      Decimal?   @db.Decimal(18, 2)
-  diferencial   Decimal?   @db.Decimal(10, 4)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id           String     @id @default(uuid())
+  clientName   String
+  clientType   ClientType
+  quantityKg   Decimal    @db.Decimal(18, 2)
+  country      String?
+  containers20 Int?
+  containers40 Int?
+  saleDate     DateTime   @db.Date
+  valueBRL     Decimal    @db.Decimal(18, 2)
+  valueUSD     Decimal?   @db.Decimal(18, 2)
+  diferencial  Decimal?   @db.Decimal(10, 4)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@index([clientType])
   @@index([saleDate])
@@ -416,13 +416,13 @@ model Sale {
 // (sacas de 60kg calculadas na leitura, como em Sale) e valor em R$ entram
 // como abatimento dos totais de faturamento do periodo correspondente.
 model SaleReturn {
-  id          String   @id @default(uuid())
-  clientName  String
-  quantityKg  Decimal  @db.Decimal(18, 2)
-  returnDate  DateTime @db.Date
-  valueBRL    Decimal  @db.Decimal(18, 2)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  clientName String
+  quantityKg Decimal  @db.Decimal(18, 2)
+  returnDate DateTime @db.Date
+  valueBRL   Decimal  @db.Decimal(18, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([returnDate])
   @@map("sale_returns")
@@ -527,24 +527,24 @@ model Corretora {
 }
 
 model HedgeOperation {
-  id                    String       @id @default(uuid())
-  corretora             Corretora    @relation(fields: [corretoraId], references: [id])
-  corretoraId           String
-  contractType          ContractType @default(NDF)
-  side                  Side?
-  contractDate          DateTime     @db.Date
-  vencimento            DateTime     @db.Date
-  valorUsd              Decimal      @db.Decimal(18, 2)
-  liquidacaoParcialUsd  Decimal      @default(0) @db.Decimal(18, 2)
-  saldoUsd              Decimal      @default(0) @db.Decimal(18, 2)
-  nivelCompra           Decimal      @default(0) @db.Decimal(10, 4)
-  nivelVenda            Decimal      @default(0) @db.Decimal(10, 4)
-  desagioValor          Decimal      @default(0) @db.Decimal(18, 2)
-  totalReais            Decimal      @default(0) @db.Decimal(18, 2)
-  status                HedgeStatus  @default(A_LIQUIDAR)
-  observacao            String?
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
+  id                   String       @id @default(uuid())
+  corretora            Corretora    @relation(fields: [corretoraId], references: [id])
+  corretoraId          String
+  contractType         ContractType @default(NDF)
+  side                 Side?
+  contractDate         DateTime     @db.Date
+  vencimento           DateTime     @db.Date
+  valorUsd             Decimal      @db.Decimal(18, 2)
+  liquidacaoParcialUsd Decimal      @default(0) @db.Decimal(18, 2)
+  saldoUsd             Decimal      @default(0) @db.Decimal(18, 2)
+  nivelCompra          Decimal      @default(0) @db.Decimal(10, 4)
+  nivelVenda           Decimal      @default(0) @db.Decimal(10, 4)
+  desagioValor         Decimal      @default(0) @db.Decimal(18, 2)
+  totalReais           Decimal      @default(0) @db.Decimal(18, 2)
+  status               HedgeStatus  @default(A_LIQUIDAR)
+  observacao           String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   @@index([corretoraId])
   @@index([status])
@@ -566,49 +566,53 @@ model Cliente {
 }
 
 model ContratoExportacao {
-  id             String          @id @default(uuid())
-  contractNumber String          @unique
-  cliente        Cliente         @relation(fields: [clienteId], references: [id])
-  clienteId      String
-  corretora      Corretora?      @relation(fields: [corretoraId], references: [id])
-  corretoraId    String?
-  country        String          @default("")
-  valorUsd       Decimal         @default(0) @db.Decimal(18, 2)
-  dataInicioContrato DateTime?   @db.Date
-  dataEstufagem  DateTime?       @db.Date
-  dataEmbarque   DateTime?       @db.Date
-  dataChegada    DateTime?       @db.Date
-  status         StatusContrato  @default(CONFIRMACAO_NEGOCIO)
+  id                 String         @id @default(uuid())
+  contractNumber     String         @unique
+  cliente            Cliente        @relation(fields: [clienteId], references: [id])
+  clienteId          String
+  corretora          Corretora?     @relation(fields: [corretoraId], references: [id])
+  corretoraId        String?
+  country            String         @default("")
+  valorUsd           Decimal        @default(0) @db.Decimal(18, 2)
+  dataInicioContrato DateTime?      @db.Date
+  dataEstufagem      DateTime?      @db.Date
+  dataEmbarque       DateTime?      @db.Date
+  dataChegada        DateTime?      @db.Date
+  status             StatusContrato @default(CONFIRMACAO_NEGOCIO)
 
   // Marca o contrato como finalizado (preenchido na etapa "Envio do BL" da
   // Mesa de Operacao). Contratos finalizados saem da Mesa de Operacao e
   // passam a aparecer no menu "Contratos Finalizados".
-  contratoFinalizado Boolean     @default(false)
-  dataFinalizacao    DateTime?   @db.Date
+  contratoFinalizado Boolean   @default(false)
+  dataFinalizacao    DateTime? @db.Date
 
   // Dados proprios (independentes dos campos gerais do contrato acima) preenchidos
   // na etapa "Confirmacao de Negocio" da Mesa de Operacao.
-  confirmacaoNegocio ContratoConfirmacaoNegocio?
-  anexos             ContratoAnexo[]
-  previsoesEtapa     ContratoEtapaPrevisao[]
-  etapasConcluidas   ContratoEtapaConcluida[]
-  fichaEnvioAmostra  ContratoEnvioAmostra?
-  fichaMarcacaoSacaria ContratoMarcacaoSacaria?
+  confirmacaoNegocio        ContratoConfirmacaoNegocio?
+  anexos                    ContratoAnexo[]
+  previsoesEtapa            ContratoEtapaPrevisao[]
+  etapasConcluidas          ContratoEtapaConcluida[]
+  fichaEnvioAmostra         ContratoEnvioAmostra?
+  fichaMarcacaoSacaria      ContratoMarcacaoSacaria?
   fichaTransporteRodoviario ContratoTransporteRodoviario?
   embalagensDetalhadas      ContratoEmbalagem[]
+  fichaTaxasLocaisArmador   ContratoTaxasLocaisArmador?
+  fichaFreteMaritimo        ContratoFreteMaritimo?
+  certificadosDetalhados    ContratoCertificado[]
+  fichaAwbDocumentacao      ContratoAwbDocumentacao?
 
   // Recebimento do contrato — controle financeiro do valor a receber do cliente/RTS.
   quantSacas                    Int?
-  adiantamentoUsd                Decimal   @default(0) @db.Decimal(18, 2)
-  dataAdiantamento                DateTime? @db.Date
-  financiadoPelaRts              Boolean   @default(false)
-  valorFinanciadoRtsUsd          Decimal   @default(0) @db.Decimal(18, 2)
+  adiantamentoUsd               Decimal   @default(0) @db.Decimal(18, 2)
+  dataAdiantamento              DateTime? @db.Date
+  financiadoPelaRts             Boolean   @default(false)
+  valorFinanciadoRtsUsd         Decimal   @default(0) @db.Decimal(18, 2)
   dataLiberacaoFinanciamentoRts DateTime? @db.Date
   previsaoPagamentoCliente      DateTime? @db.Date
-  saldoAReceberRtsUsd            Decimal   @default(0) @db.Decimal(18, 2)
-  valorRecebidoRtsUsd            Decimal   @default(0) @db.Decimal(18, 2)
-  dataRecebimentoRts              DateTime? @db.Date
-  obsRecebimento                 String?
+  saldoAReceberRtsUsd           Decimal   @default(0) @db.Decimal(18, 2)
+  valorRecebidoRtsUsd           Decimal   @default(0) @db.Decimal(18, 2)
+  dataRecebimentoRts            DateTime? @db.Date
+  obsRecebimento                String?
 
   // Despesas do contrato (R$) — compoe o custo final da operacao de exportacao.
   despachante              Decimal @default(0) @db.Decimal(18, 2)
@@ -616,6 +620,7 @@ model ContratoExportacao {
   freteTerrestre           Decimal @default(0) @db.Decimal(18, 2)
   freteMaritimo            Decimal @default(0) @db.Decimal(18, 2)
   taxasLocaisArmador       Decimal @default(0) @db.Decimal(18, 2)
+  correcaoBL               Decimal @default(0) @db.Decimal(18, 2)
   fumigacao                Decimal @default(0) @db.Decimal(18, 2)
   embalagens               Decimal @default(0) @db.Decimal(18, 2)
   inspecao                 Decimal @default(0) @db.Decimal(18, 2)
@@ -626,14 +631,15 @@ model ContratoExportacao {
   freteEntregaSacaria      Decimal @default(0) @db.Decimal(18, 2)
   envioDocumentacao        Decimal @default(0) @db.Decimal(18, 2)
   telexRelease             Decimal @default(0) @db.Decimal(18, 2)
+  traducao                 Decimal @default(0) @db.Decimal(18, 2)
   legalizacao              Decimal @default(0) @db.Decimal(18, 2)
   financiamentoRts         Decimal @default(0) @db.Decimal(18, 2)
   diariaContainerDetention Decimal @default(0) @db.Decimal(18, 2)
   despesasRedex            Decimal @default(0) @db.Decimal(18, 2)
   estadiaContainer         Decimal @default(0) @db.Decimal(18, 2)
 
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([clienteId])
   @@index([status])
@@ -645,37 +651,37 @@ model ContratoExportacao {
 // campos proprios dessa etapa, independentes dos campos gerais do contrato
 // (ContratoExportacao), conforme solicitado pela area de operacoes.
 model ContratoConfirmacaoNegocio {
-  id               String              @id @default(uuid())
-  contrato         ContratoExportacao  @relation(fields: [contratoId], references: [id], onDelete: Cascade)
-  contratoId       String              @unique
-  dataConfirmacao  DateTime?           @db.Date
-  numeroContrato   String?
+  id                    String             @id @default(uuid())
+  contrato              ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId            String             @unique
+  dataConfirmacao       DateTime?          @db.Date
+  numeroContrato        String?
   numeroContratoInterno String?
-  corretora        Corretora?          @relation(fields: [corretoraId], references: [id])
-  corretoraId      String?
-  cliente          Cliente?            @relation(fields: [clienteId], references: [id])
-  clienteId        String?
-  valorUsd         Decimal?            @db.Decimal(18, 2)
-  tipoFrete        TipoFrete?          @relation(fields: [tipoFreteId], references: [id])
-  tipoFreteId      String?
-  tipoEmbalagem    TipoEmbalagem?      @relation(fields: [tipoEmbalagemId], references: [id])
-  tipoEmbalagemId  String?
-  quantidadeSacas  Int?
-  peneira          Peneira?            @relation(fields: [peneiraId], references: [id])
-  peneiraId        String?
-  padrao           PadraoCafe?         @relation(fields: [padraoId], references: [id])
-  padraoId         String?
-  previsaoEmbarque DateTime?           @db.Date
-  destinoCarga     String?
-  formaPagamento   FormaPagamento?     @relation(fields: [formaPagamentoId], references: [id])
-  formaPagamentoId String?
-  diferencial      Decimal?            @db.Decimal(10, 4)
-  fixacaoTipo      String?
-  dataFixacao      DateTime?           @db.Date
-  nivelBolsa       Decimal?            @db.Decimal(10, 4)
-  valorDolar       Decimal?            @db.Decimal(10, 4)
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  corretora             Corretora?         @relation(fields: [corretoraId], references: [id])
+  corretoraId           String?
+  cliente               Cliente?           @relation(fields: [clienteId], references: [id])
+  clienteId             String?
+  valorUsd              Decimal?           @db.Decimal(18, 2)
+  tipoFrete             TipoFrete?         @relation(fields: [tipoFreteId], references: [id])
+  tipoFreteId           String?
+  tipoEmbalagem         TipoEmbalagem?     @relation(fields: [tipoEmbalagemId], references: [id])
+  tipoEmbalagemId       String?
+  quantidadeSacas       Int?
+  peneira               Peneira?           @relation(fields: [peneiraId], references: [id])
+  peneiraId             String?
+  padrao                PadraoCafe?        @relation(fields: [padraoId], references: [id])
+  padraoId              String?
+  previsaoEmbarque      DateTime?          @db.Date
+  destinoCarga          String?
+  formaPagamento        FormaPagamento?    @relation(fields: [formaPagamentoId], references: [id])
+  formaPagamentoId      String?
+  diferencial           Decimal?           @db.Decimal(10, 4)
+  fixacaoTipo           String?
+  dataFixacao           DateTime?          @db.Date
+  nivelBolsa            Decimal?           @db.Decimal(10, 4)
+  valorDolar            Decimal?           @db.Decimal(10, 4)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
   @@index([corretoraId])
   @@index([clienteId])
@@ -747,10 +753,10 @@ model FormaPagamento {
 // Lista de tipos de amostra cadastraveis, usada na ficha da etapa Envio de
 // Amostra de Aprovacao (PSS) da Mesa de Operacao.
 model TipoAmostra {
-  id        String                @id @default(uuid())
-  name      String                @unique
+  id        String                 @id @default(uuid())
+  name      String                 @unique
   envios    ContratoEnvioAmostra[]
-  createdAt DateTime              @default(now())
+  createdAt DateTime               @default(now())
 
   @@map("tipos_amostra")
 }
@@ -758,10 +764,10 @@ model TipoAmostra {
 // Lista de transportadoras/couriers cadastraveis (ex: DHL, FedEx), usada na
 // ficha da etapa Envio de Amostra de Aprovacao (PSS) da Mesa de Operacao.
 model TransportadoraAmostra {
-  id        String                @id @default(uuid())
-  name      String                @unique
+  id        String                 @id @default(uuid())
+  name      String                 @unique
   envios    ContratoEnvioAmostra[]
-  createdAt DateTime              @default(now())
+  createdAt DateTime               @default(now())
 
   @@map("transportadoras_amostra")
 }
@@ -913,19 +919,147 @@ model ContratoEmbalagem {
   @@map("contrato_embalagens")
 }
 
+// Armadores (companhias de navegacao) cadastraveis, usados na etapa
+// Recebimento do BL da Mesa de Operacao para as taxas locais do armador.
+model Armador {
+  id        String                       @id @default(uuid())
+  name      String                       @unique
+  itens     ItemTabelaArmador[]
+  fichas    ContratoTaxasLocaisArmador[]
+  createdAt DateTime                     @default(now())
+
+  @@map("armadores")
+}
+
+// Item da tabela de preco de um armador - taxas locais cobradas por
+// container (THC, ISPS, lacre, etc). Sem categorias fixas: cada armador
+// cadastra livremente os itens da propria tabela.
+model ItemTabelaArmador {
+  id                String   @id @default(uuid())
+  armador           Armador  @relation(fields: [armadorId], references: [id], onDelete: Cascade)
+  armadorId         String
+  descricao         String
+  precoPorContainer Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([armadorId])
+  @@map("itens_tabela_armador")
+}
+
+// Ficha da etapa "Recebimento do BL" - armador e itens da tabela dele
+// escolhidos para este contrato. O custo de "Taxas locais por armador"
+// passa a ser a soma dos itens escolhidos vezes a quantidade de containers,
+// substituindo o valor manual desse item.
+model ContratoTaxasLocaisArmador {
+  id                   String             @id @default(uuid())
+  contrato             ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId           String             @unique
+  armador              Armador?           @relation(fields: [armadorId], references: [id])
+  armadorId            String?
+  itensSelecionadosIds String[]           @default([])
+  quantidadeContainers Int                @default(1)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([armadorId])
+  @@map("contrato_taxas_locais_armador")
+}
+
+// Empresas de frete maritimo cadastraveis, usadas na etapa Recebimento do
+// BL da Mesa de Operacao.
+model EmpresaFreteMaritimo {
+  id        String                    @id @default(uuid())
+  name      String                    @unique
+  itens     ItemTabelaFreteMaritimo[]
+  fichas    ContratoFreteMaritimo[]
+  createdAt DateTime                  @default(now())
+
+  @@map("empresas_frete_maritimo")
+}
+
+// Item da tabela de preco de uma empresa de frete maritimo, cobrado por
+// container. Sem categorias fixas: cada empresa cadastra livremente os
+// itens da propria tabela.
+model ItemTabelaFreteMaritimo {
+  id                String               @id @default(uuid())
+  empresa           EmpresaFreteMaritimo @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId         String
+  descricao         String
+  precoPorContainer Decimal              @default(0) @db.Decimal(18, 2)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([empresaId])
+  @@map("itens_tabela_frete_maritimo")
+}
+
+// Ficha da etapa "Recebimento do BL" - empresa de frete maritimo e itens
+// da tabela dela escolhidos para este contrato. O custo de "Frete
+// maritimo" passa a ser a soma dos itens escolhidos vezes a quantidade de
+// containers, substituindo o valor manual desse item.
+model ContratoFreteMaritimo {
+  id                   String                @id @default(uuid())
+  contrato             ContratoExportacao    @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId           String                @unique
+  empresa              EmpresaFreteMaritimo? @relation(fields: [empresaId], references: [id])
+  empresaId            String?
+  itensSelecionadosIds String[]              @default([])
+  quantidadeContainers Int                   @default(1)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  @@index([empresaId])
+  @@map("contrato_frete_maritimo")
+}
+
+// Um certificado emitido do contrato (etapa "Envio dos documentos para
+// aprovacao") - descricao livre e valor. Um contrato pode ter varios
+// certificados (fitossanitario, origem, qualidade, etc); o custo de
+// "Certificados" passa a ser a soma dos valores de todos eles, substituindo
+// o valor manual desse item.
+model ContratoCertificado {
+  id         String             @id @default(uuid())
+  contrato   ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId String
+  descricao  String
+  valor      Decimal            @default(0) @db.Decimal(18, 2)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@index([contratoId])
+  @@map("contrato_certificados")
+}
+
+// Ficha da etapa "Envio para financiamento (RTS)" - numero e valor do AWB
+// usado para o envio dos documentos. O valor do AWB passa a compor o custo
+// de "Envio de documentacao (Pierdoc/Cliente)", substituindo o valor manual
+// desse item.
+model ContratoAwbDocumentacao {
+  id         String             @id @default(uuid())
+  contrato   ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  contratoId String             @unique
+  awbNumero  String?
+  awbValor   Decimal            @default(0) @db.Decimal(18, 2)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@map("contrato_awb_documentacao")
+}
+
 // Documentos anexados a um contrato em qualquer etapa da Mesa de Operacao
 // (contrato assinado, amostra, arte de sacaria, BL, etc). O arquivo em si
 // fica no Supabase Storage (bucket "contrato-anexos"); aqui guardamos so a
 // referencia.
 model ContratoAnexo {
-  id         String         @id @default(uuid())
+  id         String             @id @default(uuid())
   contrato   ContratoExportacao @relation(fields: [contratoId], references: [id], onDelete: Cascade)
   contratoId String
   etapa      StatusContrato
   fileName   String
   fileUrl    String
   fileSize   Int?
-  uploadedAt DateTime       @default(now())
+  uploadedAt DateTime           @default(now())
 
   @@index([contratoId])
   @@index([etapa])

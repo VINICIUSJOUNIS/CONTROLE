@@ -33,6 +33,7 @@ export type DespesasContratoInput = {
   freteTerrestre: number;
   freteMaritimo: number;
   taxasLocaisArmador: number;
+  correcaoBL: number;
   fumigacao: number;
   embalagens: number;
   inspecao: number;
@@ -43,6 +44,7 @@ export type DespesasContratoInput = {
   freteEntregaSacaria: number;
   envioDocumentacao: number;
   telexRelease: number;
+  traducao: number;
   legalizacao: number;
   financiamentoRts: number;
   diariaContainerDetention: number;
@@ -212,6 +214,83 @@ export async function updateCustosEstufagem(id: string, input: CustosEstufagemIn
     where: { id },
     data: {
       armazem: Number(input.armazem) || 0,
+    },
+  });
+
+  revalidateAll();
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+}
+
+export type CustosRecebimentoBLInput = {
+  correcaoBL: string;
+  despesasPortuarias: string;
+};
+
+// Edicao rapida da correcao de BL (se aplicavel) e das taxas portuarias
+// direto no card da etapa Recebimento do BL da Mesa de Operacao. As taxas
+// locais do armador e o frete maritimo sao calculados a parte (ver
+// upsertTaxasLocaisArmador e upsertFreteMaritimo).
+export async function updateCustosRecebimentoBL(id: string, input: CustosRecebimentoBLInput) {
+  await prisma.contratoExportacao.update({
+    where: { id },
+    data: {
+      correcaoBL: Number(input.correcaoBL) || 0,
+      despesasPortuarias: Number(input.despesasPortuarias) || 0,
+    },
+  });
+
+  revalidateAll();
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+}
+
+export type CustosEnvioDocumentosInput = {
+  despachante: string;
+  fumigacao: string;
+};
+
+// Edicao rapida do custo de despachante e da fumigacao (se aplicavel)
+// direto no card da etapa Envio dos documentos para aprovacao da Mesa de
+// Operacao. Os certificados sao lancados a parte (ver
+// addContratoCertificado), um por um.
+export async function updateCustosEnvioDocumentos(id: string, input: CustosEnvioDocumentosInput) {
+  await prisma.contratoExportacao.update({
+    where: { id },
+    data: {
+      despachante: Number(input.despachante) || 0,
+      fumigacao: Number(input.fumigacao) || 0,
+    },
+  });
+
+  revalidateAll();
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+}
+
+// Edicao rapida do custo de financiamento direto no card da etapa Envio
+// para financiamento (RTS) da Mesa de Operacao. O AWB de envio dos
+// documentos e lancado a parte (ver upsertAwbDocumentacao).
+export async function updateCustoFinanciamento(id: string, valor: string) {
+  await prisma.contratoExportacao.update({
+    where: { id },
+    data: { financiamentoRts: Number(valor) || 0 },
+  });
+
+  revalidateAll();
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+}
+
+export type CustosTraducaoLegalizacaoInput = {
+  traducao: string;
+  legalizacao: string;
+};
+
+// Edicao rapida do custo de traducao e de legalizacao (se aplicavel) direto
+// no card da etapa Traducao e pedido de legalizacao da Mesa de Operacao.
+export async function updateCustosTraducaoLegalizacao(id: string, input: CustosTraducaoLegalizacaoInput) {
+  await prisma.contratoExportacao.update({
+    where: { id },
+    data: {
+      traducao: Number(input.traducao) || 0,
+      legalizacao: Number(input.legalizacao) || 0,
     },
   });
 

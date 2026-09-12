@@ -145,6 +145,105 @@ export async function deleteContratoEmbalagem(id: string) {
   revalidateAll();
 }
 
+export type TaxasLocaisArmadorInput = {
+  armadorId: string;
+  itensSelecionadosIds: string[];
+  quantidadeContainers: number;
+};
+
+// Ficha da etapa "Recebimento do BL": armador e itens da tabela dele (taxas
+// locais cobradas por container) escolhidos para este contrato - o custo
+// das taxas locais e calculado sozinho a partir da soma dos itens
+// escolhidos vezes a quantidade de containers.
+export async function upsertTaxasLocaisArmador(contratoId: string, input: TaxasLocaisArmadorInput) {
+  const data = {
+    armadorId: input.armadorId || null,
+    itensSelecionadosIds: input.itensSelecionadosIds,
+    quantidadeContainers: input.quantidadeContainers > 0 ? input.quantidadeContainers : 1,
+  };
+
+  await prisma.contratoTaxasLocaisArmador.upsert({
+    where: { contratoId },
+    create: { contratoId, ...data },
+    update: data,
+  });
+
+  revalidateAll();
+}
+
+export type FreteMaritimoInput = {
+  empresaId: string;
+  itensSelecionadosIds: string[];
+  quantidadeContainers: number;
+};
+
+// Ficha da etapa "Recebimento do BL": empresa de frete maritimo e itens da
+// tabela dela escolhidos para este contrato - o custo do frete maritimo e
+// calculado sozinho a partir da soma dos itens escolhidos vezes a
+// quantidade de containers.
+export async function upsertFreteMaritimo(contratoId: string, input: FreteMaritimoInput) {
+  const data = {
+    empresaId: input.empresaId || null,
+    itensSelecionadosIds: input.itensSelecionadosIds,
+    quantidadeContainers: input.quantidadeContainers > 0 ? input.quantidadeContainers : 1,
+  };
+
+  await prisma.contratoFreteMaritimo.upsert({
+    where: { contratoId },
+    create: { contratoId, ...data },
+    update: data,
+  });
+
+  revalidateAll();
+}
+
+export type CertificadoLinhaInput = {
+  descricao: string;
+  valor: string;
+};
+
+// Certificados da etapa "Envio dos documentos para aprovacao" - varios por
+// contrato (fitossanitario, origem, qualidade etc). O custo de
+// "Certificados" e calculado sozinho a partir da soma do valor de cada um.
+export async function addContratoCertificado(contratoId: string, input: CertificadoLinhaInput) {
+  await prisma.contratoCertificado.create({
+    data: {
+      contratoId,
+      descricao: input.descricao.trim(),
+      valor: Number(input.valor) || 0,
+    },
+  });
+  revalidateAll();
+}
+
+export async function deleteContratoCertificado(id: string) {
+  await prisma.contratoCertificado.delete({ where: { id } });
+  revalidateAll();
+}
+
+export type AwbDocumentacaoInput = {
+  awbNumero: string;
+  awbValor: string;
+};
+
+// Ficha da etapa "Envio para financiamento (RTS)": numero e valor do AWB
+// usado para o envio dos documentos - o valor passa a compor o custo de
+// "Envio de documentacao (Pierdoc/Cliente)".
+export async function upsertAwbDocumentacao(contratoId: string, input: AwbDocumentacaoInput) {
+  const data = {
+    awbNumero: input.awbNumero.trim() || null,
+    awbValor: Number(input.awbValor) || 0,
+  };
+
+  await prisma.contratoAwbDocumentacao.upsert({
+    where: { contratoId },
+    create: { contratoId, ...data },
+    update: data,
+  });
+
+  revalidateAll();
+}
+
 export async function setPrevisaoEtapa(contratoId: string, etapa: StatusContratoValue, dataPrevisao: string) {
   if (!dataPrevisao) {
     await prisma.contratoEtapaPrevisao.deleteMany({ where: { contratoId, etapa } });

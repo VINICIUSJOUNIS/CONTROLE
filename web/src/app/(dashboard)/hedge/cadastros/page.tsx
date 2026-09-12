@@ -11,6 +11,8 @@ import {
   getPadroesCafe,
   getFornecedoresMarcacaoSacaria,
   getTransportadorasRodoviarias,
+  getArmadores,
+  getEmpresasFreteMaritimo,
 } from "@/lib/hedge-data";
 import { CadastrosView } from "@/components/hedge/cadastros/cadastros-view";
 
@@ -27,6 +29,8 @@ export default async function CadastrosPage() {
     padroesCafe,
     fornecedoresMarcacaoSacaria,
     transportadorasRodoviarias,
+    armadores,
+    empresasFreteMaritimo,
   ] = await Promise.all([
     getClientes(),
     getCorretoras(),
@@ -39,6 +43,8 @@ export default async function CadastrosPage() {
     getPadroesCafe(),
     getFornecedoresMarcacaoSacaria(),
     getTransportadorasRodoviarias(),
+    getArmadores(),
+    getEmpresasFreteMaritimo(),
   ]);
 
   return (
@@ -60,6 +66,8 @@ export default async function CadastrosPage() {
           padroesCafe={padroesCafe}
           fornecedoresMarcacaoSacaria={fornecedoresMarcacaoSacaria}
           transportadorasRodoviarias={transportadorasRodoviarias}
+          armadores={armadores}
+          empresasFreteMaritimo={empresasFreteMaritimo}
         />
       </div>
     </div>

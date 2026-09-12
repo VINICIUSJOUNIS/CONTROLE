@@ -7,7 +7,14 @@ import { CorretorasTable, CorretoraRow } from "@/components/hedge/cadastros/corr
 import { CatalogoSimplesTable } from "@/components/hedge/cadastros/catalogo-simples-table";
 import { FornecedoresMarcacaoSacariaTable } from "@/components/hedge/cadastros/fornecedores-marcacao-sacaria-table";
 import { TransportadorasRodoviariasTable } from "@/components/hedge/cadastros/transportadoras-rodoviarias-table";
-import { FornecedorMarcacaoSacaria, TransportadoraRodoviariaData } from "@/lib/hedge-data";
+import { ArmadoresTable } from "@/components/hedge/cadastros/armadores-table";
+import { EmpresasFreteMaritimoTable } from "@/components/hedge/cadastros/empresas-frete-maritimo-table";
+import {
+  FornecedorMarcacaoSacaria,
+  TransportadoraRodoviariaData,
+  ArmadorData,
+  EmpresaFreteMaritimoData,
+} from "@/lib/hedge-data";
 import {
   createTipoFrete,
   updateTipoFrete,
@@ -58,6 +65,8 @@ const tabs = [
   { key: "padrao", label: "Padrão" },
   { key: "marcacaoSacaria", label: "Fornecedor de Marcação" },
   { key: "transportadoraRodoviaria", label: "Transportadora Rodoviária" },
+  { key: "armador", label: "Armador" },
+  { key: "freteMaritimo", label: "Empresa de Frete Marítimo" },
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
@@ -74,6 +83,8 @@ export function CadastrosView({
   padroesCafe,
   fornecedoresMarcacaoSacaria,
   transportadorasRodoviarias,
+  armadores,
+  empresasFreteMaritimo,
 }: {
   clientes: ClienteRow[];
   corretoras: CorretoraRow[];
@@ -86,6 +97,8 @@ export function CadastrosView({
   padroesCafe: Item[];
   fornecedoresMarcacaoSacaria: FornecedorMarcacaoSacaria[];
   transportadorasRodoviarias: TransportadoraRodoviariaData[];
+  armadores: ArmadorData[];
+  empresasFreteMaritimo: EmpresaFreteMaritimoData[];
 }) {
   const [tab, setTab] = useState<TabKey>("clientes");
 
@@ -184,6 +197,8 @@ export function CadastrosView({
       {tab === "transportadoraRodoviaria" && (
         <TransportadorasRodoviariasTable transportadoras={transportadorasRodoviarias} />
       )}
+      {tab === "armador" && <ArmadoresTable armadores={armadores} />}
+      {tab === "freteMaritimo" && <EmpresasFreteMaritimoTable empresas={empresasFreteMaritimo} />}
     </div>
   );
 }
