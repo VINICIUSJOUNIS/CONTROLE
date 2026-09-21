@@ -634,6 +634,8 @@ model ContratoExportacao {
   traducao                 Decimal @default(0) @db.Decimal(18, 2)
   legalizacao              Decimal @default(0) @db.Decimal(18, 2)
   apostilamento            Decimal @default(0) @db.Decimal(18, 2)
+  bancoCartaBordero        Decimal @default(0) @db.Decimal(18, 2)
+  awbBancoCliente          Decimal @default(0) @db.Decimal(18, 2)
   financiamentoRts         Decimal @default(0) @db.Decimal(18, 2)
   diariaContainerDetention Decimal @default(0) @db.Decimal(18, 2)
   despesasRedex            Decimal @default(0) @db.Decimal(18, 2)

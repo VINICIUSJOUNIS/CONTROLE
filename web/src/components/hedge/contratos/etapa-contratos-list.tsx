@@ -33,6 +33,8 @@ import {
   CustosEnvioDocumentosInput,
   updateCustoFinanciamento,
   updateCustosTraducaoLegalizacao,
+  updateCustosCartaBordero,
+  CustosCartaBorderoInput,
   CustosTraducaoLegalizacaoInput,
   StatusContratoValue,
 } from "@/app/(dashboard)/hedge/contratos/actions";
@@ -1082,6 +1084,63 @@ function AwbDocumentacaoSection({
 // Edicao rapida do custo de traducao e de legalizacao (se aplicavel)
 // direto no card da etapa Traducao e pedido de legalizacao, mesmo padrao
 // de salvar-ao-perder-foco do CustosEstufagemSection.
+// Edicao rapida do custo do banco para emissao da carta bordero e do custo
+// do AWB de envio dos documentos para o banco do cliente, direto no card da
+// etapa Emissao da carta bordero, mesmo padrao de salvar-ao-perder-foco do
+// CustosEstufagemSection.
+function CustosCartaBorderoSection({
+  contratoId,
+  custos,
+}: {
+  contratoId: string;
+  custos: CustosCartaBorderoInput;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(custos);
+  const [isPending, startTransition] = useTransition();
+
+  function handleBlur() {
+    if (
+      value.bancoCartaBordero === custos.bancoCartaBordero &&
+      value.awbBancoCliente === custos.awbBancoCliente
+    )
+      return;
+    startTransition(async () => {
+      await updateCustosCartaBordero(contratoId, value);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Custo do banco para emissão da carta (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.bancoCartaBordero}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, bancoCartaBordero: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Custo do AWB de envio dos documentos para o banco do cliente (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.awbBancoCliente}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, awbBancoCliente: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+    </div>
+  );
+}
+
 function CustosTraducaoLegalizacaoSection({
   contratoId,
   custos,
@@ -2032,6 +2091,16 @@ export function EtapaContratosList({
                       traducao: String(item.despesas.traducao),
                       legalizacao: String(item.despesas.legalizacao),
                       apostilamento: String(item.despesas.apostilamento),
+                    }}
+                  />
+                )}
+
+                {status === "EMISSAO_CARTA_BORDERO" && (
+                  <CustosCartaBorderoSection
+                    contratoId={item.id}
+                    custos={{
+                      bancoCartaBordero: String(item.despesas.bancoCartaBordero),
+                      awbBancoCliente: String(item.despesas.awbBancoCliente),
                     }}
                   />
                 )}

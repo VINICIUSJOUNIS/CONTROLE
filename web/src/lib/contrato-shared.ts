@@ -200,6 +200,8 @@ export const despesaLabels: Record<keyof DespesasContratoInput, string> = {
   traducao: "Traducao",
   legalizacao: "Legalizacao",
   apostilamento: "Apostilamento",
+  bancoCartaBordero: "Custo do banco para emissao da carta bordero",
+  awbBancoCliente: "AWB de envio dos documentos para o banco do cliente",
   financiamentoRts: "Financiamento RTS",
   diariaContainerDetention: "Diaria de container / Detention",
   despesasRedex: "Despesas com Redex",

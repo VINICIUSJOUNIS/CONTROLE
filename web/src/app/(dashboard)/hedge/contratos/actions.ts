@@ -47,6 +47,8 @@ export type DespesasContratoInput = {
   traducao: number;
   legalizacao: number;
   apostilamento: number;
+  bancoCartaBordero: number;
+  awbBancoCliente: number;
   financiamentoRts: number;
   diariaContainerDetention: number;
   despesasRedex: number;
@@ -298,6 +300,27 @@ export async function updateCustosTraducaoLegalizacao(id: string, input: CustosT
       traducao: Number(input.traducao) || 0,
       legalizacao: Number(input.legalizacao) || 0,
       apostilamento: Number(input.apostilamento) || 0,
+    },
+  });
+
+  revalidateAll();
+  revalidatePath("/hedge/mesa-operacao/[slug]", "page");
+}
+
+export type CustosCartaBorderoInput = {
+  bancoCartaBordero: string;
+  awbBancoCliente: string;
+};
+
+// Edicao rapida do custo do banco para emissao da carta bordero e do custo
+// do AWB de envio dos documentos para o banco do cliente, direto no card da
+// etapa Emissao da carta bordero da Mesa de Operacao.
+export async function updateCustosCartaBordero(id: string, input: CustosCartaBorderoInput) {
+  await prisma.contratoExportacao.update({
+    where: { id },
+    data: {
+      bancoCartaBordero: Number(input.bancoCartaBordero) || 0,
+      awbBancoCliente: Number(input.awbBancoCliente) || 0,
     },
   });
 

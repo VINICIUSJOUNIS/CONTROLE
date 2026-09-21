@@ -141,6 +141,8 @@ const despesaFields = [
   "traducao",
   "legalizacao",
   "apostilamento",
+  "bancoCartaBordero",
+  "awbBancoCliente",
   "financiamentoRts",
   "diariaContainerDetention",
   "despesasRedex",
