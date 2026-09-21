@@ -204,14 +204,27 @@ export function ContratosTable({
     });
   }
 
+  function deleteById(id: string, contractNumber: string) {
+    if (
+      !window.confirm(
+        `Excluir o contrato ${contractNumber}? Todos os dados da operacao (custos, anexos, vinculos) tambem serao excluidos. Esta acao nao pode ser desfeita.`
+      )
+    )
+      return;
+    startTransition(async () => {
+      try {
+        await deleteContrato(id);
+        setOpen(false);
+        router.refresh();
+      } catch {
+        setError("Nao foi possivel excluir o contrato.");
+      }
+    });
+  }
+
   function handleDelete() {
     if (!editingId) return;
-    if (!window.confirm("Excluir este contrato de exportacao? Esta acao nao pode ser desfeita.")) return;
-    startTransition(async () => {
-      await deleteContrato(editingId);
-      setOpen(false);
-      router.refresh();
-    });
+    deleteById(editingId, form.contractNumber || "selecionado");
   }
 
   return (
@@ -502,12 +515,23 @@ export function ContratosTable({
                     {row.dataChegada ? formatDate(row.dataChegada) : <span className="text-muted">-</span>}
                   </td>
                   <td className="px-4 py-2.5">
-                    <button
-                      onClick={() => openEdit(row)}
-                      className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
-                    >
-                      <Pencil size={14} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEdit(row)}
+                        className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
+                        title="Editar"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => deleteById(row.id, row.contractNumber)}
+                        disabled={isPending}
+                        className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-danger"
+                        title="Excluir contrato"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
