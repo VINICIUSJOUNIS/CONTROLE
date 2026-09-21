@@ -61,6 +61,7 @@ import {
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
 import {
   statusOrder,
+  statusToSlug,
   statusLabels,
   etapaStatusOptions,
   etapaStatusLabels,
@@ -1615,7 +1616,7 @@ function VoltarMenu({ contratoId, currentStatus }: { contratoId: string; current
     if (!target) return;
     startTransition(async () => {
       await updateContratoStatus(contratoId, target as StatusContratoValue);
-      router.refresh();
+      router.push(`/hedge/mesa-operacao/${statusToSlug(target as StatusContratoValue)}?contrato=${contratoId}`);
     });
   }
 
@@ -1650,7 +1651,7 @@ function AvancarMenu({ contratoId, currentStatus }: { contratoId: string; curren
     if (!target) return;
     startTransition(async () => {
       await updateContratoStatus(contratoId, target as StatusContratoValue);
-      router.refresh();
+      router.push(`/hedge/mesa-operacao/${statusToSlug(target as StatusContratoValue)}?contrato=${contratoId}`);
     });
   }
 
@@ -1794,25 +1795,21 @@ export function EtapaContratosList({
   certificadosPorContrato?: Record<string, CertificadoLinha[]>;
   fichasAwbDocumentacao?: Record<string, AwbDocumentacaoData>;
 }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const contratoParam = searchParams.get("contrato");
-  const [, startTransition] = useTransition();
   const [expandedId, setExpandedId] = useState<string | null>(contratoParam);
+
+  const [prevContratoParam, setPrevContratoParam] = useState(contratoParam);
+  if (contratoParam !== prevContratoParam) {
+    setPrevContratoParam(contratoParam);
+    setExpandedId(contratoParam);
+  }
 
   useEffect(() => {
     if (contratoParam) {
       document.getElementById(`contrato-${contratoParam}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function goToStatus(id: string, target: StatusContratoValue) {
-    startTransition(async () => {
-      await updateContratoStatus(id, target);
-      router.refresh();
-    });
-  }
+  }, [contratoParam]);
 
   if (contratos.length === 0) {
     return <Card className="p-6 text-center text-sm text-muted">Nenhum contrato nesta etapa.</Card>;

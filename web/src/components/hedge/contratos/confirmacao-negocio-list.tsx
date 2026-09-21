@@ -13,7 +13,7 @@ import {
   createContratoComConfirmacao,
   ConfirmacaoNegocioInput,
 } from "@/app/(dashboard)/hedge/mesa-operacao/actions";
-import { Cliente, Corretora, statusOrder, EtapaStatusValue } from "@/lib/contrato-shared";
+import { Cliente, Corretora, statusOrder, statusToSlug, EtapaStatusValue } from "@/lib/contrato-shared";
 import { COUNTRIES } from "@/lib/countries";
 import { updateContratoStatus, StatusContratoValue } from "@/app/(dashboard)/hedge/contratos/actions";
 import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
@@ -187,7 +187,7 @@ export function ConfirmacaoNegocioList({
     const nextStatus = statusOrder[nextIndex];
     startTransition(async () => {
       await updateContratoStatus(id, nextStatus);
-      router.refresh();
+      router.push(`/hedge/mesa-operacao/${statusToSlug(nextStatus)}?contrato=${id}`);
     });
   }
 
