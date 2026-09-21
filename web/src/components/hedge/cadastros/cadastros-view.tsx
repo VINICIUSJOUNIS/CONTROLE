@@ -21,6 +21,11 @@ import {
   deleteTipoFrete,
 } from "@/app/(dashboard)/hedge/mesa-operacao/tipos-frete/actions";
 import {
+  createTipoFixacao,
+  updateTipoFixacao,
+  deleteTipoFixacao,
+} from "@/app/(dashboard)/hedge/mesa-operacao/tipos-fixacao/actions";
+import {
   createTipoEmbalagem,
   updateTipoEmbalagem,
   deleteTipoEmbalagem,
@@ -57,6 +62,7 @@ const tabs = [
   { key: "clientes", label: "Clientes" },
   { key: "corretoras", label: "Corretoras" },
   { key: "frete", label: "Tipo de Frete" },
+  { key: "fixacao", label: "Tipo de Fixação" },
   { key: "embalagem", label: "Tipo de Embalagem" },
   { key: "pagamento", label: "Forma de Pagamento" },
   { key: "amostra", label: "Tipo de Amostra" },
@@ -75,6 +81,7 @@ export function CadastrosView({
   clientes,
   corretoras,
   tiposFrete,
+  tiposFixacao,
   tiposEmbalagem,
   formasPagamento,
   tiposAmostra,
@@ -89,6 +96,7 @@ export function CadastrosView({
   clientes: ClienteRow[];
   corretoras: CorretoraRow[];
   tiposFrete: Item[];
+  tiposFixacao: Item[];
   tiposEmbalagem: Item[];
   formasPagamento: Item[];
   tiposAmostra: Item[];
@@ -129,6 +137,16 @@ export function CadastrosView({
           createAction={createTipoFrete}
           updateAction={updateTipoFrete}
           deleteAction={deleteTipoFrete}
+        />
+      )}
+      {tab === "fixacao" && (
+        <CatalogoSimplesTable
+          itemLabel="Tipo de fixação"
+          placeholder="Ex: Buyer, Seller"
+          items={tiposFixacao}
+          createAction={createTipoFixacao}
+          updateAction={updateTipoFixacao}
+          deleteAction={deleteTipoFixacao}
         />
       )}
       {tab === "embalagem" && (

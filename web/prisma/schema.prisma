@@ -681,7 +681,8 @@ model ContratoConfirmacaoNegocio {
   formaPagamento        FormaPagamento?    @relation(fields: [formaPagamentoId], references: [id])
   formaPagamentoId      String?
   diferencial           Decimal?           @db.Decimal(10, 4)
-  fixacaoTipo           String?
+  fixacaoTipo           TipoFixacao?       @relation(fields: [fixacaoTipoId], references: [id])
+  fixacaoTipoId         String?
   dataFixacao           DateTime?          @db.Date
   nivelBolsa            Decimal?           @db.Decimal(10, 4)
   valorDolar            Decimal?           @db.Decimal(10, 4)
@@ -691,6 +692,7 @@ model ContratoConfirmacaoNegocio {
   @@index([corretoraId])
   @@index([clienteId])
   @@index([tipoFreteId])
+  @@index([fixacaoTipoId])
   @@index([tipoEmbalagemId])
   @@index([formaPagamentoId])
   @@index([peneiraId])
@@ -707,6 +709,17 @@ model TipoFrete {
   createdAt           DateTime                     @default(now())
 
   @@map("tipos_frete")
+}
+
+// Lista de tipos de fixacao cadastraveis (ex: Buyer, Seller), usada na ficha
+// da etapa Confirmacao de Negocio da Mesa de Operacao.
+model TipoFixacao {
+  id                  String                       @id @default(uuid())
+  name                String                       @unique
+  confirmacoesNegocio ContratoConfirmacaoNegocio[]
+  createdAt           DateTime                     @default(now())
+
+  @@map("tipos_fixacao")
 }
 
 // Lista de tipos de embalagem cadastraveis (ex: Saca 60kg, Big bag), usada na

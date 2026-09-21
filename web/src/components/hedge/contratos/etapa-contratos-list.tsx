@@ -1841,7 +1841,7 @@ export function ConfirmacaoNegocioResumo({
       })}`,
     ]);
   if (dados.tipoFreteNome) linhas.push(["Frete", dados.tipoFreteNome]);
-  if (dados.fixacaoTipo) linhas.push(["Fixação", dados.fixacaoTipo === "BUYER" ? "Buyer" : "Seller"]);
+  if (dados.fixacaoTipoNome) linhas.push(["Fixação", dados.fixacaoTipoNome]);
   if (dados.dataFixacao) linhas.push(["Data da fixação", formatDate(dados.dataFixacao)]);
   if (dados.nivelBolsa != null) linhas.push(["Nível de bolsa", String(dados.nivelBolsa)]);
   if (dados.valorDolar != null) linhas.push(["Valor do dólar", String(dados.valorDolar)]);

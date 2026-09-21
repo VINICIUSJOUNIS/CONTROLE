@@ -8,6 +8,7 @@ import {
   getClientes,
   getCorretoras,
   getTiposFrete,
+  getTiposFixacao,
   getTiposEmbalagem,
   getFormasPagamento,
   getPeneiras,
@@ -80,6 +81,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
     clientes,
     corretoras,
     tiposFrete,
+    tiposFixacao,
     tiposEmbalagem,
     formasPagamento,
     peneiras,
@@ -93,6 +95,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
     getClientes(),
     getCorretoras(),
     getTiposFrete(),
+    getTiposFixacao(),
     getTiposEmbalagem(),
     getFormasPagamento(),
     getPeneiras(),
@@ -111,6 +114,7 @@ async function ConfirmacaoNegocioEtapa({ contratos }: { contratos: Awaited<Retur
         clientes={clientes}
         corretoras={corretoras}
         tiposFrete={tiposFrete}
+        tiposFixacao={tiposFixacao}
         tiposEmbalagem={tiposEmbalagem}
         formasPagamento={formasPagamento}
         peneiras={peneiras}

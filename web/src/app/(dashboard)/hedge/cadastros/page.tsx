@@ -3,6 +3,7 @@ import {
   getClientes,
   getCorretoras,
   getTiposFrete,
+  getTiposFixacao,
   getTiposEmbalagem,
   getFormasPagamento,
   getTiposAmostra,
@@ -21,6 +22,7 @@ export default async function CadastrosPage() {
     clientes,
     corretoras,
     tiposFrete,
+    tiposFixacao,
     tiposEmbalagem,
     formasPagamento,
     tiposAmostra,
@@ -35,6 +37,7 @@ export default async function CadastrosPage() {
     getClientes(),
     getCorretoras(),
     getTiposFrete(),
+    getTiposFixacao(),
     getTiposEmbalagem(),
     getFormasPagamento(),
     getTiposAmostra(),
@@ -58,6 +61,7 @@ export default async function CadastrosPage() {
           clientes={clientes}
           corretoras={corretoras}
           tiposFrete={tiposFrete}
+          tiposFixacao={tiposFixacao}
           tiposEmbalagem={tiposEmbalagem}
           formasPagamento={formasPagamento}
           tiposAmostra={tiposAmostra}

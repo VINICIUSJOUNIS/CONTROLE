@@ -175,7 +175,8 @@ export type ConfirmacaoNegocioData = {
   formaPagamentoId: string | null;
   formaPagamentoNome: string | null;
   diferencial: number | null;
-  fixacaoTipo: string | null;
+  fixacaoTipoId: string | null;
+  fixacaoTipoNome: string | null;
   dataFixacao: string | null;
   nivelBolsa: number | null;
   valorDolar: number | null;
@@ -183,6 +184,11 @@ export type ConfirmacaoNegocioData = {
 
 export async function getTiposFrete() {
   const tipos = await prisma.tipoFrete.findMany({ orderBy: { name: "asc" } });
+  return tipos.map((t) => ({ id: t.id, name: t.name }));
+}
+
+export async function getTiposFixacao() {
+  const tipos = await prisma.tipoFixacao.findMany({ orderBy: { name: "asc" } });
   return tipos.map((t) => ({ id: t.id, name: t.name }));
 }
 
@@ -670,6 +676,7 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
       cliente: true,
       corretora: true,
       tipoFrete: true,
+      fixacaoTipo: true,
       tipoEmbalagem: true,
       formaPagamento: true,
       peneira: true,
@@ -704,7 +711,8 @@ export async function getConfirmacoesNegocio(): Promise<Record<string, Confirmac
         formaPagamentoId: r.formaPagamentoId,
         formaPagamentoNome: r.formaPagamento?.name ?? null,
         diferencial: r.diferencial != null ? Number(r.diferencial) : null,
-        fixacaoTipo: r.fixacaoTipo,
+        fixacaoTipoId: r.fixacaoTipoId,
+        fixacaoTipoNome: r.fixacaoTipo?.name ?? null,
         dataFixacao: r.dataFixacao ? toISODate(r.dataFixacao) : null,
         nivelBolsa: r.nivelBolsa != null ? Number(r.nivelBolsa) : null,
         valorDolar: r.valorDolar != null ? Number(r.valorDolar) : null,

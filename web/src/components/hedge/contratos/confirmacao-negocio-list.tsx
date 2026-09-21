@@ -19,6 +19,7 @@ import { updateContratoStatus, StatusContratoValue } from "@/app/(dashboard)/hed
 import { NovoCliente } from "@/components/hedge/clientes/novo-cliente";
 import { NovaCorretora } from "@/components/hedge/corretoras/nova-corretora";
 import { NovoTipoFrete } from "@/components/hedge/contratos/novo-tipo-frete";
+import { NovoTipoFixacao } from "@/components/hedge/contratos/novo-tipo-fixacao";
 import { NovoTipoEmbalagem } from "@/components/hedge/contratos/novo-tipo-embalagem";
 import { NovaFormaPagamento } from "@/components/hedge/contratos/nova-forma-pagamento";
 import { NovaPeneira } from "@/components/hedge/contratos/nova-peneira";
@@ -64,7 +65,7 @@ function emptyForm(): ConfirmacaoNegocioInput {
     destinoCarga: "",
     formaPagamentoId: "",
     diferencial: "",
-    fixacaoTipo: "",
+    fixacaoTipoId: "",
     dataFixacao: "",
     nivelBolsa: "",
     valorDolar: "",
@@ -92,7 +93,7 @@ function formFromData(data: ConfirmacaoNegocioData, contrato: ContratoRow | unde
     destinoCarga: data.destinoCarga ?? "",
     formaPagamentoId: data.formaPagamentoId ?? "",
     diferencial: data.diferencial != null ? String(data.diferencial) : "",
-    fixacaoTipo: data.fixacaoTipo ?? "",
+    fixacaoTipoId: data.fixacaoTipoId ?? "",
     dataFixacao: data.dataFixacao ?? "",
     nivelBolsa: data.nivelBolsa != null ? String(data.nivelBolsa) : "",
     valorDolar: data.valorDolar != null ? String(data.valorDolar) : "",
@@ -105,6 +106,7 @@ export function ConfirmacaoNegocioList({
   clientes,
   corretoras,
   tiposFrete,
+  tiposFixacao,
   tiposEmbalagem,
   formasPagamento,
   peneiras,
@@ -119,6 +121,7 @@ export function ConfirmacaoNegocioList({
   clientes: Cliente[];
   corretoras: Corretora[];
   tiposFrete: { id: string; name: string }[];
+  tiposFixacao: { id: string; name: string }[];
   tiposEmbalagem: { id: string; name: string }[];
   formasPagamento: { id: string; name: string }[];
   peneiras: { id: string; name: string }[];
@@ -406,10 +409,10 @@ export function ConfirmacaoNegocioList({
                           <dd>{dados.tipoFreteNome}</dd>
                         </div>
                       )}
-                      {dados.fixacaoTipo && (
+                      {dados.fixacaoTipoNome && (
                         <div className="flex justify-between gap-2">
                           <dt className="text-muted">Fixação</dt>
-                          <dd>{dados.fixacaoTipo === "BUYER" ? "Buyer" : "Seller"}</dd>
+                          <dd>{dados.fixacaoTipoNome}</dd>
                         </div>
                       )}
                       {dados.dataFixacao && (
@@ -645,14 +648,20 @@ export function ConfirmacaoNegocioList({
               </div>
               <div>
                 <Label>Fixação</Label>
-                <Select
-                  value={form.fixacaoTipo}
-                  onChange={(e) => setForm({ ...form, fixacaoTipo: e.target.value })}
-                >
-                  <option value="">Selecione...</option>
-                  <option value="BUYER">Buyer</option>
-                  <option value="SELLER">Seller</option>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={form.fixacaoTipoId}
+                    onChange={(e) => setForm({ ...form, fixacaoTipoId: e.target.value })}
+                  >
+                    <option value="">Selecione...</option>
+                    {tiposFixacao.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </Select>
+                  <NovoTipoFixacao compact />
+                </div>
               </div>
               <div>
                 <Label>Data da Fixação</Label>
