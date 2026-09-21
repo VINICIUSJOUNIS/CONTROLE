@@ -526,10 +526,12 @@ function CustosRecebimentoBLSection({
   contratoId,
   custos,
   freteMaritimoPorTabela,
+  taxasLocaisPorTabela,
 }: {
   contratoId: string;
   custos: CustosRecebimentoBLInput;
   freteMaritimoPorTabela: boolean;
+  taxasLocaisPorTabela: boolean;
 }) {
   const router = useRouter();
   const [value, setValue] = useState(custos);
@@ -539,7 +541,8 @@ function CustosRecebimentoBLSection({
     if (
       value.correcaoBL === custos.correcaoBL &&
       value.despesasPortuarias === custos.despesasPortuarias &&
-      value.freteMaritimo === custos.freteMaritimo
+      value.freteMaritimo === custos.freteMaritimo &&
+      value.taxasLocaisArmador === custos.taxasLocaisArmador
     )
       return;
     startTransition(async () => {
@@ -549,7 +552,20 @@ function CustosRecebimentoBLSection({
   }
 
   return (
-    <div className="mt-3 grid grid-cols-3 gap-3 border-t border-border pt-2">
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Taxas locais do armador (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.taxasLocaisArmador}
+          disabled={isPending || taxasLocaisPorTabela}
+          title={taxasLocaisPorTabela ? "Calculado pelos itens da tabela do armador" : undefined}
+          onChange={(e) => setValue({ ...value, taxasLocaisArmador: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs disabled:opacity-60"
+        />
+      </label>
       <label className="text-xs text-muted">
         Frete marítimo (se aplicável) (R$)
         <input
@@ -2110,8 +2126,10 @@ export function EtapaContratosList({
                         correcaoBL: String(item.despesas.correcaoBL),
                         despesasPortuarias: String(item.despesas.despesasPortuarias),
                         freteMaritimo: String(item.despesas.freteMaritimo),
+                        taxasLocaisArmador: String(item.despesas.taxasLocaisArmador),
                       }}
                       freteMaritimoPorTabela={(fichasFreteMaritimo?.[item.id]?.itensSelecionadosIds.length ?? 0) > 0}
+                      taxasLocaisPorTabela={(fichasTaxasLocaisArmador?.[item.id]?.itensSelecionadosIds.length ?? 0) > 0}
                     />
                     <TaxasLocaisArmadorSection
                       contratoId={item.id}

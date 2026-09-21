@@ -230,6 +230,7 @@ export type CustosRecebimentoBLInput = {
   correcaoBL: string;
   despesasPortuarias: string;
   freteMaritimo: string;
+  taxasLocaisArmador: string;
 };
 
 // Edicao rapida da correcao de BL (se aplicavel), das taxas portuarias e do
@@ -245,6 +246,7 @@ export async function updateCustosRecebimentoBL(id: string, input: CustosRecebim
       correcaoBL: Number(input.correcaoBL) || 0,
       despesasPortuarias: Number(input.despesasPortuarias) || 0,
       freteMaritimo: Number(input.freteMaritimo) || 0,
+      taxasLocaisArmador: Number(input.taxasLocaisArmador) || 0,
     },
   });
 
