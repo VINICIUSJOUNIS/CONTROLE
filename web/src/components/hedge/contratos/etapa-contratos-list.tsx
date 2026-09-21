@@ -34,6 +34,8 @@ import {
   updateCustoFinanciamento,
   updateCustosTraducaoLegalizacao,
   updateCustosCartaBordero,
+  updateCustosEnvioBl,
+  CustosEnvioBlInput,
   CustosCartaBorderoInput,
   CustosTraducaoLegalizacaoInput,
   StatusContratoValue,
@@ -1088,6 +1090,58 @@ function AwbDocumentacaoSection({
 // do AWB de envio dos documentos para o banco do cliente, direto no card da
 // etapa Emissao da carta bordero, mesmo padrao de salvar-ao-perder-foco do
 // CustosEstufagemSection.
+// Edicao rapida do custo de seaway bill e de telex release (se aplicavel)
+// direto no card da etapa Envio do BL original, mesmo padrao de
+// salvar-ao-perder-foco do CustosEstufagemSection.
+function CustosEnvioBlSection({
+  contratoId,
+  custos,
+}: {
+  contratoId: string;
+  custos: CustosEnvioBlInput;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(custos);
+  const [isPending, startTransition] = useTransition();
+
+  function handleBlur() {
+    if (value.seawayBill === custos.seawayBill && value.telexRelease === custos.telexRelease) return;
+    startTransition(async () => {
+      await updateCustosEnvioBl(contratoId, value);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+      <label className="text-xs text-muted">
+        Seaway bill (se aplicável) (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.seawayBill}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, seawayBill: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Telex release (se aplicável) (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.telexRelease}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, telexRelease: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+    </div>
+  );
+}
+
 function CustosCartaBorderoSection({
   contratoId,
   custos,
@@ -2106,7 +2160,16 @@ export function EtapaContratosList({
                 )}
 
                 {status === "ENVIO_BL_ORIGINAL_TELEX" && (
-                  <ContratoFinalizadoSection contratoId={item.id} finalizado={item.contratoFinalizado} />
+                  <>
+                    <CustosEnvioBlSection
+                      contratoId={item.id}
+                      custos={{
+                        seawayBill: String(item.despesas.seawayBill),
+                        telexRelease: String(item.despesas.telexRelease),
+                      }}
+                    />
+                    <ContratoFinalizadoSection contratoId={item.id} finalizado={item.contratoFinalizado} />
+                  </>
                 )}
 
                 <CustosResumo item={item} />
