@@ -140,6 +140,7 @@ const despesaFields = [
   "telexRelease",
   "traducao",
   "legalizacao",
+  "apostilamento",
   "financiamentoRts",
   "diariaContainerDetention",
   "despesasRedex",

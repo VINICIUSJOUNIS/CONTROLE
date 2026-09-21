@@ -1094,7 +1094,12 @@ function CustosTraducaoLegalizacaoSection({
   const [isPending, startTransition] = useTransition();
 
   function handleBlur() {
-    if (value.traducao === custos.traducao && value.legalizacao === custos.legalizacao) return;
+    if (
+      value.traducao === custos.traducao &&
+      value.legalizacao === custos.legalizacao &&
+      value.apostilamento === custos.apostilamento
+    )
+      return;
     startTransition(async () => {
       await updateCustosTraducaoLegalizacao(contratoId, value);
       router.refresh();
@@ -1102,7 +1107,7 @@ function CustosTraducaoLegalizacaoSection({
   }
 
   return (
-    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+    <div className="mt-3 grid grid-cols-3 gap-3 border-t border-border pt-2">
       <label className="text-xs text-muted">
         Tradução (se aplicável) (R$)
         <input
@@ -1123,6 +1128,18 @@ function CustosTraducaoLegalizacaoSection({
           value={value.legalizacao}
           disabled={isPending}
           onChange={(e) => setValue({ ...value, legalizacao: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Apostilamento (se aplicável) (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.apostilamento}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, apostilamento: e.target.value })}
           onBlur={handleBlur}
           className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
         />
@@ -2014,6 +2031,7 @@ export function EtapaContratosList({
                     custos={{
                       traducao: String(item.despesas.traducao),
                       legalizacao: String(item.despesas.legalizacao),
+                      apostilamento: String(item.despesas.apostilamento),
                     }}
                   />
                 )}

@@ -46,6 +46,7 @@ export type DespesasContratoInput = {
   telexRelease: number;
   traducao: number;
   legalizacao: number;
+  apostilamento: number;
   financiamentoRts: number;
   diariaContainerDetention: number;
   despesasRedex: number;
@@ -285,9 +286,10 @@ export async function updateCustoFinanciamento(id: string, valor: string) {
 export type CustosTraducaoLegalizacaoInput = {
   traducao: string;
   legalizacao: string;
+  apostilamento: string;
 };
 
-// Edicao rapida do custo de traducao e de legalizacao (se aplicavel) direto
+// Edicao rapida do custo de traducao, legalizacao e apostilamento (se aplicavel) direto
 // no card da etapa Traducao e pedido de legalizacao da Mesa de Operacao.
 export async function updateCustosTraducaoLegalizacao(id: string, input: CustosTraducaoLegalizacaoInput) {
   await prisma.contratoExportacao.update({
@@ -295,6 +297,7 @@ export async function updateCustosTraducaoLegalizacao(id: string, input: CustosT
     data: {
       traducao: Number(input.traducao) || 0,
       legalizacao: Number(input.legalizacao) || 0,
+      apostilamento: Number(input.apostilamento) || 0,
     },
   });
 

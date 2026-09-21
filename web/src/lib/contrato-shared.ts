@@ -199,6 +199,7 @@ export const despesaLabels: Record<keyof DespesasContratoInput, string> = {
   telexRelease: "Telex release",
   traducao: "Traducao",
   legalizacao: "Legalizacao",
+  apostilamento: "Apostilamento",
   financiamentoRts: "Financiamento RTS",
   diariaContainerDetention: "Diaria de container / Detention",
   despesasRedex: "Despesas com Redex",
