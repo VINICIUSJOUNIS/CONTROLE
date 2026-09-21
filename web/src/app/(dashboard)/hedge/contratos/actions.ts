@@ -44,6 +44,7 @@ export type DespesasContratoInput = {
   freteEntregaSacaria: number;
   envioDocumentacao: number;
   seawayBill: number;
+  envioDocumentosCliente: number;
   telexRelease: number;
   traducao: number;
   legalizacao: number;
@@ -332,10 +333,11 @@ export async function updateCustosCartaBordero(id: string, input: CustosCartaBor
 export type CustosEnvioBlInput = {
   seawayBill: string;
   telexRelease: string;
+  envioDocumentosCliente: string;
 };
 
-// Edicao rapida do custo de seaway bill e de telex release (se aplicavel)
-// direto no card da etapa Envio do BL original / Seaway Bill / Telex Release
+// Edicao rapida do custo de seaway bill, telex release (se aplicavel) e
+// envio dos documentos para o cliente direto no card da etapa Envio do BL original / Seaway Bill / Telex Release
 // da Mesa de Operacao.
 export async function updateCustosEnvioBl(id: string, input: CustosEnvioBlInput) {
   await prisma.contratoExportacao.update({
@@ -343,6 +345,7 @@ export async function updateCustosEnvioBl(id: string, input: CustosEnvioBlInput)
     data: {
       seawayBill: Number(input.seawayBill) || 0,
       telexRelease: Number(input.telexRelease) || 0,
+      envioDocumentosCliente: Number(input.envioDocumentosCliente) || 0,
     },
   });
 

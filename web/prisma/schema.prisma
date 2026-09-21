@@ -637,6 +637,7 @@ model ContratoExportacao {
   bancoCartaBordero        Decimal @default(0) @db.Decimal(18, 2)
   awbBancoCliente          Decimal @default(0) @db.Decimal(18, 2)
   seawayBill               Decimal @default(0) @db.Decimal(18, 2)
+  envioDocumentosCliente   Decimal @default(0) @db.Decimal(18, 2)
   financiamentoRts         Decimal @default(0) @db.Decimal(18, 2)
   diariaContainerDetention Decimal @default(0) @db.Decimal(18, 2)
   despesasRedex            Decimal @default(0) @db.Decimal(18, 2)

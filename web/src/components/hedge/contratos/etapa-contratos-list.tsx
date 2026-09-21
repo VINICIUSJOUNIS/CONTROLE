@@ -1105,7 +1105,12 @@ function CustosEnvioBlSection({
   const [isPending, startTransition] = useTransition();
 
   function handleBlur() {
-    if (value.seawayBill === custos.seawayBill && value.telexRelease === custos.telexRelease) return;
+    if (
+      value.seawayBill === custos.seawayBill &&
+      value.telexRelease === custos.telexRelease &&
+      value.envioDocumentosCliente === custos.envioDocumentosCliente
+    )
+      return;
     startTransition(async () => {
       await updateCustosEnvioBl(contratoId, value);
       router.refresh();
@@ -1113,7 +1118,7 @@ function CustosEnvioBlSection({
   }
 
   return (
-    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-2">
+    <div className="mt-3 grid grid-cols-3 gap-3 border-t border-border pt-2">
       <label className="text-xs text-muted">
         Seaway bill (se aplicável) (R$)
         <input
@@ -1134,6 +1139,18 @@ function CustosEnvioBlSection({
           value={value.telexRelease}
           disabled={isPending}
           onChange={(e) => setValue({ ...value, telexRelease: e.target.value })}
+          onBlur={handleBlur}
+          className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
+        />
+      </label>
+      <label className="text-xs text-muted">
+        Envio dos documentos para o cliente (R$)
+        <input
+          type="number"
+          step="0.01"
+          value={value.envioDocumentosCliente}
+          disabled={isPending}
+          onChange={(e) => setValue({ ...value, envioDocumentosCliente: e.target.value })}
           onBlur={handleBlur}
           className="mt-1 block w-full rounded border border-border bg-background px-1.5 py-1 text-xs"
         />
@@ -2166,6 +2183,7 @@ export function EtapaContratosList({
                       custos={{
                         seawayBill: String(item.despesas.seawayBill),
                         telexRelease: String(item.despesas.telexRelease),
+                        envioDocumentosCliente: String(item.despesas.envioDocumentosCliente),
                       }}
                     />
                     <ContratoFinalizadoSection contratoId={item.id} finalizado={item.contratoFinalizado} />

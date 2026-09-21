@@ -197,6 +197,7 @@ export const despesaLabels: Record<keyof DespesasContratoInput, string> = {
   freteEntregaSacaria: "Frete de entrega de sacaria",
   envioDocumentacao: "Envio de documentacao (Pierdoc/Cliente)",
   seawayBill: "Seaway bill",
+  envioDocumentosCliente: "Envio dos documentos para o cliente",
   telexRelease: "Telex release",
   traducao: "Traducao",
   legalizacao: "Legalizacao",

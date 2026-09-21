@@ -138,6 +138,7 @@ const despesaFields = [
   "freteEntregaSacaria",
   "envioDocumentacao",
   "seawayBill",
+  "envioDocumentosCliente",
   "telexRelease",
   "traducao",
   "legalizacao",
