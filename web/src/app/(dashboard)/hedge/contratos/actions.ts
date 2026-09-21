@@ -224,18 +224,22 @@ export async function updateCustosEstufagem(id: string, input: CustosEstufagemIn
 export type CustosRecebimentoBLInput = {
   correcaoBL: string;
   despesasPortuarias: string;
+  freteMaritimo: string;
 };
 
-// Edicao rapida da correcao de BL (se aplicavel) e das taxas portuarias
-// direto no card da etapa Recebimento do BL da Mesa de Operacao. As taxas
-// locais do armador e o frete maritimo sao calculados a parte (ver
-// upsertTaxasLocaisArmador e upsertFreteMaritimo).
+// Edicao rapida da correcao de BL (se aplicavel), das taxas portuarias e do
+// valor direto do frete maritimo (se aplicavel) no card da etapa
+// Recebimento do BL da Mesa de Operacao. As taxas locais do armador e o
+// frete maritimo por tabela sao calculados a parte (ver
+// upsertTaxasLocaisArmador e upsertFreteMaritimo) e, quando ha itens
+// escolhidos na tabela da empresa, substituem o valor direto do frete.
 export async function updateCustosRecebimentoBL(id: string, input: CustosRecebimentoBLInput) {
   await prisma.contratoExportacao.update({
     where: { id },
     data: {
       correcaoBL: Number(input.correcaoBL) || 0,
       despesasPortuarias: Number(input.despesasPortuarias) || 0,
+      freteMaritimo: Number(input.freteMaritimo) || 0,
     },
   });
 
