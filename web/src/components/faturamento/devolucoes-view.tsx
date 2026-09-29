@@ -34,7 +34,13 @@ function formFromRow(row: SaleReturnRow) {
   };
 }
 
-export function DevolucoesView({ returns }: { returns: SaleReturnRow[] }) {
+export function DevolucoesView({
+  returns,
+  clientOptions,
+}: {
+  returns: SaleReturnRow[];
+  clientOptions: string[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [clientFilter, setClientFilter] = useState("todos");
@@ -55,6 +61,14 @@ export function DevolucoesView({ returns }: { returns: SaleReturnRow[] }) {
     () => Array.from(new Set(returns.map((r) => r.clientName))).sort((a, b) => a.localeCompare(b, "pt-BR")),
     [returns]
   );
+
+  // Inclui o nome atual do formulario mesmo se nao estiver em clientOptions,
+  // para nao "sumir" a selecao ao editar uma devolucao antiga cujo nome ja
+  // ficou gravado diferente do cadastro de Vendas.
+  const clientSelectOptions = useMemo(() => {
+    if (!form.clientName || clientOptions.includes(form.clientName)) return clientOptions;
+    return [form.clientName, ...clientOptions].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [clientOptions, form.clientName]);
 
   function applyYearFilter(year: string) {
     setYearFilter(year);
@@ -214,11 +228,20 @@ export function DevolucoesView({ returns }: { returns: SaleReturnRow[] }) {
             <div className="space-y-3">
               <div>
                 <Label>Nome do cliente</Label>
-                <Input
+                <Select
                   value={form.clientName}
                   onChange={(e) => setForm({ ...form, clientName: e.target.value })}
-                  placeholder="Ex: Café Comércio Ltda"
-                />
+                >
+                  <option value="">Selecione...</option>
+                  {/* Mesmo nome exato cadastrado em Vendas - digitar diferente aqui
+                      faz a devolucao nao ser reconhecida como Interno/Externo e
+                      sumir das quebras por cliente, mesmo continuando no total. */}
+                  {clientSelectOptions.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
