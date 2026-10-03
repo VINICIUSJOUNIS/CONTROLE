@@ -20,6 +20,21 @@ import {
 
 const POR_PAGINA = 100;
 
+const NOMES_MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Marco",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
 type Linha = { reg: Registro; calc: Record<string, number | null>; alerta: string | null; busca: string };
 
 type Form = Record<string, string>;
@@ -70,6 +85,7 @@ export function HedgeAbaView({
   const [ano, setAno] = useState("todos");
   const [soAlertas, setSoAlertas] = useState(false);
   const [mes, setMes] = useState("todos");
+  const [dia, setDia] = useState("todos");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const [filtrosCampo, setFiltrosCampo] = useState<Record<string, string>>({});
@@ -165,13 +181,6 @@ export function HedgeAbaView({
     [registros]
   );
 
-  const meses = useMemo(
-    () =>
-      Array.from(new Set(registros.map((r) => String(r.dados.data ?? "").slice(0, 7)).filter((m) => m.length === 7)))
-        .sort()
-        .reverse(),
-    [registros]
-  );
 
   // Campos de lista (opcoes, cadastros, textos com sugestao) viram filtros.
   const camposFiltro = useMemo(
@@ -205,7 +214,8 @@ export function HedgeAbaView({
       if (config.filtroStatus && status !== "todos" && String(l.reg.dados[config.filtroStatus] ?? "") !== status) return false;
       const data = String(l.reg.dados.data ?? "");
       if (ano !== "todos" && !data.startsWith(ano)) return false;
-      if (mes !== "todos" && !data.startsWith(mes)) return false;
+      if (mes !== "todos" && data.slice(5, 7) !== mes) return false;
+      if (dia !== "todos" && data.slice(8, 10) !== dia) return false;
       if (de && (!data || data < de)) return false;
       if (ate && (!data || data > ate)) return false;
       for (const [key, valor] of Object.entries(filtrosCampo)) {
@@ -220,12 +230,13 @@ export function HedgeAbaView({
       if (q && !l.busca.includes(q)) return false;
       return true;
     });
-  }, [linhas, busca, status, ano, mes, de, ate, filtrosCampo, soAlertas, config]);
+  }, [linhas, busca, status, ano, mes, dia, de, ate, filtrosCampo, soAlertas, config]);
 
   const filtrosAtivos =
     (status !== "todos" ? 1 : 0) +
     (ano !== "todos" ? 1 : 0) +
     (mes !== "todos" ? 1 : 0) +
+    (dia !== "todos" ? 1 : 0) +
     (de ? 1 : 0) +
     (ate ? 1 : 0) +
     Object.values(filtrosCampo).filter(Boolean).length +
@@ -237,6 +248,7 @@ export function HedgeAbaView({
     setStatus("todos");
     setAno("todos");
     setMes("todos");
+    setDia("todos");
     setDe("");
     setAte("");
     setFiltrosCampo({});
@@ -248,7 +260,8 @@ export function HedgeAbaView({
     const p: string[] = [];
     if (config.filtroStatus && status !== "todos") p.push(`${campoPorKey.get(config.filtroStatus)?.label}: ${status}`);
     if (ano !== "todos") p.push(`Ano: ${ano}`);
-    if (mes !== "todos") p.push(`Mes: ${mes.slice(5, 7)}/${mes.slice(0, 4)}`);
+    if (mes !== "todos") p.push(`Mes: ${NOMES_MESES[Number(mes) - 1]}`);
+    if (dia !== "todos") p.push(`Dia: ${dia}`);
     if (de) p.push(`De: ${formatarValor(de, "data")}`);
     if (ate) p.push(`Ate: ${formatarValor(ate, "data")}`);
     for (const [key, valor] of Object.entries(filtrosCampo))
@@ -511,6 +524,40 @@ export function HedgeAbaView({
             ))}
           </Select>
         )}
+        {temData && (
+          <Select
+            value={mes}
+            onChange={(e) => {
+              setMes(e.target.value);
+              setPagina(0);
+            }}
+            className="w-auto"
+          >
+            <option value="todos">Todos os meses</option>
+            {NOMES_MESES.map((nome, i) => (
+              <option key={nome} value={String(i + 1).padStart(2, "0")}>
+                {nome}
+              </option>
+            ))}
+          </Select>
+        )}
+        {temData && (
+          <Select
+            value={dia}
+            onChange={(e) => {
+              setDia(e.target.value);
+              setPagina(0);
+            }}
+            className="w-auto"
+          >
+            <option value="todos">Todos os dias</option>
+            {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")).map((d) => (
+              <option key={d} value={d}>
+                Dia {d}
+              </option>
+            ))}
+          </Select>
+        )}
         {totalAlertas > 0 && (
           <label className="flex items-center gap-2 text-sm text-warning">
             <input type="checkbox" checked={soAlertas} onChange={(e) => setSoAlertas(e.target.checked)} />
@@ -543,23 +590,6 @@ export function HedgeAbaView({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {temData && (
               <>
-                <div>
-                  <Label>Mes</Label>
-                  <Select
-                    value={mes}
-                    onChange={(e) => {
-                      setMes(e.target.value);
-                      setPagina(0);
-                    }}
-                  >
-                    <option value="todos">Todos os meses</option>
-                    {meses.map((m) => (
-                      <option key={m} value={m}>
-                        {m.slice(5, 7)}/{m.slice(0, 4)}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
                 <div>
                   <Label>Data de</Label>
                   <Input

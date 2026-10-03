@@ -17,6 +17,7 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
   const anos = useMemo(() => Array.from(new Set(historico.map((h) => h.data.slice(0, 4)))).sort().reverse(), [historico]);
   const [ano, setAno] = useState(anos[0] ?? "todos");
   const [mes, setMes] = useState("todos");
+  const [dia, setDia] = useState("todos");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
 
@@ -36,9 +37,10 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
         if (de || ate) return (!de || h.data >= de) && (!ate || h.data <= ate);
         if (ano !== "todos" && !h.data.startsWith(ano)) return false;
         if (mes !== "todos" && h.data.slice(5, 7) !== mes) return false;
+        if (dia !== "todos" && h.data.slice(8, 10) !== dia) return false;
         return true;
       }),
-    [comVariacao, ano, mes, de, ate]
+    [comVariacao, ano, mes, dia, de, ate]
   );
 
   const vendas = filtrado.map((h) => h.venda);
@@ -132,6 +134,22 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
           {["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"].map((m) => (
             <option key={m} value={m}>
               {new Date(2000, Number(m) - 1, 1).toLocaleDateString("pt-BR", { month: "long" })}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={dia}
+          onChange={(e) => {
+            setDia(e.target.value);
+            setDe("");
+            setAte("");
+          }}
+          className="w-auto"
+        >
+          <option value="todos">Todos os dias</option>
+          {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")).map((d) => (
+            <option key={d} value={d}>
+              Dia {d}
             </option>
           ))}
         </Select>
