@@ -31,7 +31,7 @@ const modules = [
   },
   {
     href: "/hedge-cambial",
-    label: "Hedge",
+    label: "Dashboard Hedge",
     description: "Operacoes de protecao cambial.",
     icon: TrendingUp,
   },

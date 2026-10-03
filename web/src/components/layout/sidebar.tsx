@@ -116,7 +116,7 @@ const hedgeNavItems = [
 ];
 
 const hedgeCambialNavItems = [
-  { href: "/hedge-cambial", label: "Hedge", icon: TrendingUp },
+  { href: "/hedge-cambial", label: "Dashboard Hedge", icon: TrendingUp },
 ];
 
 const planejamentoNavItems = [
@@ -147,7 +147,7 @@ const modules = [
     label: "Controle de Exportação",
     items: hedgeNavItems,
   },
-  { match: (p: string) => p.startsWith("/hedge-cambial"), label: "Hedge", items: hedgeCambialNavItems },
+  { match: (p: string) => p.startsWith("/hedge-cambial"), label: "Dashboard Hedge", items: hedgeCambialNavItems },
   {
     match: (p: string) => p.startsWith("/planejamento-orcamentario"),
     label: "Planejamento Orçamentário",
