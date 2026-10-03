@@ -63,7 +63,20 @@ export async function gerarBoletimIa(dolar: Noticia[], cambio: PainelCambio): Pr
     system: SISTEMA,
     messages: [{ role: "user", content: `Dados de agora (JSON):\n${dadosParaIa(dolar, cambio)}\n\nEscreva o boletim.` }],
   } as unknown as Anthropic.Beta.MessageCreateParamsNonStreaming;
-  const resposta = await client.beta.messages.create(params);
+  let resposta: Anthropic.Beta.BetaMessage;
+  try {
+    resposta = await client.beta.messages.create(params);
+  } catch (e) {
+    // Parametro novo recusado (400): refaz no formato basico, sem os betas.
+    if (!(e instanceof Anthropic.BadRequestError)) throw e;
+    console.error("Boletim IA: refazendo sem betas -", e.message);
+    resposta = await client.beta.messages.create({
+      model: MODELO,
+      max_tokens: 4000,
+      system: SISTEMA,
+      messages: params.messages,
+    });
+  }
   if (resposta.stop_reason === "refusal") throw new Error("IA recusou o pedido");
   const texto = resposta.content
     .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
