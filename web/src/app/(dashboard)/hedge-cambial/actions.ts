@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getAbaConfig, normalizarDados } from "@/lib/hedge-cambial/config";
-import { PARAMETROS } from "@/lib/hedge-cambial/data";
+import { CADASTROS, Dados, getAbaConfig, HEDGE_ABAS, normalizarDados } from "@/lib/hedge-cambial/config";
+import { abaDoCadastro, getCadastro, getCadastrosDaAba, PARAMETROS } from "@/lib/hedge-cambial/data";
 
 export type Resultado = { ok: true } | { ok: false; erro: string };
 
@@ -15,12 +15,12 @@ function revalidar(aba?: string) {
 export async function salvarRegistro(aba: string, id: string | null, entrada: Record<string, unknown>): Promise<Resultado> {
   const config = getAbaConfig(aba);
   if (!config) return { ok: false, erro: "Aba invalida." };
-  const r = normalizarDados(config, entrada);
+  const atual = id ? await prisma.hedgeRegistro.findUnique({ where: { id } }) : null;
+  if (id && (!atual || atual.aba !== aba)) return { ok: false, erro: "Lancamento nao encontrado." };
+  const r = normalizarDados(config, entrada, await getCadastrosDaAba(config), atual?.dados as Dados | undefined);
   if ("erro" in r) return { ok: false, erro: r.erro };
 
   if (id) {
-    const atual = await prisma.hedgeRegistro.findUnique({ where: { id } });
-    if (!atual || atual.aba !== aba) return { ok: false, erro: "Lancamento nao encontrado." };
     await prisma.hedgeRegistro.update({ where: { id }, data: { dados: r.dados } });
   } else {
     const ultimo = await prisma.hedgeRegistro.aggregate({ where: { aba }, _max: { ordem: true } });
@@ -87,4 +87,35 @@ export async function buscarPtax(): Promise<{ ok: true; dolar: number; data: str
   } catch {
     return { ok: false, erro: "Falha ao consultar o Banco Central. Informe o dolar manualmente." };
   }
+}
+
+// ---- Cadastros (ex.: corretoras da Trava NDF) ----
+function revalidarCadastro(cadastro: keyof typeof CADASTROS) {
+  for (const aba of Object.values(HEDGE_ABAS)) {
+    if (aba.campos.some((c) => c.cadastro === cadastro)) revalidar(aba.slug);
+  }
+}
+
+export async function adicionarItemCadastro(cadastro: string, nome: string): Promise<Resultado> {
+  if (!(cadastro in CADASTROS)) return { ok: false, erro: "Cadastro invalido." };
+  const c = cadastro as keyof typeof CADASTROS;
+  const limpo = nome.replace(/\s+/g, " ").trim().toUpperCase();
+  if (!limpo) return { ok: false, erro: "Informe o nome." };
+  if (limpo.length > 60) return { ok: false, erro: "Nome muito longo." };
+  const existentes = await getCadastro(c);
+  if (existentes.some((e) => e.toUpperCase() === limpo)) return { ok: false, erro: `"${limpo}" ja esta cadastrada.` };
+  const aba = abaDoCadastro(c);
+  const ultimo = await prisma.hedgeRegistro.aggregate({ where: { aba }, _max: { ordem: true } });
+  await prisma.hedgeRegistro.create({ data: { aba, ordem: (ultimo._max.ordem ?? 0) + 1, dados: { nome: limpo } } });
+  revalidarCadastro(c);
+  return { ok: true };
+}
+
+// Remove da lista de opcoes. Lancamentos antigos com esse nome continuam como estao.
+export async function excluirItemCadastro(cadastro: string, nome: string): Promise<Resultado> {
+  if (!(cadastro in CADASTROS)) return { ok: false, erro: "Cadastro invalido." };
+  const c = cadastro as keyof typeof CADASTROS;
+  await prisma.hedgeRegistro.deleteMany({ where: { aba: abaDoCadastro(c), dados: { path: ["nome"], equals: nome } } });
+  revalidarCadastro(c);
+  return { ok: true };
 }

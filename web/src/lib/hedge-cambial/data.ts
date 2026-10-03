@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Ctx, Dados, Registro } from "@/lib/hedge-cambial/config";
+import { AbaConfig, CADASTROS, Ctx, Dados, Registro } from "@/lib/hedge-cambial/config";
 
 export const PARAMETROS = {
   dolar: "dolar",
@@ -45,6 +45,24 @@ export function ctxDe(p: Parametros): Ctx {
 export async function getRegistros(aba: string): Promise<Registro[]> {
   const rows = await prisma.hedgeRegistro.findMany({ where: { aba }, orderBy: { ordem: "asc" } });
   return rows.map((r) => ({ id: r.id, ordem: r.ordem, dados: r.dados as Dados }));
+}
+
+export const abaDoCadastro = (cadastro: keyof typeof CADASTROS) => `cadastro:${cadastro}`;
+
+// Itens de um cadastro (ex.: corretoras da Trava NDF), em ordem alfabetica.
+export async function getCadastro(cadastro: keyof typeof CADASTROS): Promise<string[]> {
+  const rows = await prisma.hedgeRegistro.findMany({ where: { aba: abaDoCadastro(cadastro) }, select: { dados: true } });
+  return rows
+    .map((r) => String((r.dados as Dados).nome ?? ""))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+// Listas de todos os cadastros usados pelos campos de uma aba.
+export async function getCadastrosDaAba(config: AbaConfig): Promise<Record<string, string[]>> {
+  const usados = Array.from(new Set(config.campos.map((c) => c.cadastro).filter((c): c is keyof typeof CADASTROS => !!c)));
+  const listas = await Promise.all(usados.map((c) => getCadastro(c)));
+  return Object.fromEntries(usados.map((c, i) => [c, listas[i]]));
 }
 
 export async function getRegistrosPorAba(): Promise<Record<string, Dados[]>> {

@@ -2,15 +2,20 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ListPlus, Pencil, Plus, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
-import { Campo, Ctx, Dados, Formato, getAbaConfig, Registro } from "@/lib/hedge-cambial/config";
+import { CADASTROS, Campo, Ctx, Dados, Formato, getAbaConfig, Registro } from "@/lib/hedge-cambial/config";
 import { formatarValor } from "@/lib/hedge-cambial/formatar";
-import { excluirRegistro, salvarRegistro } from "@/app/(dashboard)/hedge-cambial/actions";
+import {
+  adicionarItemCadastro,
+  excluirItemCadastro,
+  excluirRegistro,
+  salvarRegistro,
+} from "@/app/(dashboard)/hedge-cambial/actions";
 
 const POR_PAGINA = 100;
 
@@ -43,7 +48,21 @@ function lerNumero(s: string, formato?: Formato): number | null {
   return Number.isFinite(n) ? n : NaN;
 }
 
-export function HedgeAbaView({ slug, registros, ctx }: { slug: string; registros: Registro[]; ctx: Ctx }) {
+const NOVO_ITEM = "__novo__";
+
+type ChaveCadastro = keyof typeof CADASTROS;
+
+export function HedgeAbaView({
+  slug,
+  registros,
+  ctx,
+  cadastros = {},
+}: {
+  slug: string;
+  registros: Registro[];
+  ctx: Ctx;
+  cadastros?: Record<string, string[]>;
+}) {
   const config = getAbaConfig(slug)!;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -56,6 +75,59 @@ export function HedgeAbaView({ slug, registros, ctx }: { slug: string; registros
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState<Form>({});
   const [erro, setErro] = useState<string | null>(null);
+  // Cadastros (ex.: corretoras): itens incluidos nesta tela aparecem na hora,
+  // antes de a pagina recarregar a lista do servidor.
+  const [incluidos, setIncluidos] = useState<Record<string, string[]>>({});
+  const [excluidos, setExcluidos] = useState<Record<string, string[]>>({});
+  const [novoItem, setNovoItem] = useState<{ campo: string; nome: string } | null>(null);
+  const [gerenciando, setGerenciando] = useState<ChaveCadastro | null>(null);
+  const [nomeGerenciar, setNomeGerenciar] = useState("");
+  const [erroCadastro, setErroCadastro] = useState<string | null>(null);
+
+  const listas = useMemo(() => {
+    const out: Record<string, string[]> = {};
+    for (const chave of Object.keys(CADASTROS)) {
+      const base = new Set([...(cadastros[chave] ?? []), ...(incluidos[chave] ?? [])]);
+      for (const x of excluidos[chave] ?? []) base.delete(x);
+      out[chave] = Array.from(base).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    }
+    return out;
+  }, [cadastros, incluidos, excluidos]);
+
+  const cadastrosDaAba = useMemo(
+    () => Array.from(new Set(config.campos.map((c) => c.cadastro).filter((c): c is ChaveCadastro => !!c))),
+    [config]
+  );
+
+  function cadastrar(chave: ChaveCadastro, nome: string, aoCadastrar?: (nome: string) => void) {
+    setErroCadastro(null);
+    startTransition(async () => {
+      const r = await adicionarItemCadastro(chave, nome);
+      if (!r.ok) {
+        setErroCadastro(r.erro);
+        return;
+      }
+      const limpo = nome.replace(/\s+/g, " ").trim().toUpperCase();
+      setIncluidos((m) => ({ ...m, [chave]: [...(m[chave] ?? []), limpo] }));
+      setExcluidos((m) => ({ ...m, [chave]: (m[chave] ?? []).filter((x) => x !== limpo) }));
+      aoCadastrar?.(limpo);
+      router.refresh();
+    });
+  }
+
+  function descadastrar(chave: ChaveCadastro, nome: string) {
+    if (!window.confirm(`Remover "${nome}" da lista? Os lancamentos ja feitos com esse nome continuam como estao.`)) return;
+    startTransition(async () => {
+      const r = await excluirItemCadastro(chave, nome);
+      if (!r.ok) {
+        setErroCadastro(r.erro);
+        return;
+      }
+      setExcluidos((m) => ({ ...m, [chave]: [...(m[chave] ?? []), nome] }));
+      setIncluidos((m) => ({ ...m, [chave]: (m[chave] ?? []).filter((x) => x !== nome) }));
+      router.refresh();
+    });
+  }
 
   const campoPorKey = useMemo(() => new Map(config.campos.map((c) => [c.key, c])), [config]);
   const calcPorKey = useMemo(() => new Map(config.calculados.map((c) => [c.key, c])), [config]);
@@ -277,7 +349,20 @@ export function HedgeAbaView({ slug, registros, ctx }: { slug: string; registros
             <AlertTriangle size={14} /> Somente com alerta ({totalAlertas})
           </label>
         )}
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          {cadastrosDaAba.map((chave) => (
+            <Button
+              key={chave}
+              variant="outline"
+              onClick={() => {
+                setGerenciando(chave);
+                setNomeGerenciar("");
+                setErroCadastro(null);
+              }}
+            >
+              <ListPlus size={16} /> {CADASTROS[chave].titulo}
+            </Button>
+          ))}
           <Button onClick={abrirNovo}>
             <Plus size={16} /> Novo lancamento
           </Button>
@@ -402,7 +487,65 @@ export function HedgeAbaView({ slug, registros, ctx }: { slug: string; registros
                   {c.label}
                   {c.obrigatorio && <span className="text-danger"> *</span>}
                 </Label>
-                {c.tipo === "opcao" ? (
+                {c.cadastro ? (
+                  <>
+                    <Select
+                      value={form[c.key] ?? ""}
+                      onChange={(e) => {
+                        if (e.target.value === NOVO_ITEM) {
+                          setNovoItem({ campo: c.key, nome: "" });
+                          setErroCadastro(null);
+                        } else setForm({ ...form, [c.key]: e.target.value });
+                      }}
+                    >
+                      <option value="">Selecione...</option>
+                      {form[c.key] && !listas[c.cadastro].includes(form[c.key]) && (
+                        <option value={form[c.key]}>{form[c.key]} (fora do cadastro)</option>
+                      )}
+                      {listas[c.cadastro].map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                      <option value={NOVO_ITEM}>+ Cadastrar nova {CADASTROS[c.cadastro].item}...</option>
+                    </Select>
+                    {novoItem?.campo === c.key && (
+                      <div className="mt-1.5 flex gap-1.5">
+                        <Input
+                          autoFocus
+                          placeholder={`Nome da nova ${CADASTROS[c.cadastro].item}`}
+                          value={novoItem.nome}
+                          onChange={(e) => setNovoItem({ campo: c.key, nome: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              cadastrar(c.cadastro!, novoItem.nome, (nome) => {
+                                setForm((f) => ({ ...f, [c.key]: nome }));
+                                setNovoItem(null);
+                              });
+                            }
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          disabled={pending || !novoItem.nome.trim()}
+                          onClick={() =>
+                            cadastrar(c.cadastro!, novoItem.nome, (nome) => {
+                              setForm((f) => ({ ...f, [c.key]: nome }));
+                              setNovoItem(null);
+                            })
+                          }
+                        >
+                          Cadastrar
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setNovoItem(null)}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    )}
+                    {novoItem?.campo === c.key && erroCadastro && <p className="mt-1 text-[11px] text-danger">{erroCadastro}</p>}
+                  </>
+                ) : c.tipo === "opcao" ? (
                   <Select value={form[c.key] ?? ""} onChange={(e) => setForm({ ...form, [c.key]: e.target.value })}>
                     <option value="">Selecione...</option>
                     {/* Mantem um valor antigo fora da lista para nao perder a selecao ao editar. */}
@@ -466,6 +609,47 @@ export function HedgeAbaView({ slug, registros, ctx }: { slug: string; registros
             </Button>
           </div>
         </DialogContent>
+      </Dialog>
+      <Dialog open={gerenciando !== null} onOpenChange={(v) => !v && setGerenciando(null)}>
+        {gerenciando && (
+          <DialogContent title={CADASTROS[gerenciando].titulo}>
+            <div className="flex gap-2">
+              <Input
+                placeholder={`Nova ${CADASTROS[gerenciando].item}`}
+                value={nomeGerenciar}
+                onChange={(e) => setNomeGerenciar(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && nomeGerenciar.trim()) cadastrar(gerenciando, nomeGerenciar, () => setNomeGerenciar(""));
+                }}
+              />
+              <Button
+                disabled={pending || !nomeGerenciar.trim()}
+                onClick={() => cadastrar(gerenciando, nomeGerenciar, () => setNomeGerenciar(""))}
+              >
+                <Plus size={15} /> Cadastrar
+              </Button>
+            </div>
+            {erroCadastro && <p className="mt-2 text-sm text-danger">{erroCadastro}</p>}
+            <ul className="mt-3 max-h-80 divide-y divide-border overflow-auto rounded-lg border border-border">
+              {listas[gerenciando].length === 0 && <li className="px-3 py-4 text-center text-sm text-muted">Nenhuma cadastrada.</li>}
+              {listas[gerenciando].map((nome) => (
+                <li key={nome} className="flex items-center justify-between px-3 py-2 text-sm">
+                  <span>{nome}</span>
+                  <button
+                    className="rounded p-1 text-muted hover:bg-border/60 hover:text-danger"
+                    title="Remover da lista"
+                    onClick={() => descadastrar(gerenciando, nome)}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[11px] text-muted">
+              Remover da lista nao altera os lancamentos ja feitos; so tira a opcao dos proximos.
+            </p>
+          </DialogContent>
+        )}
       </Dialog>
     </div>
   );

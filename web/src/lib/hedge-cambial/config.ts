@@ -24,6 +24,12 @@ export type Ctx = {
 
 export type Formato = "brl" | "usd" | "sacas" | "lotes" | "num2" | "num4" | "centlb" | "pct" | "data" | "texto";
 
+// Listas cadastraveis usadas em campos de lancamento (gravadas em
+// HedgeRegistro com aba "cadastro:<chave>" e dados { nome }).
+export const CADASTROS = {
+  "corretoras-ndf": { titulo: "Corretoras (Trava NDF)", item: "corretora" },
+} as const;
+
 export type Campo = {
   key: string;
   label: string;
@@ -33,6 +39,8 @@ export type Campo = {
   sugestoes?: boolean;
   /** Sugestoes fixas somadas as dos valores ja lancados. */
   sugestoesFixas?: readonly string[];
+  /** Lista cadastrada (ver CADASTROS): o campo vira uma lista de selecao com opcao de cadastrar. */
+  cadastro?: keyof typeof CADASTROS;
   obrigatorio?: boolean;
   formato?: Formato;
   ajuda?: string;
@@ -183,7 +191,7 @@ const travaNdf: AbaConfig = {
       formato: "brl",
       ajuda: "Deixe vazio para calcular: liquidado x (nivel venda - nivel USD). Positivo = ganho.",
     },
-    { key: "corretora", label: "CORRETORA", tipo: "texto", sugestoes: true },
+    { key: "corretora", label: "CORRETORA", tipo: "texto", obrigatorio: true, cadastro: "corretoras-ndf" },
     { key: "contrato", label: "CONTRATO TRAVA", tipo: "opcao", opcoes: ["NDF", "TRAVA"], obrigatorio: true },
     { key: "status", label: "STATUS", tipo: "opcao", opcoes: ["A LIQUIDAR", "LIQUIDADA"], obrigatorio: true },
     { key: "vencimento", label: "VENCIMENTO", tipo: "data", obrigatorio: true },
@@ -1128,7 +1136,14 @@ export function getAbaConfig(slug: string): AbaConfig | undefined {
 
 // Normaliza os dados de um lancamento conforme os campos da aba (tipos e
 // obrigatorios) e aplica as validacoes da aba. Usado no servidor antes de gravar.
-export function normalizarDados(aba: AbaConfig, entrada: Record<string, unknown>): { dados: Dados } | { erro: string } {
+// `listas`: itens cadastrados de cada CADASTRO usado pela aba; `anterior`: dados
+// atuais do lancamento (um valor antigo fora da lista continua aceito na edicao).
+export function normalizarDados(
+  aba: AbaConfig,
+  entrada: Record<string, unknown>,
+  listas: Record<string, string[]> = {},
+  anterior?: Dados
+): { dados: Dados } | { erro: string } {
   const dados: Dados = {};
   for (const campo of aba.campos) {
     const bruto = entrada[campo.key];
@@ -1150,6 +1165,8 @@ export function normalizarDados(aba: AbaConfig, entrada: Record<string, unknown>
       }
     }
     if (campo.obrigatorio && v === null) return { erro: `Preencha ${campo.label}.` };
+    if (campo.cadastro && v !== null && !(listas[campo.cadastro] ?? []).includes(String(v)) && anterior?.[campo.key] !== v)
+      return { erro: `${campo.label}: escolha uma opcao cadastrada (ou cadastre "${v}").` };
     dados[campo.key] = v;
   }
   const erro = aba.validar?.(dados);
