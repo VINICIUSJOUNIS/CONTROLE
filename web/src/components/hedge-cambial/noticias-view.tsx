@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { DollarSign, ExternalLink, Loader2, Radio, Square, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/field";
 import { Card } from "@/components/ui/card";
 import type { Noticia, StatusFonte } from "@/lib/hedge-cambial/noticias";
 import { cn } from "@/lib/utils";
@@ -117,6 +118,52 @@ export function NoticiasView({
               A IA resume em audio as noticias e os dados do Banco Central desta tela. Em cada noticia, o botao Ouvir le a manchete e o resumo.
             </span>
           </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted">Voz:</span>
+            <Select
+              value={leitor.vozId ?? ""}
+              onChange={(e) => leitor.setVozId(e.target.value)}
+              className="h-8 w-auto max-w-xs text-xs"
+            >
+              {leitor.opcoes.length === 0 && <option value="">Padrao do navegador</option>}
+              {leitor.opcoes.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.nome}
+                  {o.natural ? " - natural" : ""}
+                </option>
+              ))}
+            </Select>
+            <span className="text-muted">Velocidade:</span>
+            <Select
+              value={String(leitor.velocidade)}
+              onChange={(e) => leitor.setVelocidade(Number(e.target.value))}
+              className="h-8 w-auto text-xs"
+            >
+              {[0.9, 1, 1.1, 1.2, 1.3].map((v) => (
+                <option key={v} value={String(v)}>
+                  {v === 1 ? "Normal" : `${String(v).replace(".", ",")}x`}
+                </option>
+              ))}
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                leitor.ativo === "teste"
+                  ? leitor.parar()
+                  : leitor.falar("teste", "Bom dia. Este e o boletim do dolar da Nayme, com as ultimas noticias e os dados do Banco Central.")
+              }
+            >
+              {leitor.ativo === "teste" ? <Square size={12} /> : <Volume2 size={13} />} Testar voz
+            </Button>
+          </div>
+          {!leitor.temNatural && (
+            <p className="text-xs text-warning">
+              Este navegador so tem vozes sinteticas mais roboticas. Para uma voz natural, abra o sistema no Microsoft Edge e
+              escolha &quot;Francisca&quot; ou &quot;Antonio&quot; (vozes neurais gratuitas do Edge), ou no Google Chrome a voz
+              &quot;Google portugues do Brasil&quot;.
+            </p>
+          )}
           {boletim?.aviso && <p className="text-xs text-warning">{boletim.aviso}</p>}
           {boletim && (
             <details className="text-xs text-muted">
