@@ -1,12 +1,12 @@
 // Ultimas noticias do mercado de dolar, lidas dos feeds RSS publicos dos
-// portais abaixo. O resultado fica em cache por 30 minutos (tag NOTICIAS_TAG);
-// a tela busca de novo sozinha quando completa 30 minutos e o botao
+// portais abaixo. O resultado fica em cache por 5 minutos (tag NOTICIAS_TAG);
+// a tela busca de novo sozinha quando completa 5 minutos e o botao
 // "Atualizar agora" forca uma busca nova na hora (ver atualizarNoticias).
 // Noticias de cafe ficaram de fora: os feeds gratuitos publicam com dias de
 // atraso, o que nao serve para decisao de mercado.
 import { unstable_cache } from "next/cache";
 
-export const NOTICIAS_REVALIDAR_SEGUNDOS = 30 * 60;
+export const NOTICIAS_REVALIDAR_SEGUNDOS = 5 * 60;
 export const NOTICIAS_TAG = "hedge-noticias";
 const QUANTIDADE = 10;
 

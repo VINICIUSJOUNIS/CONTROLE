@@ -7,7 +7,7 @@ export default async function HedgeNoticiasPage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Ultimas Noticias" subtitle="Mercado de dolar - atualiza a cada 30 minutos" />
+      <Topbar title="Ultimas Noticias" subtitle="Mercado de dolar - atualiza a cada 5 minutos" />
       <div className="p-6">
         <NoticiasView dolar={dolar} fontes={fontes} buscadoEm={buscadoEm} />
       </div>

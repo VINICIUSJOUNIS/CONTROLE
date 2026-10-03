@@ -9,7 +9,7 @@ import type { Noticia, StatusFonte } from "@/lib/hedge-cambial/noticias";
 import { cn } from "@/lib/utils";
 import { atualizarNoticias } from "@/app/(dashboard)/hedge-cambial/noticias/actions";
 
-const INTERVALO_MS = 30 * 60 * 1000;
+const INTERVALO_MS = 5 * 60 * 1000;
 
 function quando(iso: string | null, agora: number) {
   if (!iso) return "";
@@ -65,7 +65,7 @@ export function NoticiasView({
     });
   }, [router]);
 
-  // Atualizacao automatica: 30 minutos depois da ultima busca. Se a aba ficou
+  // Atualizacao automatica: 5 minutos depois da ultima busca. Se a aba ficou
   // em segundo plano (o navegador atrasa os timers), atualiza ao voltar.
   useEffect(() => {
     const id = setTimeout(atualizar, Math.max(5000, proxima - Date.now()));
@@ -93,7 +93,7 @@ export function NoticiasView({
         <span>
           {pending
             ? "Buscando as ultimas noticias..."
-            : `Buscado as ${hora(new Date(buscadoEm).getTime())}. Proxima atualizacao automatica as ${hora(proxima)} (a cada 30 minutos).`}
+            : `Buscado as ${hora(new Date(buscadoEm).getTime())}. Proxima atualizacao automatica as ${hora(proxima)} (a cada 5 minutos).`}
         </span>
         <Button variant="outline" size="sm" disabled={pending} onClick={atualizar}>
           <RefreshCw size={13} className={pending ? "animate-spin" : undefined} /> Atualizar agora
