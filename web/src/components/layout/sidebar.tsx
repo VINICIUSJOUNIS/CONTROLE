@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { hedgeCambialAbas } from "@/lib/hedge-cambial-abas";
 import { statusLabels, statusToSlug, buildMesaOperacaoSections } from "@/lib/contrato-shared";
 
 type MesaOperacaoSubItem =
@@ -117,6 +118,7 @@ const hedgeNavItems = [
 
 const hedgeCambialNavItems = [
   { href: "/hedge-cambial", label: "Dashboard Hedge", icon: TrendingUp },
+  ...hedgeCambialAbas.map((a) => ({ href: `/hedge-cambial/${a.slug}`, label: a.label, icon: FileStack })),
 ];
 
 const planejamentoNavItems = [
@@ -199,7 +201,7 @@ export function Sidebar({
         {activeModule.items.map((item) => {
           const active =
             pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href + "/"));
+            (item.href !== "/" && item.href !== "/hedge-cambial" && pathname.startsWith(item.href + "/"));
           const Icon = item.icon;
           const subItems = (item as { subItems?: MesaOperacaoSubItem[] }).subItems;
           const isExpanded = expanded === item.href;
