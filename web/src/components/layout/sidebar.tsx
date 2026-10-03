@@ -138,7 +138,7 @@ const modules = [
     items: apresentacaoNavItems,
   },
   { match: (p: string) => p.startsWith("/faturamento"), label: "Faturamento", items: faturamentoNavItems },
-  { match: (p: string) => p.startsWith("/hedge"), label: "Controle de Hedge", items: hedgeNavItems },
+  { match: (p: string) => p.startsWith("/hedge"), label: "Controle de Exportação", items: hedgeNavItems },
   {
     match: (p: string) => p.startsWith("/planejamento-orcamentario"),
     label: "Planejamento Orçamentário",

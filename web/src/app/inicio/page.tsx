@@ -25,7 +25,7 @@ const modules = [
   },
   {
     href: "/hedge",
-    label: "Controle de Hedge",
+    label: "Controle de Exportação",
     description: "Contratos de exportacao, operacoes cambiais e vencimentos.",
     icon: ShieldCheck,
   },
