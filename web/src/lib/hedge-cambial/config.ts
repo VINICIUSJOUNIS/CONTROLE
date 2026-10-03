@@ -27,7 +27,30 @@ export type Formato = "brl" | "usd" | "sacas" | "lotes" | "num2" | "num4" | "cen
 // Listas cadastraveis usadas em campos de lancamento (gravadas em
 // HedgeRegistro com aba "cadastro:<chave>" e dados { nome }).
 export const CADASTROS = {
-  "corretoras-ndf": { titulo: "Corretoras (Trava NDF)", item: "corretora" },
+  "corretoras-ndf": {
+    titulo: "Corretoras (Trava NDF)",
+    cadastrar: "Cadastrar nova corretora",
+    nome: "Nome da corretora",
+    aviso: "A nova corretora ja fica selecionada neste lancamento.",
+  },
+  produtores: {
+    titulo: "Produtores / Fornecedores",
+    cadastrar: "Cadastrar novo produtor / fornecedor",
+    nome: "Nome do produtor / fornecedor",
+    aviso: "O novo produtor / fornecedor ja fica selecionado neste lancamento.",
+  },
+  padroes: {
+    titulo: "Padroes de cafe",
+    cadastrar: "Cadastrar novo padrao",
+    nome: "Nome do padrao (ex.: GC1, CD 10% CATA)",
+    aviso: "O novo padrao ja fica selecionado neste lancamento.",
+  },
+  peneiras: {
+    titulo: "Peneiras",
+    cadastrar: "Cadastrar nova peneira",
+    nome: "Peneira (ex.: 17/18, BC)",
+    aviso: "A nova peneira ja fica selecionada neste lancamento.",
+  },
 } as const;
 
 export type Campo = {
@@ -714,13 +737,13 @@ const compras: AbaConfig = {
   campos: [
     { key: "data", label: "DATA", tipo: "data", obrigatorio: true },
     { key: "sacas", label: "QUANTIDADE SACAS", tipo: "numero", formato: "sacas", obrigatorio: true },
-    { key: "produtor", label: "PRODUTOR", tipo: "texto", sugestoes: true, obrigatorio: true },
+    { key: "produtor", label: "PRODUTOR / FORNECEDOR", tipo: "texto", obrigatorio: true, cadastro: "produtores" },
     { key: "ordemCompra", label: "ORDEM COMPRA", tipo: "texto" },
     { key: "valorSaca", label: "VR. SACA R$", tipo: "numero", formato: "brl", obrigatorio: true },
     { key: "ny", label: "NY (c/lb)", tipo: "numero", formato: "centlb" },
     { key: "dolar", label: "DOLAR", tipo: "numero", formato: "num4" },
-    { key: "padrao", label: "PADRAO", tipo: "texto", sugestoes: true },
-    { key: "peneira", label: "PENEIRA", tipo: "texto", sugestoes: true },
+    { key: "padrao", label: "PADRAO", tipo: "texto", cadastro: "padroes" },
+    { key: "peneira", label: "PENEIRA", tipo: "texto", cadastro: "peneiras" },
     { key: "dataEntrega", label: "DATA ENTREGA", tipo: "data" },
     { key: "embalagem", label: "EMBALAGEM", tipo: "texto", sugestoes: true, sugestoesFixas: ["GRANEL", "BIG BAG"] },
     { key: "status", label: "STATUS", tipo: "opcao", opcoes: ["COMPRADO", "ENTREGUE"], obrigatorio: true },

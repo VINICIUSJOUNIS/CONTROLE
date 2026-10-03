@@ -469,22 +469,32 @@ export function HedgeAbaView({
                 {c.cadastro ? (
                   <>
                     <div className="flex gap-1.5">
-                      <Select value={form[c.key] ?? ""} onChange={(e) => setForm({ ...form, [c.key]: e.target.value })}>
-                        <option value="">Selecione...</option>
-                        {form[c.key] && !listas[c.cadastro].includes(form[c.key]) && (
-                          <option value={form[c.key]}>{form[c.key]} (fora do cadastro)</option>
-                        )}
-                        {listas[c.cadastro].map((o) => (
-                          <option key={o} value={o}>
-                            {o}
-                          </option>
-                        ))}
-                      </Select>
+                      {listas[c.cadastro].length > 60 ? (
+                        // Lista grande (ex.: produtores): busca digitando, so aceita nomes cadastrados.
+                        <Input
+                          list={`cad-${c.key}`}
+                          placeholder="Digite para buscar..."
+                          value={form[c.key] ?? ""}
+                          onChange={(e) => setForm({ ...form, [c.key]: e.target.value })}
+                        />
+                      ) : (
+                        <Select value={form[c.key] ?? ""} onChange={(e) => setForm({ ...form, [c.key]: e.target.value })}>
+                          <option value="">Selecione...</option>
+                          {form[c.key] && !listas[c.cadastro].includes(form[c.key]) && (
+                            <option value={form[c.key]}>{form[c.key]} (fora do cadastro)</option>
+                          )}
+                          {listas[c.cadastro].map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
                       <Button
                         type="button"
                         variant="outline"
                         className="shrink-0"
-                        title={`Cadastrar ${CADASTROS[c.cadastro].item}`}
+                        title={CADASTROS[c.cadastro].cadastrar}
                         onClick={() => {
                           setNovoItem(novoItem?.campo === c.key ? null : { campo: c.key, nome: "" });
                           setErroCadastro(null);
@@ -493,13 +503,23 @@ export function HedgeAbaView({
                         {novoItem?.campo === c.key ? <X size={15} /> : <Plus size={15} />} Cadastrar
                       </Button>
                     </div>
+                    {listas[c.cadastro].length > 60 && (
+                      <datalist id={`cad-${c.key}`}>
+                        {listas[c.cadastro].map((o) => (
+                          <option key={o} value={o} />
+                        ))}
+                      </datalist>
+                    )}
+                    {form[c.key] && !listas[c.cadastro].includes(form[c.key]) && novoItem?.campo !== c.key && (
+                      <p className="mt-1 text-[11px] text-warning">Nao cadastrado: escolha da lista ou clique em Cadastrar.</p>
+                    )}
                     {novoItem?.campo === c.key && (
                       <div className="mt-2 space-y-2 rounded-lg border border-border bg-border/10 p-2.5">
-                        <p className="text-[11px] font-medium text-muted">Cadastrar nova {CADASTROS[c.cadastro].item}</p>
+                        <p className="text-[11px] font-medium text-muted">{CADASTROS[c.cadastro].cadastrar}</p>
                         <div className="flex gap-1.5">
                           <Input
                             autoFocus
-                            placeholder={`Nome da ${CADASTROS[c.cadastro].item}`}
+                            placeholder={CADASTROS[c.cadastro].nome}
                             value={novoItem.nome}
                             onChange={(e) => setNovoItem({ campo: c.key, nome: e.target.value })}
                             onKeyDown={(e) => {
@@ -529,7 +549,11 @@ export function HedgeAbaView({
                         </div>
                         {erroCadastro && <p className="text-[11px] text-danger">{erroCadastro}</p>}
                         <ul className="max-h-40 divide-y divide-border overflow-auto rounded border border-border bg-card">
-                          {listas[c.cadastro].map((nome) => (
+                          {/* Mostra os parecidos com o nome digitado (evita cadastrar repetido). */}
+                          {listas[c.cadastro]
+                            .filter((nome) => !novoItem.nome.trim() || nome.toUpperCase().includes(novoItem.nome.trim().toUpperCase()))
+                            .slice(0, 50)
+                            .map((nome) => (
                             <li key={nome} className="flex items-center justify-between px-2 py-1 text-xs">
                               <span>{nome}</span>
                               <button
@@ -544,8 +568,7 @@ export function HedgeAbaView({
                           ))}
                         </ul>
                         <p className="text-[10px] text-muted">
-                          A nova {CADASTROS[c.cadastro].item} ja fica selecionada neste lancamento. Remover da lista nao altera
-                          lancamentos ja feitos.
+                          {CADASTROS[c.cadastro].aviso} Remover da lista nao altera lancamentos ja feitos.
                         </p>
                       </div>
                     )}
