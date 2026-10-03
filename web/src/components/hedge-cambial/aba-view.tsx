@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Pencil, Plus, Trash2, X } from "lucide-react";
+import { AlertTriangle, Download, Filter, Pencil, Plus, Printer, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { Input, Label, Select, Textarea } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { CADASTROS, Campo, Ctx, Dados, Formato, getAbaConfig, Registro } from "@/lib/hedge-cambial/config";
 import { formatarValor } from "@/lib/hedge-cambial/formatar";
+import { baixarCsv, imprimirRelatorio, TabelaRelatorio } from "@/lib/hedge-cambial/relatorio";
 import {
   adicionarItemCadastro,
   excluirItemCadastro,
@@ -68,6 +69,12 @@ export function HedgeAbaView({
   const [status, setStatus] = useState("todos");
   const [ano, setAno] = useState("todos");
   const [soAlertas, setSoAlertas] = useState(false);
+  const [mes, setMes] = useState("todos");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+  const [filtrosCampo, setFiltrosCampo] = useState<Record<string, string>>({});
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [agruparPor, setAgruparPor] = useState("nenhum");
   const [pagina, setPagina] = useState(0);
   const [aberto, setAberto] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -158,6 +165,29 @@ export function HedgeAbaView({
     [registros]
   );
 
+  const meses = useMemo(
+    () =>
+      Array.from(new Set(registros.map((r) => String(r.dados.data ?? "").slice(0, 7)).filter((m) => m.length === 7)))
+        .sort()
+        .reverse(),
+    [registros]
+  );
+
+  // Campos de lista (opcoes, cadastros, textos com sugestao) viram filtros.
+  const camposFiltro = useMemo(
+    () =>
+      config.campos
+        .filter((c) => c.key !== config.filtroStatus && (c.tipo === "opcao" || c.cadastro || c.sugestoes || c.sugestoesFixas))
+        .map((c) => ({
+          campo: c,
+          valores: Array.from(new Set(registros.map((r) => String(r.dados[c.key] ?? "")).filter(Boolean))).sort((a, b) =>
+            a.localeCompare(b, "pt-BR")
+          ),
+        }))
+        .filter((f) => f.valores.length > 1),
+    [registros, config]
+  );
+
   const sugestoes = useMemo(() => {
     const m: Record<string, string[]> = {};
     for (const c of config.campos) {
@@ -173,12 +203,60 @@ export function HedgeAbaView({
     const q = busca.trim().toLowerCase();
     return linhas.filter((l) => {
       if (config.filtroStatus && status !== "todos" && String(l.reg.dados[config.filtroStatus] ?? "") !== status) return false;
-      if (ano !== "todos" && !String(l.reg.dados.data ?? "").startsWith(ano)) return false;
+      const data = String(l.reg.dados.data ?? "");
+      if (ano !== "todos" && !data.startsWith(ano)) return false;
+      if (mes !== "todos" && !data.startsWith(mes)) return false;
+      if (de && (!data || data < de)) return false;
+      if (ate && (!data || data > ate)) return false;
+      for (const [key, valor] of Object.entries(filtrosCampo)) {
+        if (!valor) continue;
+        const v = String(l.reg.dados[key] ?? "");
+        // Listas grandes: o filtro e "contem" (digitado); as demais, valor exato.
+        if (valor.startsWith("~")) {
+          if (!v.toLowerCase().includes(valor.slice(1).toLowerCase())) return false;
+        } else if (v !== valor) return false;
+      }
       if (soAlertas && !l.alerta) return false;
       if (q && !l.busca.includes(q)) return false;
       return true;
     });
-  }, [linhas, busca, status, ano, soAlertas, config]);
+  }, [linhas, busca, status, ano, mes, de, ate, filtrosCampo, soAlertas, config]);
+
+  const filtrosAtivos =
+    (status !== "todos" ? 1 : 0) +
+    (ano !== "todos" ? 1 : 0) +
+    (mes !== "todos" ? 1 : 0) +
+    (de ? 1 : 0) +
+    (ate ? 1 : 0) +
+    Object.values(filtrosCampo).filter(Boolean).length +
+    (busca.trim() ? 1 : 0) +
+    (soAlertas ? 1 : 0);
+
+  function limparFiltros() {
+    setBusca("");
+    setStatus("todos");
+    setAno("todos");
+    setMes("todos");
+    setDe("");
+    setAte("");
+    setFiltrosCampo({});
+    setSoAlertas(false);
+    setPagina(0);
+  }
+
+  function descricaoFiltros() {
+    const p: string[] = [];
+    if (config.filtroStatus && status !== "todos") p.push(`${campoPorKey.get(config.filtroStatus)?.label}: ${status}`);
+    if (ano !== "todos") p.push(`Ano: ${ano}`);
+    if (mes !== "todos") p.push(`Mes: ${mes.slice(5, 7)}/${mes.slice(0, 4)}`);
+    if (de) p.push(`De: ${formatarValor(de, "data")}`);
+    if (ate) p.push(`Ate: ${formatarValor(ate, "data")}`);
+    for (const [key, valor] of Object.entries(filtrosCampo))
+      if (valor) p.push(`${campoPorKey.get(key)?.label}: ${valor.startsWith("~") ? `contem "${valor.slice(1)}"` : valor}`);
+    if (busca.trim()) p.push(`Busca: "${busca.trim()}"`);
+    if (soAlertas) p.push("Somente com alerta");
+    return p.length ? p.join(" | ") : "Sem filtros";
+  }
 
   const totalAlertas = useMemo(() => linhas.filter((l) => l.alerta).length, [linhas]);
   const indicadores = useMemo(
@@ -211,6 +289,104 @@ export function HedgeAbaView({
     return t;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtradas, config]);
+
+  // ---- Relatorios ----
+  const camposAgrupar = useMemo(
+    () => config.campos.filter((c) => c.tipo === "opcao" || c.cadastro || c.sugestoes || c.sugestoesFixas || c.key === config.filtroStatus),
+    [config]
+  );
+
+  // Resumo agrupado: quantidade e soma das colunas de total por grupo.
+  const resumo = useMemo(() => {
+    if (agruparPor === "nenhum") return null;
+    const grupos = new Map<string, { qtd: number; somas: Record<string, number> }>();
+    for (const l of filtradas) {
+      const data = String(l.reg.dados.data ?? "");
+      const chave =
+        agruparPor === "__mes"
+          ? data.slice(0, 7) || "(sem data)"
+          : agruparPor === "__ano"
+            ? data.slice(0, 4) || "(sem data)"
+            : String(l.reg.dados[agruparPor] ?? "") || "(vazio)";
+      const g = grupos.get(chave) ?? { qtd: 0, somas: {} };
+      g.qtd++;
+      for (const key of config.totais ?? []) {
+        const v = valorColuna(l, key);
+        g.somas[key] = (g.somas[key] ?? 0) + (typeof v === "number" ? v : 0);
+      }
+      grupos.set(chave, g);
+    }
+    const lista = Array.from(grupos.entries()).map(([chave, g]) => ({ chave, ...g }));
+    // Por periodo: ordem cronologica; demais: maior quantidade primeiro.
+    if (agruparPor === "__mes" || agruparPor === "__ano") lista.sort((a, b) => a.chave.localeCompare(b.chave));
+    else lista.sort((a, b) => b.qtd - a.qtd || a.chave.localeCompare(b.chave, "pt-BR"));
+    return lista;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtradas, agruparPor, config]);
+
+  const rotuloGrupo = (chave: string) =>
+    agruparPor === "__mes" && /^\d{4}-\d{2}$/.test(chave) ? `${chave.slice(5, 7)}/${chave.slice(0, 4)}` : chave;
+  const nomeAgrupamento =
+    agruparPor === "__mes" ? "Mes" : agruparPor === "__ano" ? "Ano" : (campoPorKey.get(agruparPor)?.label ?? "");
+
+  function tabelasRelatorio(): TabelaRelatorio[] {
+    const colunasTotais = config.totais ?? [];
+    const tabelas: TabelaRelatorio[] = [];
+    if (resumo) {
+      tabelas.push({
+        titulo: `Resumo por ${nomeAgrupamento}`,
+        colunas: [nomeAgrupamento, "Lancamentos", ...colunasTotais.map((k) => campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label ?? k)],
+        numericas: [false, true, ...colunasTotais.map(() => true)],
+        linhas: resumo.map((g) => [rotuloGrupo(g.chave), g.qtd, ...colunasTotais.map((k) => formatarValor(g.somas[k] ?? 0, formatoColuna(k)))]),
+        rodape: ["TOTAL", filtradas.length, ...colunasTotais.map((k) => formatarValor(totais[k] ?? 0, formatoColuna(k)))],
+      });
+    }
+    tabelas.push({
+      titulo: `Lancamentos (${filtradas.length})`,
+      colunas: config.colunas.map((k) => campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label ?? k),
+      numericas: config.colunas.map((k) => formatoColuna(k) !== "data" && formatoColuna(k) !== undefined && formatoColuna(k) !== "texto"),
+      linhas: filtradas.map((l) => config.colunas.map((k) => formatarValor(valorColuna(l, k) ?? null, formatoColuna(k)))),
+      rodape: colunasTotais.length
+        ? config.colunas.map((k, i) => (k in totais ? formatarValor(totais[k], formatoColuna(k)) : i === 0 ? "TOTAL" : ""))
+        : undefined,
+    });
+    return tabelas;
+  }
+
+  // Excel: numeros sem formatacao (para somar no Excel), datas dd/mm/aaaa.
+  function exportarExcel() {
+    const colunasTotais = config.totais ?? [];
+    const valorExcel = (v: unknown, fmt: Formato | undefined) =>
+      typeof v === "number" ? v : v === null || v === undefined ? null : fmt === "data" ? formatarValor(String(v), "data") : String(v);
+    const tabelas: TabelaRelatorio[] = [];
+    if (resumo) {
+      tabelas.push({
+        titulo: `${config.label} - Resumo por ${nomeAgrupamento}`,
+        colunas: [nomeAgrupamento, "Lancamentos", ...colunasTotais.map((k) => campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label ?? k)],
+        linhas: resumo.map((g) => [rotuloGrupo(g.chave), g.qtd, ...colunasTotais.map((k) => g.somas[k] ?? 0)]),
+        rodape: ["TOTAL", filtradas.length, ...colunasTotais.map((k) => totais[k] ?? 0)],
+      });
+    }
+    tabelas.push({
+      titulo: `${config.label} - Filtros: ${descricaoFiltros()}`,
+      colunas: config.colunas.map((k) => campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label ?? k),
+      linhas: filtradas.map((l) => config.colunas.map((k) => valorExcel(valorColuna(l, k), formatoColuna(k)))),
+    });
+    const hoje = new Date().toISOString().slice(0, 10);
+    baixarCsv(`${config.slug}-${hoje}.csv`, tabelas);
+  }
+
+  function imprimir() {
+    imprimirRelatorio({
+      titulo: config.label,
+      subtitulo: `Emitido em ${new Date().toLocaleString("pt-BR")} - Filtros: ${descricaoFiltros()}`,
+      indicadores: indicadores.map((i) => ({
+        label: i.label,
+        valor: i.texto ?? (i.valor === null ? "-" : formatarValor(i.valor, i.formato)),
+      })),
+      tabelas: tabelasRelatorio(),
+    });
+  }
 
   // Previa das colunas calculadas no formulario, com os valores digitados.
   const previa = useMemo(() => {
@@ -341,12 +517,172 @@ export function HedgeAbaView({
             <AlertTriangle size={14} /> Somente com alerta ({totalAlertas})
           </label>
         )}
-        <div className="ml-auto">
+        <Button variant="outline" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
+          <Filter size={15} /> Mais filtros{filtrosAtivos > 0 ? ` (${filtrosAtivos})` : ""}
+        </Button>
+        {filtrosAtivos > 0 && (
+          <Button variant="ghost" onClick={limparFiltros}>
+            <X size={15} /> Limpar filtros
+          </Button>
+        )}
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button variant="outline" onClick={exportarExcel} disabled={!filtradas.length} title="Exporta o que esta filtrado">
+            <Download size={15} /> Excel
+          </Button>
+          <Button variant="outline" onClick={imprimir} disabled={!filtradas.length} title="Relatorio para imprimir ou salvar em PDF">
+            <Printer size={15} /> Imprimir / PDF
+          </Button>
           <Button onClick={abrirNovo}>
             <Plus size={16} /> Novo lancamento
           </Button>
         </div>
       </div>
+
+      {mostrarFiltros && (
+        <Card className="p-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {temData && (
+              <>
+                <div>
+                  <Label>Mes</Label>
+                  <Select
+                    value={mes}
+                    onChange={(e) => {
+                      setMes(e.target.value);
+                      setPagina(0);
+                    }}
+                  >
+                    <option value="todos">Todos os meses</option>
+                    {meses.map((m) => (
+                      <option key={m} value={m}>
+                        {m.slice(5, 7)}/{m.slice(0, 4)}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label>Data de</Label>
+                  <Input
+                    type="date"
+                    value={de}
+                    onChange={(e) => {
+                      setDe(e.target.value);
+                      setPagina(0);
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label>Data ate</Label>
+                  <Input
+                    type="date"
+                    value={ate}
+                    onChange={(e) => {
+                      setAte(e.target.value);
+                      setPagina(0);
+                    }}
+                  />
+                </div>
+              </>
+            )}
+            {camposFiltro.map(({ campo, valores }) => (
+              <div key={campo.key}>
+                <Label>{campo.label}</Label>
+                {valores.length > 150 ? (
+                  <Input
+                    placeholder="Contem..."
+                    value={(filtrosCampo[campo.key] ?? "").replace(/^~/, "")}
+                    onChange={(e) => {
+                      setFiltrosCampo({ ...filtrosCampo, [campo.key]: e.target.value ? `~${e.target.value}` : "" });
+                      setPagina(0);
+                    }}
+                  />
+                ) : (
+                  <Select
+                    value={filtrosCampo[campo.key] ?? ""}
+                    onChange={(e) => {
+                      setFiltrosCampo({ ...filtrosCampo, [campo.key]: e.target.value });
+                      setPagina(0);
+                    }}
+                  >
+                    <option value="">Todos</option>
+                    {valores.map((v) => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </div>
+            ))}
+            <div>
+              <Label>Relatorio: resumir por</Label>
+              <Select value={agruparPor} onChange={(e) => setAgruparPor(e.target.value)}>
+                <option value="nenhum">Sem resumo</option>
+                {temData && <option value="__mes">Mes</option>}
+                {temData && <option value="__ano">Ano</option>}
+                {camposAgrupar.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {resumo && (
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2.5 text-sm font-semibold">
+            <span>Resumo por {nomeAgrupamento}</span>
+            <button className="rounded p-1 text-muted hover:bg-border/60" title="Fechar resumo" onClick={() => setAgruparPor("nenhum")}>
+              <X size={14} />
+            </button>
+          </div>
+          <div className="max-h-80 overflow-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-card">
+                <tr className="border-b border-border text-left text-muted">
+                  <th className="px-3 py-2 font-medium">{nomeAgrupamento}</th>
+                  <th className="px-3 py-2 text-right font-medium">Lancamentos</th>
+                  {(config.totais ?? []).map((k) => (
+                    <th key={k} className="whitespace-nowrap px-3 py-2 text-right font-medium">
+                      {campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {resumo.map((g) => (
+                  <tr key={g.chave} className="border-b border-border/60">
+                    <td className="px-3 py-1.5">{rotuloGrupo(g.chave)}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">{g.qtd}</td>
+                    {(config.totais ?? []).map((k) => (
+                      <td
+                        key={k}
+                        className={cn("whitespace-nowrap px-3 py-1.5 text-right tabular-nums", (g.somas[k] ?? 0) < 0 && "text-danger")}
+                      >
+                        {formatarValor(g.somas[k] ?? 0, formatoColuna(k))}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="sticky bottom-0 bg-card">
+                <tr className="border-t border-border font-semibold">
+                  <td className="px-3 py-2">TOTAL</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{filtradas.length}</td>
+                  {(config.totais ?? []).map((k) => (
+                    <td key={k} className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                      {formatarValor(totais[k] ?? 0, formatoColuna(k))}
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <div className="max-h-[70vh] overflow-auto">

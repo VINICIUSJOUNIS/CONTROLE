@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import type { PtaxDia } from "@/lib/hedge-cambial/ptax";
+import { imprimirRelatorio } from "@/lib/hedge-cambial/relatorio";
 
 const dataBr = (iso: string) => iso.split("-").reverse().join("/");
 const taxa = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
@@ -137,7 +138,34 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
         <span className="text-xs text-muted">ou periodo:</span>
         <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} className="w-auto" title="De" />
         <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-auto" title="Ate" />
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <Button
+            variant="outline"
+            disabled={!filtrado.length}
+            onClick={() =>
+              imprimirRelatorio({
+                titulo: "Historico do Dolar (PTAX)",
+                subtitulo: `Emitido em ${new Date().toLocaleString("pt-BR")} - Periodo: ${filtrado[0] ? dataBr(filtrado[0].data) : ""} a ${filtrado.at(-1) ? dataBr(filtrado.at(-1)!.data) : ""}`,
+                indicadores: resumo
+                  ? [
+                      { label: "Media (venda)", valor: taxa(resumo.media) },
+                      { label: "Minima / maxima (venda)", valor: `${taxa(resumo.min)} / ${taxa(resumo.max)}` },
+                      { label: "Variacao no periodo", valor: pct(resumo.variacao) },
+                    ]
+                  : [],
+                tabelas: [
+                  {
+                    titulo: `PTAX de fechamento (${filtrado.length} dias uteis)`,
+                    colunas: ["Data", "Compra", "Venda", "Variacao no dia"],
+                    numericas: [false, true, true, true],
+                    linhas: [...filtrado].reverse().map((h) => [dataBr(h.data), taxa(h.compra), taxa(h.venda), h.variacao === null ? "-" : pct(h.variacao)]),
+                  },
+                ],
+              })
+            }
+          >
+            <Printer size={15} /> Imprimir / PDF
+          </Button>
           <Button variant="outline" onClick={exportar} disabled={!filtrado.length}>
             <Download size={15} /> Exportar (Excel/CSV)
           </Button>

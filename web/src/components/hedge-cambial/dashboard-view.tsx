@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
+import { Download, Printer, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
@@ -12,6 +12,7 @@ import type { Dashboard, LinhaDashboard } from "@/lib/hedge-cambial/dashboard";
 import type { Parametros } from "@/lib/hedge-cambial/data";
 import type { Formato } from "@/lib/hedge-cambial/config";
 import { formatarValor } from "@/lib/hedge-cambial/formatar";
+import { baixarCsv, imprimirRelatorio, TabelaRelatorio } from "@/lib/hedge-cambial/relatorio";
 import { buscarPtax, salvarParametros } from "@/app/(dashboard)/hedge-cambial/actions";
 
 function lerNumero(s: string): number | null {
@@ -117,8 +118,51 @@ export function HedgeDashboardView({ dashboard, parametros }: { dashboard: Dashb
     });
   }
 
+  function tabelas(numerosFormatados: boolean): TabelaRelatorio[] {
+    const v = (x: number | null, fmt: Formato) => (x === null ? null : numerosFormatados ? formatarValor(x, fmt) : x);
+    return [
+      {
+        titulo: "NAYME - posicao em sacas",
+        colunas: ["Linha", "Sacas"],
+        numericas: [false, true],
+        linhas: dashboard.sacas.map((l) => [l.label + (l.foraDoNet ? " (fora do NET)" : ""), v(l.valor, "sacas")]),
+        rodape: ["NET", v(dashboard.netSacas, "sacas")],
+      },
+      {
+        titulo: "LONG X SHORT DOLAR (US$)",
+        colunas: ["Linha", "US$"],
+        numericas: [false, true],
+        linhas: dashboard.dolar.map((l) => [l.label, v(l.valor, "usd")]),
+        rodape: ["NET", v(dashboard.netDolar, "usd")],
+      },
+      {
+        titulo: "Precos medios",
+        colunas: ["Linha", "Valor"],
+        numericas: [false, true],
+        linhas: dashboard.precos.map((l) => [l.label, v(l.valor, "num2")]),
+      },
+    ];
+  }
+
+  const subtitulo = () =>
+    `Emitido em ${new Date().toLocaleString("pt-BR")} - Dolar do dia: ${parametros.dolar ?? "-"}${parametros.dolarData ? ` (${parametros.dolarData.split("-").reverse().join("/")})` : ""} - NY atual: ${parametros.ny ?? "-"}`;
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => baixarCsv(`dashboard-hedge-${new Date().toISOString().slice(0, 10)}.csv`, tabelas(false))}
+        >
+          <Download size={15} /> Excel
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => imprimirRelatorio({ titulo: "Dashboard Hedge", subtitulo: subtitulo(), indicadores: [], tabelas: tabelas(true) })}
+        >
+          <Printer size={15} /> Imprimir / PDF
+        </Button>
+      </div>
       <Card className="p-4">
         <p className="mb-3 text-sm font-semibold">Parametros de mercado (preencher diariamente)</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
