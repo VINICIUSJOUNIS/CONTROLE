@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { DollarSign, ExternalLink } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { DollarSign, ExternalLink, Loader2, Radio, Square, Volume2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Noticia, StatusFonte } from "@/lib/hedge-cambial/noticias";
 import { cn } from "@/lib/utils";
-import { atualizarNoticias } from "@/app/(dashboard)/hedge-cambial/noticias/actions";
+import { atualizarNoticias, gerarBoletim } from "@/app/(dashboard)/hedge-cambial/noticias/actions";
+import { useLeitorVoz } from "@/components/hedge-cambial/leitor-voz";
 import { BarraAtualizacao } from "@/components/hedge-cambial/atualizacao-automatica";
 import { CambioBcbView } from "@/components/hedge-cambial/cambio-bcb-view";
 import type { PainelCambio } from "@/lib/hedge-cambial/cambio-bcb";
@@ -56,6 +58,32 @@ export function NoticiasView({
   cambio: PainelCambio;
 }) {
   const [agora, setAgora] = useState(() => new Date(buscadoEm).getTime());
+  const leitor = useLeitorVoz();
+  const [gerando, startGerar] = useTransition();
+  const [boletim, setBoletim] = useState<{ texto: string; ia: boolean; aviso?: string } | null>(null);
+
+  // Boletim falado: a IA escreve o texto com as noticias e o painel do BCB, e o
+  // navegador le em voz alta.
+  function ouvirBoletim() {
+    if (leitor.ativo === "boletim") {
+      leitor.parar();
+      return;
+    }
+    leitor.parar();
+    startGerar(async () => {
+      const b = await gerarBoletim();
+      setBoletim(b);
+      leitor.falar("boletim", b.texto);
+    });
+  }
+
+  function ouvirNoticia(n: Noticia) {
+    if (leitor.ativo === n.link) {
+      leitor.parar();
+      return;
+    }
+    leitor.falar(n.link, `${n.titulo}. ${n.resumo} Fonte: ${n.fonte}.`);
+  }
 
   // Atualiza o "ha X min" a cada minuto.
   useEffect(() => {
@@ -71,6 +99,35 @@ export function NoticiasView({
         descartarCache={atualizarNoticias}
         rotulo="as ultimas noticias e os dados do Banco Central"
       />
+
+      {leitor.suportado ? (
+        <Card className="space-y-2 p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button onClick={ouvirBoletim} disabled={gerando}>
+              {gerando ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : leitor.ativo === "boletim" ? (
+                <Square size={15} />
+              ) : (
+                <Radio size={15} />
+              )}
+              {gerando ? "A IA esta preparando o boletim..." : leitor.ativo === "boletim" ? "Parar boletim" : "Ouvir boletim do dolar (IA)"}
+            </Button>
+            <span className="text-xs text-muted">
+              A IA resume em audio as noticias e os dados do Banco Central desta tela. Em cada noticia, o botao Ouvir le a manchete e o resumo.
+            </span>
+          </div>
+          {boletim?.aviso && <p className="text-xs text-warning">{boletim.aviso}</p>}
+          {boletim && (
+            <details className="text-xs text-muted">
+              <summary className="cursor-pointer">Texto do boletim {boletim.ia ? "(escrito pela IA)" : ""}</summary>
+              <p className="mt-2 whitespace-pre-line leading-relaxed">{boletim.texto}</p>
+            </details>
+          )}
+        </Card>
+      ) : (
+        <p className="text-xs text-muted">Este navegador nao tem leitura em voz alta. Use o Chrome ou o Edge para ouvir as noticias.</p>
+      )}
 
       <Card className="overflow-hidden">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold">
@@ -103,6 +160,16 @@ export function NoticiasView({
                   <a href={n.link} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
                     Ler noticia completa
                   </a>
+                  {leitor.suportado && (
+                    <button
+                      type="button"
+                      onClick={() => ouvirNoticia(n)}
+                      className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                    >
+                      {leitor.ativo === n.link ? <Square size={11} /> : <Volume2 size={12} />}
+                      {leitor.ativo === n.link ? "Parar" : "Ouvir"}
+                    </button>
+                  )}
                 </p>
               </li>
             ))}
