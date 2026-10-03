@@ -1,8 +1,9 @@
 // Aba DASHBOARD da planilha: posicao em sacas (NAYME) e LONG x SHORT DOLAR,
 // calculados a partir dos lancamentos das outras abas.
 // Correcoes em relacao a planilha (ver comentarios em cada linha):
-// - NET GERAL = SUM(B12:B13) somava o sintetico duas vezes;
-// - "bolsa set/25", "PRE FIXACAO SINTETICO" e "POSICAO B3" eram numeros
+// - NET GERAL = SUM(B12:B13) somava o sintetico duas vezes (aba SINTETICO
+//   retirada do sistema, junto com as linhas SINTETICO e PRE FIXACAO SINTETICO);
+// - "bolsa set/25" e "POSICAO B3" eram numeros
 //   digitados (0) - agora sao calculados/parametro;
 // - PRE-FIXACAO usava o preco medio de venda ME (com diferencial); agora usa NY atual;
 // - juros do ACC entram no lado do dolar;
@@ -74,8 +75,6 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
   const vendaFut = -soma(sem(r("vendas-futuras"), "status", "LIQUIDADO"), (d) => num(d, "sacas"));
   // Planilha: SUM(C) da BOLSA NY
   const bolsa = soma(r("bolsa-ny-nayme"), bolsaSacas);
-  // Planilha: SUM(C) do SINTETICO
-  const sintetico = soma(r("sintetico-em-reais-bancos"), (d) => num(d, "sacas"));
 
   const sacas: LinhaDashboard[] = [
     { label: "ESTOQUE", valor: estoque, aba: "estoque-cafe-nayme" },
@@ -92,7 +91,6 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
     },
     { label: "VENDA FUTURA", valor: vendaFut, aba: "vendas-futuras", ajuda: "Nao liquidadas." },
     { label: "BOLSA NY", valor: bolsa, aba: "bolsa-ny-nayme" },
-    { label: "SINTETICO EM REAIS", valor: sintetico, aba: "sintetico-em-reais-bancos" },
   ];
   sacas.push({
     label: "VENDA ME A FIXAR (a embarcar)",
@@ -126,7 +124,6 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
   // x 1,3228), sem o diferencial. Sem NY informado, cai no criterio da planilha.
   const precoNySaca = ctx.ny !== null ? ctx.ny * LB_SACA : precoMedioVenda;
   const preFixacao = precoNySaca === null ? null : -(bolsa * precoNySaca);
-  const preFixacaoSintetico = precoNySaca === null ? null : -(sintetico * precoNySaca);
 
   const dolar: LinhaDashboard[] = [
     { label: "ACC", valor: acc, aba: "endividamento-nayme", ajuda: "Saldo a liquidar dos ACC." },
@@ -144,12 +141,6 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
       valor: preFixacao,
       aba: "bolsa-ny-nayme",
       ajuda: ctx.ny !== null ? "-(Bolsa NY em sacas x NY atual x 1,3228)." : "Sem NY atual: usando o preco medio de venda ME.",
-    },
-    {
-      label: "PRE FIXACAO SINTETICO",
-      valor: preFixacaoSintetico,
-      aba: "sintetico-em-reais-bancos",
-      ajuda: "-(Sintetico em sacas x NY atual x 1,3228).",
     },
     { label: "POSICAO B3", valor: posicaoB3Usd ?? 0, ajuda: "Parametro (US$) - posicao em dolar futuro na B3." },
   ];

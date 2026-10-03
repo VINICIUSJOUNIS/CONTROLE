@@ -124,73 +124,6 @@ function diasEntre(de: string, ate: string) {
 const STATUS_COMPRA_VENDA = ["COMPRA", "VENDA"] as const;
 
 // ---------------------------------------------------------------------------
-// SINTETICO EM REAIS - BANCOS
-// ---------------------------------------------------------------------------
-const sintetico: AbaConfig = {
-  slug: "sintetico-em-reais-bancos",
-  label: "",
-  descricao: "Operacoes de KC sintetico em reais contratadas com bancos.",
-  campos: [
-    { key: "data", label: "DATA", tipo: "data", obrigatorio: true },
-    { key: "lotes", label: "LOTES", tipo: "numero", formato: "lotes" },
-    {
-      key: "sacas",
-      label: "SACAS",
-      tipo: "numero",
-      formato: "sacas",
-      obrigatorio: true,
-      ajuda: "Venda: informe negativo (posicao vendida).",
-    },
-    { key: "nivel", label: "NIVEL (c/lb)", tipo: "numero", formato: "centlb", obrigatorio: true },
-    { key: "taxaUsd", label: "TAXA US$", tipo: "numero", formato: "num4" },
-    { key: "banco", label: "BANCO", tipo: "texto", sugestoes: true },
-    { key: "kc", label: "KC", tipo: "texto", sugestoes: true, ajuda: "Ex.: KCU3" },
-    { key: "status", label: "STATUS", tipo: "opcao", opcoes: STATUS_COMPRA_VENDA, obrigatorio: true },
-    { key: "opcao", label: "OPCAO", tipo: "data" },
-    { key: "posicao", label: "POSICAO", tipo: "opcao", opcoes: ["LONG", "SHORT"] },
-  ],
-  calculados: [
-    {
-      key: "totalUsd",
-      label: "TOTAL US$",
-      formato: "usd",
-      // Planilha: E=C*D e M=C*D (sacas x c/lb, sem converter). Corrigido para US$.
-      calc: (d) => {
-        const s = num(d, "sacas");
-        const n = num(d, "nivel");
-        return s === null || n === null ? null : s * n * LB_SACA;
-      },
-      ajuda: "Sacas x nivel (c/lb) x 1,3228. Na planilha faltava a conversao para US$.",
-    },
-    {
-      key: "totalBrl",
-      label: "TOTAL R$",
-      formato: "brl",
-      // Planilha: G=E*F
-      calc: (d) => {
-        const s = num(d, "sacas");
-        const n = num(d, "nivel");
-        const t = num(d, "taxaUsd");
-        return s === null || n === null || t === null ? null : (s * n * LB_SACA) * t;
-      },
-    },
-  ],
-  colunas: ["data", "lotes", "sacas", "nivel", "totalUsd", "taxaUsd", "totalBrl", "banco", "kc", "status", "opcao", "posicao"],
-  totais: ["lotes", "sacas", "totalUsd", "totalBrl"],
-  filtroStatus: "status",
-  padrao: dataDe,
-  validar: (d) => {
-    const s = n0(d, "sacas");
-    if (txt(d, "status") === "VENDA" && s > 0) return "Venda: as sacas devem ser negativas.";
-    if (txt(d, "status") === "COMPRA" && s < 0) return "Compra: as sacas devem ser positivas.";
-    return null;
-  },
-  indicadores: (rows) => [
-    { label: "Posicao (sacas)", valor: soma(rows, (d) => num(d, "sacas")), formato: "sacas", destaque: true },
-  ],
-};
-
-// ---------------------------------------------------------------------------
 // TRAVA NDF US$ NAYME
 // ---------------------------------------------------------------------------
 // Convencao da planilha: VALOR EM US$ com sinal (compra +, venda -);
@@ -643,7 +576,7 @@ const vendasMe: AbaConfig = {
 };
 
 // ---------------------------------------------------------------------------
-// BOLSA NY - NAYME  /  LOTE ESPECIAL (mesmas colunas)
+// BOLSA NY - NAYME
 // ---------------------------------------------------------------------------
 export function bolsaSacas(d: Dados) {
   return n0(d, "lotes") * SACAS_LOTE; // Planilha: C=B*283,5
@@ -1167,178 +1100,7 @@ const resumoTrades: AbaConfig = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// LOTE ESPECIAL
-// ---------------------------------------------------------------------------
-// Planilha: resultado somado a mao em pares/trincas (L2=E1+E2, L9=E7+E8+E9...),
-// L134=SUM(L), M=L*1,3228, N=M*5,7 (dolar digitado). Agora cada linha recebe a
-// OPERACAO a que pertence e o resultado sai somado por operacao automaticamente.
-// Sinal: na planilha o resultado ficava negativo quando havia ganho (venda
-// mais cara que a recompra). Corrigido: positivo = ganho, negativo = perda.
-export function loteResultadoUsd(d: Dados) {
-  return -bolsaUsd(d);
-}
-
-const loteEspecial: AbaConfig = {
-  slug: "lote-especial",
-  label: "",
-  descricao: "Operacoes de day trade/lote especial em NY, com o resultado por operacao.",
-  campos: [
-    ...camposBolsa,
-    { key: "operacao", label: "OPERACAO (agrupa o resultado)", tipo: "texto", sugestoes: true, obrigatorio: true },
-    {
-      key: "dolarLiquidacao",
-      label: "DOLAR DE LIQUIDACAO",
-      tipo: "numero",
-      formato: "num4",
-      ajuda: "Dolar usado para converter o resultado. Vazio = dolar do dia.",
-    },
-  ],
-  calculados: [
-    { key: "sacas", label: "SACAS", formato: "sacas", calc: bolsaSacas },
-    { key: "totalUsd", label: "TOTAL US$", formato: "usd", calc: bolsaUsd },
-    { key: "resultadoUsd", label: "RESULTADO US$ (+ganho)", formato: "usd", calc: loteResultadoUsd },
-    {
-      key: "resultadoBrl",
-      label: "RESULTADO R$",
-      formato: "brl",
-      calc: (d, ctx) => {
-        const dolar = num(d, "dolarLiquidacao") ?? ctx.dolar;
-        return dolar ? loteResultadoUsd(d) * dolar : null;
-      },
-    },
-  ],
-  colunas: [
-    "operacao",
-    "data",
-    "lotes",
-    "sacas",
-    "nivel",
-    "totalUsd",
-    "corretora",
-    "kc",
-    "status",
-    "opcao",
-    "posicao",
-    "resultadoUsd",
-    "dolarLiquidacao",
-    "resultadoBrl",
-  ],
-  totais: ["lotes", "sacas", "resultadoUsd", "resultadoBrl"],
-  filtroStatus: "operacao",
-  padrao: (ctx) => ({ data: ctx.hoje, posicao: "SHORT", corretora: "HEDGEPOINT" }),
-  validar: validarBolsa,
-  alerta: alertaBolsa,
-  indicadores: (rows, ctx) => {
-    const lotesAbertos = soma(rows, (d) => num(d, "lotes"));
-    return [
-      { label: "Resultado (US$)", valor: soma(rows, loteResultadoUsd), formato: "usd", destaque: true },
-      {
-        label: "Resultado (R$)",
-        valor: soma(rows, (d) => {
-          const dolar = num(d, "dolarLiquidacao") ?? ctx.dolar;
-          return dolar ? loteResultadoUsd(d) * dolar : null;
-        }),
-        formato: "brl",
-        destaque: true,
-      },
-      // Resultado so e realizado com a posicao zerada; lote em aberto distorce o numero.
-      { label: "Lotes em aberto", valor: lotesAbertos, formato: "lotes" },
-    ];
-  },
-};
-
-// ---------------------------------------------------------------------------
-// LIQUIDEZ
-// ---------------------------------------------------------------------------
-export function liquidezBrl(d: Dados, ctx: Ctx) {
-  const q = n0(d, "quantidade");
-  switch (txt(d, "moeda")) {
-    case "US$":
-      return ctx.dolar ? q * ctx.dolar : null; // Planilha: valor x 5,7 / 5,75 digitado
-    case "SACAS":
-      return q * n0(d, "precoUnitario"); // Planilha: =8673*2783
-    default:
-      return q;
-  }
-}
-
-const liquidez: AbaConfig = {
-  slug: "liquidez",
-  label: "",
-  descricao: "Ativo x passivo de curto prazo. Valores em US$ convertidos pelo dolar do dia.",
-  campos: [
-    { key: "grupo", label: "GRUPO", tipo: "opcao", opcoes: ["ATIVO", "PASSIVO"], obrigatorio: true },
-    { key: "item", label: "ITEM", tipo: "texto", obrigatorio: true, sugestoes: true },
-    { key: "moeda", label: "MOEDA", tipo: "opcao", opcoes: ["R$", "US$", "SACAS"], obrigatorio: true },
-    { key: "quantidade", label: "VALOR / QUANTIDADE", tipo: "numero", formato: "num2", obrigatorio: true },
-    { key: "precoUnitario", label: "PRECO R$/SACA", tipo: "numero", formato: "brl", ajuda: "So para itens em sacas (estoque)." },
-    { key: "observacao", label: "OBSERVACAO", tipo: "texto" },
-  ],
-  calculados: [{ key: "valorBrl", label: "VALOR R$", formato: "brl", calc: liquidezBrl }],
-  colunas: ["grupo", "item", "moeda", "quantidade", "precoUnitario", "valorBrl", "observacao"],
-  totais: [],
-  filtroStatus: "grupo",
-  padrao: () => ({ grupo: "ATIVO", moeda: "R$" }),
-  validar: (d) => (txt(d, "moeda") === "SACAS" && !num(d, "precoUnitario") ? "Informe o preco R$/saca." : null),
-  alerta: (d) =>
-    txt(d, "grupo") === "ATIVO" && n0(d, "quantidade") < 0 ? "Valor negativo no ativo (ex.: saldo bancario devedor e passivo)." : null,
-  indicadores: (rows, ctx) => {
-    const ativo = soma(rows.filter((d) => txt(d, "grupo") === "ATIVO"), (d) => liquidezBrl(d, ctx));
-    const passivo = soma(rows.filter((d) => txt(d, "grupo") === "PASSIVO"), (d) => liquidezBrl(d, ctx));
-    return [
-      { label: "TOTAL ATIVO", valor: ativo, formato: "brl" },
-      { label: "TOTAL PASSIVO", valor: passivo, formato: "brl" },
-      { label: "LIQUIDEZ", valor: ativo - passivo, formato: "brl", destaque: true },
-      { label: "Indice (ativo / passivo)", valor: passivo ? ativo / passivo : null, formato: "num2" },
-    ];
-  },
-};
-
-// ---------------------------------------------------------------------------
-// NET QUALIDADE
-// ---------------------------------------------------------------------------
-// Planilha: cada bloco = uma venda (sacas) e os lotes de compra alocados;
-// NET = venda - soma das compras (=SUM(D5-SUM(D6:D15))).
-export function netQualidade(rows: Dados[]) {
-  const vendas = new Map<string, { venda: number; alocado: number }>();
-  for (const d of rows) {
-    const v = txt(d, "venda");
-    const g = vendas.get(v) ?? { venda: 0, alocado: 0 };
-    if (txt(d, "tipo") === "VENDA") g.venda += n0(d, "sacas");
-    else g.alocado += n0(d, "sacas");
-    vendas.set(v, g);
-  }
-  return vendas;
-}
-
-const netQualidadeAba: AbaConfig = {
-  slug: "net-qualidade",
-  label: "",
-  descricao: "Por venda: sacas vendidas menos os lotes de compra ja alocados (o que falta comprar por qualidade).",
-  campos: [
-    { key: "venda", label: "VENDA", tipo: "texto", sugestoes: true, obrigatorio: true, ajuda: "Ex.: VENDA COOXUPE - CD" },
-    { key: "tipo", label: "TIPO", tipo: "opcao", opcoes: ["VENDA", "COMPRA ALOCADA"], obrigatorio: true },
-    { key: "fornecedor", label: "FORNECEDOR", tipo: "texto", sugestoes: true, ajuda: "Para compra alocada." },
-    { key: "sacas", label: "SACAS", tipo: "numero", formato: "sacas", obrigatorio: true },
-  ],
-  calculados: [],
-  colunas: ["venda", "tipo", "fornecedor", "sacas"],
-  totais: [],
-  filtroStatus: "venda",
-  padrao: () => ({ tipo: "COMPRA ALOCADA" }),
-  validar: (d) => (txt(d, "tipo") === "COMPRA ALOCADA" && !txt(d, "fornecedor") ? "Informe o fornecedor." : null),
-  indicadores: (rows) =>
-    Array.from(netQualidade(rows).entries()).map(([venda, g]) => ({
-      label: `NET - ${venda}`,
-      valor: g.venda - g.alocado,
-      formato: "sacas" as Formato,
-      destaque: true,
-    })),
-};
-
 const configs: AbaConfig[] = [
-  sintetico,
   travaNdf,
   estoque,
   vendaMi,
@@ -1350,9 +1112,6 @@ const configs: AbaConfig[] = [
   futuras("compras-futuras", "PRODUTOR", "Compras para entrega futura."),
   futuras("vendas-futuras", "CLIENTE", "Vendas para entrega futura."),
   resumoTrades,
-  loteEspecial,
-  liquidez,
-  netQualidadeAba,
 ];
 
 for (const c of configs) {
