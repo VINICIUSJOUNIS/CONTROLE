@@ -115,6 +115,10 @@ const hedgeNavItems = [
   { href: "/hedge/cadastros", label: "Cadastros", icon: Settings2 },
 ];
 
+const hedgeCambialNavItems = [
+  { href: "/hedge-cambial", label: "Hedge", icon: TrendingUp },
+];
+
 const planejamentoNavItems = [
   { href: "/planejamento-orcamentario", label: "Planejamento Orçamentário", icon: Target },
 ];
@@ -138,7 +142,12 @@ const modules = [
     items: apresentacaoNavItems,
   },
   { match: (p: string) => p.startsWith("/faturamento"), label: "Faturamento", items: faturamentoNavItems },
-  { match: (p: string) => p.startsWith("/hedge"), label: "Controle de Exportação", items: hedgeNavItems },
+  {
+    match: (p: string) => p === "/hedge" || p.startsWith("/hedge/"),
+    label: "Controle de Exportação",
+    items: hedgeNavItems,
+  },
+  { match: (p: string) => p.startsWith("/hedge-cambial"), label: "Hedge", items: hedgeCambialNavItems },
   {
     match: (p: string) => p.startsWith("/planejamento-orcamentario"),
     label: "Planejamento Orçamentário",
