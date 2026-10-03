@@ -1,8 +1,13 @@
-// Ultimas noticias do mercado de dolar e de cafe, lidas dos feeds RSS publicos
-// dos portais abaixo. Cada feed fica em cache por 30 minutos (o sistema busca
-// de novo depois disso); a tela tambem se atualiza sozinha a cada 30 minutos.
+// Ultimas noticias do mercado de dolar, lidas dos feeds RSS publicos dos
+// portais abaixo. O resultado fica em cache por 30 minutos (tag NOTICIAS_TAG);
+// a tela busca de novo sozinha quando completa 30 minutos e o botao
+// "Atualizar agora" forca uma busca nova na hora (ver atualizarNoticias).
+// Noticias de cafe ficaram de fora: os feeds gratuitos publicam com dias de
+// atraso, o que nao serve para decisao de mercado.
+import { unstable_cache } from "next/cache";
 
 export const NOTICIAS_REVALIDAR_SEGUNDOS = 30 * 60;
+export const NOTICIAS_TAG = "hedge-noticias";
 const QUANTIDADE = 10;
 
 export type Noticia = {
@@ -11,48 +16,30 @@ export type Noticia = {
   fonte: string;
   data: string | null; // ISO
   resumo: string;
-  /** So na lista de tendencia: direcao do preco do cafe na noticia. */
-  tendencia?: "ALTA" | "QUEDA";
 };
 
 type Feed = { fonte: string; url: string };
 
+/** Resultado da leitura de cada feed na ultima busca (mostrado na tela). */
+export type StatusFonte = { fonte: string; url: string; ok: boolean; erro?: string };
+
 const FEEDS_DOLAR: Feed[] = [
+  { fonte: "Valor Economico", url: "https://valor.globo.com/rss/valor/" },
   { fonte: "Money Times", url: "https://www.moneytimes.com.br/tag/dolar/feed/" },
   { fonte: "InfoMoney", url: "https://www.infomoney.com.br/tudo-sobre/dolar/feed/" },
   { fonte: "Investing.com", url: "https://br.investing.com/rss/news_1.rss" },
 ];
 
-const FEEDS_CAFE: Feed[] = [
-  { fonte: "Money Times", url: "https://www.moneytimes.com.br/tag/cafe/feed/" },
-  { fonte: "Canal Rural", url: "https://www.canalrural.com.br/agricultura/cafe/feed/" },
-  { fonte: "InfoMoney", url: "https://www.infomoney.com.br/tudo-sobre/cafe/feed/" },
-  { fonte: "Investing.com", url: "https://br.investing.com/rss/news_11.rss" },
-];
+// Os feeds trazem tambem outros assuntos (bolsa, juros, outras moedas): so
+// entram as noticias com o dolar/cambio no titulo.
+const FILTRO_DOLAR = /d[óo]lar|c[âa]mbio|ptax/i;
 
-// Noticias de preco do cafe (bolsa de NY): os feeds de cafe acima com mais
-// paginas, mais o de commodities do Money Times (fechamentos dos "softs").
-const FEEDS_TENDENCIA: Feed[] = [
-  ...FEEDS_CAFE,
-  { fonte: "Money Times", url: "https://www.moneytimes.com.br/tag/commodities/feed/" },
-  { fonte: "Canal Rural", url: "https://www.canalrural.com.br/agricultura/cafe/feed/?paged=2" },
-  { fonte: "Canal Rural", url: "https://www.canalrural.com.br/agricultura/cafe/feed/?paged=3" },
-  { fonte: "Canal Rural", url: "https://www.canalrural.com.br/agricultura/cafe/feed/?paged=4" },
-  { fonte: "Canal Rural", url: "https://www.canalrural.com.br/agricultura/cafe/feed/?paged=5" },
-  { fonte: "InfoMoney", url: "https://www.infomoney.com.br/tudo-sobre/cafe/feed/?paged=2" },
-  { fonte: "InfoMoney", url: "https://www.infomoney.com.br/tudo-sobre/cafe/feed/?paged=3" },
-];
-
-// Os feeds trazem tambem outros assuntos (bolsa, petroleo, soja, lojas,
-// lancamentos de produtos...): so entram as noticias com o tema no titulo e,
-// no cafe, ligadas ao mercado (preco, safra, clima, exportacao...).
-const FILTRO_DOLAR = (n: Noticia) => /d[óo]lar|c[âa]mbio|ptax/i.test(n.titulo);
-const FILTRO_CAFE = (n: Noticia) =>
-  CAFE_TITULO.test(n.titulo) &&
-  (CONTEXTO_PRECO.test(n.titulo) ||
-    /safra|exporta|colheita|produ[çc][ãa]o|produtor|florada|clima|chuva|seca|geada|el ni|estoque|oferta|demanda|consumo|cepea|conab|usda|tarifa/i.test(
-      n.titulo
-    ));
+// Cabecalhos de navegador: alguns portais recusam pedidos sem eles.
+const CABECALHOS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+  Accept: "application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5",
+  "Accept-Language": "pt-BR,pt;q=0.9",
+};
 
 function decodificar(s: string) {
   return s
@@ -83,43 +70,49 @@ function lerData(s: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-async function lerFeed(feed: Feed, filtro: RegExp | ((n: Noticia) => boolean)): Promise<Noticia[]> {
-  try {
-    const res = await fetch(feed.url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; ControleNayme/1.0)" },
-      next: { revalidate: NOTICIAS_REVALIDAR_SEGUNDOS },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return [];
-    const xml = await res.text();
-    const itens = xml.match(/<item[\s>][\s\S]*?<\/item>/gi) ?? [];
-    return itens
-      .map((item) => {
-        const resumo = tag(item, "description");
-        return {
-          titulo: tag(item, "title"),
-          link: tag(item, "link"),
-          fonte: feed.fonte,
-          data: lerData(tag(item, "pubDate")),
-          resumo: resumo.length > 220 ? resumo.slice(0, 217).trimEnd() + "..." : resumo,
-        };
-      })
-      .filter(
-        (n) =>
-          n.titulo &&
-          /^https?:\/\//.test(n.link) &&
-          (typeof filtro === "function" ? filtro(n) : filtro.test(`${n.titulo} ${n.resumo}`))
-      );
-  } catch {
-    return [];
+// Baixa o feed com ate 2 tentativas.
+async function baixar(url: string): Promise<{ xml?: string; erro?: string }> {
+  let erro = "";
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    try {
+      const res = await fetch(url, {
+        headers: CABECALHOS,
+        cache: "no-store", // o cache e do conjunto (unstable_cache abaixo), nao de cada feed
+        signal: AbortSignal.timeout(10000),
+      });
+      if (res.ok) return { xml: await res.text() };
+      erro = `HTTP ${res.status}`;
+    } catch (e) {
+      erro = e instanceof Error && e.name === "TimeoutError" ? "sem resposta (10s)" : "falha de conexao";
+    }
   }
+  return { erro };
 }
 
-async function ultimas(feeds: Feed[], filtro: RegExp | ((n: Noticia) => boolean)) {
-  const listas = await Promise.all(feeds.map((f) => lerFeed(f, filtro)));
+async function lerFeed(feed: Feed): Promise<{ noticias: Noticia[]; status: StatusFonte }> {
+  const r = await baixar(feed.url);
+  if (r.xml === undefined) return { noticias: [], status: { ...feed, ok: false, erro: r.erro } };
+  const itens = r.xml.match(/<item[\s>][\s\S]*?<\/item>/gi) ?? [];
+  const noticias = itens
+    .map((item) => {
+      const resumo = tag(item, "description");
+      return {
+        titulo: tag(item, "title"),
+        link: tag(item, "link"),
+        fonte: feed.fonte,
+        data: lerData(tag(item, "pubDate")),
+        resumo: resumo.length > 220 ? resumo.slice(0, 217).trimEnd() + "..." : resumo,
+      };
+    })
+    .filter((n) => n.titulo && /^https?:\/\//.test(n.link) && FILTRO_DOLAR.test(n.titulo));
+  return { noticias, status: { ...feed, ok: true } };
+}
+
+export async function buscarNoticias() {
+  const lidos = await Promise.all(FEEDS_DOLAR.map(lerFeed));
   const vistos = new Set<string>();
-  return listas
-    .flat()
+  const dolar = lidos
+    .flatMap((l) => l.noticias)
     .sort((a, b) => (b.data ?? "").localeCompare(a.data ?? ""))
     .filter((n) => {
       const chave = n.titulo.toLowerCase();
@@ -129,46 +122,11 @@ async function ultimas(feeds: Feed[], filtro: RegExp | ((n: Noticia) => boolean)
       return true;
     })
     .slice(0, QUANTIDADE);
+  // buscadoEm fica no cache junto com as noticias: e a hora real da busca.
+  return { dolar, fontes: lidos.map((l) => l.status), buscadoEm: new Date().toISOString() };
 }
 
-// ---- Tendencia do preco do cafe ----
-// Titulos como "Acucar recua apos maxima, enquanto cafe se aproxima da menor
-// cotacao" falam de varios produtos: a direcao e lida so no trecho do titulo
-// que fala do cafe.
-// Limite de palavra que aceita acentos (o \b do JavaScript trata "ç" e "á" como separador).
-const palavras = (lista: string) => new RegExp(`(?<![a-zà-ú])(${lista})(?![a-zà-ú])`, "i");
-const ALTA = palavras("alta|altas|sobe|sobem|subiu|subiram|avan[çc]a|avan[çc]am|avan[çc]ou|dispara|disparam|disparou|salta|saltam|valoriza|valorizam|valorizou|m[áa]xima|recupera|recuperam|ganho|ganhos|rali|firme|firmes");
-const QUEDA = palavras("queda|quedas|cai|caem|caiu|ca[íi]ram|recua|recuam|recuou|despenca|despencam|desvaloriza|desvalorizam|m[íi]nima|perde|perdem|perdas|baixa|baixas|menor cota[çc][ãa]o|press[ãa]o");
-const CAFE_TITULO = /caf[ée]|ar[áa]bica|robusta|conilon/i;
-// Contexto de preco/bolsa: evita "exportacoes de cafe caem" ou "colheita avanca".
-const CONTEXTO_PRECO = palavras("nova york|ny|bolsa|pre[çc]os?|cota[çc][ãa]o|cota[çc][õo]es|ar[áa]bica|robusta|conilon|cepea|ice|sacas?|contratos?|futuros?|semana|semanal|semanais|sess[ãa]o|fecha|mercado");
-const FORA_DO_PRECO = /exporta|colheita|safra|consumo|florada|fertilizante|curso|tarifa|embarque/i;
-
-function trechoDoCafe(titulo: string) {
-  const partes = titulo.split(/[,;:]| enquanto | e o | mas /i);
-  return partes.find((p) => CAFE_TITULO.test(p)) ?? titulo;
-}
-
-export function classificarTendencia(titulo: string): "ALTA" | "QUEDA" | null {
-  if (!CAFE_TITULO.test(titulo) || !CONTEXTO_PRECO.test(titulo)) return null;
-  const trecho = trechoDoCafe(titulo).replace(/alta qualidade|baixa qualidade/gi, "");
-  if (FORA_DO_PRECO.test(trecho) && !/pre[çc]o|cota[çc]/i.test(trecho)) return null;
-  const alta = ALTA.test(trecho);
-  const queda = QUEDA.test(trecho);
-  if (alta === queda) return null; // sem direcao clara (ou as duas): fica de fora
-  return alta ? "ALTA" : "QUEDA";
-}
-
-async function tendenciaCafe() {
-  const lista = await ultimas(FEEDS_TENDENCIA, (n) => classificarTendencia(n.titulo) !== null);
-  return lista.map((n) => ({ ...n, tendencia: classificarTendencia(n.titulo)! }));
-}
-
-export async function getUltimasNoticias() {
-  const [dolar, cafe, tendencia] = await Promise.all([
-    ultimas(FEEDS_DOLAR, FILTRO_DOLAR),
-    ultimas(FEEDS_CAFE, FILTRO_CAFE),
-    tendenciaCafe(),
-  ]);
-  return { dolar, cafe, tendencia, buscadoEm: new Date().toISOString() };
-}
+export const getUltimasNoticias = unstable_cache(buscarNoticias, [NOTICIAS_TAG], {
+  revalidate: NOTICIAS_REVALIDAR_SEGUNDOS,
+  tags: [NOTICIAS_TAG],
+});

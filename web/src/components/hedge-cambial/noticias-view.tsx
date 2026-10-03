@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Coffee, DollarSign, ExternalLink, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
+import { DollarSign, ExternalLink, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { Noticia } from "@/lib/hedge-cambial/noticias";
+import type { Noticia, StatusFonte } from "@/lib/hedge-cambial/noticias";
 import { cn } from "@/lib/utils";
+import { atualizarNoticias } from "@/app/(dashboard)/hedge-cambial/noticias/actions";
 
 const INTERVALO_MS = 30 * 60 * 1000;
 
@@ -20,104 +21,63 @@ function quando(iso: string | null, agora: number) {
   return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-function Lista({
-  titulo,
-  icone,
-  noticias,
-  agora,
-  cabecalho,
-}: {
-  titulo: string;
-  icone: React.ReactNode;
-  noticias: Noticia[];
-  agora: number;
-  cabecalho?: React.ReactNode;
-}) {
+// Estado de cada fonte na ultima busca: mostra de onde as noticias vieram e
+// qual portal nao respondeu (quando a lista vem vazia ou incompleta).
+function FontesStatus({ fontes }: { fontes: StatusFonte[] }) {
   return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold">
-        {icone}
-        {titulo}
-      </div>
-      {cabecalho}
-      {noticias.length === 0 ? (
-        <p className="px-4 py-8 text-center text-sm text-muted">Nao foi possivel carregar as noticias agora.</p>
-      ) : (
-        <ol>
-          {noticias.map((n) => (
-            <li key={n.link} className="border-b border-border/60 px-4 py-3 last:border-0">
-              <a
-                href={n.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-start gap-1.5 text-sm font-medium hover:text-primary"
-              >
-                {n.tendencia && (
-                  <span
-                    className={cn(
-                      "mt-0.5 inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold",
-                      n.tendencia === "ALTA" ? "bg-primary/15 text-primary" : "bg-danger/15 text-danger"
-                    )}
-                  >
-                    {n.tendencia === "ALTA" ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                    {n.tendencia}
-                  </span>
-                )}
-                <span className="group-hover:underline">{n.titulo}</span>
-                <ExternalLink size={12} className="mt-1 shrink-0 text-muted" />
-              </a>
-              {n.resumo && <p className="mt-1 text-xs text-muted">{n.resumo}</p>}
-              <p className="mt-1 text-[11px] text-muted">
-                {n.fonte}
-                {n.data && ` - ${quando(n.data, agora)}`}
-              </p>
-            </li>
-          ))}
-        </ol>
-      )}
-    </Card>
-  );
-}
-
-function ResumoTendencia({ noticias }: { noticias: Noticia[] }) {
-  const altas = noticias.filter((n) => n.tendencia === "ALTA").length;
-  const quedas = noticias.filter((n) => n.tendencia === "QUEDA").length;
-  if (altas + quedas === 0) return null;
-  const direcao = altas > quedas ? "ALTA" : quedas > altas ? "QUEDA" : "LATERAL";
-  return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-border bg-border/20 px-4 py-2.5 text-xs">
-      <span>
-        Tendencia nas noticias:{" "}
-        <strong className={cn(direcao === "ALTA" && "text-primary", direcao === "QUEDA" && "text-danger")}>{direcao}</strong>
-      </span>
-      <span className="text-muted">
-        {altas} de alta - {quedas} de queda (ultimas {altas + quedas})
-      </span>
-      <span className="text-muted">Leitura das manchetes, nao e recomendacao de operacao.</span>
+    <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
+      <span>Fontes nesta busca:</span>
+      {fontes.map((f) => (
+        <span
+          key={f.url}
+          title={f.erro ? `Falha: ${f.erro}` : undefined}
+          className={cn(
+            "rounded-full border px-2 py-0.5",
+            f.ok ? "border-primary/40 text-primary" : "border-danger/50 text-danger"
+          )}
+        >
+          {f.fonte}: {f.ok ? "ok" : "fora do ar"}
+        </span>
+      ))}
     </div>
   );
 }
 
 export function NoticiasView({
   dolar,
-  cafe,
-  tendencia,
+  fontes,
   buscadoEm,
 }: {
   dolar: Noticia[];
-  cafe: Noticia[];
-  tendencia: Noticia[];
+  fontes: StatusFonte[];
   buscadoEm: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [agora, setAgora] = useState(() => new Date(buscadoEm).getTime());
+  const proxima = new Date(buscadoEm).getTime() + INTERVALO_MS;
 
-  // Busca de novo a cada 30 minutos enquanto a tela estiver aberta.
-  useEffect(() => {
-    const id = setInterval(() => startTransition(() => router.refresh()), INTERVALO_MS);
-    return () => clearInterval(id);
+  // Descarta o cache no servidor e recarrega a tela: busca nas fontes na hora.
+  const atualizar = useCallback(() => {
+    startTransition(async () => {
+      await atualizarNoticias();
+      router.refresh();
+    });
   }, [router]);
+
+  // Atualizacao automatica: 30 minutos depois da ultima busca. Se a aba ficou
+  // em segundo plano (o navegador atrasa os timers), atualiza ao voltar.
+  useEffect(() => {
+    const id = setTimeout(atualizar, Math.max(5000, proxima - Date.now()));
+    const aoVoltar = () => {
+      if (document.visibilityState === "visible" && Date.now() >= proxima) atualizar();
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => {
+      clearTimeout(id);
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
+  }, [proxima, atualizar]);
 
   // Atualiza o "ha X min" a cada minuto.
   useEffect(() => {
@@ -125,27 +85,60 @@ export function NoticiasView({
     return () => clearInterval(id);
   }, []);
 
-  const hora = new Date(buscadoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const hora = (t: number) => new Date(t).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between text-xs text-muted">
-        <span>Atualizado as {hora}. Proxima atualizacao automatica em ate 30 minutos.</span>
-        <Button variant="outline" size="sm" disabled={pending} onClick={() => startTransition(() => router.refresh())}>
-          <RefreshCw size={13} className={pending ? "animate-spin" : undefined} /> Atualizar
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+        <span>
+          {pending
+            ? "Buscando as ultimas noticias..."
+            : `Buscado as ${hora(new Date(buscadoEm).getTime())}. Proxima atualizacao automatica as ${hora(proxima)} (a cada 30 minutos).`}
+        </span>
+        <Button variant="outline" size="sm" disabled={pending} onClick={atualizar}>
+          <RefreshCw size={13} className={pending ? "animate-spin" : undefined} /> Atualizar agora
         </Button>
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Lista titulo="Mercado de Dolar" icone={<DollarSign size={16} className="text-primary" />} noticias={dolar} agora={agora} />
-        <Lista titulo="Mercado de Cafe" icone={<Coffee size={16} className="text-primary" />} noticias={cafe} agora={agora} />
-      </div>
-      <Lista
-        titulo="Tendencia Bolsa NY - Cafe (alta ou queda no preco)"
-        icone={<TrendingUp size={16} className="text-primary" />}
-        noticias={tendencia}
-        agora={agora}
-        cabecalho={<ResumoTendencia noticias={tendencia} />}
-      />
+
+      <Card className="overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold">
+          <DollarSign size={16} className="text-primary" />
+          Mercado de Dolar - 10 ultimas noticias
+        </div>
+        {dolar.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-muted">
+            Nenhuma noticia recebida das fontes nesta busca. Veja o estado das fontes abaixo e clique em Atualizar agora.
+          </p>
+        ) : (
+          <ol>
+            {dolar.map((n) => (
+              <li key={n.link} className="border-b border-border/60 px-4 py-3 last:border-0">
+                <a
+                  href={n.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-start gap-1.5 text-sm font-medium hover:text-primary"
+                >
+                  <span className="group-hover:underline">{n.titulo}</span>
+                  <ExternalLink size={12} className="mt-1 shrink-0 text-muted" />
+                </a>
+                {n.resumo && <p className="mt-1 text-xs text-muted">{n.resumo}</p>}
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-muted">
+                  <span>
+                    {n.fonte}
+                    {n.data && ` - ${quando(n.data, agora)}`}
+                  </span>
+                  <a href={n.link} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
+                    Ler noticia completa
+                  </a>
+                </p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Card>
+
+      <FontesStatus fontes={fontes} />
     </div>
   );
 }
