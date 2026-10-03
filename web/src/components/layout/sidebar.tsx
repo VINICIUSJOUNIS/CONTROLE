@@ -31,6 +31,7 @@ import {
   ClipboardList,
   CheckCircle2,
   CalendarDays,
+  Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -118,6 +119,7 @@ const hedgeNavItems = [
 
 const hedgeCambialNavItems = [
   { href: "/hedge-cambial", label: "Dashboard Hedge", icon: TrendingUp },
+  { href: "/hedge-cambial/noticias", label: "ULTIMAS NOTICIAS", icon: Newspaper },
   ...hedgeCambialAbas.map((a) => ({ href: `/hedge-cambial/${a.slug}`, label: a.label, icon: FileStack })),
 ];
 
