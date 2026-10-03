@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ListPlus, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -48,8 +48,6 @@ function lerNumero(s: string, formato?: Formato): number | null {
   return Number.isFinite(n) ? n : NaN;
 }
 
-const NOVO_ITEM = "__novo__";
-
 type ChaveCadastro = keyof typeof CADASTROS;
 
 export function HedgeAbaView({
@@ -80,8 +78,6 @@ export function HedgeAbaView({
   const [incluidos, setIncluidos] = useState<Record<string, string[]>>({});
   const [excluidos, setExcluidos] = useState<Record<string, string[]>>({});
   const [novoItem, setNovoItem] = useState<{ campo: string; nome: string } | null>(null);
-  const [gerenciando, setGerenciando] = useState<ChaveCadastro | null>(null);
-  const [nomeGerenciar, setNomeGerenciar] = useState("");
   const [erroCadastro, setErroCadastro] = useState<string | null>(null);
 
   const listas = useMemo(() => {
@@ -94,10 +90,6 @@ export function HedgeAbaView({
     return out;
   }, [cadastros, incluidos, excluidos]);
 
-  const cadastrosDaAba = useMemo(
-    () => Array.from(new Set(config.campos.map((c) => c.cadastro).filter((c): c is ChaveCadastro => !!c))),
-    [config]
-  );
 
   function cadastrar(chave: ChaveCadastro, nome: string, aoCadastrar?: (nome: string) => void) {
     setErroCadastro(null);
@@ -349,20 +341,7 @@ export function HedgeAbaView({
             <AlertTriangle size={14} /> Somente com alerta ({totalAlertas})
           </label>
         )}
-        <div className="ml-auto flex gap-2">
-          {cadastrosDaAba.map((chave) => (
-            <Button
-              key={chave}
-              variant="outline"
-              onClick={() => {
-                setGerenciando(chave);
-                setNomeGerenciar("");
-                setErroCadastro(null);
-              }}
-            >
-              <ListPlus size={16} /> {CADASTROS[chave].titulo}
-            </Button>
-          ))}
+        <div className="ml-auto">
           <Button onClick={abrirNovo}>
             <Plus size={16} /> Novo lancamento
           </Button>
@@ -489,61 +468,87 @@ export function HedgeAbaView({
                 </Label>
                 {c.cadastro ? (
                   <>
-                    <Select
-                      value={form[c.key] ?? ""}
-                      onChange={(e) => {
-                        if (e.target.value === NOVO_ITEM) {
-                          setNovoItem({ campo: c.key, nome: "" });
+                    <div className="flex gap-1.5">
+                      <Select value={form[c.key] ?? ""} onChange={(e) => setForm({ ...form, [c.key]: e.target.value })}>
+                        <option value="">Selecione...</option>
+                        {form[c.key] && !listas[c.cadastro].includes(form[c.key]) && (
+                          <option value={form[c.key]}>{form[c.key]} (fora do cadastro)</option>
+                        )}
+                        {listas[c.cadastro].map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="shrink-0"
+                        title={`Cadastrar ${CADASTROS[c.cadastro].item}`}
+                        onClick={() => {
+                          setNovoItem(novoItem?.campo === c.key ? null : { campo: c.key, nome: "" });
                           setErroCadastro(null);
-                        } else setForm({ ...form, [c.key]: e.target.value });
-                      }}
-                    >
-                      <option value="">Selecione...</option>
-                      {form[c.key] && !listas[c.cadastro].includes(form[c.key]) && (
-                        <option value={form[c.key]}>{form[c.key]} (fora do cadastro)</option>
-                      )}
-                      {listas[c.cadastro].map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                      <option value={NOVO_ITEM}>+ Cadastrar nova {CADASTROS[c.cadastro].item}...</option>
-                    </Select>
+                        }}
+                      >
+                        {novoItem?.campo === c.key ? <X size={15} /> : <Plus size={15} />} Cadastrar
+                      </Button>
+                    </div>
                     {novoItem?.campo === c.key && (
-                      <div className="mt-1.5 flex gap-1.5">
-                        <Input
-                          autoFocus
-                          placeholder={`Nome da nova ${CADASTROS[c.cadastro].item}`}
-                          value={novoItem.nome}
-                          onChange={(e) => setNovoItem({ campo: c.key, nome: e.target.value })}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
+                      <div className="mt-2 space-y-2 rounded-lg border border-border bg-border/10 p-2.5">
+                        <p className="text-[11px] font-medium text-muted">Cadastrar nova {CADASTROS[c.cadastro].item}</p>
+                        <div className="flex gap-1.5">
+                          <Input
+                            autoFocus
+                            placeholder={`Nome da ${CADASTROS[c.cadastro].item}`}
+                            value={novoItem.nome}
+                            onChange={(e) => setNovoItem({ campo: c.key, nome: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && novoItem.nome.trim()) {
+                                e.preventDefault();
+                                cadastrar(c.cadastro!, novoItem.nome, (nome) => {
+                                  setForm((f) => ({ ...f, [c.key]: nome }));
+                                  setNovoItem(null);
+                                });
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-9 shrink-0"
+                            disabled={pending || !novoItem.nome.trim()}
+                            onClick={() =>
                               cadastrar(c.cadastro!, novoItem.nome, (nome) => {
                                 setForm((f) => ({ ...f, [c.key]: nome }));
                                 setNovoItem(null);
-                              });
+                              })
                             }
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          disabled={pending || !novoItem.nome.trim()}
-                          onClick={() =>
-                            cadastrar(c.cadastro!, novoItem.nome, (nome) => {
-                              setForm((f) => ({ ...f, [c.key]: nome }));
-                              setNovoItem(null);
-                            })
-                          }
-                        >
-                          Cadastrar
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setNovoItem(null)}>
-                          Cancelar
-                        </Button>
+                          >
+                            Salvar
+                          </Button>
+                        </div>
+                        {erroCadastro && <p className="text-[11px] text-danger">{erroCadastro}</p>}
+                        <ul className="max-h-40 divide-y divide-border overflow-auto rounded border border-border bg-card">
+                          {listas[c.cadastro].map((nome) => (
+                            <li key={nome} className="flex items-center justify-between px-2 py-1 text-xs">
+                              <span>{nome}</span>
+                              <button
+                                type="button"
+                                className="rounded p-1 text-muted hover:bg-border/60 hover:text-danger"
+                                title="Remover da lista"
+                                onClick={() => descadastrar(c.cadastro!, nome)}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="text-[10px] text-muted">
+                          A nova {CADASTROS[c.cadastro].item} ja fica selecionada neste lancamento. Remover da lista nao altera
+                          lancamentos ja feitos.
+                        </p>
                       </div>
                     )}
-                    {novoItem?.campo === c.key && erroCadastro && <p className="mt-1 text-[11px] text-danger">{erroCadastro}</p>}
                   </>
                 ) : c.tipo === "opcao" ? (
                   <Select value={form[c.key] ?? ""} onChange={(e) => setForm({ ...form, [c.key]: e.target.value })}>
@@ -609,47 +614,6 @@ export function HedgeAbaView({
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
-      <Dialog open={gerenciando !== null} onOpenChange={(v) => !v && setGerenciando(null)}>
-        {gerenciando && (
-          <DialogContent title={CADASTROS[gerenciando].titulo}>
-            <div className="flex gap-2">
-              <Input
-                placeholder={`Nova ${CADASTROS[gerenciando].item}`}
-                value={nomeGerenciar}
-                onChange={(e) => setNomeGerenciar(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && nomeGerenciar.trim()) cadastrar(gerenciando, nomeGerenciar, () => setNomeGerenciar(""));
-                }}
-              />
-              <Button
-                disabled={pending || !nomeGerenciar.trim()}
-                onClick={() => cadastrar(gerenciando, nomeGerenciar, () => setNomeGerenciar(""))}
-              >
-                <Plus size={15} /> Cadastrar
-              </Button>
-            </div>
-            {erroCadastro && <p className="mt-2 text-sm text-danger">{erroCadastro}</p>}
-            <ul className="mt-3 max-h-80 divide-y divide-border overflow-auto rounded-lg border border-border">
-              {listas[gerenciando].length === 0 && <li className="px-3 py-4 text-center text-sm text-muted">Nenhuma cadastrada.</li>}
-              {listas[gerenciando].map((nome) => (
-                <li key={nome} className="flex items-center justify-between px-3 py-2 text-sm">
-                  <span>{nome}</span>
-                  <button
-                    className="rounded p-1 text-muted hover:bg-border/60 hover:text-danger"
-                    title="Remover da lista"
-                    onClick={() => descadastrar(gerenciando, nome)}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 text-[11px] text-muted">
-              Remover da lista nao altera os lancamentos ja feitos; so tira a opcao dos proximos.
-            </p>
-          </DialogContent>
-        )}
       </Dialog>
     </div>
   );
