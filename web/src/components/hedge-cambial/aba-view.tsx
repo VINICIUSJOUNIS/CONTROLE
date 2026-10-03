@@ -6,7 +6,7 @@ import { AlertTriangle, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Input, Label, Select } from "@/components/ui/field";
+import { Input, Label, Select, Textarea } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { CADASTROS, Campo, Ctx, Dados, Formato, getAbaConfig, Registro } from "@/lib/hedge-cambial/config";
 import { formatarValor } from "@/lib/hedge-cambial/formatar";
@@ -394,7 +394,11 @@ export function HedgeAbaView({
                           calcPorKey.has(key) && "font-medium"
                         )}
                       >
-                        {formatarValor(v ?? null, fmt)}
+                        {typeof v === "string" && v.length > 40 ? (
+                          <span title={v}>{v.slice(0, 40)}...</span>
+                        ) : (
+                          formatarValor(v ?? null, fmt)
+                        )}
                       </td>
                     );
                   })}
@@ -461,12 +465,18 @@ export function HedgeAbaView({
         <DialogContent title={editandoId ? `Editar - ${config.label}` : `Novo lancamento - ${config.label}`} className="max-w-3xl">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {config.campos.map((c) => (
-              <div key={c.key}>
+              <div key={c.key} className={c.multilinha ? "sm:col-span-2" : undefined}>
                 <Label>
                   {c.label}
                   {c.obrigatorio && <span className="text-danger"> *</span>}
                 </Label>
-                {c.cadastro ? (
+                {c.multilinha ? (
+                  <Textarea
+                    rows={3}
+                    value={form[c.key] ?? ""}
+                    onChange={(e) => setForm({ ...form, [c.key]: e.target.value })}
+                  />
+                ) : c.cadastro ? (
                   <>
                     <div className="flex gap-1.5">
                       {listas[c.cadastro].length > 60 ? (

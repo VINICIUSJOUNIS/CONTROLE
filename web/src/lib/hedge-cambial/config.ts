@@ -67,6 +67,8 @@ export type Campo = {
   obrigatorio?: boolean;
   formato?: Formato;
   ajuda?: string;
+  /** Texto longo: caixa de varias linhas ocupando a largura do formulario. */
+  multilinha?: boolean;
 };
 
 export type Calculado = {
@@ -686,6 +688,7 @@ const bolsaNy: AbaConfig = {
     { key: "usdFechamento", label: "US$ FECHAMENTO", tipo: "texto" },
     { key: "valorAjustado", label: "VALOR AJUSTADO", tipo: "texto" },
     { key: "ajusteDiario", label: "VALOR AJUSTE DIARIO", tipo: "texto" },
+    { key: "observacao", label: "OBSERVACOES ADICIONAIS", tipo: "texto", multilinha: true },
   ],
   calculados: [
     { key: "sacas", label: "SACAS", formato: "sacas", calc: bolsaSacas, ajuda: "Lotes x 283,5." },
@@ -705,6 +708,7 @@ const bolsaNy: AbaConfig = {
     "usdFechamento",
     "valorAjustado",
     "ajusteDiario",
+    "observacao",
   ],
   totais: ["lotes", "sacas", "totalUsd"],
   filtroStatus: "status",
