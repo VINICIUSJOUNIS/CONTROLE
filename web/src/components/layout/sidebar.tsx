@@ -120,6 +120,7 @@ const hedgeNavItems = [
 const hedgeCambialNavItems = [
   { href: "/hedge-cambial", label: "Dashboard Hedge", icon: TrendingUp },
   { href: "/hedge-cambial/noticias", label: "ULTIMAS NOTICIAS", icon: Newspaper },
+  { href: "/hedge-cambial/historico-dolar", label: "HISTORICO DOLAR (PTAX)", icon: LineChart },
   ...hedgeCambialAbas.map((a) => ({ href: `/hedge-cambial/${a.slug}`, label: a.label, icon: FileStack })),
 ];
 

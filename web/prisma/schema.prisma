@@ -1249,3 +1249,15 @@ model HedgeParametro {
 
   @@map("hedge_parametros")
 }
+
+// Historico da PTAX de fechamento (dolar comercial, compra e venda) do Banco
+// Central, um registro por dia util. Preenchido automaticamente pelo sistema
+// (src/lib/hedge-cambial/ptax.ts) e usado como dolar do dia do modulo Hedge.
+model HedgePtax {
+  data      DateTime @id @db.Date
+  compra    Decimal  @db.Decimal(10, 4)
+  venda     Decimal  @db.Decimal(10, 4)
+  createdAt DateTime @default(now())
+
+  @@map("hedge_ptax")
+}

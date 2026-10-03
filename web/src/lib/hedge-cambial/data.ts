@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { sincronizarPtaxSilencioso } from "@/lib/hedge-cambial/ptax";
 import { AbaConfig, CADASTROS, Ctx, Dados, Registro } from "@/lib/hedge-cambial/config";
 
 export const PARAMETROS = {
@@ -22,6 +23,8 @@ function hojeLocal() {
 }
 
 export async function getParametros(): Promise<Parametros> {
+  // Antes de ler o dolar do dia, traz a PTAX nova do Banco Central (se houver).
+  await sincronizarPtaxSilencioso();
   const rows = await prisma.hedgeParametro.findMany();
   const map = new Map(rows.map((r) => [r.chave, r.valor]));
   const n = (k: string) => {
