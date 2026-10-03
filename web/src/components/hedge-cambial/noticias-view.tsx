@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { DollarSign, ExternalLink, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { DollarSign, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import type { Noticia, StatusFonte } from "@/lib/hedge-cambial/noticias";
 import { cn } from "@/lib/utils";
 import { atualizarNoticias } from "@/app/(dashboard)/hedge-cambial/noticias/actions";
+import { BarraAtualizacao } from "@/components/hedge-cambial/atualizacao-automatica";
 
 const INTERVALO_MS = 5 * 60 * 1000;
 
@@ -52,32 +51,7 @@ export function NoticiasView({
   fontes: StatusFonte[];
   buscadoEm: string;
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
   const [agora, setAgora] = useState(() => new Date(buscadoEm).getTime());
-  const proxima = new Date(buscadoEm).getTime() + INTERVALO_MS;
-
-  // Descarta o cache no servidor e recarrega a tela: busca nas fontes na hora.
-  const atualizar = useCallback(() => {
-    startTransition(async () => {
-      await atualizarNoticias();
-      router.refresh();
-    });
-  }, [router]);
-
-  // Atualizacao automatica: 5 minutos depois da ultima busca. Se a aba ficou
-  // em segundo plano (o navegador atrasa os timers), atualiza ao voltar.
-  useEffect(() => {
-    const id = setTimeout(atualizar, Math.max(5000, proxima - Date.now()));
-    const aoVoltar = () => {
-      if (document.visibilityState === "visible" && Date.now() >= proxima) atualizar();
-    };
-    document.addEventListener("visibilitychange", aoVoltar);
-    return () => {
-      clearTimeout(id);
-      document.removeEventListener("visibilitychange", aoVoltar);
-    };
-  }, [proxima, atualizar]);
 
   // Atualiza o "ha X min" a cada minuto.
   useEffect(() => {
@@ -85,20 +59,14 @@ export function NoticiasView({
     return () => clearInterval(id);
   }, []);
 
-  const hora = (t: number) => new Date(t).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
-        <span>
-          {pending
-            ? "Buscando as ultimas noticias..."
-            : `Buscado as ${hora(new Date(buscadoEm).getTime())}. Proxima atualizacao automatica as ${hora(proxima)} (a cada 5 minutos).`}
-        </span>
-        <Button variant="outline" size="sm" disabled={pending} onClick={atualizar}>
-          <RefreshCw size={13} className={pending ? "animate-spin" : undefined} /> Atualizar agora
-        </Button>
-      </div>
+      <BarraAtualizacao
+        buscadoEm={buscadoEm}
+        intervaloMs={INTERVALO_MS}
+        descartarCache={atualizarNoticias}
+        rotulo="as ultimas noticias"
+      />
 
       <Card className="overflow-hidden">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold">
