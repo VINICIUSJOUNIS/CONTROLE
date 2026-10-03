@@ -7,6 +7,8 @@ import type { Noticia, StatusFonte } from "@/lib/hedge-cambial/noticias";
 import { cn } from "@/lib/utils";
 import { atualizarNoticias } from "@/app/(dashboard)/hedge-cambial/noticias/actions";
 import { BarraAtualizacao } from "@/components/hedge-cambial/atualizacao-automatica";
+import { CambioBcbView } from "@/components/hedge-cambial/cambio-bcb-view";
+import type { PainelCambio } from "@/lib/hedge-cambial/cambio-bcb";
 
 const INTERVALO_MS = 5 * 60 * 1000;
 
@@ -46,10 +48,12 @@ export function NoticiasView({
   dolar,
   fontes,
   buscadoEm,
+  cambio,
 }: {
   dolar: Noticia[];
   fontes: StatusFonte[];
   buscadoEm: string;
+  cambio: PainelCambio;
 }) {
   const [agora, setAgora] = useState(() => new Date(buscadoEm).getTime());
 
@@ -65,7 +69,7 @@ export function NoticiasView({
         buscadoEm={buscadoEm}
         intervaloMs={INTERVALO_MS}
         descartarCache={atualizarNoticias}
-        rotulo="as ultimas noticias"
+        rotulo="as ultimas noticias e os dados do Banco Central"
       />
 
       <Card className="overflow-hidden">
@@ -107,6 +111,9 @@ export function NoticiasView({
       </Card>
 
       <FontesStatus fontes={fontes} />
+
+      <h2 className="pt-2 text-base font-semibold">Cambio - dados oficiais do Banco Central</h2>
+      <CambioBcbView painel={cambio} />
     </div>
   );
 }

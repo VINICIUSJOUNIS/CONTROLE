@@ -4,10 +4,6 @@ import { Info, Landmark, LineChart, TrendingDown, TrendingUp, Minus } from "luci
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { Atuacao, PainelCambio, Sinal } from "@/lib/hedge-cambial/cambio-bcb";
-import { atualizarCambio } from "@/app/(dashboard)/hedge-cambial/cambio-bcb/actions";
-import { BarraAtualizacao } from "@/components/hedge-cambial/atualizacao-automatica";
-
-const INTERVALO_MS = 5 * 60 * 1000;
 
 const dataBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 const taxa = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
@@ -45,12 +41,6 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
 
   return (
     <div className="space-y-6">
-      <BarraAtualizacao
-        buscadoEm={painel.buscadoEm}
-        intervaloMs={INTERVALO_MS}
-        descartarCache={atualizarCambio}
-        rotulo="os dados do Banco Central"
-      />
       {painel.falhas.length > 0 && (
         <p className="text-sm text-warning">Banco Central nao respondeu nesta busca: {painel.falhas.join(", ")}. Clique em Atualizar agora.</p>
       )}
