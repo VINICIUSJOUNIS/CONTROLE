@@ -25,7 +25,14 @@ import {
   txt,
 } from "@/lib/hedge-cambial/config";
 
-export type LinhaDashboard = { label: string; valor: number | null; aba?: string; ajuda?: string };
+export type LinhaDashboard = {
+  label: string;
+  valor: number | null;
+  aba?: string;
+  ajuda?: string;
+  /** Linha so informativa - nao soma no NET. */
+  foraDoNet?: boolean;
+};
 
 export type Dashboard = {
   sacas: LinhaDashboard[];
@@ -54,6 +61,15 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
   // Planilha: -SUMIF(S,"FIXADO",B)
   const vendasMe = r("vendas-merc-externo-nayme");
   const vendaMeSacas = -soma(com(vendasMe, "status", "FIXADO"), (d) => num(d, "quant"));
+  // Venda ME "A FIXAR" (preco a fixar, PTBF): trava so o diferencial - o risco
+  // de NY continua com a Nayme ate a fixacao. Enquanto o cafe esta em estoque, o
+  // estoque ja carrega essa exposicao, entao a venda nao entra no NET (como na
+  // planilha). Depois de embarcada, o cafe sai do estoque mas o preco segue
+  // aberto: volta para o NET como posicao comprada (+sacas) ate fixar.
+  const meAFixar = com(vendasMe, "status", "A FIXAR");
+  const embarcada = (d: Dados) => txt(d, "dataEmb") !== "" && txt(d, "dataEmb") <= ctx.hoje;
+  const meAFixarEmbarcada = soma(meAFixar.filter(embarcada), (d) => num(d, "quant"));
+  const meAFixarEstoque = soma(meAFixar.filter((d) => !embarcada(d)), (d) => num(d, "quant"));
   // Planilha: -SUM(B) + SUMIF(J,"LIQUIDADO",B)
   const vendaFut = -soma(sem(r("vendas-futuras"), "status", "LIQUIDADO"), (d) => num(d, "sacas"));
   // Planilha: SUM(C) da BOLSA NY
@@ -68,12 +84,25 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
     { label: "CAFES A FIXAR", valor: aFixar, aba: "cafes-a-fixar-nayme", ajuda: "Saldo a fixar (status A FIXAR)." },
     { label: "VENDA MI", valor: vendaMi, aba: "venda-mi", ajuda: "Vendas ainda nao embarcadas." },
     { label: "VENDA ME USD", valor: vendaMeSacas, aba: "vendas-merc-externo-nayme", ajuda: "Vendas externas com status FIXADO." },
+    {
+      label: "VENDA ME A FIXAR EMBARCADA",
+      valor: meAFixarEmbarcada,
+      aba: "vendas-merc-externo-nayme",
+      ajuda: "Embarcada com preco ainda a fixar: risco de NY continua (posicao comprada).",
+    },
     { label: "VENDA FUTURA", valor: vendaFut, aba: "vendas-futuras", ajuda: "Nao liquidadas." },
     { label: "BOLSA NY", valor: bolsa, aba: "bolsa-ny-nayme" },
     { label: "SINTETICO EM REAIS", valor: sintetico, aba: "sintetico-em-reais-bancos" },
   ];
+  sacas.push({
+    label: "VENDA ME A FIXAR (a embarcar)",
+    valor: meAFixarEstoque,
+    aba: "vendas-merc-externo-nayme",
+    ajuda: "Informativo, fora do NET: so o diferencial esta travado; o NY segue no estoque ate a fixacao.",
+    foraDoNet: true,
+  });
   // Planilha: NET = SUM(B4:B12) e NET GERAL = SUM(B12:B13) (sintetico em dobro).
-  const netSacas = sacas.reduce((s, l) => s + (l.valor ?? 0), 0);
+  const netSacas = sacas.reduce((s, l) => s + (l.foraDoNet ? 0 : (l.valor ?? 0)), 0);
 
   // ----- LONG X SHORT DOLAR -----
   const endiv = r("endividamento-nayme");
@@ -124,7 +153,7 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
     },
     { label: "POSICAO B3", valor: posicaoB3Usd ?? 0, ajuda: "Parametro (US$) - posicao em dolar futuro na B3." },
   ];
-  const netDolar = dolar.reduce((s, l) => s + (l.valor ?? 0), 0);
+  const netDolar = dolar.reduce((s, l) => s + (l.foraDoNet ? 0 : (l.valor ?? 0)), 0);
 
   // ----- Precos medios -----
   // Preco medio de venda geral (R$/saca): vendas ME com status PORTO, CLIENTE e

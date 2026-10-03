@@ -40,7 +40,7 @@ function Tabela({
       <table className="w-full text-sm">
         <tbody>
           {linhas.map((l) => (
-            <tr key={l.label} className="border-b border-border/60">
+            <tr key={l.label} className={cn("border-b border-border/60", l.foraDoNet && "text-muted italic")}>
               <td className="px-4 py-2">
                 {l.aba ? (
                   <Link href={`/hedge-cambial/${l.aba}`} className="hover:text-primary hover:underline">

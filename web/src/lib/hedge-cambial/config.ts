@@ -207,6 +207,14 @@ function travaTaxa(d: Dados) {
   return f !== 0 ? f : g;
 }
 
+function travaAjuste(d: Dados) {
+  const informado = num(d, "ajusteInformado");
+  if (informado !== null) return informado;
+  const g = num(d, "nivelVenda");
+  if (!g) return 0;
+  return n0(d, "liquidacao") * (g - n0(d, "nivelUsd"));
+}
+
 export function travaSaldo(d: Dados) {
   return n0(d, "valorUsd") - n0(d, "liquidacao");
 }
@@ -214,7 +222,7 @@ export function travaSaldo(d: Dados) {
 const travaNdf: AbaConfig = {
   slug: "trava-ndf-us-nayme",
   label: "",
-  descricao: "Travas e NDFs de dolar: valor contratado, liquidacoes, saldo em aberto e desagio.",
+  descricao: "Travas e NDFs de dolar: valor contratado, liquidacoes, saldo em aberto e ajuste (resultado) da liquidacao.",
   campos: [
     { key: "data", label: "DATA", tipo: "data", obrigatorio: true },
     { key: "tipo", label: "COMPRA/VENDA", tipo: "opcao", opcoes: STATUS_COMPRA_VENDA, obrigatorio: true },
@@ -236,11 +244,11 @@ const travaNdf: AbaConfig = {
     { key: "nivelUsd", label: "NIVEL USD", tipo: "numero", formato: "num4", obrigatorio: true, ajuda: "Taxa contratada (R$/US$)." },
     { key: "nivelVenda", label: "NIVEL VENDA", tipo: "numero", formato: "num4", ajuda: "Taxa de liquidacao (fixing)." },
     {
-      key: "desagioInformado",
-      label: "DESAGIO R$ (informado)",
+      key: "ajusteInformado",
+      label: "AJUSTE R$ (informado)",
       tipo: "numero",
       formato: "brl",
-      ajuda: "Deixe vazio para calcular: liquidado x (nivel USD - nivel venda).",
+      ajuda: "Deixe vazio para calcular: liquidado x (nivel venda - nivel USD). Positivo = ganho.",
     },
     { key: "corretora", label: "CORRETORA", tipo: "texto", sugestoes: true },
     { key: "contrato", label: "CONTRATO TRAVA", tipo: "opcao", opcoes: ["NDF", "TRAVA"], obrigatorio: true },
@@ -256,21 +264,17 @@ const travaNdf: AbaConfig = {
       calc: travaSaldo, // Planilha: E=C-D
     },
     {
-      key: "desagio",
-      label: "DESAGIO R$",
+      key: "ajuste",
+      label: "AJUSTE R$ (+ganho / -perda)",
       formato: "brl",
-      // Planilha: H=(D*F)-(C*G) na maioria; H9=D*G; H10=(F9-G10)*D10 (linha de cima);
-      // H11:H14, H62, H63 digitados. Com liquidacao parcial (D<C) a formula
-      // original misturava valor total e liquidado. Corrigido: liquidado x (F - G).
-      // Positivo = custo, negativo = ganho (mesmo sinal da planilha).
-      calc: (d) => {
-        const informado = num(d, "desagioInformado");
-        if (informado !== null) return informado;
-        const g = num(d, "nivelVenda");
-        if (!g) return 0;
-        return n0(d, "liquidacao") * (n0(d, "nivelUsd") - g);
-      },
-      ajuda: "Liquidado x (nivel USD - nivel venda). Positivo = custo, negativo = ganho.",
+      // Planilha (coluna DESAGIO R$): H=(D*F)-(C*G) na maioria; H9=D*G;
+      // H10=(F9-G10)*D10 (linha de cima); H11:H14, H62, H63 digitados. O sinal era
+      // positivo = custo, e com liquidacao parcial (D<C) a formula misturava valor
+      // total e liquidado. Corrigido para a formula de mercado do ajuste de NDF:
+      // nocional liquidado x (taxa de liquidacao - taxa contratada), com o nocional
+      // com sinal (venda negativa) - positivo = ganho para a Nayme.
+      calc: travaAjuste,
+      ajuda: "Liquidado x (nivel venda - nivel USD). Positivo = ganho, negativo = perda.",
     },
     {
       key: "totalBrl",
@@ -301,7 +305,7 @@ const travaNdf: AbaConfig = {
     "saldoUsd",
     "nivelUsd",
     "nivelVenda",
-    "desagio",
+    "ajuste",
     "corretora",
     "contrato",
     "status",
@@ -310,7 +314,7 @@ const travaNdf: AbaConfig = {
     "vencimento",
     "observacao",
   ],
-  totais: ["valorUsd", "liquidacao", "saldoUsd", "desagio", "totalBrl", "mtmBrl"],
+  totais: ["valorUsd", "liquidacao", "saldoUsd", "ajuste", "totalBrl", "mtmBrl"],
   filtroStatus: "status",
   padrao: (ctx) => ({ data: ctx.hoje, status: "A LIQUIDAR", contrato: "NDF" }),
   validar: (d) => {
@@ -331,8 +335,8 @@ const travaNdf: AbaConfig = {
     // indicador "Saldo das LIQUIDADAS". Aqui so a liquidacao parcial.
     if (txt(d, "status") === "LIQUIDADA" && v !== 0 && l !== 0 && saldo !== 0) return "Status LIQUIDADA com saldo em aberto.";
     // Planilha: sem NIVEL VENDA o desagio virava liquidado x nivel USD (valor cheio em R$).
-    if (txt(d, "status") === "LIQUIDADA" && v !== 0 && l !== 0 && !num(d, "nivelVenda") && num(d, "desagioInformado") === null)
-      return "Liquidada sem NIVEL VENDA: desagio nao calculado.";
+    if (txt(d, "status") === "LIQUIDADA" && v !== 0 && l !== 0 && !num(d, "nivelVenda") && num(d, "ajusteInformado") === null)
+      return "Liquidada sem NIVEL VENDA: ajuste nao calculado.";
     if (txt(d, "status") === "A LIQUIDAR" && saldo === 0) return "Status A LIQUIDAR sem saldo.";
     const venc = txt(d, "vencimento");
     if (txt(d, "status") === "A LIQUIDAR" && venc && venc < ctx.hoje) return "Vencimento ja passou.";
@@ -350,6 +354,7 @@ const travaNdf: AbaConfig = {
     // contratado (dava 0,2489). Corrigido: taxa media ponderada do saldo em aberto.
     return [
       { label: "Saldo liquido em aberto (US$)", valor: soma(rows, travaSaldo), formato: "usd", destaque: true },
+      { label: "Ajuste realizado (R$)", valor: soma(rows, (d) => travaAjuste(d)), formato: "brl" },
       {
         label: "Saldo das LIQUIDADAS (deve ser 0)",
         valor: soma(rows.filter((d) => txt(d, "status") === "LIQUIDADA"), travaSaldo),
@@ -517,8 +522,9 @@ export const ME_STATUS = ["A FIXAR", "FIXADO", "PORTO", "CLIENTE", "FINANCIADO",
 export function meUnit(d: Dados) {
   const informado = num(d, "unitInformado");
   if (informado !== null) return informado;
+  // NY vazio ou zero = preco ainda nao fixado (planilha calculava (0 + dif) x 1,3228).
   const f = num(d, "nyCentLb");
-  if (f === null) return null;
+  if (!f) return null;
   return (f + n0(d, "diferencial")) * LB_SACA;
 }
 
