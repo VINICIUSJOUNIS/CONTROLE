@@ -156,6 +156,21 @@ function travaAjuste(d: Dados) {
   return n0(d, "liquidacao") * (g - n0(d, "nivelUsd"));
 }
 
+// NDF em aberto: status A LIQUIDAR com saldo. (As linhas antigas de 2023/2024
+// lancavam compra e venda em linhas separadas e ficam com saldo individual
+// mesmo LIQUIDADAS - por isso o filtro e pelo status, nao so pelo saldo.)
+export function ndfAberta(d: Dados) {
+  return txt(d, "status") === "A LIQUIDAR" && travaSaldo(d) !== 0;
+}
+
+// Ajuste previsto no vencimento pelo dolar do dia: saldo x (dolar - taxa
+// contratada). Positivo = a Nayme recebe; negativo = a Nayme paga. (Na
+// liquidacao vale a PTAX de venda do dia util anterior ao vencimento.)
+export function ndfAjustePrevisto(d: Dados, ctx: Ctx): number | null {
+  if (!ndfAberta(d) || !ctx.dolar) return null;
+  return travaSaldo(d) * (ctx.dolar - travaTaxa(d));
+}
+
 export function travaSaldo(d: Dados) {
   return n0(d, "valorUsd") - n0(d, "liquidacao");
 }
@@ -225,17 +240,25 @@ const travaNdf: AbaConfig = {
       ajuda: "Saldo US$ x taxa contratada.",
     },
     {
-      key: "mtmBrl",
-      label: "MTM R$ (dolar do dia)",
+      key: "aReceber",
+      label: "A RECEBER R$ (dolar do dia)",
       formato: "brl",
-      // Novo: marcacao a mercado do saldo em aberto pelo dolar do dia.
-      // Positivo = ganho para a Nayme.
+      // Novo: ajuste previsto da NDF em aberto no vencimento, pelo dolar do dia.
       calc: (d, ctx) => {
-        const saldo = travaSaldo(d);
-        if (!ctx.dolar || saldo === 0) return null;
-        return saldo * (ctx.dolar - travaTaxa(d));
+        const a = ndfAjustePrevisto(d, ctx);
+        return a !== null && a > 0 ? a : null;
       },
-      ajuda: "Saldo x (dolar do dia - taxa contratada). Positivo = ganho.",
+      ajuda: "NDF em aberto: saldo x (dolar do dia - taxa contratada), quando positivo.",
+    },
+    {
+      key: "aPagar",
+      label: "A PAGAR R$ (dolar do dia)",
+      formato: "brl",
+      calc: (d, ctx) => {
+        const a = ndfAjustePrevisto(d, ctx);
+        return a !== null && a < 0 ? -a : null;
+      },
+      ajuda: "NDF em aberto: saldo x (dolar do dia - taxa contratada), quando negativo.",
     },
   ],
   colunas: [
@@ -251,11 +274,12 @@ const travaNdf: AbaConfig = {
     "contrato",
     "status",
     "totalBrl",
-    "mtmBrl",
     "vencimento",
+    "aReceber",
+    "aPagar",
     "observacao",
   ],
-  totais: ["valorUsd", "liquidacao", "saldoUsd", "ajuste", "totalBrl", "mtmBrl"],
+  totais: ["valorUsd", "liquidacao", "saldoUsd", "ajuste", "totalBrl", "aReceber", "aPagar"],
   filtroStatus: "status",
   padrao: (ctx) => ({ data: ctx.hoje, status: "A LIQUIDAR", contrato: "NDF" }),
   validar: (d) => {
@@ -284,31 +308,32 @@ const travaNdf: AbaConfig = {
     return null;
   },
   indicadores: (rows, ctx) => {
-    const abertas = rows.filter((d) => travaSaldo(d) !== 0);
+    const abertas = rows.filter(ndfAberta);
     const compras = abertas.filter((d) => travaSaldo(d) > 0);
     const vendas = abertas.filter((d) => travaSaldo(d) < 0);
     const taxaMedia = (rs: Dados[]) => {
       const s = soma(rs, travaSaldo);
       return s === 0 ? null : soma(rs, (d) => travaSaldo(d) * travaTaxa(d)) / s;
     };
+    const previstos = abertas.map((d) => ndfAjustePrevisto(d, ctx) ?? 0);
+    const aReceber = previstos.filter((v) => v > 0).reduce((a, b) => a + b, 0);
+    const aPagar = -previstos.filter((v) => v < 0).reduce((a, b) => a + b, 0);
     // Planilha: N1 = SUM(L:L)/SUM(C:C) - dividia o R$ do saldo pelo valor bruto
     // contratado (dava 0,2489). Corrigido: taxa media ponderada do saldo em aberto.
     return [
-      { label: "Saldo liquido em aberto (US$)", valor: soma(rows, travaSaldo), formato: "usd", destaque: true },
+      { label: "A RECEBER no vencimento (R$)", valor: ctx.dolar ? aReceber : null, formato: "brl", destaque: true },
+      { label: "A PAGAR no vencimento (R$)", valor: ctx.dolar ? aPagar : null, formato: "brl", destaque: true },
+      { label: "Saldo liquido (receber - pagar)", valor: ctx.dolar ? aReceber - aPagar : null, formato: "brl", destaque: true },
+      { label: "Saldo em aberto (US$)", valor: soma(abertas, travaSaldo), formato: "usd" },
+      { label: "Compras em aberto (US$)", valor: soma(compras, travaSaldo), formato: "usd" },
+      { label: "Taxa media compras", valor: taxaMedia(compras), formato: "num4" },
+      { label: "Vendas em aberto (US$)", valor: soma(vendas, travaSaldo), formato: "usd" },
+      { label: "Taxa media vendas", valor: taxaMedia(vendas), formato: "num4" },
       { label: "Ajuste realizado (R$)", valor: soma(rows, (d) => travaAjuste(d)), formato: "brl" },
       {
         label: "Saldo das LIQUIDADAS (deve ser 0)",
         valor: soma(rows.filter((d) => txt(d, "status") === "LIQUIDADA"), travaSaldo),
         formato: "usd",
-      },
-      { label: "Compras em aberto (US$)", valor: soma(compras, travaSaldo), formato: "usd" },
-      { label: "Taxa media compras", valor: taxaMedia(compras), formato: "num4" },
-      { label: "Vendas em aberto (US$)", valor: soma(vendas, travaSaldo), formato: "usd" },
-      { label: "Taxa media vendas", valor: taxaMedia(vendas), formato: "num4" },
-      {
-        label: "MTM em aberto (R$)",
-        valor: ctx.dolar ? soma(abertas, (d) => travaSaldo(d) * (ctx.dolar! - travaTaxa(d))) : null,
-        formato: "brl",
       },
     ];
   },

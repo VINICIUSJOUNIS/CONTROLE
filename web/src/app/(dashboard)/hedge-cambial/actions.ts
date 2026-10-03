@@ -67,6 +67,26 @@ export async function salvarParametros(entrada: {
   return { ok: true };
 }
 
+// Grava so o dolar do dia (usado na TRAVA NDF), sem mexer nos outros parametros.
+export async function salvarDolarDoDia(dolar: number, data: string | null): Promise<Resultado> {
+  if (!Number.isFinite(dolar) || dolar <= 0 || dolar > 50) return { ok: false, erro: "Dolar fora da faixa." };
+  if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) return { ok: false, erro: "Data invalida." };
+  await prisma.$transaction([
+    prisma.hedgeParametro.upsert({
+      where: { chave: PARAMETROS.dolar },
+      create: { chave: PARAMETROS.dolar, valor: String(dolar) },
+      update: { valor: String(dolar) },
+    }),
+    prisma.hedgeParametro.upsert({
+      where: { chave: PARAMETROS.dolarData },
+      create: { chave: PARAMETROS.dolarData, valor: data ?? "" },
+      update: { valor: data ?? "" },
+    }),
+  ]);
+  revalidatePath("/hedge-cambial", "layout");
+  return { ok: true };
+}
+
 // PTAX de venda mais recente publicada pelo Banco Central (ultimos 10 dias,
 // para cobrir fins de semana e feriados).
 export async function buscarPtax(): Promise<{ ok: true; dolar: number; data: string } | { ok: false; erro: string }> {
