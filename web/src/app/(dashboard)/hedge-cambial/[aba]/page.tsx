@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
-import { getHedgeCambialAba, hedgeCambialAbas } from "@/lib/hedge-cambial-abas";
+import { HedgeAbaView } from "@/components/hedge-cambial/aba-view";
+import { getAbaConfig } from "@/lib/hedge-cambial/config";
+import { ctxDe, getParametros, getRegistros } from "@/lib/hedge-cambial/data";
+import { hedgeCambialAbas } from "@/lib/hedge-cambial-abas";
 
 export function generateStaticParams() {
   return hedgeCambialAbas.map((a) => ({ aba: a.slug }));
@@ -8,14 +11,16 @@ export function generateStaticParams() {
 
 export default async function HedgeCambialAbaPage({ params }: { params: Promise<{ aba: string }> }) {
   const { aba: slug } = await params;
-  const aba = getHedgeCambialAba(slug);
-  if (!aba) notFound();
+  const config = getAbaConfig(slug);
+  if (!config) notFound();
+
+  const [registros, parametros] = await Promise.all([getRegistros(slug), getParametros()]);
 
   return (
     <div className="flex flex-col">
-      <Topbar title={aba.label} subtitle="Hedge" />
-      <div className="space-y-6 p-6">
-        <p className="text-center text-muted">Modulo em construcao.</p>
+      <Topbar title={config.label} subtitle={config.descricao} />
+      <div className="p-6">
+        <HedgeAbaView slug={slug} registros={registros} ctx={ctxDe(parametros)} />
       </div>
     </div>
   );

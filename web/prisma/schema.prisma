@@ -1218,3 +1218,34 @@ model BudgetLineMonth {
   @@unique([budgetLineId, month])
   @@map("budget_line_months")
 }
+
+// Modulo Hedge (card HEDGE): cada aba da planilha PLANILHA_HEDGE_NAYME vira um
+// conjunto de registros desta tabela, identificados por `aba` (slug, ver
+// src/lib/hedge-cambial/config.ts). Os campos de cada aba ficam em `dados`
+// (JSON com chaves definidas na config da aba: datas "YYYY-MM-DD", numeros e
+// textos) - as colunas calculadas da planilha NAO sao gravadas, sao recalculadas
+// na leitura pelas formulas da config. `ordem` preserva a ordem das linhas da
+// planilha importada; novos lancamentos recebem o proximo numero.
+model HedgeRegistro {
+  id        String   @id @default(uuid())
+  aba       String
+  ordem     Int
+  dados     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([aba, ordem])
+  @@map("hedge_registros")
+}
+
+// Parametros de mercado do modulo Hedge usados nos calculos (dolar do dia,
+// NY atual, posicao B3) - substituem os valores fixos digitados nas formulas
+// da planilha (5,70 / 5,57 / 5,75) e a cotacao "dados de acoes" quebrada do
+// DASHBOARD. Valor guardado como texto numerico.
+model HedgeParametro {
+  chave     String   @id
+  valor     String
+  updatedAt DateTime @updatedAt
+
+  @@map("hedge_parametros")
+}
