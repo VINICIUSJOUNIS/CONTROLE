@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return new Response("Faça login novamente.", { status: 401 });
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
     return new Response("ANTHROPIC_API_KEY não configurada.", { status: 500 });
   }
 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   if (file.type !== "application/pdf") return new Response("O arquivo precisa ser um PDF.", { status: 400 });
 
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim() });
 
   const stream = client.messages.stream({
     model: MODELO,

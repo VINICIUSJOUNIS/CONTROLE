@@ -107,7 +107,7 @@ export function AnaliseBalancete() {
 // Renderizador simples do Markdown que a IA devolve: titulos, listas, tabelas,
 // negrito e italico.
 function inline(texto: string): ReactNode {
-  const partes = texto.split(/(\*\*[^*]+\*\*|_[^_]+_)/g);
+  const partes = texto.split(/(\*\*[^*]+\*\*|(?<!\w)_[^_]+_(?!\w))/g);
   return partes.map((p, i) =>
     p.startsWith("**") && p.endsWith("**") ? (
       <strong key={i}>{p.slice(2, -2)}</strong>
