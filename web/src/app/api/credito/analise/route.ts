@@ -20,6 +20,16 @@ const FORMATO =
   "Responda em português do Brasil, em Markdown: um titulo '## ' para cada secao, na ordem pedida, tabelas Markdown " +
   "para balanço, contas e indicadores, listas com '- ' e valores em R$ no padrão brasileiro.";
 
+// Traduz os erros da API da Anthropic para a tela, mantendo a mensagem original.
+function motivoErro(e: unknown) {
+  if (e instanceof Anthropic.AuthenticationError) return "Chave ANTHROPIC_API_KEY inválida - confira o valor na Vercel.";
+  if (e instanceof Anthropic.PermissionDeniedError) return "A chave não tem permissão para usar este modelo.";
+  if (e instanceof Anthropic.RateLimitError) return "Limite de uso da API atingido - aguarde um minuto e tente de novo.";
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/credit balance/i.test(msg)) return "Sem créditos na conta da Anthropic - adicione créditos em console.anthropic.com > Billing.";
+  return `Detalhe: ${msg}`;
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
@@ -69,7 +79,7 @@ export async function POST(request: Request) {
         }
       } catch (e) {
         console.error("Analise de credito:", e);
-        controller.enqueue(encoder.encode("\n\n**Erro ao gerar a análise.** Tente novamente."));
+        controller.enqueue(encoder.encode(`\n\n**Erro ao gerar a análise.** ${motivoErro(e)}`));
       } finally {
         controller.close();
       }
