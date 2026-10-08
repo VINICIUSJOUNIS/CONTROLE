@@ -14,7 +14,7 @@ const modules = [
   {
     href: "/credito",
     label: "Analise de Credito",
-    description: "Balanco patrimonial, DRE, fluxo de caixa e indicadores.",
+    description: "Analise do balancete em PDF pela IA: balanco, contas, endividamento e riscos.",
     icon: Scale,
   },
   {
