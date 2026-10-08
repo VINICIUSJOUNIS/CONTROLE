@@ -7,6 +7,11 @@ export const maxDuration = 300;
 
 const MODELO = "claude-opus-5-5";
 
+// A chave da Anthropic cadastrada e de organizacao (sem workspace): a API exige
+// o cabecalho anthropic-workspace-id. O ID nao e segredo; pode ser trocado pela
+// variavel ANTHROPIC_WORKSPACE_ID na Vercel.
+const WORKSPACE_ID = process.env.ANTHROPIC_WORKSPACE_ID?.trim() || "wrkspc_01EMEck1JehNq3HA2d1qT88Z";
+
 const PROMPT =
   "Você é um analista financeiro sênior. Ao receber um PDF de balancete, extraia e apresente: resumo executivo, " +
   "balanço patrimonial simplificado, contas a receber (aging e concentração), contas a pagar (fornecedores, impostos, " +
@@ -47,7 +52,10 @@ export async function POST(request: Request) {
   if (file.type !== "application/pdf") return new Response("O arquivo precisa ser um PDF.", { status: 400 });
 
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim() });
+  const client = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY.trim(),
+    defaultHeaders: { "anthropic-workspace-id": WORKSPACE_ID },
+  });
 
   const stream = client.messages.stream({
     model: MODELO,
