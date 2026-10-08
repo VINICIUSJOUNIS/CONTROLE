@@ -198,6 +198,13 @@ function Markdown({ texto }: { texto: string }) {
         )
       );
       i++;
+    } else if (t.startsWith(">")) {
+      blocos.push(
+        <p key={blocos.length} className="border-l-2 border-primary pl-3 text-muted">
+          {inline(t.replace(/^>\s*/, ""))}
+        </p>
+      );
+      i++;
     } else if (/^-{3,}$/.test(t)) {
       blocos.push(<hr key={blocos.length} className="border-border" />);
       i++;

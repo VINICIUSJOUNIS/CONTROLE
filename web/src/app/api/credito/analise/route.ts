@@ -57,28 +57,47 @@ export async function POST(request: Request) {
     defaultHeaders: { "anthropic-workspace-id": WORKSPACE_ID },
   });
 
-  const stream = client.messages.stream({
-    model: MODELO,
-    max_tokens: 16000,
-    system: `${PROMPT}\n\n${FORMATO}`,
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
-          { type: "text", text: "Analise este balancete." },
-        ],
-      },
-    ],
-  });
+  const messages: Anthropic.MessageParam[] = [
+    {
+      role: "user",
+      content: [
+        { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
+        { type: "text", text: "Analise este balancete." },
+      ],
+    },
+  ];
+  // O raciocinio interno do modelo tambem consome max_tokens: limite alto e
+  // effort medio deixam espaco para o relatorio completo. O SDK instalado (0.68)
+  // nao tipa output_config, entao o campo vai no corpo como esta.
+  const abrir = (comEffort: boolean) =>
+    client.messages.stream({
+      model: MODELO,
+      max_tokens: 64000,
+      system: `${PROMPT}\n\n${FORMATO}`,
+      messages,
+      ...(comEffort ? { output_config: { effort: "medium" } } : {}),
+    } as Anthropic.MessageStreamParams);
 
+  let stream = abrir(true);
   const encoder = new TextEncoder();
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
+      let escreveu = false;
       try {
-        for await (const ev of stream) {
-          if (ev.type === "content_block_delta" && ev.delta.type === "text_delta") {
-            controller.enqueue(encoder.encode(ev.delta.text));
+        for (let tentativa = 0; ; tentativa++) {
+          try {
+            for await (const ev of stream) {
+              if (ev.type === "content_block_delta" && ev.delta.type === "text_delta") {
+                escreveu = true;
+                controller.enqueue(encoder.encode(ev.delta.text));
+              }
+            }
+            break;
+          } catch (e) {
+            // Parametro recusado (400) antes de qualquer texto: refaz sem o effort.
+            if (tentativa > 0 || escreveu || !(e instanceof Anthropic.BadRequestError)) throw e;
+            console.error("Analise de credito: refazendo sem effort -", e.message);
+            stream = abrir(false);
           }
         }
         const final = await stream.finalMessage();
