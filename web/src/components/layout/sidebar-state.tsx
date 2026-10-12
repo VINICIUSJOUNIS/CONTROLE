@@ -1,11 +1,11 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Minimize2, PanelLeftClose, PanelLeftOpen, Presentation } from "lucide-react";
+import { Minimize2, Presentation } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Estado da moldura do sistema, compartilhado entre Sidebar e Topbar:
-// - menu lateral aberto/fechado (lembrado neste navegador, vale para todos os modulos)
+// - menu lateral expandido/recolhido (lembrado neste navegador, vale para todos os modulos)
 // - modo apresentacao: tela cheia, sem menu e sem barra superior.
 const CHAVE = "controle:menu-lateral-aberto";
 const EVENTO = "controle:menu-lateral";
@@ -82,21 +82,6 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
 
 export const useSidebar = () => useContext(Ctx);
 
-export function SidebarToggle() {
-  const { aberta, alternar } = useSidebar();
-  const Icone = aberta ? PanelLeftClose : PanelLeftOpen;
-  return (
-    <button
-      type="button"
-      onClick={alternar}
-      title={aberta ? "Ocultar menu" : "Mostrar menu"}
-      aria-label={aberta ? "Ocultar menu" : "Mostrar menu"}
-      className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border hover:bg-border/40 md:flex print:hidden"
-    >
-      <Icone size={16} />
-    </button>
-  );
-}
 
 export function ApresentarButton() {
   const { alternarApresentacao } = useSidebar();

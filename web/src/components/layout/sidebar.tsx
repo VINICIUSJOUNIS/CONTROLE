@@ -32,7 +32,8 @@ import {
   CheckCircle2,
   CalendarDays,
   Newspaper,
-  Presentation,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-state";
@@ -76,7 +77,6 @@ const navItems = [
   { href: "/taxas", label: "Evolucao das Taxas", icon: LineChart },
   { href: "/bancos", label: "Comparativo de Bancos", icon: Building2 },
   { href: "/relatorios", label: "Relatorios", icon: FileText },
-  { href: "/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const faturamentoNavItems = [
@@ -87,7 +87,6 @@ const faturamentoNavItems = [
   { href: "/faturamento/curva-abc", label: "Curva ABC", icon: BarChart3 },
   { href: "/faturamento/relatorio", label: "Relatório Comparativo", icon: FileText },
   { href: "/faturamento/relatorio-clientes", label: "Relatório de Clientes", icon: Users },
-  { href: "/faturamento/gerencial", label: "Apresentação", icon: Presentation },
 ];
 
 const apresentacaoNavItems = [
@@ -100,7 +99,6 @@ const apresentacaoNavItems = [
 
 const creditoNavItems = [
   { href: "/credito", label: "Analise de Credito", icon: LayoutDashboard },
-  { href: "/credito/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const hedgeNavItems = [
@@ -119,7 +117,6 @@ const hedgeNavItems = [
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
   { href: "/hedge/alertas-prazos", label: "Alerta de Prazos", icon: AlertTriangle },
   { href: "/hedge/cadastros", label: "Cadastros", icon: Settings2 },
-  { href: "/hedge/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const hedgeCambialNavItems = [
@@ -127,17 +124,14 @@ const hedgeCambialNavItems = [
   { href: "/hedge-cambial/noticias", label: "ULTIMAS NOTICIAS", icon: Newspaper },
   { href: "/hedge-cambial/historico-dolar", label: "HISTORICO DOLAR (PTAX)", icon: LineChart },
   ...hedgeCambialAbas.map((a) => ({ href: `/hedge-cambial/${a.slug}`, label: a.label, icon: FileStack })),
-  { href: "/hedge-cambial/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const planejamentoNavItems = [
   { href: "/planejamento-orcamentario", label: "Planejamento Orçamentário", icon: Target },
-  { href: "/planejamento-orcamentario/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const transferenciaOrdemNavItems = [
   { href: "/transferencia-ordem", label: "Transferência de Ordem", icon: Send },
-  { href: "/transferencia-ordem/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const roleLabels: Record<string, string> = {
@@ -191,8 +185,7 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const activeModule = getActiveModule(pathname);
-  // Item ativo = o de caminho mais especifico que contem a pagina atual (ex.:
-  // /credito/apresentacao acende so "Apresentação", nao tambem "/credito").
+  // Item ativo = o de caminho mais especifico que contem a pagina atual.
   const activeHref = activeModule.items
     .filter(
       (item) =>
@@ -202,7 +195,9 @@ export function Sidebar({
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
   const [expanded, setExpanded] = useState<string | null>(null);
   const [expandedSubGroup, setExpandedSubGroup] = useState<string | null>(null);
-  const { aberta, apresentando } = useSidebar();
+  const { aberta, alternar, apresentando } = useSidebar();
+  // Recolhido, o menu vira uma faixa estreita so com os icones.
+  const recolhido = !aberta;
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -212,13 +207,30 @@ export function Sidebar({
   }
 
   return (
-    <aside className={cn((!aberta || apresentando) && "md:hidden", "hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden")}>
-      <Link href="/inicio" className="flex items-center gap-2 px-5 py-5">
-        <div>
-          <p className="text-sm font-semibold text-white">Controle</p>
-        </div>
-      </Link>
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
+    <aside
+      className={cn(
+        "hidden shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-[width] md:flex print:hidden",
+        recolhido ? "w-16" : "w-64",
+        apresentando && "md:hidden"
+      )}
+    >
+      <div className={cn("flex items-center py-4", recolhido ? "justify-center px-2" : "justify-between pl-5 pr-3")}>
+        {!recolhido && (
+          <Link href="/inicio" className="text-sm font-semibold text-white">
+            Controle
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={alternar}
+          title={recolhido ? "Expandir menu" : "Recolher menu"}
+          aria-label={recolhido ? "Expandir menu" : "Recolher menu"}
+          className="rounded-lg p-1.5 text-sidebar-foreground/80 hover:bg-white/10 hover:text-white"
+        >
+          {recolhido ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
+      </div>
+      <nav className={cn("flex-1 space-y-1 overflow-y-auto py-2", recolhido ? "px-2" : "px-3")}>
         {activeModule.items.map((item) => {
           const active = item.href === activeHref;
           const Icon = item.icon;
@@ -234,21 +246,30 @@ export function Sidebar({
                     : "hover:bg-sidebar-active/60 hover:text-white"
                 )}
               >
-                <Link href={item.href} className="flex flex-1 items-center gap-3 px-3 py-2.5">
-                  <Icon size={17} />
-                  {item.label}
-                  {subItems && mesaOperacaoCount != null && (
+                <Link
+                  href={item.href}
+                  title={recolhido ? item.label : undefined}
+                  className={cn("relative flex flex-1 items-center gap-3 py-2.5", recolhido ? "justify-center px-0" : "px-3")}
+                >
+                  <Icon size={17} className="shrink-0" />
+                  {recolhido ? (
+                    item.href === "/hedge/alertas-prazos" &&
+                    !!alertasPrazosCount && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger" />
+                  ) : (
+                    item.label
+                  )}
+                  {!recolhido && subItems && mesaOperacaoCount != null && (
                     <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium">
                       {mesaOperacaoCount}
                     </span>
                   )}
-                  {item.href === "/hedge/alertas-prazos" && !!alertasPrazosCount && (
+                  {!recolhido && item.href === "/hedge/alertas-prazos" && !!alertasPrazosCount && (
                     <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-xs font-bold text-white">
                       {alertasPrazosCount}
                     </span>
                   )}
                 </Link>
-                {subItems && (
+                {subItems && !recolhido && (
                   <button
                     type="button"
                     onClick={() => setExpanded(isExpanded ? null : item.href)}
@@ -262,7 +283,7 @@ export function Sidebar({
                   </button>
                 )}
               </div>
-              {subItems && isExpanded && (
+              {subItems && isExpanded && !recolhido && (
                 <ul className="mt-1 space-y-0.5 border-l border-white/10 pl-6">
                   {subItems.map((sub) => {
                     if (sub.kind === "group") {
@@ -352,16 +373,15 @@ export function Sidebar({
           );
         })}
       </nav>
-      <div className="border-t border-white/10 px-4 py-3">
-        <p className="text-xs font-medium text-white">
-          {roleLabels[profile.role] ?? profile.role}
-        </p>
+      <div className={cn("border-t border-white/10 py-3", recolhido ? "flex justify-center px-2" : "px-4")}>
+        {!recolhido && <p className="text-xs font-medium text-white">{roleLabels[profile.role] ?? profile.role}</p>}
         <button
           onClick={handleSignOut}
-          className="mt-2 flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-white"
+          title="Sair"
+          className={cn("flex items-center gap-1.5 text-xs text-sidebar-foreground/70 hover:text-white", !recolhido && "mt-2")}
         >
-          <LogOut size={13} />
-          Sair
+          <LogOut size={recolhido ? 16 : 13} />
+          {!recolhido && "Sair"}
         </button>
       </div>
     </aside>
