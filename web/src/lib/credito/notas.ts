@@ -67,8 +67,33 @@ export const NOTAS_METODOLOGIA: { titulo: string; planilha: string; sistema: str
     sistema: "DFC indireta do mês entre o balanço atual e o anterior, com fechamento: caixa inicial + fluxo gerado = caixa final do balanço (diferença mostrada).",
   },
   {
+    titulo: "EBITDA ajustado (revisão)",
+    planilha: "-",
+    sistema: "EBITDA conforme a Resolução CVM 156/2022 (LL + IR/CSLL + resultado financeiro + D&A) ajustado para crédito: exclui a equivalência patrimonial, que não é caixa. Antes ela entrava no EBITDA e era somada de novo no fluxo de caixa.",
+  },
+  {
+    titulo: "Retornos sobre saldos médios",
+    planilha: "ROE e ROA sobre o saldo final.",
+    sistema: "ROE, ROA, giro do ativo, ROIC e custo da dívida sobre o saldo médio do mês ((início + fim) ÷ 2). Com PL médio negativo o ROE não é calculado (passivo a descoberto).",
+  },
+  {
+    titulo: "Grau de alavancagem financeira",
+    planilha: "LL/PL ÷ EBIT/AT: misturava retorno depois do IR com retorno antes do IR.",
+    sistema: "GAF = ROE ÷ ROIC (Assaf Neto), ambos depois do IR, com NOPAT = EBIT × (1 − 34%). Novo ROIC e custo médio da dívida para comparar se o crédito cria valor.",
+  },
+  {
+    titulo: "Provisão de IRPJ e CSLL",
+    planilha: "Sem conferência.",
+    sistema: "Alíquota efetiva = IR/CSLL ÷ LAIR. Abaixo de 23,8% (34% com compensação máxima de prejuízo fiscal de 30%) o sistema alerta e mostra o lucro líquido ajustado com IR/CSLL de 34%, além do lucro contábil.",
+  },
+  {
+    titulo: "Derivativos e rastreabilidade",
+    planilha: "-",
+    sistema: "MTM negativo de derivativos/hedge tem campo próprio no passivo (fora do capital de giro, dentro da tesouraria). Nova conferência: a soma das contas de origem do PDF tem que bater com cada campo extraído.",
+  },
+  {
     titulo: "Novos indicadores",
     planilha: "-",
-    sistema: "Liquidez imediata, endividamento geral, imobilização do PL, margens bruta/EBITDA/líquida, ROE e ROA anualizados, dívida financeira no exigível, geração interna de recursos (FFO) e geração operacional de caixa.",
+    sistema: "Liquidez imediata, endividamento geral, imobilização do PL e dos recursos não correntes, dívida líquida/PL, custo médio da dívida, ROIC, margens bruta/EBITDA/líquida, ROE e ROA anualizados, dívida financeira no exigível, geração interna de recursos (FFO) e geração operacional de caixa.",
   },
 ];

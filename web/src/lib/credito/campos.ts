@@ -56,6 +56,7 @@ export const CAMPOS_BALANCO = [
   { grupo: "passivoCirculante", chave: "irCsRecolher", rotulo: "IRPJ e CSLL a Recolher", regra: "Imposto de renda e contribuição social sobre o lucro a recolher." },
   { grupo: "passivoCirculante", chave: "emprestimosCP", rotulo: "Empréstimos e Financiamentos (CP)", regra: "Empréstimos e financiamentos bancários, conta garantida, FUNCAFÉ, financiamentos e empréstimos de terceiros de curto prazo - exceto ACC/ACE." },
   { grupo: "passivoCirculante", chave: "accAce", rotulo: "ACC / ACE", regra: "Adiantamentos sobre contratos de câmbio (ACC/ACE). É dívida financeira, nunca adiantamento de cliente." },
+  { grupo: "passivoCirculante", chave: "derivativosPassivo", rotulo: "Derivativos e Hedge a Pagar", regra: "Ajuste a mercado (MTM) negativo de derivativos e margens/chamadas a pagar a corretoras de hedge. Não é fornecedor nem dívida bancária." },
   { grupo: "passivoCirculante", chave: "partesRelacionadasCP", rotulo: "Empréstimos de Sócios e Coligadas (CP)", regra: "Mútuos e empréstimos recebidos de sócios e empresas do grupo no curto prazo." },
   { grupo: "passivoCirculante", chave: "dividendosPagar", rotulo: "Dividendos e Lucros a Pagar", regra: "Dividendos, lucros e JCP a pagar." },
   { grupo: "passivoCirculante", chave: "adiantamentosClientes", rotulo: "Adiantamentos de Clientes", regra: "Adiantamentos recebidos de clientes por vendas futuras (não incluir ACC)." },

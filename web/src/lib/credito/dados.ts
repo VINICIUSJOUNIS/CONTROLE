@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import type { Balanco, Dre, DreTipo, Origens } from "./campos";
+import { CAMPOS_BALANCO, CAMPOS_DRE, type Balanco, type Dre, type DreTipo, type Origens } from "./campos";
 import type { RegistroCredito } from "./calculos";
 import type { Extracao } from "./extracao-schema";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
+
+// Registros gravados antes de um campo novo existir recebem 0 nesse campo.
+const completar = <T,>(valores: unknown, chaves: readonly { chave: string }[]) =>
+  Object.fromEntries(chaves.map((c) => [c.chave, Number((valores as Record<string, unknown>)?.[c.chave] ?? 0)])) as T;
 
 // Todos os meses cadastrados, do mais antigo para o mais recente.
 export async function listarRegistrosCredito(): Promise<RegistroCredito[]> {
@@ -18,9 +22,9 @@ export async function listarRegistrosCredito(): Promise<RegistroCredito[]> {
     dreTipo: r.dreTipo as DreTipo,
     dreInicio: iso(r.dreInicio),
     dreFim: iso(r.dreFim)!,
-    balanco: r.balanco as Balanco,
-    balancoAnterior: (r.balancoAnterior as Balanco | null) ?? null,
-    dre: r.dre as Dre,
+    balanco: completar<Balanco>(r.balanco, CAMPOS_BALANCO),
+    balancoAnterior: r.balancoAnterior ? completar<Balanco>(r.balancoAnterior, CAMPOS_BALANCO) : null,
+    dre: completar<Dre>(r.dre, CAMPOS_DRE),
     origens: r.origens as Origens,
     conferenciaPdf: r.conferenciaPdf as RegistroCredito["conferenciaPdf"],
     observacoes: r.observacoes as string[],

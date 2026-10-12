@@ -197,7 +197,16 @@ export type DreCalc = Dre & {
   resultadoFinanceiro: number;
   lair: number;
   lucroLiquido: number;
+  aliquotaEfetiva: number | null; // IR/CSLL ÷ LAIR
+  irComplementar: number; // IR/CSLL que falta para a aliquota minima legal (0 se a provisao for suficiente)
+  lucroAjustado: number; // lucro liquido com a provisao de IR/CSLL complementada
 };
+
+// Lucro real: IRPJ 15% + adicional 10% + CSLL 9% = 34%. Mesmo compensando
+// prejuizo fiscal (limite de 30% do lucro - Lei 9.065/95, art. 15), a aliquota
+// efetiva minima e 34% x 70% = 23,8%. Abaixo disso a provisao esta incompleta.
+export const ALIQUOTA_IR_CS = 0.34;
+export const ALIQUOTA_MINIMA_IR_CS = ALIQUOTA_IR_CS * 0.7;
 
 export function calcularDre(d: Dre, depreciacaoBalanco: number | null): DreCalc {
   const receitaLiquida = d.receitaBruta - d.deducoes;
@@ -209,10 +218,15 @@ export function calcularDre(d: Dre, depreciacaoBalanco: number | null): DreCalc 
   // pela variacao da depreciacao acumulada no balanco (sem baixas no mes).
   const depreciacaoEstimada = d.depreciacaoAmortizacao === 0 && (depreciacaoBalanco ?? 0) > 0;
   const depreciacaoUsada = depreciacaoEstimada ? (depreciacaoBalanco as number) : d.depreciacaoAmortizacao;
-  const ebitda = ebit + depreciacaoUsada;
+  // EBITDA ajustado para credito: EBIT + D&A, sem a equivalencia patrimonial
+  // (resultado de coligadas, nao gera caixa). Equivale a Resolucao CVM 156/2022
+  // (LL + IR/CS + resultado financeiro + D&A) excluida a equivalencia.
+  const ebitda = ebit - d.equivalenciaPatrimonial + depreciacaoUsada;
   const resultadoFinanceiro = d.receitasFinanceiras - d.despesasFinanceiras + d.variacaoCambialLiquida;
   const lair = ebit + resultadoFinanceiro + d.resultadoNaoOperacional;
   const lucroLiquido = lair - d.irCs - d.participacoes;
+  const aliquotaEfetiva = lair > 0 ? d.irCs / lair : null;
+  const irComplementar = lair > 0 && d.irCs < lair * ALIQUOTA_MINIMA_IR_CS ? lair * ALIQUOTA_IR_CS - d.irCs : 0;
   return {
     ...d,
     receitaLiquida,
@@ -225,6 +239,9 @@ export function calcularDre(d: Dre, depreciacaoBalanco: number | null): DreCalc 
     resultadoFinanceiro,
     lair,
     lucroLiquido,
+    aliquotaEfetiva,
+    irComplementar,
+    lucroAjustado: lucroLiquido - irComplementar,
   };
 }
 
@@ -256,6 +273,16 @@ function dreDoMes(comp: string, porComp: Map<string, RegistroCredito>): Dre | nu
   if (r.dreTipo === "mensal" || Number(comp.slice(5, 7)) === 1) return r.dre;
   const antAcum = dreAcumuladaAno(mesAnterior(comp), porComp);
   return antAcum ? subtrairDre(r.dre, antAcum) : null;
+}
+
+// Depreciacao do mes estimada pela variacao da depreciacao acumulada (null sem balanco anterior).
+function depreciacaoDoMes(comp: string, porComp: Map<string, RegistroCredito>): number | null {
+  const r = porComp.get(comp);
+  if (!r) return null;
+  const ant = porComp.get(mesAnterior(comp))?.balanco ?? r.balancoAnterior;
+  if (!ant) return null;
+  const dep = r.balanco.depreciacaoAcumulada - ant.depreciacaoAcumulada;
+  return dep > 0 ? dep : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -295,7 +322,7 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
   };
   const d = calcularDre(dreBase, deprecBalanco !== null && deprecBalanco > 0 ? deprecBalanco * meses : null);
   const dreAntMes = regAnt ? dreDoMes(regAnt.competencia, porComp) : null;
-  const dAnt = dreAntMes ? calcularDre(dreAntMes, null) : null;
+  const dAnt = dreAntMes && regAnt ? calcularDre(dreAntMes, depreciacaoDoMes(regAnt.competencia, porComp)) : null;
 
   // EBITDA dos ultimos 12 meses quando houver 12 meses seguidos; senao anualizado.
   const ltm = ebitdaUltimos12(comp, porComp);
@@ -372,7 +399,13 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
     lDre("(-) IRPJ e CSLL", -d.irCs, dAnt ? -dAnt.irCs : null, 2, ["irCs"]),
     lDre("(-) Participações", -d.participacoes, dAnt ? -dAnt.participacoes : null, 2, ["participacoes"]),
     lDre("Lucro Líquido do Período", d.lucroLiquido, da("lucroLiquido"), 0),
-    lDre(d.depreciacaoEstimada ? "EBITDA (D&A estimada pelo balanço)" : "EBITDA", d.ebitda, da("ebitda"), 1),
+    ...(d.irComplementar > 0
+      ? [
+          lDre(`(-) IR/CSLL complementar estimado (${pct(ALIQUOTA_IR_CS, 0)} do LAIR)`, -d.irComplementar, null, 2),
+          lDre("Lucro Líquido Ajustado (provisão de IR/CSLL completa)", d.lucroAjustado, null, 0),
+        ]
+      : []),
+    lDre(d.depreciacaoEstimada ? "EBITDA ajustado (D&A estimada pelo balanço)" : "EBITDA ajustado", d.ebitda, da("ebitda"), 1),
   ].filter((l) => l.nivel !== 2 || l.valor !== 0 || (l.anterior ?? 0) !== 0);
 
   // ---------------------------------------------------------------------- DFC
@@ -380,6 +413,8 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
 
   // --------------------------------------------------------------- Indicadores
   const ind = (i: Omit<Indicador, "anterior"> & { anterior?: number | null }): Indicador => ({ anterior: null, ...i });
+  const media = (atual: number, anterior: number | null | undefined) => (anterior === null || anterior === undefined ? atual : (atual + anterior) / 2);
+  const anual = (x: number | null) => (x === null ? null : (x * 12) / meses);
 
   // Capital de giro (Fleuriet)
   const ccl = t.ac - t.pc;
@@ -460,7 +495,7 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
       formato: "moeda",
       oQueE:
         "Diferença entre os ativos financeiros de curto prazo (caixa, aplicações, hedge, créditos não operacionais) e os passivos financeiros de curto prazo (empréstimos, ACC, mútuos, dividendos). Negativo indica que a empresa depende de crédito bancário de curto prazo para girar.",
-      formula: "T = Ativo Errático − Passivo Errático = CCL − NCG",
+      formula: "T = Ativo Errático (financeiro) − Passivo Errático (oneroso) = CCL − NCG",
       componentes: [
         { rotulo: "Caixa e bancos", valor: b.caixa, campos: ["caixa"], sinal: "+" },
         { rotulo: "Aplicações financeiras", valor: b.aplicacoesFinanceiras, campos: ["aplicacoesFinanceiras"], sinal: "+" },
@@ -468,6 +503,7 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
         { rotulo: "Outros ativos não operacionais", valor: b.outrosAtivosNaoOperacionaisCirc, campos: ["outrosAtivosNaoOperacionaisCirc"], sinal: "+" },
         { rotulo: "Empréstimos e financiamentos CP", valor: b.emprestimosCP, campos: ["emprestimosCP"], sinal: "-" },
         { rotulo: "ACC / ACE", valor: b.accAce, campos: ["accAce"], sinal: "-" },
+        { rotulo: "Derivativos e hedge a pagar", valor: b.derivativosPassivo, campos: ["derivativosPassivo"], sinal: "-" },
         { rotulo: "Empréstimos de sócios/coligadas CP", valor: b.partesRelacionadasCP, campos: ["partesRelacionadasCP"], sinal: "-" },
         { rotulo: "Dividendos a pagar", valor: b.dividendosPagar, campos: ["dividendosPagar"], sinal: "-" },
       ].filter((c) => c.valor !== 0),
@@ -646,6 +682,12 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
   const dlEbitda = ebitdaAnual > 0 ? t.dividaLiquida / ebitdaAnual : null;
   const coberturaJuros = div(d.ebitda, d.despesasFinanceiras);
   const varDivida = ta ? div(t.dividaBancaria - ta.dividaBancaria, ta.dividaBancaria) : null;
+  const dlPl = t.pl > 0 ? t.dividaLiquida / t.pl : null;
+  const imobRnc = div(t.anc - t.rlp, t.pl + t.pnc);
+  const dividaMedia = media(t.dividaBruta, ta?.dividaBruta);
+  const custoDivida = dividaMedia > 0 ? (d.despesasFinanceiras * 12) / meses / dividaMedia : null;
+  const capInvMedio = media(t.dividaBruta + t.pl, ta ? ta.dividaBruta + ta.pl : null);
+  const roicAnual = capInvMedio > 0 ? anual((d.ebit * (1 - ALIQUOTA_IR_CS)) / capInvMedio) : null;
   const estrutura: Indicador[] = [
     ind({
       chave: "dividaLiquidaEbitda",
@@ -683,6 +725,43 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
       ],
       leitura: coberturaJuros === null ? "Sem despesas financeiras no período." : `O EBITDA cobre ${num(coberturaJuros)} vezes os juros do período.`,
       tom: coberturaJuros === null ? "neutro" : coberturaJuros >= 3 ? "bom" : coberturaJuros >= 1.5 ? "atencao" : "ruim",
+    }),
+    ind({
+      chave: "custoDivida",
+      titulo: "Custo Médio da Dívida",
+      valor: custoDivida,
+      formato: "pct",
+      oQueE:
+        "Taxa anual implícita paga sobre a dívida onerosa (empréstimos, ACC e mútuos): despesas financeiras anualizadas sobre a dívida média. Não inclui variação cambial. Compare com o ROIC: se a dívida custar mais do que a operação rende, crescer com crédito destrói valor.",
+      formula: "Despesas Financeiras × 12 ÷ Dívida Onerosa Média",
+      componentes: [
+        { rotulo: "Despesas financeiras do período", valor: d.despesasFinanceiras, campos: ["despesasFinanceiras"] },
+        { rotulo: "Despesas financeiras anualizadas", valor: (d.despesasFinanceiras * 12) / meses },
+        { rotulo: "Dívida onerosa final", valor: t.dividaBruta },
+        { rotulo: "Dívida onerosa inicial", valor: ta?.dividaBruta ?? null },
+        { rotulo: "= Dívida onerosa média", valor: dividaMedia },
+        { rotulo: "ROIC anualizado (para comparar)", valor: roicAnual, formato: "pct" },
+      ],
+      leitura:
+        custoDivida === null
+          ? "Sem dívida onerosa."
+          : `A dívida custa cerca de ${pct(custoDivida)} ao ano (juros, encargos de ACC, IOF e tarifas lançados em despesas financeiras)${roicAnual !== null ? `, contra ROIC de ${pct(roicAnual)} ao ano: ${roicAnual > custoDivida ? "a operação rende mais que o custo da dívida" : "a dívida custa mais do que a operação rende"}` : ""}. ACC em dólar tem juros baixos, mas carrega risco cambial fora desta taxa.`,
+      tom: custoDivida === null ? "neutro" : roicAnual !== null && roicAnual > custoDivida ? "bom" : custoDivida <= 0.2 ? "atencao" : "ruim",
+    }),
+    ind({
+      chave: "dividaLiquidaPl",
+      titulo: "Dívida Líquida / Patrimônio Líquido",
+      valor: dlPl,
+      anterior: ta && ta.pl > 0 ? ta.dividaLiquida / ta.pl : null,
+      formato: "vezes",
+      oQueE: "Quanto de dívida onerosa líquida existe para cada R$ 1,00 de capital próprio - alavancagem financeira do balanço.",
+      formula: "Dívida Líquida ÷ Patrimônio Líquido",
+      componentes: [
+        { rotulo: "Dívida líquida", valor: t.dividaLiquida },
+        { rotulo: "Patrimônio líquido", valor: t.pl },
+      ],
+      leitura: dlPl === null ? "Patrimônio líquido negativo ou nulo." : `Para cada R$ 1,00 de capital próprio há R$ ${num(dlPl)} de dívida líquida.`,
+      tom: dlPl === null ? "ruim" : dlPl <= 1 ? "bom" : dlPl <= 3 ? "atencao" : "ruim",
     }),
     ind({
       chave: "endividamentoGeral",
@@ -747,6 +826,22 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
       tom: imobPl === null ? "neutro" : imobPl <= 0.5 ? "bom" : imobPl <= 1 ? "atencao" : "ruim",
     }),
     ind({
+      chave: "imobilizacaoRecursosNaoCorrentes",
+      titulo: "Imobilização dos Recursos Não Correntes",
+      valor: imobRnc,
+      anterior: ta ? div(ta.anc - ta.rlp, ta.pl + ta.pnc) : null,
+      formato: "pct",
+      oQueE: "Quanto dos recursos de longo prazo (PL + passivo não circulante) está aplicado em ativos permanentes. Acima de 100%, ativos permanentes estão sendo financiados com dívida de curto prazo.",
+      formula: "(Investimentos + Imobilizado Líquido + Intangível) ÷ (Patrimônio Líquido + Passivo Não Circulante)",
+      componentes: [
+        { rotulo: "Ativo permanente", valor: t.anc - t.rlp },
+        { rotulo: "Patrimônio líquido", valor: t.pl, sinal: "+" },
+        { rotulo: "Passivo não circulante", valor: t.pnc, sinal: "+" },
+      ],
+      leitura: imobRnc === null ? "-" : `${pct(imobRnc)} dos recursos de longo prazo estão em ativos permanentes.`,
+      tom: imobRnc === null ? "neutro" : imobRnc <= 0.7 ? "bom" : imobRnc <= 1 ? "atencao" : "ruim",
+    }),
+    ind({
       chave: "dividaFinanceiraExigivel",
       titulo: "Participação da Dívida Financeira no Exigível",
       valor: div(t.dividaBruta, exigivel),
@@ -781,11 +876,19 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
   const mBruta = div(d.lucroBruto, rl);
   const mEbitda = div(d.ebitda, rl);
   const mLiq = div(d.lucroLiquido, rl);
-  const roe = div(d.lucroLiquido, t.pl);
-  const roa = div(d.lucroLiquido, t.at);
-  const roaOp = div(d.ebit, t.at);
-  const gaf = roe !== null && roaOp ? roe / roaOp : null;
-  const giro = div(rl, t.at);
+  // Retornos sobre saldos medios do periodo ((inicial + final) / 2), pratica
+  // padrao de analise: o lucro e gerado ao longo do mes, nao so no saldo final.
+  const plMedio = media(t.pl, ta?.pl);
+  const atMedio = media(t.at, ta?.at);
+  const capitalInvestido = media(t.dividaBruta + t.pl, ta ? ta.dividaBruta + ta.pl : null);
+  const baseMedia = ta ? "médio (início + fim) ÷ 2" : "final (sem balanço anterior)";
+  const roe = plMedio > 0 ? d.lucroLiquido / plMedio : null;
+  const roa = div(d.lucroLiquido, atMedio);
+  // NOPAT: resultado operacional depois do IR/CSLL teorico de 34%.
+  const nopat = d.ebit * (1 - ALIQUOTA_IR_CS);
+  const roic = capitalInvestido > 0 ? nopat / capitalInvestido : null;
+  const gaf = roe !== null && roic ? roe / roic : null;
+  const giro = div(rl, atMedio);
   const evolVendas = dAnt ? div(d.receitaLiquida - dAnt.receitaLiquida, dAnt.receitaLiquida) : null;
   const rentabilidade: Indicador[] = [
     ind({
@@ -811,9 +914,10 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
       anterior: dAnt ? div(dAnt.ebitda, dAnt.receitaLiquida) : null,
       formato: "pct",
       oQueE: "Geração de caixa operacional (antes de juros, variação cambial, impostos e depreciação) para cada R$ 1,00 de receita.",
-      formula: "EBITDA ÷ Receita Líquida, com EBITDA = EBIT + Depreciação e Amortização",
+      formula: "EBITDA ajustado ÷ Receita Líquida, com EBITDA = EBIT − Equivalência + Depreciação e Amortização",
       componentes: [
         { rotulo: "EBIT", valor: d.ebit },
+        { rotulo: "Equivalência patrimonial", valor: d.equivalenciaPatrimonial, sinal: "-" },
         { rotulo: d.depreciacaoEstimada ? "Depreciação (estimada pela variação da depreciação acumulada)" : "Depreciação e amortização", valor: d.depreciacaoUsada, campos: d.depreciacaoEstimada ? ["depreciacaoAcumulada"] : ["depreciacaoAmortizacao"], sinal: "+" },
         { rotulo: "= EBITDA", valor: d.ebitda },
         { rotulo: "Receita líquida", valor: rl },
@@ -832,8 +936,12 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
       componentes: [
         { rotulo: "Lucro líquido", valor: d.lucroLiquido },
         { rotulo: "Receita líquida", valor: rl },
+        ...(d.irComplementar > 0 ? [{ rotulo: "Margem com IR/CSLL completo", valor: div(d.lucroAjustado, rl), formato: "pct" }] : []),
       ],
-      leitura: mLiq === null ? "-" : `${pct(mLiq)} da receita virou lucro líquido (${brl(d.lucroLiquido)}).`,
+      leitura:
+        mLiq === null
+          ? "-"
+          : `${pct(mLiq)} da receita virou lucro líquido (${brl(d.lucroLiquido)}).${d.irComplementar > 0 ? ` Com a provisão de IR/CSLL completa seria ${pct(div(d.lucroAjustado, rl) ?? 0)} (${brl(d.lucroAjustado)}).` : ""}`,
       tom: mLiq === null ? "neutro" : mLiq > 0.01 ? "bom" : mLiq >= 0 ? "atencao" : "ruim",
     }),
     ind({
@@ -842,14 +950,20 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
       valor: roe,
       formato: "pct",
       oQueE: "Retorno do período sobre o capital dos sócios. Anualizado, compare com o custo de oportunidade (CDI).",
-      formula: "Lucro Líquido ÷ Patrimônio Líquido",
+      formula: `Lucro Líquido ÷ Patrimônio Líquido ${baseMedia}`,
       componentes: [
         { rotulo: "Lucro líquido do período", valor: d.lucroLiquido },
-        { rotulo: "Patrimônio líquido", valor: t.pl },
-        { rotulo: "ROE anualizado", valor: roe === null ? null : (roe * 12) / meses, formato: "pct" },
+        { rotulo: "PL final", valor: t.pl },
+        { rotulo: "PL inicial", valor: ta?.pl ?? null },
+        { rotulo: "= PL médio", valor: plMedio },
+        { rotulo: "ROE anualizado (× 12)", valor: anual(roe), formato: "pct" },
+        ...(d.irComplementar > 0 ? [{ rotulo: "ROE com IR/CSLL completo", valor: plMedio > 0 ? d.lucroAjustado / plMedio : null, formato: "pct" }] : []),
       ],
-      leitura: roe === null ? "-" : `Retorno de ${pct(roe)} no período (${pct((roe * 12) / meses)} ao ano, anualizado).`,
-      tom: roe === null || t.pl <= 0 ? "ruim" : (roe * 12) / meses >= 0.15 ? "bom" : roe >= 0 ? "atencao" : "ruim",
+      leitura:
+        roe === null
+          ? "Patrimônio líquido médio negativo ou nulo: o retorno sobre o capital próprio não tem significado (passivo a descoberto)."
+          : `Retorno de ${pct(roe)} no período (${pct(anual(roe)!)} ao ano). PL pequeno em relação ao lucro do mês amplia o ROE - leia junto com o endividamento.${d.irComplementar > 0 ? ` Com a provisão de IR/CSLL completa, ${pct(d.lucroAjustado / plMedio)} no período.` : ""}`,
+      tom: roe === null ? "ruim" : anual(roe)! >= 0.15 ? "bom" : roe >= 0 ? "atencao" : "ruim",
     }),
     ind({
       chave: "roa",
@@ -857,13 +971,13 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
       valor: roa,
       formato: "pct",
       oQueE: "Lucro gerado para cada R$ 1,00 investido no ativo total, independentemente de como foi financiado.",
-      formula: "Lucro Líquido ÷ Ativo Total",
+      formula: `Lucro Líquido ÷ Ativo Total ${baseMedia}`,
       componentes: [
         { rotulo: "Lucro líquido do período", valor: d.lucroLiquido },
-        { rotulo: "Ativo total", valor: t.at },
-        { rotulo: "ROA anualizado", valor: roa === null ? null : (roa * 12) / meses, formato: "pct" },
+        { rotulo: "Ativo total médio", valor: atMedio },
+        { rotulo: "ROA anualizado (× 12)", valor: anual(roa), formato: "pct" },
       ],
-      leitura: roa === null ? "-" : `O ativo rendeu ${pct(roa)} no período (${pct((roa * 12) / meses)} ao ano).`,
+      leitura: roa === null ? "-" : `O ativo rendeu ${pct(roa)} no período (${pct(anual(roa)!)} ao ano).`,
       tom: roa === null ? "neutro" : roa > 0 ? "bom" : "ruim",
     }),
     ind({
@@ -872,28 +986,70 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
       valor: giro,
       formato: "vezes",
       oQueE: "Quantas vezes o ativo total \"girou\" em vendas no período - eficiência no uso dos recursos.",
-      formula: "Receita Líquida ÷ Ativo Total",
+      formula: `Receita Líquida ÷ Ativo Total ${baseMedia}`,
       componentes: [
         { rotulo: "Receita líquida", valor: rl },
-        { rotulo: "Ativo total", valor: t.at },
-        { rotulo: "Giro anualizado", valor: giro === null ? null : (giro * 12) / meses, formato: "vezes" },
+        { rotulo: "Ativo total médio", valor: atMedio },
+        { rotulo: "Giro anualizado (× 12)", valor: anual(giro), formato: "vezes" },
       ],
-      leitura: giro === null ? "-" : `As vendas do período equivalem a ${num(giro)}x o ativo (${num((giro * 12) / meses)}x ao ano).`,
+      leitura: giro === null ? "-" : `As vendas do período equivalem a ${num(giro)}x o ativo (${num(anual(giro)!)}x ao ano).`,
       tom: "neutro",
+    }),
+    ind({
+      chave: "roic",
+      titulo: "Retorno sobre o Capital Investido (ROIC)",
+      valor: roic,
+      formato: "pct",
+      oQueE:
+        "Retorno da operação, depois do imposto, sobre todo o capital que financia a empresa (dívida onerosa + capital próprio), sem efeito da forma de financiamento. Deve superar o custo da dívida para que tomar crédito crie valor.",
+      formula: `ROIC = NOPAT ÷ (Dívida Onerosa + PL) ${baseMedia}, com NOPAT = EBIT × (1 − 34%)`,
+      componentes: [
+        { rotulo: "EBIT", valor: d.ebit },
+        { rotulo: "IR/CSLL teórico de 34%", valor: d.ebit * ALIQUOTA_IR_CS, sinal: "-" },
+        { rotulo: "= NOPAT", valor: nopat },
+        { rotulo: "Capital investido médio (dívida onerosa + PL)", valor: capitalInvestido },
+        { rotulo: "ROIC anualizado (× 12)", valor: anual(roic), formato: "pct" },
+      ],
+      leitura: roic === null ? "Capital investido negativo ou nulo." : `A operação rendeu ${pct(roic)} no período (${pct(anual(roic)!)} ao ano) sobre o capital investido.`,
+      tom: roic === null ? "neutro" : anual(roic)! >= 0.15 ? "bom" : roic > 0 ? "atencao" : "ruim",
     }),
     ind({
       chave: "alavancagemFinanceira",
       titulo: "Grau de Alavancagem Financeira (GAF)",
       valor: gaf,
       formato: "vezes",
-      oQueE: "Mostra se a dívida está trabalhando a favor do sócio: acima de 1, o retorno do PL é maior que o retorno operacional do ativo (a dívida rende mais do que custa).",
-      formula: "GAF = ROE ÷ (EBIT ÷ Ativo Total)",
+      oQueE:
+        "Mostra se a dívida está trabalhando a favor do sócio: acima de 1, o retorno do PL supera o retorno do capital investido - a dívida rende mais do que custa. Abaixo de 1, juros e variação cambial consomem o resultado operacional.",
+      formula: "GAF = ROE ÷ ROIC (Assaf Neto), ambos depois do IR",
       componentes: [
         { rotulo: "ROE", valor: roe, formato: "pct" },
-        { rotulo: "Retorno operacional do ativo (EBIT ÷ AT)", valor: roaOp, formato: "pct" },
+        { rotulo: "ROIC", valor: roic, formato: "pct" },
       ],
       leitura: gaf === null ? "-" : gaf > 1 ? `GAF de ${num(gaf)}: o endividamento está ampliando o retorno dos sócios.` : `GAF de ${num(gaf)}: o custo da dívida e a variação cambial estão consumindo o resultado operacional.`,
       tom: gaf === null ? "neutro" : gaf > 1 ? "bom" : "atencao",
+    }),
+    ind({
+      chave: "aliquotaIr",
+      titulo: "Alíquota Efetiva de IRPJ e CSLL",
+      valor: d.aliquotaEfetiva,
+      formato: "pct",
+      oQueE:
+        "Quanto do lucro antes do IR foi provisionado de imposto. No lucro real a alíquota é 34% (IRPJ 15% + adicional 10% + CSLL 9%); mesmo compensando prejuízo fiscal (limitado a 30% do lucro) ela não fica abaixo de 23,8%. Provisão menor que isso superestima o lucro líquido.",
+      formula: "IRPJ e CSLL provisionados ÷ Lucro Antes do IR",
+      componentes: [
+        { rotulo: "IRPJ e CSLL provisionados", valor: d.irCs, campos: ["irCs"] },
+        { rotulo: "Lucro antes do IR e CSLL", valor: d.lair },
+        { rotulo: "IR/CSLL esperado a 34%", valor: d.lair > 0 ? d.lair * ALIQUOTA_IR_CS : null },
+        { rotulo: "IR/CSLL complementar estimado", valor: d.irComplementar },
+        { rotulo: "= Lucro líquido ajustado", valor: d.lucroAjustado },
+      ],
+      leitura:
+        d.aliquotaEfetiva === null
+          ? "Sem lucro antes do IR no período."
+          : d.irComplementar > 0
+            ? `A provisão de ${brl(d.irCs)} é só ${pct(d.aliquotaEfetiva)} do lucro antes do IR - abaixo do mínimo legal de 23,8%. Provavelmente o imposto só é provisionado no fechamento trimestral/anual, ou o valor lançado é apenas compensação de IRRF. Com IR/CSLL de 34% o lucro do período seria ${brl(d.lucroAjustado)} (−${brl(d.irComplementar)}). Confirmar com a contabilidade.`
+            : `Alíquota efetiva de ${pct(d.aliquotaEfetiva)}, compatível com o lucro real.`,
+      tom: d.aliquotaEfetiva === null ? "neutro" : d.irComplementar > 0 ? "ruim" : "bom",
     }),
     ind({
       chave: "evolucaoVendas",
@@ -918,19 +1074,22 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
   const geracao: Indicador[] = [
     ind({
       chave: "ebitda",
-      titulo: "EBITDA",
+      titulo: "EBITDA Ajustado",
       valor: d.ebitda,
       anterior: dAnt?.ebitda ?? null,
       formato: "moeda",
-      oQueE: "Lucro operacional antes de juros, variação cambial, impostos, depreciação e amortização - aproxima o caixa gerado pela operação.",
-      formula: "EBITDA = Lucro Bruto − Despesas Operacionais + Outras Receitas Operacionais + Depreciação",
+      oQueE:
+        "Lucro operacional antes de juros, variação cambial, impostos, depreciação e amortização - aproxima o caixa gerado pela operação. É o EBITDA da Resolução CVM 156/2022 (lucro líquido + IR/CSLL + resultado financeiro + depreciação) ajustado para crédito: sem equivalência patrimonial e sem resultados não recorrentes.",
+      formula: "EBITDA ajustado = EBIT − Equivalência Patrimonial + Depreciação e Amortização",
       componentes: [
         { rotulo: "Lucro bruto", valor: d.lucroBruto, sinal: "+" },
         { rotulo: "Despesas operacionais", valor: d.despesasOperacionais, sinal: "-" },
         { rotulo: "Outras receitas operacionais", valor: d.outrasReceitasOperacionais, campos: ["outrasReceitasOperacionais"], sinal: "+" },
         { rotulo: "Equivalência patrimonial", valor: d.equivalenciaPatrimonial, campos: ["equivalenciaPatrimonial"], sinal: "+" },
         { rotulo: "= EBIT", valor: d.ebit },
+        { rotulo: "Equivalência patrimonial (não é caixa)", valor: d.equivalenciaPatrimonial, sinal: "-" },
         { rotulo: "Depreciação e amortização", valor: d.depreciacaoUsada, sinal: "+" },
+        { rotulo: "= EBITDA ajustado", valor: d.ebitda },
       ].filter((c) => c.valor !== 0),
       leitura: `${d.ebitda >= 0 ? "Geração" : "Consumo"} operacional de ${brl(Math.abs(d.ebitda))} no período.${d.depreciacaoEstimada ? ` A DRE não destaca a depreciação; usou-se a variação da depreciação acumulada do balanço (${brl(d.depreciacaoUsada)}).` : ""}`,
       tom: d.ebitda > 0 ? "bom" : "ruim",
@@ -1040,6 +1199,23 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
     });
   }
 
+  const valoresAtuais: Record<string, number> = { ...registro.balanco, ...registro.dre };
+  const origemDivergente = Object.entries(registro.origens)
+    .map(([campo, contas]) => ({ campo, soma: contas.reduce((s, c) => s + c.valor, 0), valor: valoresAtuais[campo] }))
+    .filter((o) => o.valor !== undefined && Math.abs(o.soma - o.valor) >= 1);
+  const semOrigem = Object.entries(valoresAtuais).filter(([k, v]) => Math.abs(v) >= 1 && !(registro.origens[k]?.length));
+  conferencias.push({
+    titulo: "Contas de origem somam o valor de cada campo",
+    ok: origemDivergente.length === 0 && semOrigem.length === 0,
+    detalhe:
+      origemDivergente.length === 0 && semOrigem.length === 0
+        ? "Cada número do sistema está rastreado até as contas do PDF e a soma confere."
+        : [
+            ...origemDivergente.map((o) => `${ROTULO_CAMPO(o.campo)}: contas somam ${brl(o.soma)} × campo ${brl(o.valor)}`),
+            ...semOrigem.map(([k]) => `${ROTULO_CAMPO(k)} sem conta de origem`),
+          ].join("; "),
+  });
+
   return {
     registro,
     periodo,
@@ -1099,10 +1275,11 @@ function fluxoDeCaixa(b: Balanco, a: Balanco, t: Totais, ta: Totais, d: DreCalc)
     v("rlpTributos") -
     v("rlpDepositosJudiciais") -
     v("rlpOutros") +
+    v("derivativosPassivo") +
     v("tributosLP") +
     v("provisoesLP") +
     v("outrosPassivosNaoCirc");
-  add("   Ativos e passivos não operacionais (hedge, LP, provisões)", naoOp, 2, ["derivativosHedge", "outrosAtivosNaoOperacionaisCirc", "rlpOutros", "rlpTributos", "tributosLP", "provisoesLP"]);
+  add("   Ativos e passivos não operacionais (hedge, LP, provisões)", naoOp, 2, ["derivativosHedge", "derivativosPassivo", "outrosAtivosNaoOperacionaisCirc", "rlpOutros", "rlpTributos", "tributosLP", "provisoesLP"]);
   const naoOpRes = d.resultadoNaoOperacional - d.participacoes;
   if (naoOpRes !== 0) add("   Resultado não operacional e participações", naoOpRes, 2, ["resultadoNaoOperacional", "participacoes"]);
   const antesFin = add("CAIXA ANTES DO RESULTADO FINANCEIRO", fco + naoOp + naoOpRes, 0);
@@ -1149,10 +1326,7 @@ function ebitdaUltimos12(comp: string, porComp: Map<string, RegistroCredito>): n
     const r = porComp.get(c);
     const m = dreDoMes(c, porComp);
     if (!r || !m) return null;
-    const ant = porComp.get(mesAnterior(c));
-    const balAnt = ant?.balanco ?? r.balancoAnterior;
-    const dep = balAnt ? r.balanco.depreciacaoAcumulada - balAnt.depreciacaoAcumulada : null;
-    total += calcularDre(m, dep !== null && dep > 0 ? dep : null).ebitda;
+    total += calcularDre(m, depreciacaoDoMes(c, porComp)).ebitda;
     c = mesAnterior(c);
   }
   return total;
