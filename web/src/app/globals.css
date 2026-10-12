@@ -120,3 +120,13 @@ option {
   background: var(--border);
   border-radius: 8px;
 }
+
+/* Modo apresentacao (botao "Apresentar" da barra superior): tela cheia sem a
+   moldura do sistema e com o conteudo um pouco maior para projetor/TV. */
+.modo-apresentacao .ocultar-em-apresentacao {
+  display: none !important;
+}
+.modo-apresentacao main,
+.modo-apresentacao .flex-1.min-w-0 {
+  zoom: 1.1;
+}

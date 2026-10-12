@@ -1,10 +1,10 @@
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Bell } from "lucide-react";
-import { SidebarToggle } from "@/components/layout/sidebar-state";
+import { ApresentarButton, SidebarToggle } from "@/components/layout/sidebar-state";
 
 export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <header className="flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur print:hidden">
+    <header className="flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 backdrop-blur print:hidden ocultar-em-apresentacao">
       <div className="flex items-center gap-3">
         <SidebarToggle />
         <div>
@@ -13,6 +13,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
         </div>
       </div>
       <div className="flex items-center gap-3">
+        <ApresentarButton />
         <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border">
           <Bell size={16} />
           <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-danger" />

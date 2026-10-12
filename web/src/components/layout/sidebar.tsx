@@ -32,6 +32,7 @@ import {
   CheckCircle2,
   CalendarDays,
   Newspaper,
+  Presentation,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-state";
@@ -75,6 +76,7 @@ const navItems = [
   { href: "/taxas", label: "Evolucao das Taxas", icon: LineChart },
   { href: "/bancos", label: "Comparativo de Bancos", icon: Building2 },
   { href: "/relatorios", label: "Relatorios", icon: FileText },
+  { href: "/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const faturamentoNavItems = [
@@ -85,6 +87,7 @@ const faturamentoNavItems = [
   { href: "/faturamento/curva-abc", label: "Curva ABC", icon: BarChart3 },
   { href: "/faturamento/relatorio", label: "Relatório Comparativo", icon: FileText },
   { href: "/faturamento/relatorio-clientes", label: "Relatório de Clientes", icon: Users },
+  { href: "/faturamento/gerencial", label: "Apresentação", icon: Presentation },
 ];
 
 const apresentacaoNavItems = [
@@ -97,6 +100,7 @@ const apresentacaoNavItems = [
 
 const creditoNavItems = [
   { href: "/credito", label: "Analise de Credito", icon: LayoutDashboard },
+  { href: "/credito/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const hedgeNavItems = [
@@ -115,6 +119,7 @@ const hedgeNavItems = [
   { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
   { href: "/hedge/alertas-prazos", label: "Alerta de Prazos", icon: AlertTriangle },
   { href: "/hedge/cadastros", label: "Cadastros", icon: Settings2 },
+  { href: "/hedge/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const hedgeCambialNavItems = [
@@ -122,14 +127,17 @@ const hedgeCambialNavItems = [
   { href: "/hedge-cambial/noticias", label: "ULTIMAS NOTICIAS", icon: Newspaper },
   { href: "/hedge-cambial/historico-dolar", label: "HISTORICO DOLAR (PTAX)", icon: LineChart },
   ...hedgeCambialAbas.map((a) => ({ href: `/hedge-cambial/${a.slug}`, label: a.label, icon: FileStack })),
+  { href: "/hedge-cambial/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const planejamentoNavItems = [
   { href: "/planejamento-orcamentario", label: "Planejamento Orçamentário", icon: Target },
+  { href: "/planejamento-orcamentario/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const transferenciaOrdemNavItems = [
   { href: "/transferencia-ordem", label: "Transferência de Ordem", icon: Send },
+  { href: "/transferencia-ordem/apresentacao", label: "Apresentação", icon: Presentation },
 ];
 
 const roleLabels: Record<string, string> = {
@@ -183,9 +191,18 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const activeModule = getActiveModule(pathname);
+  // Item ativo = o de caminho mais especifico que contem a pagina atual (ex.:
+  // /credito/apresentacao acende so "Apresentação", nao tambem "/credito").
+  const activeHref = activeModule.items
+    .filter(
+      (item) =>
+        pathname === item.href ||
+        (item.href !== "/" && item.href !== "/hedge-cambial" && pathname.startsWith(item.href + "/"))
+    )
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
   const [expanded, setExpanded] = useState<string | null>(null);
   const [expandedSubGroup, setExpandedSubGroup] = useState<string | null>(null);
-  const { aberta } = useSidebar();
+  const { aberta, apresentando } = useSidebar();
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -195,7 +212,7 @@ export function Sidebar({
   }
 
   return (
-    <aside className={cn(!aberta && "md:hidden", "hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden")}>
+    <aside className={cn((!aberta || apresentando) && "md:hidden", "hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden")}>
       <Link href="/inicio" className="flex items-center gap-2 px-5 py-5">
         <div>
           <p className="text-sm font-semibold text-white">Controle</p>
@@ -203,9 +220,7 @@ export function Sidebar({
       </Link>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
         {activeModule.items.map((item) => {
-          const active =
-            pathname === item.href ||
-            (item.href !== "/" && item.href !== "/hedge-cambial" && pathname.startsWith(item.href + "/"));
+          const active = item.href === activeHref;
           const Icon = item.icon;
           const subItems = (item as { subItems?: MesaOperacaoSubItem[] }).subItems;
           const isExpanded = expanded === item.href;
