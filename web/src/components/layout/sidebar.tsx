@@ -34,6 +34,7 @@ import {
   Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/components/layout/sidebar-state";
 import { createClient } from "@/lib/supabase/client";
 import { hedgeCambialAbas } from "@/lib/hedge-cambial-abas";
 import { statusLabels, statusToSlug, buildMesaOperacaoSections } from "@/lib/contrato-shared";
@@ -184,6 +185,7 @@ export function Sidebar({
   const activeModule = getActiveModule(pathname);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [expandedSubGroup, setExpandedSubGroup] = useState<string | null>(null);
+  const { aberta } = useSidebar();
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -193,7 +195,7 @@ export function Sidebar({
   }
 
   return (
-    <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden">
+    <aside className={cn(!aberta && "md:hidden", "hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden")}>
       <Link href="/inicio" className="flex items-center gap-2 px-5 py-5">
         <div>
           <p className="text-sm font-semibold text-white">Controle</p>

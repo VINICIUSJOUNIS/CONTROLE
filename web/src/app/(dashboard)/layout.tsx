@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/layout/sidebar";
+import { SidebarProvider } from "@/components/layout/sidebar-state";
 import { getCurrentProfile } from "@/lib/auth";
 import { getContratosExportacaoCountByStatus, getAlertasPrazos } from "@/lib/hedge-data";
 
@@ -16,14 +17,16 @@ export default async function DashboardLayout({
   const alertasPrazosCount = alertasPrazos.length;
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar
-        profile={profile}
-        mesaOperacaoCount={mesaOperacaoCount}
-        mesaOperacaoCountByStatus={mesaOperacaoCountByStatus}
-        alertasPrazosCount={alertasPrazosCount}
-      />
-      <div className="flex-1 min-w-0">{children}</div>
-    </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen">
+        <Sidebar
+          profile={profile}
+          mesaOperacaoCount={mesaOperacaoCount}
+          mesaOperacaoCountByStatus={mesaOperacaoCountByStatus}
+          alertasPrazosCount={alertasPrazosCount}
+        />
+        <div className="flex-1 min-w-0">{children}</div>
+      </div>
+    </SidebarProvider>
   );
 }
