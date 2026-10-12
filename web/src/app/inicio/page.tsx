@@ -14,7 +14,7 @@ const modules = [
   {
     href: "/credito",
     label: "Analise de Credito",
-    description: "Analise do balancete em PDF pela IA: balanco, contas, endividamento e riscos.",
+    description: "Modulo em reconstrucao.",
     icon: Scale,
   },
   {

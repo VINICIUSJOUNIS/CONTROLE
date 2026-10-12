@@ -95,7 +95,7 @@ const apresentacaoNavItems = [
 ];
 
 const creditoNavItems = [
-  { href: "/credito", label: "Analise de Balancete", icon: LayoutDashboard },
+  { href: "/credito", label: "Analise de Credito", icon: LayoutDashboard },
 ];
 
 const hedgeNavItems = [
