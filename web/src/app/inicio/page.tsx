@@ -14,7 +14,7 @@ const modules = [
   {
     href: "/credito",
     label: "Analise de Credito",
-    description: "Modulo em reconstrucao.",
+    description: "Balanço e DRE mensais lidos do PDF pela IA: capital de giro, liquidez, endividamento e rentabilidade explicados.",
     icon: Scale,
   },
   {

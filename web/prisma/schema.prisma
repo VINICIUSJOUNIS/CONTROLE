@@ -241,6 +241,34 @@ model LoanInstallment {
   @@map("loan_installments")
 }
 
+// Analise de Credito: um registro por mes (competencia), com o Balanco
+// Patrimonial e a DRE extraidos do PDF pela IA ja reclassificados nos campos
+// de src/lib/credito/campos.ts. Os indicadores sao calculados na leitura
+// (src/lib/credito/calculos.ts), nunca gravados.
+model AnaliseCredito {
+  id                  String    @id @default(uuid())
+  competencia         DateTime  @unique @db.Date
+  empresa             String
+  cnpj                String
+  dataBalanco         DateTime  @db.Date
+  dataBalancoAnterior DateTime? @db.Date
+  dreTipo             String
+  dreInicio           DateTime? @db.Date
+  dreFim              DateTime  @db.Date
+  balanco             Json
+  balancoAnterior     Json?
+  dre                 Json
+  origens             Json
+  conferenciaPdf      Json
+  observacoes         Json
+  arquivos            String[]
+  modeloIa            String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("analises_credito")
+}
+
 model AccOperation {
   id                     String     @id @default(uuid())
   bank                   Bank       @relation(fields: [bankId], references: [id])
