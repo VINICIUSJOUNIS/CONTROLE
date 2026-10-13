@@ -1,11 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
+import { registrarAtividade } from "@/components/auth/inatividade";
+
+// Aviso quando a sessao foi encerrada pelo controle de inatividade.
+function AvisoInatividade() {
+  const params = useSearchParams();
+  if (params.get("motivo") !== "inatividade") return null;
+  return (
+    <p className="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
+      Sessão encerrada após 10 minutos sem uso. Entre novamente com sua senha.
+    </p>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,6 +41,8 @@ export default function LoginPage() {
       return;
     }
 
+    // Novo login: o prazo de inatividade recomeça agora.
+    registrarAtividade();
     router.push("/inicio");
     router.refresh();
   }
@@ -62,6 +76,9 @@ export default function LoginPage() {
             </div>
           </div>
 
+          <Suspense>
+            <AvisoInatividade />
+          </Suspense>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label>E-mail</Label>

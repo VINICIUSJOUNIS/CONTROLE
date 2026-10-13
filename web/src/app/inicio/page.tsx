@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Landmark, Scale, Receipt, ShieldCheck, Target, Send, Gauge, TrendingUp } from "lucide-react";
 import { getCurrentProfile } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ControleInatividade } from "@/components/auth/inatividade";
 
 const modules = [
   {
@@ -60,6 +61,7 @@ export default async function InicioPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <ControleInatividade />
       <header className="flex items-center justify-between px-6 py-5">
         <div className="flex items-center gap-3">
           <Image

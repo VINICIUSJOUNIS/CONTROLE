@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { SidebarProvider } from "@/components/layout/sidebar-state";
+import { ControleInatividade } from "@/components/auth/inatividade";
 import { getCurrentProfile } from "@/lib/auth";
 import { getContratosExportacaoCountByStatus, getAlertasPrazos } from "@/lib/hedge-data";
 
@@ -18,6 +19,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
+      <ControleInatividade />
       <div className="flex min-h-screen">
         <Sidebar
           profile={profile}
