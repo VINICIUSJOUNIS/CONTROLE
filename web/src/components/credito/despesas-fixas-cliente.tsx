@@ -2,7 +2,7 @@
 
 import { Fragment, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, ChevronRight, FileUp, Loader2, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Eye, EyeOff, FileUp, Loader2, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -155,6 +155,9 @@ export function TabelaFixas({
   meses: number;
 }) {
   const [abertas, setAbertas] = useState<Set<string>>(new Set());
+  // Colunas de detalhe (% do mes, medias, acumulado e natureza) ficam ocultas por padrao.
+  const [detalhes, setDetalhes] = useState(false);
+  const det = detalhes ? "" : "hidden";
   const alternar = (c: string) =>
     setAbertas((s) => {
       const n = new Set(s);
@@ -164,16 +167,26 @@ export function TabelaFixas({
     });
   return (
     <div className="overflow-x-auto">
+      <div className="mb-2 flex justify-end print:hidden">
+        <button
+          type="button"
+          onClick={() => setDetalhes((d) => !d)}
+          className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs hover:bg-border/40"
+        >
+          {detalhes ? <EyeOff size={13} /> : <Eye size={13} />}
+          {detalhes ? "Ocultar colunas" : "Mostrar colunas"}
+        </button>
+      </div>
       <table className="w-full whitespace-nowrap text-sm">
         <thead>
           <tr className="border-b border-border text-xs text-muted">
             <th className="py-2 text-left font-medium">Categoria / conta</th>
             <th className="py-2 pl-4 text-right font-medium">Mês</th>
-            <th className="py-2 pl-4 text-right font-medium">% do mês</th>
-            <th className="py-2 pl-4 text-right font-medium">Média mensal anterior</th>
-            <th className="py-2 pl-4 text-right font-medium">Acumulado no ano</th>
-            <th className="py-2 pl-4 text-right font-medium">Média mensal do ano</th>
-            <th className="py-2 pl-4 text-left font-medium print:hidden">Natureza</th>
+            <th className={cn("py-2 pl-4 text-right font-medium", det)}>% do mês</th>
+            <th className={cn("py-2 pl-4 text-right font-medium", det)}>Média mensal anterior</th>
+            <th className={cn("py-2 pl-4 text-right font-medium", det)}>Acumulado no ano</th>
+            <th className={cn("py-2 pl-4 text-right font-medium", det)}>Média mensal do ano</th>
+            <th className="py-2 pl-4 text-left font-medium print:hidden">{detalhes ? "Natureza" : ""}</th>
           </tr>
         </thead>
         <tbody>
@@ -187,14 +200,14 @@ export function TabelaFixas({
                     {c.categoria} <span className="text-xs font-normal text-muted">({c.contas.length})</span>
                   </td>
                   <td className="py-2 pl-4 text-right tabular-nums">{brl(c.mes)}</td>
-                  <td className="py-2 pl-4 text-right tabular-nums">{pct(totalMes ? c.mes / totalMes : null)}</td>
-                  <td className="py-2 pl-4 text-right tabular-nums">{meses > 1 ? brl(c.contas.reduce((s, x) => s + (x.mediaAnterior ?? 0), 0)) : "-"}</td>
-                  <td className="py-2 pl-4 text-right tabular-nums">{brl(c.acumulado)}</td>
-                  <td className="py-2 pl-4 text-right tabular-nums">{brl(c.media)}</td>
+                  <td className={cn("py-2 pl-4 text-right tabular-nums", det)}>{pct(totalMes ? c.mes / totalMes : null)}</td>
+                  <td className={cn("py-2 pl-4 text-right tabular-nums", det)}>{meses > 1 ? brl(c.contas.reduce((s, x) => s + (x.mediaAnterior ?? 0), 0)) : "-"}</td>
+                  <td className={cn("py-2 pl-4 text-right tabular-nums", det)}>{brl(c.acumulado)}</td>
+                  <td className={cn("py-2 pl-4 text-right tabular-nums", det)}>{brl(c.media)}</td>
                   <td className="print:hidden" />
                 </tr>
                 {(aberta ? c.contas : []).map((x) => (
-                  <LinhaConta key={`${x.classificacao}:${x.valorMes}:${x.saldoAnterior}`} balanceteId={balanceteId} conta={x} totalMes={totalMes} meses={meses} />
+                  <LinhaConta key={`${x.classificacao}:${x.valorMes}:${x.saldoAnterior}`} balanceteId={balanceteId} conta={x} totalMes={totalMes} meses={meses} detalhes={detalhes} />
                 ))}
               </Fragment>
             );
@@ -202,12 +215,12 @@ export function TabelaFixas({
           <tr className="bg-border/30 font-semibold">
             <td className="py-2">Total das despesas fixas</td>
             <td className="py-2 pl-4 text-right tabular-nums">{brl(totalMes)}</td>
-            <td className="py-2 pl-4 text-right tabular-nums">100,0%</td>
-            <td className="py-2 pl-4 text-right tabular-nums">
+            <td className={cn("py-2 pl-4 text-right tabular-nums", det)}>100,0%</td>
+            <td className={cn("py-2 pl-4 text-right tabular-nums", det)}>
               {meses > 1 ? brl(categorias.reduce((s, c) => s + c.contas.reduce((t, x) => t + (x.mediaAnterior ?? 0), 0), 0)) : "-"}
             </td>
-            <td className="py-2 pl-4 text-right tabular-nums">{brl(totalAcumulado)}</td>
-            <td className="py-2 pl-4 text-right tabular-nums">{brl(totalAcumulado / meses)}</td>
+            <td className={cn("py-2 pl-4 text-right tabular-nums", det)}>{brl(totalAcumulado)}</td>
+            <td className={cn("py-2 pl-4 text-right tabular-nums", det)}>{brl(totalAcumulado / meses)}</td>
             <td className="print:hidden" />
           </tr>
         </tbody>
@@ -268,7 +281,20 @@ function lerValor(texto: string): number | null {
 }
 const paraTexto = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function LinhaConta({ balanceteId, conta: x, totalMes, meses }: { balanceteId: string; conta: ContaClassificada; totalMes: number; meses: number }) {
+function LinhaConta({
+  balanceteId,
+  conta: x,
+  totalMes,
+  meses,
+  detalhes,
+}: {
+  balanceteId: string;
+  conta: ContaClassificada;
+  totalMes: number;
+  meses: number;
+  detalhes: boolean;
+}) {
+  const det = detalhes ? "" : "hidden";
   const [editando, setEditando] = useState(false);
   const [mes, setMes] = useState(paraTexto(x.valorMes));
   const [anterior, setAnterior] = useState(paraTexto(x.saldoAnterior));
@@ -297,21 +323,21 @@ function LinhaConta({ balanceteId, conta: x, totalMes, meses }: { balanceteId: s
         {erro && <p className="text-danger">{erro}</p>}
       </td>
       <td className={cn("py-1.5 pl-4 text-right tabular-nums", x.valorMes === 0 && "text-muted")}>
-        {editando ? <input value={mes} onChange={(e) => setMes(e.target.value)} className={campo} aria-label="Valor do mês" autoFocus /> : brl(x.valorMes)}
-      </td>
-      <td className="py-1.5 pl-4 text-right tabular-nums text-muted">{pct(totalMes ? x.valorMes / totalMes : null)}</td>
-      <td className="py-1.5 pl-4 text-right tabular-nums text-muted">
         {editando ? (
           <span className="flex flex-col items-end gap-0.5">
+            <input value={mes} onChange={(e) => setMes(e.target.value)} className={campo} aria-label="Valor do mês" autoFocus />
+            <span className="text-[10px] text-muted">valor do mês</span>
             <input value={anterior} onChange={(e) => setAnterior(e.target.value)} className={campo} aria-label="Acumulado até o mês anterior" />
-            <span className="text-[10px]">acumulado até o mês anterior</span>
+            <span className="text-[10px] text-muted">acumulado até o mês anterior</span>
           </span>
         ) : (
-          brl(x.mediaAnterior)
+          brl(x.valorMes)
         )}
       </td>
-      <td className="py-1.5 pl-4 text-right tabular-nums">{brl(x.saldoAtual)}</td>
-      <td className="py-1.5 pl-4 text-right tabular-nums text-muted">{brl(x.saldoAtual / meses)}</td>
+      <td className={cn("py-1.5 pl-4 text-right tabular-nums text-muted", det)}>{pct(totalMes ? x.valorMes / totalMes : null)}</td>
+      <td className={cn("py-1.5 pl-4 text-right tabular-nums text-muted", det)}>{brl(x.mediaAnterior)}</td>
+      <td className={cn("py-1.5 pl-4 text-right tabular-nums", det)}>{brl(x.saldoAtual)}</td>
+      <td className={cn("py-1.5 pl-4 text-right tabular-nums text-muted", det)}>{brl(x.saldoAtual / meses)}</td>
       <td className="py-1.5 pl-4 print:hidden">
         <div className="flex items-center gap-1">
           {editando ? (
@@ -362,7 +388,7 @@ function LinhaConta({ balanceteId, conta: x, totalMes, meses }: { balanceteId: s
                   <Trash2 size={13} />
                 </button>
               ) : (
-                <SeletorNatureza conta={x} />
+                detalhes && <SeletorNatureza conta={x} />
               )}
             </>
           )}
