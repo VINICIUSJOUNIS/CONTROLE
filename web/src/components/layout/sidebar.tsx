@@ -99,6 +99,7 @@ const apresentacaoNavItems = [
 
 const creditoNavItems = [
   { href: "/credito", label: "Analise de Credito", icon: LayoutDashboard },
+  { href: "/credito/despesas-fixas", label: "Despesas Fixas", icon: Receipt },
 ];
 
 const hedgeNavItems = [

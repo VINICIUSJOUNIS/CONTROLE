@@ -43,7 +43,14 @@ function motivoErro(e: unknown) {
 
 export class ErroExtracao extends Error {}
 
-export async function extrairComIa(pdfs: { nome: string; base64: string }[], signal?: AbortSignal): Promise<Extracao> {
+// Le PDFs com a IA e devolve o JSON no formato do schema (structured output).
+export async function lerPdfsComIa(
+  pdfs: { nome: string; base64: string }[],
+  sistema: string,
+  pedido: string,
+  schema: object,
+  signal?: AbortSignal
+): Promise<unknown> {
   const chave = process.env.ANTHROPIC_API_KEY?.trim();
   if (!chave) throw new ErroExtracao("ANTHROPIC_API_KEY não configurada.");
   const client = new Anthropic({ apiKey: chave, defaultHeaders: { "anthropic-workspace-id": WORKSPACE_ID } });
@@ -56,7 +63,7 @@ export async function extrairComIa(pdfs: { nome: string; base64: string }[], sig
         source: { type: "base64", media_type: "application/pdf", data: p.base64 },
       })
     ),
-    { type: "text", text: "Extraia e reclassifique o Balanço Patrimonial e a DRE destes PDFs conforme as regras." },
+    { type: "text", text: pedido },
   ];
 
   // O SDK instalado (0.68) nao tipa output_config nem fallbacks; os campos vao
@@ -64,9 +71,9 @@ export async function extrairComIa(pdfs: { nome: string; base64: string }[], sig
   const base = {
     model: MODELO_IA,
     max_tokens: 64000,
-    system: SISTEMA,
+    system: sistema,
     messages: [{ role: "user", content }],
-    output_config: { effort: "medium", format: { type: "json_schema", schema: extracaoJsonSchema } },
+    output_config: { effort: "medium", format: { type: "json_schema", schema } },
   };
 
   let final: Anthropic.Message;
@@ -91,13 +98,21 @@ export async function extrairComIa(pdfs: { nome: string; base64: string }[], sig
   if (final.stop_reason === "max_tokens") throw new ErroExtracao("A resposta da IA passou do limite de tamanho.");
   const texto = final.content.find((b): b is Anthropic.TextBlock => b.type === "text")?.text;
   if (!texto) throw new ErroExtracao("A IA não devolveu dados.");
-
-  let json: unknown;
   try {
-    json = JSON.parse(texto);
+    return JSON.parse(texto);
   } catch {
     throw new ErroExtracao("A resposta da IA não é um JSON válido.");
   }
+}
+
+export async function extrairComIa(pdfs: { nome: string; base64: string }[], signal?: AbortSignal): Promise<Extracao> {
+  const json = await lerPdfsComIa(
+    pdfs,
+    SISTEMA,
+    "Extraia e reclassifique o Balanço Patrimonial e a DRE destes PDFs conforme as regras.",
+    extracaoJsonSchema,
+    signal
+  );
   const parsed = extracaoSchema.safeParse(json);
   if (!parsed.success) throw new ErroExtracao(`Resposta da IA fora do formato: ${parsed.error.issues[0]?.message ?? ""}`);
   return parsed.data as Extracao;
