@@ -3,7 +3,7 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ContasExcluidas, EnviarBalancete, ExcluirMesDespesas, TabelaFixas } from "@/components/credito/despesas-fixas-cliente";
+import { ContasExcluidas, EnviarBalancete, ExcluirMesDespesas, IncluirDespesa, TabelaFixas } from "@/components/credito/despesas-fixas-cliente";
 import { listarAjustesDespesa, listarBalancetesDespesas } from "@/lib/credito/despesas-dados";
 import { resumir } from "@/lib/credito/despesas";
 import { listarRegistrosCredito } from "@/lib/credito/dados";
@@ -66,10 +66,13 @@ async function Conteudo({
   const peContabil = margemContrib && margemContrib > 0 ? fixaBase / margemContrib : null;
   const peFinanceiro = margemContrib && margemContrib > 0 ? (fixaBase - deprecMedia) / margemContrib : null;
 
-  const somaContas = atual.contas.reduce((s, c) => s + c.saldoAtual, 0);
-  const somaMes = atual.contas.reduce((s, c) => s + c.debito - c.credito, 0);
+  // Conferencia com o PDF pelos valores originais; edicoes e inclusoes manuais aparecem a parte.
+  const doPdf = atual.contas.filter((c) => !c.manual).map((c) => c.original ?? c);
+  const somaContas = doPdf.reduce((s, c) => s + c.saldoAtual, 0);
+  const somaMes = doPdf.reduce((s, c) => s + c.debito - c.credito, 0);
+  const ajusteManualMes = atual.contas.reduce((s, c) => s + (c.debito - c.credito) - (c.manual ? 0 : (c.original ?? c).debito - (c.original ?? c).credito), 0);
+  const qtdManuais = atual.contas.filter((c) => c.manual || c.original).length;
   const confere = Math.abs(somaContas - atual.totalPdf.saldoAtual) < 1 && Math.abs(somaMes - (atual.totalPdf.debito - atual.totalPdf.credito)) < 1;
-  const alertas = r.contas.filter((c) => c.natureza === "fixa" && c.alerta);
   const naoFixas = r.contas.filter((c) => c.natureza !== "fixa").sort((a, b) => b.saldoAtual - a.saldoAtual);
 
   const cards = [
@@ -118,30 +121,14 @@ async function Conteudo({
         ))}
       </div>
 
-      {alertas.length > 0 && (
-        <Card className="border-warning">
-          <CardContent className="flex gap-3 p-4 text-sm">
-            <AlertTriangle className="mt-0.5 shrink-0 text-warning" size={18} />
-            <div>
-              <p className="font-medium">Pontos para conferir com a contabilidade</p>
-              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted">
-                {alertas.map((a) => (
-                  <li key={a.classificacao}>
-                    {a.descricao} ({a.classificacao}): {a.alerta} Mês {brl(a.valorMes)}; média anterior {brl(a.mediaAnterior)}.
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>
           <CardTitle>Despesas fixas por categoria (clique para abrir as contas)</CardTitle>
         </CardHeader>
         <CardContent>
-          <TabelaFixas categorias={r.fixasPorCategoria} totalMes={r.fixasMes} totalAcumulado={r.fixasAcumulado} meses={r.meses} />
+          <IncluirDespesa balanceteId={atual.id} />
+          <TabelaFixas balanceteId={atual.id} categorias={r.fixasPorCategoria} totalMes={r.fixasMes} totalAcumulado={r.fixasAcumulado} meses={r.meses} />
         </CardContent>
       </Card>
 
@@ -183,10 +170,15 @@ async function Conteudo({
           <div className="flex gap-2">
             {confere ? <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-success" /> : <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />}
             <p>
-              {confere ? "Confere" : "Diferença"}: as {atual.contas.length} contas analíticas somam {brl(somaContas)} no ano e {brl(somaMes)} no mês; o total do grupo de despesas operacionais (4.2) no PDF é{" "}
+              {confere ? "Confere" : "Diferença"}: as {doPdf.length} contas analíticas do PDF somam {brl(somaContas)} no ano e {brl(somaMes)} no mês; o total do grupo de despesas operacionais (4.2) no PDF é{" "}
               {brl(atual.totalPdf.saldoAtual)} no ano e {brl(atual.totalPdf.debito - atual.totalPdf.credito)} no mês.
             </p>
           </div>
+          {qtdManuais > 0 && (
+            <p className="text-muted">
+              {qtdManuais} {qtdManuais === 1 ? "conta editada ou incluída" : "contas editadas ou incluídas"} manualmente, somando {brl(ajusteManualMes)} no mês em relação ao balancete.
+            </p>
+          )}
           <ul className="list-disc space-y-1 pl-5 text-muted">
             <li>
               <span className="font-medium text-foreground">Despesa fixa</span> é a que existe com ou sem venda, dentro da estrutura atual (pessoal, aluguel, utilidades, serviços contínuos, tecnologia, seguros, depreciação). Não varia com o volume embarcado.

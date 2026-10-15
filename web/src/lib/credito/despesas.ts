@@ -39,6 +39,12 @@ export type ContaDespesa = {
   debito: number;
   credito: number;
   saldoAtual: number; // acumulado do ano
+  // Despesa incluida manualmente (nao veio do balancete): natureza e categoria proprias.
+  manual?: boolean;
+  natureza?: Natureza;
+  categoria?: string;
+  // Valores originais do PDF quando a conta foi editada na tela.
+  original?: { saldoAnterior: number; debito: number; credito: number; saldoAtual: number };
 };
 
 // periodica: despesa fixa anual/eventual (IPTU, IPVA, dedetizacao...) - mes zerado e normal.
@@ -130,7 +136,7 @@ export type ContaClassificada = ContaDespesa & {
   natureza: Natureza;
   categoria: string;
   nota?: string;
-  origem: "regra" | "automatica" | "ajuste";
+  origem: "regra" | "automatica" | "ajuste" | "manual";
   valorMes: number;
   mediaAnterior: number | null; // media mensal ate o mes anterior
   alerta?: string;
@@ -140,7 +146,8 @@ export type ContaClassificada = ContaDespesa & {
 export function classificar(c: ContaDespesa, meses: number, ajustes: Record<string, Ajuste>): ContaClassificada {
   const ajuste = ajustes[c.classificacao];
   const regra = REGRAS[c.classificacao];
-  const base = ajuste ?? regra ?? regraPorGrupo(c.classificacao);
+  const manual = c.manual && c.natureza ? { natureza: c.natureza, categoria: c.categoria ?? "Despesas gerais" } : null;
+  const base = ajuste ?? manual ?? regra ?? regraPorGrupo(c.classificacao);
   const valorMes = c.debito - c.credito;
   const mediaAnterior = meses > 1 ? c.saldoAnterior / (meses - 1) : null;
   let alerta: string | undefined;
@@ -154,7 +161,7 @@ export function classificar(c: ContaDespesa, meses: number, ajustes: Record<stri
     natureza: base.natureza,
     categoria: base.categoria,
     nota: ajuste ? undefined : regra?.nota,
-    origem: ajuste ? "ajuste" : regra ? "regra" : "automatica",
+    origem: ajuste ? "ajuste" : manual ? "manual" : regra ? "regra" : "automatica",
     valorMes,
     mediaAnterior,
     alerta,

@@ -2,12 +2,19 @@
 
 import { Fragment, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, FileUp, Loader2, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, FileUp, Loader2, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CATEGORIAS_FIXAS, NATUREZAS, ROTULO_NATUREZA, type ContaClassificada, type Natureza } from "@/lib/credito/despesas";
-import { excluirBalanceteDespesas, reclassificarConta } from "@/app/(dashboard)/credito/despesas-fixas/actions";
+import {
+  editarValorConta,
+  excluirBalanceteDespesas,
+  excluirDespesaManual,
+  incluirDespesa,
+  reclassificarConta,
+  restaurarConta,
+} from "@/app/(dashboard)/credito/despesas-fixas/actions";
 
 const brl = (v: number | null) =>
   v === null ? "-" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 }).format(v);
@@ -134,7 +141,19 @@ function SeletorNatureza({ conta }: { conta: ContaClassificada }) {
 
 type Categoria = { categoria: string; mes: number; acumulado: number; media: number; contas: ContaClassificada[] };
 
-export function TabelaFixas({ categorias, totalMes, totalAcumulado, meses }: { categorias: Categoria[]; totalMes: number; totalAcumulado: number; meses: number }) {
+export function TabelaFixas({
+  balanceteId,
+  categorias,
+  totalMes,
+  totalAcumulado,
+  meses,
+}: {
+  balanceteId: string;
+  categorias: Categoria[];
+  totalMes: number;
+  totalAcumulado: number;
+  meses: number;
+}) {
   const [abertas, setAbertas] = useState<Set<string>>(new Set());
   const alternar = (c: string) =>
     setAbertas((s) => {
@@ -175,22 +194,7 @@ export function TabelaFixas({ categorias, totalMes, totalAcumulado, meses }: { c
                   <td className="print:hidden" />
                 </tr>
                 {(aberta ? c.contas : []).map((x) => (
-                  <tr key={x.classificacao} className="border-b border-border/30 align-top text-xs">
-                    <td className="py-1.5 pl-6 whitespace-normal">
-                      <span className="font-mono text-muted">{x.classificacao}</span> {x.descricao}
-                      {x.periodica && <span className="ml-1 text-muted">(anual/eventual)</span>}
-                      {x.alerta && <p className="text-warning">{x.alerta}</p>}
-                      {x.nota && <p className="text-muted">{x.nota}</p>}
-                    </td>
-                    <td className={cn("py-1.5 pl-4 text-right tabular-nums", x.valorMes === 0 && "text-muted")}>{brl(x.valorMes)}</td>
-                    <td className="py-1.5 pl-4 text-right tabular-nums text-muted">{pct(totalMes ? x.valorMes / totalMes : null)}</td>
-                    <td className="py-1.5 pl-4 text-right tabular-nums text-muted">{brl(x.mediaAnterior)}</td>
-                    <td className="py-1.5 pl-4 text-right tabular-nums">{brl(x.saldoAtual)}</td>
-                    <td className="py-1.5 pl-4 text-right tabular-nums text-muted">{brl(x.saldoAtual / meses)}</td>
-                    <td className="py-1.5 pl-4">
-                      <SeletorNatureza conta={x} />
-                    </td>
-                  </tr>
+                  <LinhaConta key={`${x.classificacao}:${x.valorMes}:${x.saldoAnterior}`} balanceteId={balanceteId} conta={x} totalMes={totalMes} meses={meses} />
                 ))}
               </Fragment>
             );
@@ -251,6 +255,196 @@ export function ContasExcluidas({ contas }: { contas: ContaClassificada[] }) {
           </tbody>
         </table>
       )}
+    </div>
+  );
+}
+
+// Valor digitado no padrao brasileiro (1.234,56) ou com ponto decimal.
+function lerValor(texto: string): number | null {
+  const t = texto.trim().replace(/[R$\s]/g, "");
+  if (!t) return 0;
+  const n = Number(t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t);
+  return Number.isFinite(n) ? n : null;
+}
+const paraTexto = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function LinhaConta({ balanceteId, conta: x, totalMes, meses }: { balanceteId: string; conta: ContaClassificada; totalMes: number; meses: number }) {
+  const [editando, setEditando] = useState(false);
+  const [mes, setMes] = useState(paraTexto(x.valorMes));
+  const [anterior, setAnterior] = useState(paraTexto(x.saldoAnterior));
+  const [erro, setErro] = useState("");
+  const [pendente, iniciar] = useTransition();
+
+  function salvar() {
+    const v = lerValor(mes);
+    const a = lerValor(anterior);
+    if (v === null || a === null) return setErro("Valor inválido.");
+    setErro("");
+    iniciar(async () => {
+      await editarValorConta(balanceteId, x.classificacao, v, a);
+      setEditando(false);
+    });
+  }
+
+  const campo = "w-28 rounded border border-border bg-background px-1.5 py-0.5 text-right text-xs tabular-nums";
+  return (
+    <tr className="border-b border-border/30 align-top text-xs">
+      <td className="py-1.5 pl-6 whitespace-normal">
+        <span className="font-mono text-muted">{x.manual ? "manual" : x.classificacao}</span> {x.descricao}
+        {x.periodica && <span className="ml-1 text-muted">(anual/eventual)</span>}
+        {x.manual && <span className="ml-1 rounded bg-primary/10 px-1 text-primary">incluída</span>}
+        {x.original && (
+          <span className="ml-1 rounded bg-warning/10 px-1 text-warning" title={`Valor do PDF: mês ${brl(x.original.debito - x.original.credito)}, acumulado ${brl(x.original.saldoAtual)}`}>
+            editado
+          </span>
+        )}
+        {x.nota && <p className="text-muted">{x.nota}</p>}
+        {erro && <p className="text-danger">{erro}</p>}
+      </td>
+      <td className={cn("py-1.5 pl-4 text-right tabular-nums", x.valorMes === 0 && "text-muted")}>
+        {editando ? <input value={mes} onChange={(e) => setMes(e.target.value)} className={campo} aria-label="Valor do mês" autoFocus /> : brl(x.valorMes)}
+      </td>
+      <td className="py-1.5 pl-4 text-right tabular-nums text-muted">{pct(totalMes ? x.valorMes / totalMes : null)}</td>
+      <td className="py-1.5 pl-4 text-right tabular-nums text-muted">
+        {editando ? (
+          <span className="flex flex-col items-end gap-0.5">
+            <input value={anterior} onChange={(e) => setAnterior(e.target.value)} className={campo} aria-label="Acumulado até o mês anterior" />
+            <span className="text-[10px]">acumulado até o mês anterior</span>
+          </span>
+        ) : (
+          brl(x.mediaAnterior)
+        )}
+      </td>
+      <td className="py-1.5 pl-4 text-right tabular-nums">{brl(x.saldoAtual)}</td>
+      <td className="py-1.5 pl-4 text-right tabular-nums text-muted">{brl(x.saldoAtual / meses)}</td>
+      <td className="py-1.5 pl-4 print:hidden">
+        <div className="flex items-center gap-1">
+          {editando ? (
+            <>
+              <button type="button" onClick={salvar} disabled={pendente} title="Salvar" className="rounded p-1 text-success hover:bg-border/40">
+                {pendente ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditando(false);
+                  setMes(paraTexto(x.valorMes));
+                  setAnterior(paraTexto(x.saldoAnterior));
+                  setErro("");
+                }}
+                title="Cancelar"
+                className="rounded p-1 hover:bg-border/40"
+              >
+                <X size={13} />
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={() => setEditando(true)} title="Editar valores" className="rounded p-1 hover:bg-border/40">
+                <Pencil size={13} />
+              </button>
+              {x.original && (
+                <button
+                  type="button"
+                  disabled={pendente}
+                  onClick={() => iniciar(() => restaurarConta(balanceteId, x.classificacao))}
+                  title="Restaurar o valor do PDF"
+                  className="rounded p-1 hover:bg-border/40"
+                >
+                  <RotateCcw size={13} />
+                </button>
+              )}
+              {x.manual ? (
+                <button
+                  type="button"
+                  disabled={pendente}
+                  onClick={() => {
+                    if (confirm(`Excluir a despesa ${x.descricao}?`)) iniciar(() => excluirDespesaManual(balanceteId, x.classificacao));
+                  }}
+                  title="Excluir despesa incluída"
+                  className="rounded p-1 text-danger hover:bg-border/40"
+                >
+                  <Trash2 size={13} />
+                </button>
+              ) : (
+                <SeletorNatureza conta={x} />
+              )}
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+export function IncluirDespesa({ balanceteId }: { balanceteId: string }) {
+  const [aberto, setAberto] = useState(false);
+  const [descricao, setDescricao] = useState("");
+  const [categoria, setCategoria] = useState<string>(CATEGORIAS_FIXAS[0]);
+  const [mes, setMes] = useState("");
+  const [anterior, setAnterior] = useState("");
+  const [erro, setErro] = useState("");
+  const [pendente, iniciar] = useTransition();
+
+  function salvar() {
+    const v = lerValor(mes);
+    const a = lerValor(anterior);
+    if (!descricao.trim()) return setErro("Informe a descrição.");
+    if (v === null || a === null) return setErro("Valor inválido.");
+    setErro("");
+    iniciar(async () => {
+      await incluirDespesa(balanceteId, { descricao, categoria, natureza: "fixa", valorMes: v, saldoAnterior: a });
+      setDescricao("");
+      setMes("");
+      setAnterior("");
+      setAberto(false);
+    });
+  }
+
+  if (!aberto) {
+    return (
+      <Button variant="outline" size="sm" className="mb-3 print:hidden" onClick={() => setAberto(true)}>
+        <Plus size={14} />
+        Incluir despesa
+      </Button>
+    );
+  }
+  const campo = "rounded-lg border border-border bg-background px-2 py-1.5 text-sm";
+  return (
+    <div className="mb-4 space-y-2 rounded-lg border border-border p-3 print:hidden">
+      <p className="text-sm font-medium">Incluir despesa fixa neste mês</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="min-w-[220px] flex-1 text-xs text-muted">
+          Descrição
+          <input value={descricao} onChange={(e) => setDescricao(e.target.value)} className={cn(campo, "mt-1 block w-full")} placeholder="Ex.: Energia elétrica (provisão de julho)" />
+        </label>
+        <label className="text-xs text-muted">
+          Categoria
+          <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className={cn(campo, "mt-1 block")}>
+            {CATEGORIAS_FIXAS.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-muted">
+          Valor do mês (R$)
+          <input value={mes} onChange={(e) => setMes(e.target.value)} className={cn(campo, "mt-1 block w-36 text-right")} placeholder="0,00" />
+        </label>
+        <label className="text-xs text-muted">
+          Acumulado até o mês anterior (R$)
+          <input value={anterior} onChange={(e) => setAnterior(e.target.value)} className={cn(campo, "mt-1 block w-36 text-right")} placeholder="0,00" />
+        </label>
+        <Button size="sm" onClick={salvar} disabled={pendente}>
+          {pendente ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+          Salvar
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setAberto(false)}>
+          Cancelar
+        </Button>
+      </div>
+      {erro && <p className="text-sm text-danger">{erro}</p>}
     </div>
   );
 }
