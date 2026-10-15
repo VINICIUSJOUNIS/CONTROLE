@@ -293,11 +293,6 @@ function LinhaConta({ balanceteId, conta: x, totalMes, meses }: { balanceteId: s
         <span className="font-mono text-muted">{x.manual ? "manual" : x.classificacao}</span> {x.descricao}
         {x.periodica && <span className="ml-1 text-muted">(anual/eventual)</span>}
         {x.manual && <span className="ml-1 rounded bg-primary/10 px-1 text-primary">incluída</span>}
-        {x.original && (
-          <span className="ml-1 rounded bg-warning/10 px-1 text-warning" title={`Valor do PDF: mês ${brl(x.original.debito - x.original.credito)}, acumulado ${brl(x.original.saldoAtual)}`}>
-            editado
-          </span>
-        )}
         {x.nota && <p className="text-muted">{x.nota}</p>}
         {erro && <p className="text-danger">{erro}</p>}
       </td>
