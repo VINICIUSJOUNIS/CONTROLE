@@ -14,7 +14,7 @@ function AvisoInatividade() {
   if (params.get("motivo") !== "inatividade") return null;
   return (
     <p className="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
-      Sessão encerrada após 10 minutos sem uso. Entre novamente com sua senha.
+      Sessão encerrada após 30 minutos sem uso. Entre novamente com sua senha.
     </p>
   );
 }

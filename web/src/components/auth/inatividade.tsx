@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-// Encerra a sessao depois de 10 minutos sem uso: o usuario volta para o login
+// Encerra a sessao depois de 30 minutos sem uso: o usuario volta para o login
 // e so entra de novo com a senha. A ultima atividade fica no localStorage para
 // valer entre abas (mexer numa aba mantem as outras vivas) e para pegar o caso
 // de fechar o navegador e voltar depois do prazo.
-export const TEMPO_INATIVIDADE_MS = 10 * 60 * 1000;
+export const TEMPO_INATIVIDADE_MS = 30 * 60 * 1000;
 export const CHAVE_ULTIMA_ATIVIDADE = "controle:ultima-atividade";
 
 const EVENTOS = ["mousemove", "mousedown", "keydown", "wheel", "scroll", "touchstart"] as const;
