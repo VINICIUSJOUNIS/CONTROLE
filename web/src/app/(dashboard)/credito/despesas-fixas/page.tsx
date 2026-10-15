@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ContasExcluidas, EnviarBalancete, ExcluirMesDespesas, IncluirDespesa, TabelaFixas } from "@/components/credito/despesas-fixas-cliente";
+import { EnviarBalancete, ExcluirMesDespesas, IncluirDespesa, TabelaFixas } from "@/components/credito/despesas-fixas-cliente";
 import { listarAjustesDespesa, listarBalancetesDespesas } from "@/lib/credito/despesas-dados";
 import { resumir } from "@/lib/credito/despesas";
 import { listarRegistrosCredito } from "@/lib/credito/dados";
@@ -66,14 +65,6 @@ async function Conteudo({
   const peContabil = margemContrib && margemContrib > 0 ? fixaBase / margemContrib : null;
   const peFinanceiro = margemContrib && margemContrib > 0 ? (fixaBase - deprecMedia) / margemContrib : null;
 
-  // Conferencia com o PDF pelos valores originais; edicoes e inclusoes manuais aparecem a parte.
-  const doPdf = atual.contas.filter((c) => !c.manual).map((c) => c.original ?? c);
-  const somaContas = doPdf.reduce((s, c) => s + c.saldoAtual, 0);
-  const somaMes = doPdf.reduce((s, c) => s + c.debito - c.credito, 0);
-  const ajusteManualMes = atual.contas.reduce((s, c) => s + (c.debito - c.credito) - (c.manual ? 0 : (c.original ?? c).debito - (c.original ?? c).credito), 0);
-  const qtdManuais = atual.contas.filter((c) => c.manual || c.original).length;
-  const confere = Math.abs(somaContas - atual.totalPdf.saldoAtual) < 1 && Math.abs(somaMes - (atual.totalPdf.debito - atual.totalPdf.credito)) < 1;
-  const naoFixas = r.contas.filter((c) => c.natureza !== "fixa").sort((a, b) => b.saldoAtual - a.saldoAtual);
 
   const cards = [
     { t: `Despesas fixas de ${rotuloCompetencia(atual.competencia)}`, v: brl(r.fixasMes), s: rAnt ? `mês anterior: ${brl(rAnt.fixasMes)}` : r.fixasMediaAnterior !== null ? `média mensal até o mês anterior: ${brl(r.fixasMediaAnterior)}` : undefined },
@@ -161,38 +152,6 @@ async function Conteudo({
           </CardContent>
         </Card>
       )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Conferência e critério contábil</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div className="flex gap-2">
-            {confere ? <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-success" /> : <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />}
-            <p>
-              {confere ? "Confere" : "Diferença"}: as {doPdf.length} contas analíticas do PDF somam {brl(somaContas)} no ano e {brl(somaMes)} no mês; o total do grupo de despesas operacionais (4.2) no PDF é{" "}
-              {brl(atual.totalPdf.saldoAtual)} no ano e {brl(atual.totalPdf.debito - atual.totalPdf.credito)} no mês.
-            </p>
-          </div>
-          {qtdManuais > 0 && (
-            <p className="text-muted">
-              {qtdManuais} {qtdManuais === 1 ? "conta editada ou incluída" : "contas editadas ou incluídas"} manualmente, somando {brl(ajusteManualMes)} no mês em relação ao balancete.
-            </p>
-          )}
-          <ul className="list-disc space-y-1 pl-5 text-muted">
-            <li>
-              <span className="font-medium text-foreground">Despesa fixa</span> é a que existe com ou sem venda, dentro da estrutura atual (pessoal, aluguel, utilidades, serviços contínuos, tecnologia, seguros, depreciação). Não varia com o volume embarcado.
-            </li>
-            <li>Regime de competência: o valor do mês é o débito menos o crédito da conta no balancete; o acumulado é o saldo atual (janeiro até o mês).</li>
-            <li>
-              A folha entra pelas contas de despesa com pessoal (4.2.2.01), incluindo encargos (INSS, FGTS) e provisões de férias e 13º. As obrigações a pagar do passivo (salários, INSS, FGTS a recolher) não são somadas de novo, para não contar a folha duas vezes.
-            </li>
-            <li>Ficam fora: despesas variáveis (comissões, fretes, exportação, armazenagem, viagens), não recorrentes (reformas, indenizações, processos, multas, doações) e financeiras (juros, tarifas, IOF, variação cambial).</li>
-            <li>Despesas anuais ou eventuais (IPTU, IPVA, dedetização) são fixas; para planejamento use a média mensal do ano, que dilui esses lançamentos.</li>
-          </ul>
-          <ContasExcluidas contas={naoFixas} />
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -229,48 +229,6 @@ export function TabelaFixas({
   );
 }
 
-export function ContasExcluidas({ contas }: { contas: ContaClassificada[] }) {
-  const [aberta, setAberta] = useState(false);
-  return (
-    <div>
-      <button type="button" onClick={() => setAberta((a) => !a)} className="flex items-center gap-1 text-sm font-medium text-primary print:hidden">
-        {aberta ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        Contas de despesa que não são fixas ({contas.length}) - conferência do critério
-      </button>
-      {aberta && (
-        <table className="mt-2 w-full text-xs">
-          <thead>
-            <tr className="border-b border-border text-muted">
-              <th className="py-1.5 text-left font-medium">Conta</th>
-              <th className="py-1.5 pl-3 text-left font-medium">Motivo</th>
-              <th className="py-1.5 pl-3 text-right font-medium">Mês</th>
-              <th className="py-1.5 pl-3 text-right font-medium">Acumulado</th>
-              <th className="py-1.5 pl-3 text-left font-medium">Natureza</th>
-            </tr>
-          </thead>
-          <tbody>
-            {contas.map((x) => (
-              <tr key={x.classificacao} className="border-b border-border/30 align-top">
-                <td className="py-1 whitespace-normal">
-                  <span className="font-mono text-muted">{x.classificacao}</span> {x.descricao}
-                </td>
-                <td className="py-1 pl-3 whitespace-normal text-muted">
-                  {ROTULO_NATUREZA[x.natureza]} - {x.categoria}
-                  {x.nota ? `. ${x.nota}` : ""}
-                </td>
-                <td className="py-1 pl-3 text-right tabular-nums">{brl(x.valorMes)}</td>
-                <td className="py-1 pl-3 text-right tabular-nums">{brl(x.saldoAtual)}</td>
-                <td className="py-1 pl-3">
-                  <SeletorNatureza conta={x} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
-}
 
 // Valor digitado no padrao brasileiro (1.234,56) ou com ponto decimal.
 function lerValor(texto: string): number | null {
