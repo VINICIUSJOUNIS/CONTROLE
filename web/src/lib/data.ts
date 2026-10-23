@@ -885,6 +885,18 @@ export async function getYearlyComparison(modalidade?: ModalidadeFilter) {
 // quitacoes ainda aparece. Creditos tomados agrupa por ano de contratacao; valores
 // quitados agrupa por ano de quitacao (settlementDate do emprestimo / dataQuitacao
 // do ACC) - sao dois recortes de data diferentes de proposito.
+// Valor contratado por mes no ano (emprestimos pelo valor contratado, ACC pelo
+// valor recebido em R$ - mesma base do "Creditos Tomados" do comparativo anual).
+export async function getEmprestimoAccContratacaoMensal(year: string) {
+  const [loans, accOperations] = await Promise.all([getLoans(), getAccOperations()]);
+  return Array.from({ length: 12 }, (_, i) => {
+    const mes = `${year}-${String(i + 1).padStart(2, "0")}`;
+    const emprestimos = loans.filter((l) => l.contractDate.slice(0, 7) === mes).reduce((s, l) => s + l.contractedValue, 0);
+    const acc = accOperations.filter((a) => a.contractDate.slice(0, 7) === mes).reduce((s, a) => s + a.receivedValueBRL, 0);
+    return { mes, emprestimos: Math.round(emprestimos), acc: Math.round(acc), total: Math.round(emprestimos + acc) };
+  });
+}
+
 export async function getEmprestimoAccComparativoAnual(years: string[]) {
   const [loans, accOperations] = await Promise.all([getLoans(), getAccOperations()]);
 
