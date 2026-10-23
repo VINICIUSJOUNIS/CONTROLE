@@ -7,6 +7,7 @@ import { listarAjustesDespesa, listarBalancetesDespesas } from "@/lib/credito/de
 import { resumir } from "@/lib/credito/despesas";
 import { listarRegistrosCredito } from "@/lib/credito/dados";
 import { analisar, rotuloCompetencia } from "@/lib/credito/calculos";
+import { DocumentosLinks } from "@/components/credito/documentos-links";
 
 const brl = (v: number | null) =>
   v === null ? "-" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 }).format(v);
@@ -82,7 +83,8 @@ async function Conteudo({
           <div className="text-sm">
             <p className="font-semibold">{atual.empresa}</p>
             <p className="text-muted">
-              CNPJ {atual.cnpj} · Balancete de {rotuloCompetencia(atual.competencia)} · {atual.arquivos.join(", ")}
+              CNPJ {atual.cnpj} · Balancete de {rotuloCompetencia(atual.competencia)} ·{" "}
+              <DocumentosLinks arquivos={atual.arquivos} documentos={atual.documentos} />
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 print:hidden">

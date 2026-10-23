@@ -4,7 +4,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ErroExtracao, MODELO_IA, extrairComIa } from "@/lib/credito/extracao-ia";
-import { salvarExtracao } from "@/lib/credito/dados";
+import { competenciaExtracao, salvarExtracao } from "@/lib/credito/dados";
+import { salvarDocumentos } from "@/lib/credito/documentos";
 
 export const maxDuration = 300;
 
@@ -38,9 +39,10 @@ export async function POST(request: Request) {
       const ping = setInterval(() => controller.enqueue(encoder.encode(".")), 5000);
       try {
         const extracao = await extrairComIa(pdfs, abort.signal);
-        const salvo = await salvarExtracao(extracao, pdfs.map((p) => p.nome), MODELO_IA);
+        const competencia = competenciaExtracao(extracao);
+        const documentos = await salvarDocumentos(supabase, `analise/${competencia}`, pdfs);
+        await salvarExtracao(extracao, pdfs.map((p) => p.nome), documentos, MODELO_IA);
         revalidatePath("/credito");
-        const competencia = salvo.competencia.toISOString().slice(0, 7);
         controller.enqueue(encoder.encode(`\n${JSON.stringify({ competencia })}`));
       } catch (e) {
         console.error("Analise de credito:", e);

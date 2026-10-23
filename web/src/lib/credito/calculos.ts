@@ -33,6 +33,7 @@ export type RegistroCredito = {
   conferenciaPdf: { totalAtivo: number; totalPassivoPl: number; totalAtivoAnterior: number | null; lucroLiquido: number };
   observacoes: string[];
   arquivos: string[];
+  documentos: string[];
 };
 
 export type Formato = "moeda" | "pct" | "vezes" | "dias" | "texto";

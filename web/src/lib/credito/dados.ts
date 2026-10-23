@@ -29,12 +29,15 @@ export async function listarRegistrosCredito(): Promise<RegistroCredito[]> {
     conferenciaPdf: r.conferenciaPdf as RegistroCredito["conferenciaPdf"],
     observacoes: r.observacoes as string[],
     arquivos: r.arquivos,
+    documentos: r.documentos,
   }));
 }
 
 // Grava (ou substitui) o mes do balanco extraido. A competencia e o mes da data do balanco.
-export async function salvarExtracao(e: Extracao, arquivos: string[], modeloIa: string) {
-  const competencia = new Date(`${e.dataBalanco.slice(0, 7)}-01T00:00:00Z`);
+export const competenciaExtracao = (e: Extracao) => e.dataBalanco.slice(0, 7);
+
+export async function salvarExtracao(e: Extracao, arquivos: string[], documentos: string[], modeloIa: string) {
+  const competencia = new Date(`${competenciaExtracao(e)}-01T00:00:00Z`);
   const data = {
     empresa: e.empresa,
     cnpj: e.cnpj,
@@ -50,6 +53,7 @@ export async function salvarExtracao(e: Extracao, arquivos: string[], modeloIa: 
     conferenciaPdf: e.conferenciaPdf,
     observacoes: e.observacoes,
     arquivos,
+    documentos,
     modeloIa,
   };
   return prisma.analiseCredito.upsert({ where: { competencia }, update: data, create: { competencia, ...data } });

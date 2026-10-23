@@ -9,6 +9,7 @@ export type BalanceteDespesasRegistro = {
   contas: ContaDespesa[];
   totalPdf: { saldoAnterior: number; debito: number; credito: number; saldoAtual: number };
   arquivos: string[];
+  documentos: string[];
 };
 
 export async function listarBalancetesDespesas(): Promise<BalanceteDespesasRegistro[]> {
@@ -21,6 +22,7 @@ export async function listarBalancetesDespesas(): Promise<BalanceteDespesasRegis
     contas: r.contas as ContaDespesa[],
     totalPdf: r.totalPdf as BalanceteDespesasRegistro["totalPdf"],
     arquivos: r.arquivos,
+    documentos: r.documentos,
   }));
 }
 

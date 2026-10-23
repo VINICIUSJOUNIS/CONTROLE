@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatar, type Analise, type Componente, type Indicador, type Linha, type Tom } from "@/lib/credito/calculos";
 import { CAMPO_POR_CHAVE, type Origens } from "@/lib/credito/campos";
 import { NOTAS_METODOLOGIA } from "@/lib/credito/notas";
+import { DocumentosLinks } from "@/components/credito/documentos-links";
 
 const corTom: Record<Tom, "success" | "warning" | "danger" | "neutral"> = {
   bom: "success",
@@ -43,7 +44,11 @@ export function AnaliseView({ analise }: { analise: Analise }) {
             <p className="text-xs text-muted">
               Indicadores sobre o {periodo.descricao} ({periodo.dias} dias). Comparação com o mês anterior: {analise.fonteAnterior}.
             </p>
-            {r.arquivos.length > 0 && <p className="text-xs text-muted">Arquivos: {r.arquivos.join(", ")}</p>}
+            {r.arquivos.length > 0 && (
+              <p className="text-xs text-muted">
+                Arquivos: <DocumentosLinks arquivos={r.arquivos} documentos={r.documentos} />
+              </p>
+            )}
           </div>
           <Button variant="outline" size="sm" className="print:hidden" onClick={() => window.print()}>
             <Printer size={14} />

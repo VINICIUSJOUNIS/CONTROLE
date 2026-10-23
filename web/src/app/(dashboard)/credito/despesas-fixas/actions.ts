@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
+import { removerDocumentos } from "@/lib/credito/documentos";
 import { randomUUID } from "crypto";
 import { NATUREZAS, type ContaDespesa, type Natureza } from "@/lib/credito/despesas";
 
@@ -21,7 +23,8 @@ export async function reclassificarConta(classificacao: string, natureza: Nature
 }
 
 export async function excluirBalanceteDespesas(id: string) {
-  await prisma.balanceteDespesas.delete({ where: { id } });
+  const { documentos } = await prisma.balanceteDespesas.delete({ where: { id } });
+  await removerDocumentos(await createClient(), documentos);
   revalidatePath("/credito/despesas-fixas");
 }
 

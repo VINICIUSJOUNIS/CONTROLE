@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { ErroExtracao, MODELO_IA } from "@/lib/credito/extracao-ia";
 import { extrairDespesasComIa } from "@/lib/credito/despesas-ia";
+import { salvarDocumentos } from "@/lib/credito/documentos";
 
 export const maxDuration = 300;
 
@@ -34,7 +35,8 @@ export async function POST(request: Request) {
       try {
         const e = await extrairDespesasComIa(pdf, abort.signal);
         const competencia = new Date(`${e.periodoFim.slice(0, 7)}-01T00:00:00Z`);
-        const data = { empresa: e.empresa, cnpj: e.cnpj, contas: e.contas, totalPdf: e.totalPdf, arquivos: [pdf.nome], modeloIa: MODELO_IA };
+        const documentos = await salvarDocumentos(supabase, `despesas/${e.periodoFim.slice(0, 7)}`, [pdf]);
+        const data = { empresa: e.empresa, cnpj: e.cnpj, contas: e.contas, totalPdf: e.totalPdf, arquivos: [pdf.nome], documentos, modeloIa: MODELO_IA };
         await prisma.balanceteDespesas.upsert({ where: { competencia }, update: data, create: { competencia, ...data } });
         revalidatePath("/credito/despesas-fixas");
         controller.enqueue(encoder.encode(`\n${JSON.stringify({ competencia: e.periodoFim.slice(0, 7) })}`));
