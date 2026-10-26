@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Printer } from "lucide-react";
+import { ChevronDown, ChevronRight, Printer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +74,7 @@ export function AnaliseView({ analise }: { analise: Analise }) {
           <TabsTrigger value="balanco">Balanço</TabsTrigger>
           <TabsTrigger value="dre">DRE</TabsTrigger>
           <TabsTrigger value="fluxo">Fluxo de Caixa</TabsTrigger>
-          <TabsTrigger value="conferencia">Conferência e Notas</TabsTrigger>
+          <TabsTrigger value="conferencia">Notas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="indicadores">
@@ -133,22 +133,6 @@ export function AnaliseView({ analise }: { analise: Analise }) {
         </TabsContent>
 
         <TabsContent value="conferencia">
-          <Card>
-            <CardHeader>
-              <CardTitle>Conferências automáticas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {analise.conferencias.map((c) => (
-                <div key={c.titulo} className="flex gap-2">
-                  {c.ok ? <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-success" /> : <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />}
-                  <div>
-                    <p className="font-medium">{c.titulo}</p>
-                    <p className="text-muted">{c.detalhe}</p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
           {r.observacoes.length > 0 && (
             <Card>
               <CardHeader>

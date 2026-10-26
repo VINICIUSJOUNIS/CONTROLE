@@ -15,7 +15,7 @@ export default async function CreditoPage() {
       const total = a.ativo.find((l) => l.nivel === 0)?.valor ?? 0;
       const rl = a.dre.find((l) => l.rotulo === "Receita Líquida")?.valor ?? 0;
       const ll = a.dre.find((l) => l.rotulo === "Lucro Líquido do Período")?.valor ?? 0;
-      return { r, total, rl, ll, ncg: ind("ncg")?.valor ?? null, liq: ind("liquidezCorrente")?.valor ?? null, alertas: a.conferencias.filter((c) => !c.ok).length };
+      return { r, total, rl, ll, ncg: ind("ncg")?.valor ?? null, liq: ind("liquidezCorrente")?.valor ?? null };
     })
     .reverse();
 
@@ -41,12 +41,11 @@ export default async function CreditoPage() {
                     <th className="py-2 text-right font-medium">Lucro líquido</th>
                     <th className="py-2 text-right font-medium">NCG</th>
                     <th className="py-2 text-right font-medium">Liquidez corrente</th>
-                    <th className="py-2 text-right font-medium">Conferência</th>
                     <th />
                   </tr>
                 </thead>
                 <tbody>
-                  {linhas.map(({ r, total, rl, ll, ncg, liq, alertas }) => (
+                  {linhas.map(({ r, total, rl, ll, ncg, liq }) => (
                     <tr key={r.id} className="border-b border-border/50">
                       <td className="py-2">
                         <Link href={`/credito/${r.competencia}`} className="font-medium text-primary hover:underline">
@@ -58,9 +57,6 @@ export default async function CreditoPage() {
                       <td className="py-2 text-right tabular-nums">{formatar(ll, "moeda")}</td>
                       <td className="py-2 text-right tabular-nums">{formatar(ncg, "moeda")}</td>
                       <td className="py-2 text-right tabular-nums">{formatar(liq, "vezes")}</td>
-                      <td className={alertas ? "py-2 text-right text-warning" : "py-2 text-right text-success"}>
-                        {alertas ? `${alertas} divergência(s)` : "OK"}
-                      </td>
                       <td className="py-2 text-right">
                         <ExcluirMes id={r.id} rotulo={rotuloCompetencia(r.competencia)} />
                       </td>
