@@ -465,8 +465,12 @@ export async function getAccOperations() {
       jurosCustoValor = jurosValor;
     }
 
-    // Valor do spread: (valor contratado x taxa spot) - valor recebido.
-    const spreadValor = Number((contractedValueForeign * spotRate - receivedValueBRL).toFixed(2));
+    // Valor do spread: valor contratado x (taxa spot - taxa de fechamento).
+    // Calculado direto pelas taxas, e nao contra receivedValueBRL, porque o
+    // valor recebido e gravado arredondado ao real - quando spot = fechamento
+    // isso gerava spread negativo de centavos (ex.: -R$0,50). Spread e custo,
+    // nunca negativo: travado em zero.
+    const spreadValor = Math.max(0, Number((contractedValueForeign * (spotRate - closingRate)).toFixed(2)));
 
     // Taxa flat: percentual cobrado sobre o valor total liberado (receivedValueBRL).
     const flatFeeValor = Number((receivedValueBRL * (flatFeeRate / 100)).toFixed(2));
