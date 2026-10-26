@@ -43,6 +43,9 @@ export type ContaDespesa = {
   manual?: boolean;
   natureza?: Natureza;
   categoria?: string;
+  // Conta do balancete excluida na tela: fica fora de todos os totais do mes,
+  // mas continua gravada para poder ser restaurada.
+  excluida?: boolean;
   // Valores originais do PDF quando a conta foi editada na tela.
   original?: { saldoAnterior: number; debito: number; credito: number; saldoAtual: number };
 };
@@ -172,6 +175,7 @@ export function classificar(c: ContaDespesa, meses: number, ajustes: Record<stri
 export type ResumoDespesas = {
   meses: number;
   contas: ContaClassificada[];
+  excluidas: ContaDespesa[];
   porNatureza: Record<Natureza, { mes: number; acumulado: number }>;
   fixasPorCategoria: { categoria: string; mes: number; acumulado: number; media: number; contas: ContaClassificada[] }[];
   fixasMes: number;
@@ -183,7 +187,7 @@ export type ResumoDespesas = {
 
 export function resumir(contas: ContaDespesa[], competencia: string, ajustes: Record<string, Ajuste>): ResumoDespesas {
   const meses = Number(competencia.slice(5, 7));
-  const cls = contas.map((c) => classificar(c, meses, ajustes));
+  const cls = contas.filter((c) => !c.excluida).map((c) => classificar(c, meses, ajustes));
   const porNatureza = Object.fromEntries(
     NATUREZAS.map((n) => {
       const l = cls.filter((c) => c.natureza === n);
@@ -207,6 +211,7 @@ export function resumir(contas: ContaDespesa[], competencia: string, ajustes: Re
   return {
     meses,
     contas: cls,
+    excluidas: contas.filter((c) => c.excluida),
     porNatureza,
     fixasPorCategoria,
     fixasMes: porNatureza.fixa.mes,

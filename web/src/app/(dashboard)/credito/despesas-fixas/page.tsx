@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { EnviarBalancete, ExcluirMesDespesas, IncluirDespesa, TabelaFixas } from "@/components/credito/despesas-fixas-cliente";
+import { DespesasExcluidas, EnviarBalancete, ExcluirMesDespesas, IncluirDespesa, TabelaFixas } from "@/components/credito/despesas-fixas-cliente";
 import { listarAjustesDespesa, listarBalancetesDespesas } from "@/lib/credito/despesas-dados";
 import { resumir } from "@/lib/credito/despesas";
 import { listarRegistrosCredito } from "@/lib/credito/dados";
@@ -122,6 +122,7 @@ async function Conteudo({
         <CardContent>
           <IncluirDespesa balanceteId={atual.id} />
           <TabelaFixas balanceteId={atual.id} categorias={r.fixasPorCategoria} totalMes={r.fixasMes} totalAcumulado={r.fixasAcumulado} meses={r.meses} />
+          <DespesasExcluidas balanceteId={atual.id} contas={r.excluidas} />
         </CardContent>
       </Card>
 

@@ -91,12 +91,26 @@ export async function incluirDespesa(
   await gravarContas(id, contas);
 }
 
-export async function excluirDespesaManual(id: string, classificacao: string) {
+// Exclui uma despesa do mes: a incluida manualmente sai de vez; a que veio do
+// balancete so e marcada como excluida (sai dos totais) e pode ser restaurada.
+export async function excluirDespesa(id: string, classificacao: string) {
   const contas = await lerContas(id);
-  await gravarContas(
-    id,
-    contas.filter((c) => !(c.manual && c.classificacao === classificacao))
-  );
+  const c = contas.find((x) => x.classificacao === classificacao);
+  if (!c) return;
+  if (c.manual) {
+    await gravarContas(id, contas.filter((x) => x !== c));
+  } else {
+    c.excluida = true;
+    await gravarContas(id, contas);
+  }
+}
+
+export async function restaurarDespesaExcluida(id: string, classificacao: string) {
+  const contas = await lerContas(id);
+  const c = contas.find((x) => x.classificacao === classificacao);
+  if (!c?.excluida) return;
+  delete c.excluida;
+  await gravarContas(id, contas);
 }
 
 const arred = (v: number) => Math.round(v * 100) / 100;

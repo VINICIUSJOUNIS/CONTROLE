@@ -6,11 +6,12 @@ import { Check, ChevronDown, ChevronRight, Eye, EyeOff, FileUp, Loader2, Pencil,
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { CATEGORIAS_FIXAS, NATUREZAS, ROTULO_NATUREZA, type ContaClassificada, type Natureza } from "@/lib/credito/despesas";
+import { CATEGORIAS_FIXAS, NATUREZAS, ROTULO_NATUREZA, type ContaClassificada, type ContaDespesa, type Natureza } from "@/lib/credito/despesas";
 import {
   editarValorConta,
   excluirBalanceteDespesas,
-  excluirDespesaManual,
+  excluirDespesa,
+  restaurarDespesaExcluida,
   incluirDespesa,
   reclassificarConta,
   restaurarConta,
@@ -333,21 +334,21 @@ function LinhaConta({
                   <RotateCcw size={13} />
                 </button>
               )}
-              {x.manual ? (
-                <button
-                  type="button"
-                  disabled={pendente}
-                  onClick={() => {
-                    if (confirm(`Excluir a despesa ${x.descricao}?`)) iniciar(() => excluirDespesaManual(balanceteId, x.classificacao));
-                  }}
-                  title="Excluir despesa incluída"
-                  className="rounded p-1 text-danger hover:bg-border/40"
-                >
-                  <Trash2 size={13} />
-                </button>
-              ) : (
-                detalhes && <SeletorNatureza conta={x} />
-              )}
+              <button
+                type="button"
+                disabled={pendente}
+                onClick={() => {
+                  const msg = x.manual
+                    ? `Excluir a despesa ${x.descricao}?`
+                    : `Excluir ${x.descricao} deste mês? Ela sai dos totais e pode ser restaurada na lista de despesas excluídas.`;
+                  if (confirm(msg)) iniciar(() => excluirDespesa(balanceteId, x.classificacao));
+                }}
+                title="Excluir despesa"
+                className="rounded p-1 text-danger hover:bg-border/40"
+              >
+                <Trash2 size={13} />
+              </button>
+              {!x.manual && detalhes && <SeletorNatureza conta={x} />}
             </>
           )}
         </div>
@@ -424,6 +425,46 @@ export function IncluirDespesa({ balanceteId }: { balanceteId: string }) {
         </Button>
       </div>
       {erro && <p className="text-sm text-danger">{erro}</p>}
+    </div>
+  );
+}
+
+// Contas do balancete excluidas no mes, com opcao de restaurar.
+export function DespesasExcluidas({ balanceteId, contas }: { balanceteId: string; contas: ContaDespesa[] }) {
+  const [pendente, iniciar] = useTransition();
+  const [aberta, setAberta] = useState(false);
+  if (contas.length === 0) return null;
+  return (
+    <div className="mt-4 rounded-lg border border-border p-3 text-sm print:hidden">
+      <button type="button" onClick={() => setAberta((a) => !a)} className="flex items-center gap-1 font-medium">
+        {aberta ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        Despesas excluídas deste mês ({contas.length})
+      </button>
+      {aberta && (
+        <table className="mt-2 w-full text-xs">
+          <tbody>
+            {contas.map((c) => (
+              <tr key={c.classificacao} className="border-b border-border/30 last:border-0">
+                <td className="py-1.5">
+                  <span className="font-mono text-muted">{c.classificacao}</span> {c.descricao}
+                </td>
+                <td className="py-1.5 pl-4 text-right tabular-nums text-muted">{brl(c.debito - c.credito)}</td>
+                <td className="py-1.5 pl-4 text-right">
+                  <button
+                    type="button"
+                    disabled={pendente}
+                    onClick={() => iniciar(() => restaurarDespesaExcluida(balanceteId, c.classificacao))}
+                    className="inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 hover:bg-border/40"
+                  >
+                    <RotateCcw size={12} />
+                    Restaurar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
