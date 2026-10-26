@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { RATE_BASIS_DAYS, RateBasisValue, saldoDevedorEm } from "@/lib/amortization";
+import { RATE_BASIS_DAYS, RateBasisValue, saldoDevedorEm, calcLoanJurosReais } from "@/lib/amortization";
 import { calcBaixaJuros } from "@/lib/acc-calc";
 
 function n(value: unknown): number {
@@ -287,32 +287,53 @@ export async function getLoans() {
     const insuranceCost = n(l.insuranceCost);
     const otherCosts = n(l.otherCosts);
 
-    // Juros/custo projetados para a vida toda do contrato: se liquidado antecipadamente,
-    // usa o periodo real (contratacao ate a liquidacao); senao, usa o prazo contratado
-    // (usado no KPI "Juros futuros" do dashboard, uma projecao do contrato ativo).
-    const fimPeriodo = l.settlementDate ?? l.lastDueDate;
-    const prazoMeses = monthsBetween(l.contractDate, fimPeriodo);
-    const prazoDias = daysBetween(l.contractDate, fimPeriodo);
-    const basisDays = RATE_BASIS_DAYS[l.rateBasis as RateBasisValue] ?? RATE_BASIS_DAYS.ANUAL;
-    const jurosValor = Number(
-      (contractedValue * (interestRate / 100) * (prazoDias / basisDays)).toFixed(2)
-    );
-    const custoTotal = Number((jurosValor + iof + insuranceCost + otherCosts).toFixed(2));
-
-    // Juros/custo realmente acumulados ate hoje (ou ate a liquidacao, se ja liquidado).
-    // E o que aparece na tabela de Emprestimos - nao inclui juros que ainda nao correram.
-    const fimAcumulado = l.settlementDate ?? hoje;
-    const prazoDiasAcumulado = daysBetween(l.contractDate, fimAcumulado);
-    const jurosAcumulado = Number(
-      (contractedValue * (interestRate / 100) * (prazoDiasAcumulado / basisDays)).toFixed(2)
-    );
-    const custoAcumulado = Number((jurosAcumulado + iof + insuranceCost + otherCosts).toFixed(2));
-
     const contractDateStr = l.contractDate.toISOString().slice(0, 10);
     const firstDueDateStr = l.firstDueDate.toISOString().slice(0, 10);
     const lastDueDateStr = l.lastDueDate.toISOString().slice(0, 10);
     const settlementDateStr = l.settlementDate ? l.settlementDate.toISOString().slice(0, 10) : null;
     const hojeStr = hoje.toISOString().slice(0, 10);
+
+    const parcelas = l.installmentRecords.map((r) => ({
+      numero: r.numero,
+      vencimento: r.vencimento ? r.vencimento.toISOString().slice(0, 10) : null,
+      paidAt: r.paidAt ? r.paidAt.toISOString().slice(0, 10) : null,
+      paidValue: r.paidValue != null ? n(r.paidValue) : null,
+    }));
+
+    // Prazo: liquidado, ate a liquidacao; senao, o prazo contratado. A data de
+    // liquidacao so vale com status LIQUIDADO (mesma regra de saldoDevedorEm).
+    const liquidado = l.status === "LIQUIDADO";
+    const fimPeriodo = liquidado && l.settlementDate ? l.settlementDate : l.lastDueDate;
+    const prazoMeses = monthsBetween(l.contractDate, fimPeriodo);
+
+    // Juros pelo cronograma de amortizacao (saldo devedor caindo a cada parcela),
+    // com o valor real das parcelas pagas e, se liquidado, cortado na liquidacao -
+    // ver calcLoanJurosReais. Antes era valor contratado cheio x taxa x prazo,
+    // que superestimava os juros de SAC/PRICE e ignorava o que foi pago de fato.
+    const juros = calcLoanJurosReais(
+      {
+        contractedValue,
+        interestRate,
+        rateBasis: l.rateBasis,
+        installments: l.installments,
+        contractDate: contractDateStr,
+        firstDueDate: firstDueDateStr,
+        lastDueDate: lastDueDateStr,
+        amortizationSystem: l.amortizationSystem,
+        status: l.status,
+        settlementDate: settlementDateStr,
+      },
+      parcelas,
+      hojeStr
+    );
+    const jurosValor = juros.jurosTotal;
+    const jurosPago = juros.jurosPago;
+    const custoTotal = Number((jurosValor + iof + insuranceCost + otherCosts).toFixed(2));
+
+    // Juros/custo corridos ate hoje (ou ate a liquidacao, se ja liquidado).
+    // E o que aparece na tabela de Emprestimos - nao inclui juros que ainda nao correram.
+    const jurosAcumulado = juros.jurosAcumulado;
+    const custoAcumulado = Number((jurosAcumulado + iof + insuranceCost + otherCosts).toFixed(2));
 
     // Saldo devedor real (respeita o sistema de amortizacao - PRICE/SAC/BULLET -
     // em vez de um percentual fixo). Zero se ja liquidado.
@@ -358,17 +379,13 @@ export async function getLoans() {
       otherCosts,
       prazoMeses,
       jurosValor,
+      jurosPago,
       custoTotal,
       jurosAcumulado,
       custoAcumulado,
       saldoDevedorAtual,
       status: l.status,
-      parcelas: l.installmentRecords.map((r) => ({
-        numero: r.numero,
-        vencimento: r.vencimento ? r.vencimento.toISOString().slice(0, 10) : null,
-        paidAt: r.paidAt ? r.paidAt.toISOString().slice(0, 10) : null,
-        paidValue: r.paidValue != null ? n(r.paidValue) : null,
-      })),
+      parcelas,
     };
   });
 }
@@ -429,41 +446,42 @@ export async function getAccOperations() {
         ? 0
         : Math.max(0, Number((contractedValueForeign - valorLiquidadoUSD).toFixed(2)));
 
-    // Juros efetivamente pagos: so existe pagamento real se ha baixas
-    // registradas (soma dos juros de cada tranche, mais preciso - cada parte
-    // tem seu proprio prazo real) ou se o ACC ja foi quitado (closingDate
-    // preenchida). Enquanto em aberto e sem nenhuma baixa, nao foi pago
-    // nenhum juro ainda - jurosPagoValor fica zerado (antes usava o
-    // vencimento como se ja tivesse sido pago ate la, o que mostrava juros
-    // "pagos" iguais aos projetados mesmo sem ter havido nenhum pagamento).
-    let jurosPagoUSD: number;
-    let jurosPagoValor: number;
-    let taxaConversaoJurosPagos: number;
-    // Componente de juros usado no custo total: igual ao juros pago quando ja
-    // houve pagamento real; enquanto em aberto, usa a projecao cheia do
-    // contrato (jurosValor) como estimativa do custo total esperado - custo
-    // total continua representando o custo projetado da operacao inteira,
-    // nao so o que ja foi desembolsado.
-    let jurosCustoValor: number;
-    if (baixas.length > 0) {
-      jurosPagoUSD = Number(baixas.reduce((s, b) => s + b.jurosUSD, 0).toFixed(2));
-      jurosPagoValor = Number(baixas.reduce((s, b) => s + b.jurosValor, 0).toFixed(2));
-      taxaConversaoJurosPagos = baixas[baixas.length - 1].closingRate;
-      jurosCustoValor = jurosPagoValor;
-    } else if (a.closingDate) {
-      const prazoRealDias = daysBetween(a.contractDate, a.closingDate);
-      jurosPagoUSD = Number(
-        (contractedValueForeign * (interestRate / 100) * (prazoRealDias / DIAS_ANO_BASE)).toFixed(2)
-      );
-      taxaConversaoJurosPagos = exchangeVariationValue > 0 ? exchangeVariationValue : closingRate;
-      jurosPagoValor = Number((jurosPagoUSD * taxaConversaoJurosPagos).toFixed(2));
-      jurosCustoValor = jurosPagoValor;
-    } else {
-      jurosPagoUSD = 0;
-      jurosPagoValor = 0;
-      taxaConversaoJurosPagos = exchangeVariationValue > 0 ? exchangeVariationValue : closingRate;
-      jurosCustoValor = jurosValor;
+    // Juros pelos valores efetivamente quitados. Cada baixa e uma tranche com
+    // seu proprio prazo e cambio. Liquidado, o que nao foi coberto por baixas
+    // (o ACC inteiro, se nao ha baixas) e quitado na data de quitacao
+    // (closingDate, ou o vencimento se vazia), convertido pela taxa de
+    // quitacao informada (exchangeVariationValue; vazia, o cambio da ultima
+    // baixa ou, sem baixas, a taxa de fechamento) - antes, liquidado com
+    // baixas parciais, esse saldo restante ficava sem juros nenhum.
+    // Em aberto, o saldo ainda nao quitado entra no custo como projecao ate o
+    // vencimento, na taxa de fechamento - custo total continua sendo o custo
+    // esperado da operacao inteira, mas jurosPagoValor so conta o que ja foi pago.
+    const liquidado = a.status === "LIQUIDADO";
+    const saldoNaoBaixadoUSD = Math.max(0, Number((contractedValueForeign - valorLiquidadoUSD).toFixed(2)));
+    const taxaQuitacao =
+      exchangeVariationValue > 0
+        ? exchangeVariationValue
+        : baixas.length > 0
+          ? baixas[baixas.length - 1].closingRate
+          : closingRate;
+    let jurosPagoUSD = Number(baixas.reduce((s, b) => s + b.jurosUSD, 0).toFixed(2));
+    let jurosPagoValor = Number(baixas.reduce((s, b) => s + b.jurosValor, 0).toFixed(2));
+    let jurosProjetadoRestanteValor = 0;
+    let taxaConversaoJurosPagos = baixas.length > 0 ? baixas[baixas.length - 1].closingRate : taxaQuitacao;
+    if (saldoNaoBaixadoUSD > 0.005) {
+      if (liquidado) {
+        const dataQuitacaoFinal = (a.closingDate ?? a.settlementDate).toISOString().slice(0, 10);
+        const { jurosUSD } = calcBaixaJuros(saldoNaoBaixadoUSD, interestRate, contractDateStr, dataQuitacaoFinal);
+        jurosPagoUSD = Number((jurosPagoUSD + jurosUSD).toFixed(2));
+        jurosPagoValor = Number((jurosPagoValor + jurosUSD * taxaQuitacao).toFixed(2));
+        taxaConversaoJurosPagos = taxaQuitacao;
+      } else {
+        const jurosRestanteUSD = saldoNaoBaixadoUSD * (interestRate / 100) * (prazoDias / DIAS_ANO_BASE);
+        jurosProjetadoRestanteValor = Number((jurosRestanteUSD * closingRate).toFixed(2));
+      }
     }
+    // Componente de juros usado no custo total: pago + projecao do que falta.
+    const jurosCustoValor = Number((jurosPagoValor + jurosProjetadoRestanteValor).toFixed(2));
 
     // Valor do spread: valor contratado x (taxa spot - taxa de fechamento).
     // Calculado direto pelas taxas, e nao contra receivedValueBRL, porque o
@@ -515,6 +533,7 @@ export async function getAccOperations() {
       jurosValor,
       jurosPagoUSD,
       jurosPagoValor,
+      jurosProjetadoRestanteValor,
       custoTotal,
       percentualCustoTotal: Number(percentualCustoTotal.toFixed(2)),
       contractDate: contractDateStr,
@@ -559,24 +578,22 @@ export async function getKpis(range?: PeriodRange, modalidade?: ModalidadeFilter
   const totalAccContratado = accOperations.reduce((sum, a) => sum + a.receivedValueBRL, 0);
   const totalContratadoGeral = totalContratado + totalAccContratado;
 
+  // Juros pagos: o que ja foi efetivamente pago em todas as operacoes - parcelas
+  // pagas de emprestimos ativos e baixas parciais de ACC em aberto inclusive,
+  // nao so as operacoes ja liquidadas.
   const jurosPagos =
-    loans.filter((l) => l.status === "LIQUIDADO").reduce((sum, l) => sum + l.jurosValor, 0) +
-    accOperations
-      .filter((a) => a.status === "LIQUIDADO")
-      .reduce((sum, a) => sum + a.jurosPagoValor, 0);
-  // Juros futuros: o que ainda falta pagar (projecao total menos o que ja correu ate
-  // hoje), nao a projecao inteira do contrato - senao dobraria os juros ja acumulados.
-  // Do lado do ACC, jurosValor projeta sobre o valor contratado cheio e o prazo
-  // contratado inteiro (nao "ate hoje"), entao nao da pra subtrair jurosPagoValor
-  // aqui do mesmo jeito que do lado do emprestimo sem reduzir demais o numero pra
-  // contratos com baixa parcial - mantido como projecao cheia do contrato.
+    loans.reduce((sum, l) => sum + l.jurosPago, 0) +
+    accOperations.reduce((sum, a) => sum + a.jurosPagoValor, 0);
+  // Juros futuros: o que ainda falta correr (total do contrato menos o que ja
+  // correu ate hoje) nos emprestimos e, no ACC, a projecao do saldo ainda nao
+  // quitado ate o vencimento (sem repetir o que ja foi pago em baixas).
   const jurosFuturos =
     loans
       .filter((l) => l.status !== "LIQUIDADO")
       .reduce((sum, l) => sum + Math.max(0, l.jurosValor - l.jurosAcumulado), 0) +
     accOperations
       .filter((a) => a.status !== "LIQUIDADO")
-      .reduce((sum, a) => sum + a.jurosValor, 0);
+      .reduce((sum, a) => sum + a.jurosProjetadoRestanteValor, 0);
 
   // Exposicao cambial em US$ (moeda do risco), nao convertida para R$. Usa o
   // saldo real em aberto (contratado - ja liquidado em baixas), nao o valor

@@ -17,7 +17,7 @@ export default async function AccRelatorioPage({ params }: { params: Promise<{ i
     fimAcumulado,
     interestRate: acc.interestRate,
     contractedValueForeign: acc.contractedValueForeign,
-    closingRate: acc.closingRate,
+    taxaConversao: acc.status === "LIQUIDADO" ? acc.taxaConversaoJurosPagos : acc.closingRate,
     baixas: acc.baixas,
   });
 

@@ -167,3 +167,83 @@ export function proximaParcela(
   const schedule = buildAmortizationSchedule(loan, overrides);
   return schedule.find((row) => !pagas.has(row.numero)) ?? null;
 }
+
+export type LoanParcelaReal = { numero: number; vencimento: string | null; paidAt: string | null; paidValue: number | null };
+
+export type LoanJurosReais = {
+  // Juros do contrato inteiro: valor real das parcelas pagas (valor pago -
+  // amortizacao) + calculado das que faltam. Liquidado, para na liquidacao.
+  jurosTotal: number;
+  // Juros ja pagos: parcelas com pagamento registrado; liquidado, todas.
+  jurosPago: number;
+  // Juros corridos ate hoje (parcelas vencidas/pagas + pro rata do periodo atual).
+  jurosAcumulado: number;
+};
+
+// Juros reais de um emprestimo, seguindo o cronograma de amortizacao (o saldo
+// cai a cada parcela - SAC/PRICE - em vez de cobrar juros sobre o valor
+// contratado cheio o prazo todo) e substituindo o juros calculado pelo valor
+// realmente pago quando a parcela tem pagamento registrado. Liquidado
+// (status + data de liquidacao), o cronograma e cortado na liquidacao: as
+// parcelas posteriores viram uma unica quitacao do saldo restante, com juros
+// so ate a data de liquidacao (ou o valor pago registrado nela, se houver).
+export function calcLoanJurosReais(
+  loan: LoanForAmortization & { status: string; settlementDate: string | null },
+  parcelas: LoanParcelaReal[],
+  hoje: string
+): LoanJurosReais {
+  const overrides: Record<number, string> = {};
+  const pagas = new Map<number, LoanParcelaReal>();
+  parcelas.forEach((p) => {
+    if (p.vencimento) overrides[p.numero] = p.vencimento;
+    if (p.paidAt || p.paidValue != null) pagas.set(p.numero, p);
+  });
+  const schedule = buildAmortizationSchedule(loan, overrides);
+  const rate = loan.interestRate / 100;
+  const basisDays = RATE_BASIS_DAYS[loan.rateBasis as RateBasisValue] ?? RATE_BASIS_DAYS.ANUAL;
+  const liquidado = loan.status === "LIQUIDADO";
+  const dataLiquidacao = liquidado ? loan.settlementDate ?? loan.lastDueDate : null;
+
+  type Linha = { numero: number; inicio: string; vencimento: string; saldoInicial: number; amortizacao: number; juros: number };
+  const linhas: Linha[] = [];
+  let saldo = loan.contractedValue;
+  let inicio = loan.contractDate;
+  for (const row of schedule) {
+    if (dataLiquidacao && row.vencimento > dataLiquidacao) break;
+    linhas.push({ numero: row.numero, inicio, vencimento: row.vencimento, saldoInicial: saldo, amortizacao: row.amortizacao, juros: row.juros });
+    saldo = row.saldoDevedor;
+    inicio = row.vencimento;
+  }
+  if (dataLiquidacao && saldo > 0.005) {
+    const dias = daysBetween(parseLocalDate(inicio), parseLocalDate(dataLiquidacao));
+    linhas.push({
+      numero: linhas.length + 1,
+      inicio,
+      vencimento: dataLiquidacao,
+      saldoInicial: saldo,
+      amortizacao: saldo,
+      juros: Number((saldo * rate * (dias / basisDays)).toFixed(2)),
+    });
+  }
+
+  let jurosTotal = 0;
+  let jurosPago = 0;
+  let jurosAcumulado = 0;
+  for (const l of linhas) {
+    const pago = pagas.get(l.numero);
+    const juros = pago?.paidValue != null ? Math.max(0, Number((pago.paidValue - l.amortizacao).toFixed(2))) : l.juros;
+    jurosTotal += juros;
+    if (liquidado || pago) jurosPago += juros;
+    if (liquidado || pago || l.vencimento <= hoje) {
+      jurosAcumulado += juros;
+    } else if (l.inicio < hoje) {
+      const dias = daysBetween(parseLocalDate(l.inicio), parseLocalDate(hoje));
+      jurosAcumulado += l.saldoInicial * rate * (dias / basisDays);
+    }
+  }
+  return {
+    jurosTotal: Number(jurosTotal.toFixed(2)),
+    jurosPago: Number(jurosPago.toFixed(2)),
+    jurosAcumulado: Number(jurosAcumulado.toFixed(2)),
+  };
+}

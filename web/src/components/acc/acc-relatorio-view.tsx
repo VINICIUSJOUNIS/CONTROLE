@@ -173,7 +173,7 @@ export function AccRelatorioView({ acc, monthlySchedule }: { acc: AccRow; monthl
           <CardHeader>
             <CardTitle className="print:text-xs">Cálculo de Juros — Valor Mensal</CardTitle>
             <p className="text-xs text-muted print:text-[8px]">
-              Juros simples (taxa a.a. / 360 dias) sobre o saldo em aberto no início de cada mês.
+              Juros simples (taxa a.a. / 360 dias) sobre o saldo em aberto em cada dia, já descontadas as baixas.
             </p>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0 print:p-0">

@@ -127,6 +127,7 @@ export function EmprestimoRelatorioView({
           <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4 print:gap-2">
             <InfoItem label="Juros (contrato completo)" value={formatCompactCurrency(loan.jurosValor)} />
             <InfoItem label="Juros Acumulados até Hoje" value={formatCompactCurrency(loan.jurosAcumulado)} />
+            <InfoItem label="Juros Pagos" value={formatCompactCurrency(loan.jurosPago)} />
             <InfoItem label="Custo Total (contrato completo)" value={formatCompactCurrency(loan.custoTotal)} />
             <InfoItem label="Custo Acumulado até Hoje" value={formatCompactCurrency(loan.custoAcumulado)} />
             <InfoItem label="Saldo Devedor Atual" value={formatCompactCurrency(loan.saldoDevedorAtual)} />
