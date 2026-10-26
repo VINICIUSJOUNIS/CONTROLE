@@ -29,7 +29,6 @@ export function AnaliseView({ analise }: { analise: Analise }) {
   const destaques = ["ebitda", "ncg", "saldoTesouraria", "dividaLiquidaEbitda", "liquidezCorrente", "margemLiquida"]
     .map(pega)
     .filter((i): i is Indicador => !!i);
-  const falhas = analise.conferencias.filter((c) => !c.ok);
 
   return (
     <div className="space-y-6">
@@ -56,24 +55,6 @@ export function AnaliseView({ analise }: { analise: Analise }) {
           </Button>
         </CardContent>
       </Card>
-
-      {falhas.length > 0 && (
-        <Card className="border-warning">
-          <CardContent className="flex gap-3 p-4 text-sm">
-            <AlertTriangle className="mt-0.5 shrink-0 text-warning" size={18} />
-            <div>
-              <p className="font-medium">Conferências com divergência</p>
-              <ul className="mt-1 list-disc pl-5 text-muted">
-                {falhas.map((f) => (
-                  <li key={f.titulo}>
-                    {f.titulo}: {f.detalhe}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {destaques.map((i) => (
