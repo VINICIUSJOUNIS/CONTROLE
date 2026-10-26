@@ -2,7 +2,7 @@
 // os valores ja reclassificados nos campos padronizados + as contas de origem.
 import Anthropic from "@anthropic-ai/sdk";
 import { CAMPOS_BALANCO, CAMPOS_DRE, ROTULO_GRUPO } from "./campos";
-import { extracaoJsonSchema, extracaoSchema, type Extracao } from "./extracao-schema";
+import { extracaoJsonSchema, extracaoSchema, normalizarRespostaIa, type Extracao } from "./extracao-schema";
 
 export const MODELO_IA = "claude-opus-5-5";
 
@@ -24,7 +24,7 @@ ${listaCampos()}
 REGRAS:
 1. Valores em reais (não em milhares), com sinal conforme a regra de cada campo. Leia "D"/"C" e parênteses do PDF: no ativo, saldo credor reduz; no passivo, saldo devedor reduz.
 2. Cada conta do balanço entra em exatamente um campo. A soma dos campos do ativo (com a depreciação acumulada subtraída) deve igualar o total do ativo do PDF, e passivo + PL deve igualar o total do passivo do PDF. Se o PL ainda não tiver o resultado do exercício, não invente: o sistema trata a diferença.
-3. "balanco" é a coluna da data do balanço (saldo atual). Se o PDF trouxer a coluna do mês anterior (saldo anterior), preencha "balancoAnterior" com ela pelos mesmos critérios; senão null.
+3. "balanco", "balancoAnterior" e "dre" são listas de {campo, valor}: um item por campo diferente de zero (campo omitido vale 0). "balanco" é a coluna da data do balanço (saldo atual). Se o PDF trouxer a coluna do mês anterior (saldo anterior), preencha "balancoAnterior" com ela pelos mesmos critérios; senão null.
 4. "dre" é a coluna do período do mês. Defina dreTipo: "mensal" se a coluna for só o mês, "acumulado" se for o acumulado do ano até a data. Confira pela variação de lucros acumulados no PL quando houver saldo anterior. Ignore colunas de períodos anteriores da DRE.
 5. ACC/ACE é sempre dívida financeira (accAce). Variação cambial/monetária vai sempre em variacaoCambialLiquida, mesmo que a contabilidade a apresente dentro de custos ou receitas. IRPJ/CSLL a recolher vão em irCsRecolher, separados dos demais impostos.
 6. Em "origens", para cada campo diferente de zero (balanço atual e DRE), liste as contas do PDF que o compõem com código de classificação, descrição e valor com o sinal usado no campo. Use a conta sintética mais agregada que componha o campo inteiro; detalhe contas analíticas só quando o campo usar parte de um grupo. A soma das contas deve dar o valor do campo.
@@ -113,7 +113,7 @@ export async function extrairComIa(pdfs: { nome: string; base64: string }[], sig
     extracaoJsonSchema,
     signal
   );
-  const parsed = extracaoSchema.safeParse(json);
+  const parsed = extracaoSchema.safeParse(normalizarRespostaIa(json));
   if (!parsed.success) throw new ErroExtracao(`Resposta da IA fora do formato: ${parsed.error.issues[0]?.message ?? ""}`);
   return parsed.data as Extracao;
 }

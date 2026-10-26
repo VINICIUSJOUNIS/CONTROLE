@@ -39,16 +39,49 @@ export type Extracao = Omit<z.infer<typeof extracaoSchema>, "balanco" | "balanco
   dre: Dre;
 };
 
-// JSON Schema equivalente para o structured output da API (todos os objetos
-// com additionalProperties: false e todas as propriedades obrigatorias).
-const objNumeros = (chaves: readonly string[]) => ({
-  type: "object",
-  additionalProperties: false,
-  required: [...chaves],
-  properties: Object.fromEntries(chaves.map((k) => [k, { type: "number" }])),
+// JSON Schema para o structured output da API. Balanco/DRE vao como listas
+// {campo, valor} em vez de objetos com as 38/16 chaves obrigatorias: objetos
+// tao grandes (ainda mais repetidos no balancoAnterior) estouravam o limite de
+// tamanho da gramatica da API ("The compiled grammar is too large").
+// normalizarRespostaIa monta os objetos completos (campo ausente = 0) antes
+// de validar com extracaoSchema.
+const listaValores = (chaves: readonly string[]) => ({
+  type: "array",
+  description: "Um item por campo com valor diferente de zero; campos ausentes valem 0.",
+  items: {
+    type: "object",
+    additionalProperties: false,
+    required: ["campo", "valor"],
+    properties: {
+      campo: { type: "string", enum: [...chaves] },
+      valor: { type: "number" },
+    },
+  },
 });
 const data = { type: "string", description: "Data no formato AAAA-MM-DD" };
 const dataOuNull = { anyOf: [data, { type: "null" }] };
+
+type ItemValor = { campo: string; valor: number };
+const paraObjeto = (chaves: readonly string[], lista: unknown) => {
+  if (!Array.isArray(lista)) return lista;
+  const obj: Record<string, number> = Object.fromEntries(chaves.map((k) => [k, 0]));
+  for (const item of lista as ItemValor[]) {
+    if (item && item.campo in obj && typeof item.valor === "number") obj[item.campo] += item.valor;
+  }
+  return obj;
+};
+
+// Converte as listas {campo, valor} da resposta da IA nos objetos de extracaoSchema.
+export function normalizarRespostaIa(json: unknown): unknown {
+  if (!json || typeof json !== "object") return json;
+  const r = json as Record<string, unknown>;
+  return {
+    ...r,
+    balanco: paraObjeto(chavesBalanco, r.balanco),
+    balancoAnterior: r.balancoAnterior == null ? null : paraObjeto(chavesBalanco, r.balancoAnterior),
+    dre: paraObjeto(chavesDre, r.dre),
+  };
+}
 
 export const extracaoJsonSchema = {
   type: "object",
@@ -76,9 +109,9 @@ export const extracaoJsonSchema = {
     dreTipo: { type: "string", enum: [...DRE_TIPOS] },
     dreInicio: dataOuNull,
     dreFim: data,
-    balanco: objNumeros(chavesBalanco),
-    balancoAnterior: { anyOf: [objNumeros(chavesBalanco), { type: "null" }] },
-    dre: objNumeros(chavesDre),
+    balanco: listaValores(chavesBalanco),
+    balancoAnterior: { anyOf: [listaValores(chavesBalanco), { type: "null" }] },
+    dre: listaValores(chavesDre),
     origens: {
       type: "array",
       items: {
