@@ -109,7 +109,8 @@ export default async function DashboardPage({
         tipo: "ACC" as const,
         contractNumber: a.accNumber,
         bankName: a.bankName,
-        valor: a.receivedValueBRL,
+        // Saldo ainda nao baixado (taxa de fechamento) + juros projetados ate o vencimento.
+        valor: a.saldoAbertoUSD * a.closingRate + a.jurosProjetadoRestanteValor,
         vencimento: a.settlementDate,
         status: a.status,
       })),

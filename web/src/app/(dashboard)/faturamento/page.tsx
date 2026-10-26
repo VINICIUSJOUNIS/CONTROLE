@@ -86,10 +86,10 @@ function rankClients(rows: SaleRow[], returnsByClient: SaleReturnRow[]) {
     }
     map.set(s.clientName, cur);
   }
-  // Abate a devolucao de cada cliente especificamente (nao proporcional) - a
-  // devolucao ja vem com o clientName exato, entao a atribuicao e exata.
+  // Abate a devolucao de cada cliente especificamente (nao proporcional), pelo
+  // nome do cliente na venda (clientNameVenda, resolvido em getSaleReturns).
   for (const r of returnsByClient) {
-    const cur = map.get(r.clientName);
+    const cur = map.get(r.clientNameVenda ?? r.clientName);
     if (!cur) continue;
     cur.kg -= r.quantityKg;
     cur.sacas -= r.quantitySacas;

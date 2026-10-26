@@ -126,7 +126,7 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
   const returnsInPeriod = useMemo(() => {
     return returns.filter((r) => {
       if (clientTypeFilter !== "todos" && r.clientType !== clientTypeFilter) return false;
-      if (clientFilter !== "todos" && r.clientName !== clientFilter) return false;
+      if (clientFilter !== "todos" && (r.clientNameVenda ?? r.clientName) !== clientFilter) return false;
       if (countryFilter !== "todos" && r.country !== countryFilter) return false;
       const month = r.returnDate.slice(0, 7);
       if (fromFilter && month < fromFilter) return false;

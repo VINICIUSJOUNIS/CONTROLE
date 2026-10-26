@@ -83,7 +83,8 @@ export function saldoDevedorEm(
   if (loan.status === "LIQUIDADO" && (!loan.settlementDate || dataRef >= loan.settlementDate)) {
     return 0;
   }
-  if (dataRef < loan.contractDate) return loan.contractedValue;
+  // Antes da contratacao nao ha divida (antes devolvia o valor contratado cheio).
+  if (dataRef < loan.contractDate) return 0;
 
   const schedule = buildAmortizationSchedule(loan);
   let saldo = loan.contractedValue;
@@ -187,11 +188,13 @@ export type LoanJurosReais = {
 // (status + data de liquidacao), o cronograma e cortado na liquidacao: as
 // parcelas posteriores viram uma unica quitacao do saldo restante, com juros
 // so ate a data de liquidacao (ou o valor pago registrado nela, se houver).
-export function calcLoanJurosReais(
-  loan: LoanForAmortization & { status: string; settlementDate: string | null },
-  parcelas: LoanParcelaReal[],
-  hoje: string
-): LoanJurosReais {
+type LoanReal = LoanForAmortization & { status: string; settlementDate: string | null };
+type LinhaReal = { numero: number; inicio: string; vencimento: string; saldoInicial: number; amortizacao: number; juros: number };
+
+// Cronograma efetivo do emprestimo: o de amortizacao (com os vencimentos
+// corrigidos), cortado na liquidacao quando liquidado - as parcelas posteriores
+// viram uma unica quitacao do saldo, com juros ate a data de liquidacao.
+function cronogramaReal(loan: LoanReal, parcelas: LoanParcelaReal[]) {
   const overrides: Record<number, string> = {};
   const pagas = new Map<number, LoanParcelaReal>();
   parcelas.forEach((p) => {
@@ -204,8 +207,7 @@ export function calcLoanJurosReais(
   const liquidado = loan.status === "LIQUIDADO";
   const dataLiquidacao = liquidado ? loan.settlementDate ?? loan.lastDueDate : null;
 
-  type Linha = { numero: number; inicio: string; vencimento: string; saldoInicial: number; amortizacao: number; juros: number };
-  const linhas: Linha[] = [];
+  const linhas: LinhaReal[] = [];
   let saldo = loan.contractedValue;
   let inicio = loan.contractDate;
   for (const row of schedule) {
@@ -226,6 +228,29 @@ export function calcLoanJurosReais(
     });
   }
 
+  return { linhas, pagas, liquidado, rate, basisDays };
+}
+
+// Pagamentos do emprestimo (principal + juros) na data em que saem do caixa:
+// valor e data reais quando a parcela tem pagamento registrado; senao o valor
+// e o vencimento do cronograma. Usado no fluxo de pagamentos do dashboard.
+export function pagamentosLoanReais(loan: LoanReal, parcelas: LoanParcelaReal[]): { data: string; valor: number }[] {
+  const { linhas, pagas } = cronogramaReal(loan, parcelas);
+  return linhas.map((l) => {
+    const p = pagas.get(l.numero);
+    return {
+      data: p?.paidAt ?? l.vencimento,
+      valor: p?.paidValue != null ? p.paidValue : Number((l.amortizacao + l.juros).toFixed(2)),
+    };
+  });
+}
+
+export function calcLoanJurosReais(
+  loan: LoanReal,
+  parcelas: LoanParcelaReal[],
+  hoje: string
+): LoanJurosReais {
+  const { linhas, pagas, liquidado, rate, basisDays } = cronogramaReal(loan, parcelas);
   let jurosTotal = 0;
   let jurosPago = 0;
   let jurosAcumulado = 0;

@@ -78,7 +78,7 @@ export function LineChartCard({
                 borderRadius: 8,
                 fontSize: 12,
               }}
-              formatter={(value) => applyFormat(Number(value), valueFormat)}
+              formatter={(value) => (value == null ? "-" : applyFormat(Number(value), valueFormat))}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} itemSorter={null} />
             {series.map((s) => (

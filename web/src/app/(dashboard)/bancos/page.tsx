@@ -96,8 +96,8 @@ export default async function BancosPage({
                   <th className="pb-2 pr-4 font-medium">Banco</th>
                   <th className="pb-2 pr-4 font-medium">Qtde ACC</th>
                   <th className="pb-2 pr-4 font-medium">Valor captado</th>
-                  <th className="pb-2 pr-4 font-medium">Taxa media</th>
-                  <th className="pb-2 pr-4 font-medium">Spread medio</th>
+                  <th className="pb-2 pr-4 font-medium">Taxa media (ponderada)</th>
+                  <th className="pb-2 pr-4 font-medium">Spread medio (% da spot)</th>
                   <th className="pb-2 pr-4 font-medium">Spot medio</th>
                   <th className="pb-2 pr-4 font-medium">Fechamento medio</th>
                   <th className="pb-2 pr-4 font-medium">Custo medio</th>
@@ -142,7 +142,7 @@ export default async function BancosPage({
                 <tr className="border-b border-border text-left text-xs text-muted">
                   <th className="pb-2 pr-4 font-medium">Banco</th>
                   <th className="pb-2 pr-4 font-medium">Spread</th>
-                  <th className="pb-2 pr-4 font-medium">Juros pagos</th>
+                  <th className="pb-2 pr-4 font-medium">Juros (pagos + a pagar)</th>
                   <th className="pb-2 pr-4 font-medium">IOF</th>
                   <th className="pb-2 pr-4 font-medium">Tarifas</th>
                   <th className="pb-2 pr-4 font-medium">Taxa Flat</th>
@@ -172,7 +172,7 @@ export default async function BancosPage({
               </tbody>
             </table>
             <p className="mt-3 text-xs text-muted">
-              Custo total geral = spread + juros pagos + IOF + tarifas + seguro + outros custos.
+              Custo total geral = spread + juros (pagos e, nos ACC em aberto, projetados até o vencimento) + IOF + tarifas + taxa flat + seguro + outros custos.
             </p>
           </CardContent>
         </Card>

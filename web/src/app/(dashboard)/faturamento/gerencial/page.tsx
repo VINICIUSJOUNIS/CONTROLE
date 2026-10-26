@@ -71,19 +71,19 @@ export default async function FaturamentoGerencialPage({
     : [];
 
   function geralFor(y: string, mm: string) {
-    const mSales = allSales.filter((s) => matchesPeriod(s.saleDate, y, mm, ""));
-    const mReturns = allReturns.filter((r) => matchesPeriod(r.returnDate, y, mm, ""));
+    const mSales = allSales.filter((s) => matchesPeriod(s.saleDate, y, mm, "") && comparavel(y, s.saleDate));
+    const mReturns = allReturns.filter((r) => matchesPeriod(r.returnDate, y, mm, "") && comparavel(y, r.returnDate));
     return mSales.reduce((s, v) => s + v.valueBRL, 0) - mReturns.reduce((s, r) => s + r.valueBRL, 0);
   }
 
   function marketFor(y: string, mm: string, tipo: "INTERNO" | "EXTERNO") {
-    const mSales = allSales.filter((s) => s.clientType === tipo && matchesPeriod(s.saleDate, y, mm, ""));
-    const mReturns = allReturns.filter((r) => r.clientType === tipo && matchesPeriod(r.returnDate, y, mm, ""));
+    const mSales = allSales.filter((s) => s.clientType === tipo && matchesPeriod(s.saleDate, y, mm, "") && comparavel(y, s.saleDate));
+    const mReturns = allReturns.filter((r) => r.clientType === tipo && matchesPeriod(r.returnDate, y, mm, "") && comparavel(y, r.returnDate));
     return mSales.reduce((s, v) => s + v.valueBRL, 0) - mReturns.reduce((s, r) => s + r.valueBRL, 0);
   }
 
   function containersFor(y: string, mm: string) {
-    const mExternos = allSales.filter((s) => s.clientType === "EXTERNO" && matchesPeriod(s.saleDate, y, mm, ""));
+    const mExternos = allSales.filter((s) => s.clientType === "EXTERNO" && matchesPeriod(s.saleDate, y, mm, "") && comparavel(y, s.saleDate));
     return mExternos.reduce((s, v) => s + (v.containers20 ?? 0) + (v.containers40 ?? 0), 0);
   }
 
@@ -92,6 +92,15 @@ export default async function FaturamentoGerencialPage({
   const hoje = new Date();
   const anoAtualCalendario = String(hoje.getFullYear());
   const mesAtualCalendario = hoje.getMonth() + 1;
+  // Com o ano atual em andamento, o ano anterior entra so ate o mesmo dia
+  // (mesmo periodo): antes comparava 2026 ate hoje com 2025 inteiro (incluindo
+  // nov/dez), mostrando queda que nao existe. O mes corrente tambem e cortado.
+  const hojeMMDD = `${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
+  const cortaAnterior = YEAR_ATUAL === anoAtualCalendario;
+  function comparavel(y: string, data: string) {
+    return !(cortaAnterior && y === YEAR_ANTERIOR) || data.slice(5, 10) <= hojeMMDD;
+  }
+  const sufixoPeriodo = cortaAnterior ? ` (mesmo período, até ${hojeMMDD.slice(3)}/${hojeMMDD.slice(0, 2)})` : "";
   const comparisonRows = MESES_LABEL.map((label, i) => {
     const mm = String(i + 1).padStart(2, "0");
     return {
@@ -198,7 +207,7 @@ export default async function FaturamentoGerencialPage({
               icon={DollarSign}
               tone="teal"
               trend={deltaGeral !== null ? formatPercent(Math.abs(deltaGeral), 1) : undefined}
-              trendLabel={`vs ${formatCurrency(geralAnteriorTotal)} em ${YEAR_ANTERIOR}`}
+              trendLabel={`vs ${formatCurrency(geralAnteriorTotal)} em ${YEAR_ANTERIOR}${sufixoPeriodo}`}
               trendPositive={geralAtualTotal >= geralAnteriorTotal}
             />
             <KpiCard
@@ -207,7 +216,7 @@ export default async function FaturamentoGerencialPage({
               icon={DollarSign}
               tone="green"
               trend={deltaInterno !== null ? formatPercent(Math.abs(deltaInterno), 1) : undefined}
-              trendLabel={`vs ${formatCurrency(internoAnteriorTotal)} em ${YEAR_ANTERIOR}`}
+              trendLabel={`vs ${formatCurrency(internoAnteriorTotal)} em ${YEAR_ANTERIOR}${sufixoPeriodo}`}
               trendPositive={internoAtualTotal >= internoAnteriorTotal}
             />
             <KpiCard
@@ -216,7 +225,7 @@ export default async function FaturamentoGerencialPage({
               icon={DollarSign}
               tone="soft"
               trend={deltaExterno !== null ? formatPercent(Math.abs(deltaExterno), 1) : undefined}
-              trendLabel={`vs ${formatCurrency(externoAnteriorTotal)} em ${YEAR_ANTERIOR}`}
+              trendLabel={`vs ${formatCurrency(externoAnteriorTotal)} em ${YEAR_ANTERIOR}${sufixoPeriodo}`}
               trendPositive={externoAtualTotal >= externoAnteriorTotal}
             />
             <KpiCard
@@ -225,7 +234,7 @@ export default async function FaturamentoGerencialPage({
               icon={Package}
               tone="teal"
               trend={deltaContainers !== null ? formatPercent(Math.abs(deltaContainers), 1) : undefined}
-              trendLabel={`vs ${containersAnteriorTotal.toLocaleString("pt-BR")} em ${YEAR_ANTERIOR}`}
+              trendLabel={`vs ${containersAnteriorTotal.toLocaleString("pt-BR")} em ${YEAR_ANTERIOR}${sufixoPeriodo}`}
               trendPositive={containersAtualTotal >= containersAnteriorTotal}
             />
           </div>

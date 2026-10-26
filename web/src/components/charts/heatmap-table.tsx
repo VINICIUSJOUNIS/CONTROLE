@@ -15,11 +15,11 @@ export function HeatmapTable({
 }: {
   title: string;
   rowLabel: string;
-  rows: { bank: string; values: number[] }[];
+  rows: { bank: string; values: (number | null)[] }[];
   columns: string[];
   suffix?: string;
 }) {
-  const allValues = rows.flatMap((r) => r.values);
+  const allValues = rows.flatMap((r) => r.values).filter((v): v is number => v !== null);
   const min = Math.min(...allValues);
   const max = Math.max(...allValues);
 
@@ -46,13 +46,17 @@ export function HeatmapTable({
                 <td className="py-1 pr-4 font-medium whitespace-nowrap">{row.bank}</td>
                 {row.values.map((v, i) => (
                   <td key={i} className="p-1 text-center">
-                    <div
-                      className="rounded-md py-1.5 text-xs font-medium text-neutral-900"
-                      style={{ background: colorFor(v, min, max) }}
-                    >
-                      {v.toFixed(2)}
-                      {suffix}
-                    </div>
+                    {v === null ? (
+                      <div className="py-1.5 text-xs text-muted">-</div>
+                    ) : (
+                      <div
+                        className="rounded-md py-1.5 text-xs font-medium text-neutral-900"
+                        style={{ background: colorFor(v, min, max) }}
+                      >
+                        {v.toFixed(2)}
+                        {suffix}
+                      </div>
+                    )}
                   </td>
                 ))}
               </tr>

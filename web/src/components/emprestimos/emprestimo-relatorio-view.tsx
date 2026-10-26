@@ -93,13 +93,11 @@ export function EmprestimoRelatorioView({
             <InfoItem label="Finalidade" value={loan.purpose} />
             <InfoItem label="Garantia" value={loan.guarantee} />
             <InfoItem label="Valor Contratado" value={formatCompactCurrency(loan.contractedValue)} />
-            <InfoItem label="Valor Líquido" value={formatCompactCurrency(loan.netValue)} />
             <InfoItem
               label="Taxa de Juros"
               value={`${formatPercent(loan.interestRate)} ${rateBasisSuffix[loan.rateBasis] ?? ""}`}
             />
             <InfoItem label="Indexador" value={loan.indexer} />
-            <InfoItem label="Spread" value={formatPercent(loan.spread)} />
             <InfoItem label="Sistema de Amortização" value={loan.amortizationSystem} />
             <InfoItem label="Parcelas" value={String(loan.installments)} />
             <InfoItem label="Periodicidade" value={loan.periodicity} />

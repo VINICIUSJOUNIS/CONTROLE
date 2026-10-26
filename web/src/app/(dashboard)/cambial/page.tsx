@@ -31,38 +31,38 @@ export default async function CambialPage({
   const totalUsd = accOperations.reduce((s, a) => s + a.contractedValueForeign, 0);
   const totalBRL = accOperations.reduce((s, a) => s + a.receivedValueBRL, 0);
 
-  const count = accOperations.length || 1;
-  const spotAvg = accOperations.reduce((s, a) => s + a.spotRate, 0) / count;
-  const closingAvg = accOperations.reduce((s, a) => s + a.closingRate, 0) / count;
-  const spreadAvg = closingAvg - spotAvg;
+  // Taxas medias ponderadas pelo valor em US$ de cada ACC (taxa media da
+  // carteira), nao media simples entre contratos de tamanhos diferentes.
+  const spotAvg = totalUsd > 0 ? accOperations.reduce((s, a) => s + a.spotRate * a.contractedValueForeign, 0) / totalUsd : 0;
+  const closingAvg = totalUsd > 0 ? accOperations.reduce((s, a) => s + a.closingRate * a.contractedValueForeign, 0) / totalUsd : 0;
+  // Spread = spot - fechamento (o banco paga menos que a spot): custo, nunca negativo.
+  const spreadAvg = Math.max(0, spotAvg - closingAvg);
+  const spreadPct = spotAvg > 0 ? (spreadAvg / spotAvg) * 100 : 0;
 
-  const resultados = accOperations.map((a) => (a.closingRate - a.spotRate) * a.contractedValueForeign);
-  const ganhoCambial = resultados.filter((r) => r > 0).reduce((s, r) => s + r, 0);
-  const perdaCambial = Math.abs(resultados.filter((r) => r < 0).reduce((s, r) => s + r, 0));
-  const resultadoCambial = ganhoCambial - perdaCambial;
+  // Custo do spread em R$ (valor contratado x (spot - fechamento)) - antes era
+  // exibido como "resultado cambial" com o sinal trocado (perda).
+  const custoSpread = accOperations.reduce((s, a) => s + a.spreadValor, 0);
 
-  const exposicaoAberta = accOperations
-    .filter((a) => a.status === "EM_ABERTO")
-    .reduce((s, a) => s + a.contractedValueForeign * a.spotRate, 0);
+  // Exposicao em aberto: saldo ainda nao liquidado (contratado - baixas), em R$
+  // pela taxa de fechamento; inclui ACC em atraso, que continua em aberto.
+  const abertos = accOperations.filter((a) => a.status !== "LIQUIDADO");
+  const exposicaoAberta = abertos.reduce((s, a) => s + a.saldoAbertoUSD * a.closingRate, 0);
 
   const exposureByBank = banks
     .map((b) => ({
       name: b.name,
-      exposicao: accOperations
-        .filter((a) => a.bankId === b.id && a.status === "EM_ABERTO")
-        .reduce((s, a) => s + a.contractedValueForeign * a.spotRate, 0),
+      exposicao: Math.round(abertos.filter((a) => a.bankId === b.id).reduce((s, a) => s + a.saldoAbertoUSD * a.closingRate, 0)),
     }))
     .filter((b) => b.exposicao > 0);
 
-  const monthlyResultMap = new Map<string, number>();
+  const custoSpreadPorMes = new Map<string, number>();
   for (const a of accOperations) {
     const month = a.contractDate.slice(0, 7);
-    const value = (a.closingRate - a.spotRate) * a.contractedValueForeign;
-    monthlyResultMap.set(month, (monthlyResultMap.get(month) ?? 0) + value);
+    custoSpreadPorMes.set(month, (custoSpreadPorMes.get(month) ?? 0) + a.spreadValor);
   }
-  const monthlyResult = [...monthlyResultMap.entries()]
+  const monthlyResult = [...custoSpreadPorMes.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, value]) => ({ month: formatMonthLabel(month), resultado: Math.round(value) }));
+    .map(([month, value]) => ({ month: formatMonthLabel(month), custoSpread: Math.round(value) }));
 
   return (
     <div className="flex flex-col">
@@ -92,28 +92,32 @@ export default async function CambialPage({
             icon={Scale}
             tone="soft"
           />
-          <KpiCard label="Taxa Spot media" value={`R$ ${spotAvg.toFixed(4)}`} icon={TrendingDown} tone="teal" />
+          <KpiCard label="Taxa Spot media (ponderada)" value={`R$ ${spotAvg.toFixed(4)}`} icon={TrendingDown} tone="teal" />
           <KpiCard
-            label="Taxa de fechamento media"
+            label="Taxa de fechamento media (ponderada)"
             value={`R$ ${closingAvg.toFixed(4)}`}
             icon={TrendingUp}
             tone="green"
           />
-          <KpiCard label="Spread medio" value={`R$ ${spreadAvg.toFixed(4)}`} icon={Scale} tone="soft" />
           <KpiCard
-            label="Resultado cambial acumulado"
-            value={formatCompactCurrency(resultadoCambial)}
-            icon={resultadoCambial >= 0 ? TrendingUp : TrendingDown}
-            trendPositive={resultadoCambial >= 0}
+            label="Spread medio"
+            value={`R$ ${spreadAvg.toFixed(4)} (${spreadPct.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}%)`}
+            icon={Scale}
+            tone="soft"
+          />
+          <KpiCard
+            label="Custo de spread no periodo"
+            value={formatCompactCurrency(custoSpread)}
+            icon={TrendingDown}
             tone="teal"
           />
         </div>
 
         <BarChartCard
-          title="Resultado cambial por periodo"
+          title="Custo de spread por mes de contratacao"
           data={monthlyResult}
           xKey="month"
-          series={[{ key: "resultado", name: "Resultado cambial", color: "#7a5af8" }]}
+          series={[{ key: "custoSpread", name: "Custo de spread", color: "#7a5af8" }]}
           valueFormat="currency"
         />
 
@@ -124,17 +128,6 @@ export default async function CambialPage({
           series={[{ key: "exposicao", name: "Exposicao", color: "#f79009" }]}
           valueFormat="currency"
         />
-
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-2">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-xs font-medium text-muted">Ganho cambial acumulado</p>
-            <p className="mt-1 text-lg font-semibold text-success">{formatCompactCurrency(ganhoCambial)}</p>
-          </div>
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-xs font-medium text-muted">Perda cambial acumulada</p>
-            <p className="mt-1 text-lg font-semibold text-danger">{formatCompactCurrency(perdaCambial)}</p>
-          </div>
-        </div>
 
         {yearlyComparison.length > 1 && (
           <div className="grid gap-4 lg:grid-cols-2">
@@ -149,11 +142,11 @@ export default async function CambialPage({
               valueFormat="rate"
             />
             <BarChartCard
-              title="Spread cambial medio por ano"
+              title="Spread cambial medio por ano (% da spot)"
               data={yearlyComparison}
               xKey="year"
-              series={[{ key: "spreadMedio", name: "Spread cambial", color: "#7a5af8" }]}
-              valueFormat="rate"
+              series={[{ key: "spreadMedio", name: "Spread cambial (%)", color: "#7a5af8" }]}
+              valueFormat="percent"
             />
           </div>
         )}

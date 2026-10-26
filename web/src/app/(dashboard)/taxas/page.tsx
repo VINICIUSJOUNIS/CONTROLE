@@ -36,27 +36,28 @@ export default async function TaxasPage({
     financialCost: r.financialCost,
   }));
 
-  const withLoanRate = rateHistory.filter((r) => r.loanAvgRate > 0);
-  const withAccRate = rateHistory.filter((r) => r.accAvgRate > 0);
-  const first = withLoanRate[0] ?? rateHistory[0];
-  const last = withLoanRate[withLoanRate.length - 1] ?? rateHistory[rateHistory.length - 1];
-  const firstAcc = withAccRate[0] ?? rateHistory[0];
-  const lastAcc = withAccRate[withAccRate.length - 1] ?? rateHistory[rateHistory.length - 1];
-
-  const insights = [
-    `A taxa media ponderada dos ACC ${lastAcc.accAvgRate < firstAcc.accAvgRate ? "caiu" : "subiu"} de ${formatPercent(
-      firstAcc.accAvgRate
-    )} (primeiro mes com contrato no periodo) para ${formatPercent(
-      lastAcc.accAvgRate
-    )} (ultimo mes com contrato).`,
-    `A taxa media ponderada dos emprestimos ${
-      last.loanAvgRate < first.loanAvgRate ? "reduziu" : "aumentou"
-    } de ${formatPercent(first.loanAvgRate)} para ${formatPercent(last.loanAvgRate)} no periodo analisado.`,
-    `O spread cambial medio esta em ${formatPercent(lastAcc.cambialSpread, 3)}.`,
-    `As operacoes mais recentes apresentam custo financeiro estimado de ${formatPercent(
-      lastAcc.financialCost
-    )}.`,
-  ];
+  // Primeiro e ultimo mes com contrato de cada tipo no periodo (meses sem contrato vem null).
+  const comLoan = rateHistory.filter((r) => r.loanAvgRate !== null);
+  const comAcc = rateHistory.filter((r) => r.accAvgRate !== null);
+  const pct = (v: number | null, d = 2) => (v === null ? "-" : formatPercent(v, d));
+  const insights: string[] = [];
+  if (comAcc.length >= 2) {
+    const [a0, a1] = [comAcc[0].accAvgRate!, comAcc[comAcc.length - 1].accAvgRate!];
+    insights.push(`A taxa media ponderada dos ACC ${a1 < a0 ? "caiu" : "subiu"} de ${pct(a0)} (primeiro mes com contrato no periodo) para ${pct(a1)} (ultimo mes com contrato).`);
+  }
+  if (comLoan.length >= 2) {
+    const [l0, l1] = [comLoan[0].loanAvgRate!, comLoan[comLoan.length - 1].loanAvgRate!];
+    insights.push(`A taxa media ponderada dos emprestimos ${l1 < l0 ? "reduziu" : "aumentou"} de ${pct(l0)} para ${pct(l1)} no periodo analisado.`);
+  }
+  const ultimoAcc = comAcc[comAcc.length - 1];
+  if (ultimoAcc) {
+    insights.push(`Spread cambial medio dos ACC de ${formatMonthLabel(ultimoAcc.month)}: ${pct(ultimoAcc.cambialSpread, 3)} sobre a taxa spot.`);
+  }
+  const comCusto = rateHistory.filter((r) => r.financialCost !== null);
+  const ultimoCusto = comCusto[comCusto.length - 1];
+  if (ultimoCusto) {
+    insights.push(`Contratos de ${formatMonthLabel(ultimoCusto.month)}: custo total de ${pct(ultimoCusto.financialCost)} sobre o valor captado (prazo inteiro do contrato, nao anualizado).`);
+  }
 
   return (
     <div className="flex flex-col">

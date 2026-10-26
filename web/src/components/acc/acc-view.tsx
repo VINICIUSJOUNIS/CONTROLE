@@ -37,9 +37,13 @@ const statusLabels: Record<string, string> = {
   EM_ATRASO: "Em atraso",
 };
 
+// Taxa do ACC e linear (juros simples, dias corridos / 360 - ver lib/acc-calc),
+// entao a taxa mensal equivalente e a anual / 12 (30/360). A conversao composta
+// ((1 + a)^(1/12) - 1) dava uma taxa menor que a cobrada (6% a.a. -> 0,487% em
+// vez de 0,500% a.m.).
 function annualToMonthly(annualPercent: number) {
   if (!annualPercent) return 0;
-  return (Math.pow(1 + annualPercent / 100, 1 / 12) - 1) * 100;
+  return annualPercent / 12;
 }
 
 function emptyForm(defaultBankId: string) {

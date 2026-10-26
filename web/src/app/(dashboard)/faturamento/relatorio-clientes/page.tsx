@@ -18,7 +18,7 @@ function rankClients(rows: SaleRow[], returns: SaleReturnRow[]): [string, Client
     map.set(s.clientName, cur);
   }
   for (const r of returns) {
-    const cur = map.get(r.clientName);
+    const cur = map.get(r.clientNameVenda ?? r.clientName);
     if (!cur) continue;
     cur.sacas -= r.quantitySacas;
     cur.valueBRL -= r.valueBRL;

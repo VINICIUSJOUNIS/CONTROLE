@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { RATE_BASIS_DAYS, RateBasisValue, saldoDevedorEm, calcLoanJurosReais } from "@/lib/amortization";
+import { RATE_BASIS_DAYS, RateBasisValue, saldoDevedorEm, calcLoanJurosReais, pagamentosLoanReais } from "@/lib/amortization";
 import { calcBaixaJuros } from "@/lib/acc-calc";
 
 function n(value: unknown): number {
@@ -37,6 +37,18 @@ function weightedAvg(items: { rate: number; weight: number }[]): number {
   const totalWeight = items.reduce((s, i) => s + i.weight, 0);
   if (totalWeight <= 0) return 0;
   return items.reduce((s, i) => s + i.rate * i.weight, 0) / totalWeight;
+}
+
+// Medias de cambio de um conjunto de ACC, ponderadas pelo valor em US$ (taxa
+// media da carteira, nao media simples entre contratos). Spread em % da spot.
+// Sem contratos: null.
+function mediasCambioAcc(ops: { contractedValueForeign: number; spotRate: number; closingRate: number; ptaxContracting: number }[]) {
+  const usd = ops.reduce((s, a) => s + a.contractedValueForeign, 0);
+  if (ops.length === 0 || usd <= 0) return { spot: null, fechamento: null, ptax: null, spread: null };
+  const spot = ops.reduce((s, a) => s + a.spotRate * a.contractedValueForeign, 0) / usd;
+  const fechamento = ops.reduce((s, a) => s + a.closingRate * a.contractedValueForeign, 0) / usd;
+  const ptax = ops.reduce((s, a) => s + a.ptaxContracting * a.contractedValueForeign, 0) / usd;
+  return { spot, fechamento, ptax, spread: spot > 0 ? Math.max(0, ((spot - fechamento) / spot) * 100) : 0 };
 }
 
 // Filtra registros pela data de contratacao (formato "YYYY-MM-DD"), usando o mes ("YYYY-MM")
@@ -400,7 +412,11 @@ export async function getAccOperations() {
     const contractedValueForeign = n(a.contractedValueForeign);
     const spotRate = n(a.spotRate);
     const interestRate = n(a.interestRate);
-    const exchangeSpread = n(a.exchangeSpread);
+    // Spread cambial em % da taxa spot: (spot - fechamento) / spot. A coluna
+    // gravada (fechamento - spot, em R$/US$) era exibida como se fosse %, com
+    // sinal invertido (ex.: 4,982 - 4,990 = -0,008 aparecia como "-0,01%"; o
+    // certo e 0,16%). Spread e custo, nunca negativo.
+    const exchangeSpread = spotRate > 0 ? Math.max(0, Number((((spotRate - n(a.closingRate)) / spotRate) * 100).toFixed(4))) : 0;
     const iof = n(a.iof);
     const bankFees = n(a.bankFees);
     const flatFeeRate = n(a.flatFeeRate);
@@ -467,13 +483,15 @@ export async function getAccOperations() {
     let jurosPagoUSD = Number(baixas.reduce((s, b) => s + b.jurosUSD, 0).toFixed(2));
     let jurosPagoValor = Number(baixas.reduce((s, b) => s + b.jurosValor, 0).toFixed(2));
     let jurosProjetadoRestanteValor = 0;
+    let jurosQuitacaoFinalValor = 0;
     let taxaConversaoJurosPagos = baixas.length > 0 ? baixas[baixas.length - 1].closingRate : taxaQuitacao;
     if (saldoNaoBaixadoUSD > 0.005) {
       if (liquidado) {
         const dataQuitacaoFinal = (a.closingDate ?? a.settlementDate).toISOString().slice(0, 10);
         const { jurosUSD } = calcBaixaJuros(saldoNaoBaixadoUSD, interestRate, contractDateStr, dataQuitacaoFinal);
         jurosPagoUSD = Number((jurosPagoUSD + jurosUSD).toFixed(2));
-        jurosPagoValor = Number((jurosPagoValor + jurosUSD * taxaQuitacao).toFixed(2));
+        jurosQuitacaoFinalValor = Number((jurosUSD * taxaQuitacao).toFixed(2));
+        jurosPagoValor = Number((jurosPagoValor + jurosQuitacaoFinalValor).toFixed(2));
         taxaConversaoJurosPagos = taxaQuitacao;
       } else {
         const jurosRestanteUSD = saldoNaoBaixadoUSD * (interestRate / 100) * (prazoDias / DIAS_ANO_BASE);
@@ -534,6 +552,8 @@ export async function getAccOperations() {
       jurosPagoUSD,
       jurosPagoValor,
       jurosProjetadoRestanteValor,
+      jurosCustoValor,
+      jurosQuitacaoFinalValor,
       custoTotal,
       percentualCustoTotal: Number(percentualCustoTotal.toFixed(2)),
       contractDate: contractDateStr,
@@ -563,12 +583,11 @@ export async function getKpis(range?: PeriodRange, modalidade?: ModalidadeFilter
   // Saldo devedor real dos emprestimos: soma o saldo que a amortizacao (PRICE/SAC/
   // BULLET) diz que ainda resta hoje, nao um percentual fixo do valor contratado.
   const saldoDevedorLoans = loans.reduce((sum, l) => sum + l.saldoDevedorAtual, 0);
-  const saldoDevedorAcc = accOperations
-    .filter((a) => a.status !== "LIQUIDADO")
-    .reduce((sum, a) => sum + a.receivedValueBRL, 0);
-  const saldoDevedorAccUsd = accOperations
-    .filter((a) => a.status !== "LIQUIDADO")
-    .reduce((sum, a) => sum + a.contractedValueForeign, 0);
+  // ACC em aberto: saldo ainda nao baixado (contratado - baixas parciais), em
+  // R$ pela taxa de fechamento do contrato - mesma base do relatorio "em aberto".
+  const accAbertos = accOperations.filter((a) => a.status !== "LIQUIDADO");
+  const saldoDevedorAcc = Number(accAbertos.reduce((sum, a) => sum + a.saldoAbertoUSD * a.closingRate, 0).toFixed(2));
+  const saldoDevedorAccUsd = Number(accAbertos.reduce((sum, a) => sum + a.saldoAbertoUSD, 0).toFixed(2));
   const saldoDevedorTotal = saldoDevedorLoans + saldoDevedorAcc;
 
   const totalContratado = loans.reduce((sum, l) => sum + l.contractedValue, 0);
@@ -598,9 +617,8 @@ export async function getKpis(range?: PeriodRange, modalidade?: ModalidadeFilter
   // Exposicao cambial em US$ (moeda do risco), nao convertida para R$. Usa o
   // saldo real em aberto (contratado - ja liquidado em baixas), nao o valor
   // contratado cheio - senao superestima a exposicao apos quitacoes parciais.
-  const exposicaoCambial = accOperations
-    .filter((a) => a.status === "EM_ABERTO")
-    .reduce((sum, a) => sum + a.saldoAbertoUSD, 0);
+  // EM_ATRASO tambem e exposicao: o adiantamento continua sem liquidar.
+  const exposicaoCambial = saldoDevedorAccUsd;
 
   // Custo medio ponderado da carteira: custo total / principal, ponderado pelo valor de
   // cada operacao (nao e uma media simples das taxas). Metrica-chave para o CFO.
@@ -691,60 +709,72 @@ export async function getDebtEvolution(range?: PeriodRange, modalidade?: Modalid
     const saldoLoans = loans
       .filter((l) => l.contractDate.slice(0, 7) <= month)
       .reduce((sum, l) => sum + saldoDevedorEm(l, dataRef), 0);
-    const saldoAcc = accOperations
-      .filter((a) => {
-        // Usa a data real de quitacao quando ja liquidado (pode ser antes ou depois do
-        // vencimento contratual); enquanto em aberto, usa o vencimento como estimativa.
-        const effectiveEnd = (a.dataQuitacao ?? a.settlementDate).slice(0, 7);
-        return a.contractDate.slice(0, 7) <= month && effectiveEnd >= month;
-      })
-      .reduce((sum, a) => sum + a.receivedValueBRL, 0);
+    const saldoAcc = accOperations.reduce((sum, a) => sum + saldoAccEm(a, dataRef), 0);
 
     return { month, saldoDevedor: Math.round(saldoLoans + saldoAcc) };
   });
 }
 
+// Saldo de um ACC (R$, taxa de fechamento) no fim do dia dataRef: contratado
+// menos as baixas ate a data; zero depois da quitacao (liquidado). Em aberto
+// depois do vencimento continua devendo - nao some do saldo.
+function saldoAccEm(a: AccRow, dataRef: string) {
+  if (a.contractDate > dataRef) return 0;
+  if (a.status === "LIQUIDADO" && (a.dataQuitacao ?? a.settlementDate) <= dataRef) return 0;
+  const baixado = a.baixas.filter((b) => b.dataQuitacao <= dataRef).reduce((s, b) => s + b.valorUSD, 0);
+  return Math.max(0, a.contractedValueForeign - baixado) * a.closingRate;
+}
+
+// Proximos 12 meses a partir do mes atual (titulo do grafico no dashboard).
+function proximos12Meses() {
+  const hoje = new Date();
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+}
+
+// Fluxo de pagamentos por mes. Entradas: valor captado na contratacao.
+// Saidas (principal + juros), nas datas reais quando ja pagas:
+// - emprestimo: cada parcela do cronograma (valor pago registrado, ou o do
+//   cronograma), cortado na liquidacao (pagamentosLoanReais);
+// - ACC: cada baixa (valor x taxa de fechamento + juros da tranche) e o saldo
+//   restante na quitacao (liquidado) ou no vencimento (em aberto, com os juros
+//   projetados).
+// Antes: saida do emprestimo = principal / parcelas, sem juros, e sumia ao
+// liquidar; ACC = valor recebido no vencimento contratual, sem juros.
 export async function getCashFlow(range?: PeriodRange, modalidade?: ModalidadeFilter) {
   const [allLoans, allAccOperations] = await Promise.all([getLoans(), getAccOperations()]);
   const { loans, accOperations } = applyModalidade(allLoans, allAccOperations, modalidade);
-  const fullRange = monthsSinceEarliest([
-    ...loans.map((l) => l.contractDate),
-    ...accOperations.map((a) => a.contractDate),
-  ]);
-  const from = range?.from ?? fullRange[0];
-  const to = range?.to ?? fullRange[fullRange.length - 1];
-  const months = monthsInRange(from, to);
+  const padrao = proximos12Meses();
+  const months = range?.from || range?.to ? monthsInRange(range.from ?? padrao[0], range.to ?? padrao[11]) : padrao;
 
-  return months.map((month) => {
-    const entradasEmprestimos = loans
-      .filter((l) => monthKey(l.contractDate) === month)
-      .reduce((sum, l) => sum + l.contractedValue, 0);
+  const entradas = new Map<string, number>();
+  const saidas = new Map<string, number>();
+  const add = (m: Map<string, number>, data: string, v: number) => m.set(data.slice(0, 7), (m.get(data.slice(0, 7)) ?? 0) + v);
 
-    const saidasEmprestimos = loans
-      .filter((l) => {
-        return (
-          l.status !== "LIQUIDADO" &&
-          l.firstDueDate.slice(0, 7) <= month &&
-          l.lastDueDate.slice(0, 7) >= month
-        );
-      })
-      .reduce((sum, l) => sum + l.contractedValue / l.installments, 0);
+  for (const l of loans) {
+    add(entradas, l.contractDate, l.contractedValue);
+    for (const p of pagamentosLoanReais(l, l.parcelas)) add(saidas, p.data, p.valor);
+  }
+  for (const a of accOperations) {
+    add(entradas, a.contractDate, a.receivedValueBRL);
+    for (const b of a.baixas) add(saidas, b.dataQuitacao, b.valorUSD * a.closingRate + b.jurosValor);
+    const restanteUSD = Math.max(0, a.contractedValueForeign - a.valorLiquidadoUSD);
+    if (restanteUSD > 0.005) {
+      if (a.status === "LIQUIDADO") {
+        add(saidas, a.dataQuitacao ?? a.settlementDate, restanteUSD * a.closingRate + a.jurosQuitacaoFinalValor);
+      } else {
+        add(saidas, a.settlementDate, restanteUSD * a.closingRate + a.jurosProjetadoRestanteValor);
+      }
+    }
+  }
 
-    // ACC: entrada do adiantamento na contratacao, saida (liquidacao do principal) no vencimento.
-    const entradasAcc = accOperations
-      .filter((a) => monthKey(a.contractDate) === month)
-      .reduce((sum, a) => sum + a.receivedValueBRL, 0);
-
-    const saidasAcc = accOperations
-      .filter((a) => monthKey(a.settlementDate) === month)
-      .reduce((sum, a) => sum + a.receivedValueBRL, 0);
-
-    return {
-      month,
-      entradas: Math.round(entradasEmprestimos + entradasAcc),
-      saidas: Math.round(saidasEmprestimos + saidasAcc),
-    };
-  });
+  return months.map((month) => ({
+    month,
+    entradas: Math.round(entradas.get(month) ?? 0),
+    saidas: Math.round(saidas.get(month) ?? 0),
+  }));
 }
 
 // Medias ponderadas pelo valor de cada contrato (nao uma media simples das taxas),
@@ -809,24 +839,17 @@ export async function getRateHistory(range?: PeriodRange) {
     const loansInMonth = loans.filter((l) => monthKey(l.contractDate) === month);
     const accInMonth = accOperations.filter((a) => monthKey(a.contractDate) === month);
 
-    const avg = (arr: number[]) =>
-      arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
-
     // Taxa media ponderada pelo valor de cada contrato (nao uma media simples), com
     // a taxa dos emprestimos anualizada para poder misturar bases diferentes.
-    const loanAvgRate = weightedAvg(
-      loansInMonth.map((l) => ({
-        rate: annualizedRate(l.interestRate, l.rateBasis),
-        weight: l.contractedValue,
-      }))
-    );
-    const accAvgRate = weightedAvg(
-      accInMonth.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))
-    );
-    const spotAvg = avg(accInMonth.map((a) => a.spotRate));
-    const closingAvg = avg(accInMonth.map((a) => a.closingRate));
-    const ptax = avg(accInMonth.map((a) => a.ptaxContracting));
-    const cambialSpread = avg(accInMonth.map((a) => a.exchangeSpread));
+    // Mes sem contrato fica null (lacuna no grafico), nao 0% - zero sugeriria
+    // uma taxa contratada a zero.
+    const loanAvgRate = loansInMonth.length
+      ? weightedAvg(loansInMonth.map((l) => ({ rate: annualizedRate(l.interestRate, l.rateBasis), weight: l.contractedValue })))
+      : null;
+    const accAvgRate = accInMonth.length
+      ? weightedAvg(accInMonth.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL })))
+      : null;
+    const cambio = mediasCambioAcc(accInMonth);
 
     // Custo financeiro efetivo: custo total / principal, ponderado, para emprestimos e ACC
     // contratados no mes (reflete o custo real, nao um peso arbitrario entre as taxas).
@@ -836,17 +859,18 @@ export async function getRateHistory(range?: PeriodRange) {
     const principalMes =
       loansInMonth.reduce((s, l) => s + l.contractedValue, 0) +
       accInMonth.reduce((s, a) => s + a.receivedValueBRL, 0);
-    const financialCost = principalMes > 0 ? (custoTotalMes / principalMes) * 100 : 0;
+    const financialCost = principalMes > 0 ? (custoTotalMes / principalMes) * 100 : null;
+    const r = (v: number | null, d: number) => (v === null ? null : Number(v.toFixed(d)));
 
     return {
       month,
-      loanAvgRate: Number(loanAvgRate.toFixed(2)),
-      accAvgRate: Number(accAvgRate.toFixed(2)),
-      ptax: Number(ptax.toFixed(4)),
-      spotAvg: Number(spotAvg.toFixed(4)),
-      closingAvg: Number(closingAvg.toFixed(4)),
-      cambialSpread: Number(cambialSpread.toFixed(4)),
-      financialCost: Number(financialCost.toFixed(2)),
+      loanAvgRate: r(loanAvgRate, 2),
+      accAvgRate: r(accAvgRate, 2),
+      ptax: r(cambio.ptax, 4),
+      spotAvg: r(cambio.spot, 4),
+      closingAvg: r(cambio.fechamento, 4),
+      cambialSpread: r(cambio.spread, 4),
+      financialCost: r(financialCost, 2),
     };
   });
 }
@@ -862,8 +886,6 @@ export async function getYearlyComparison(modalidade?: ModalidadeFilter) {
     ])
   ).sort();
 
-  const avg = (arr: number[]) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0);
-
   return years.map((year) => {
     const loansInYear = loans.filter((l) => l.contractDate.slice(0, 4) === year);
     const accInYear = accOperations.filter((a) => a.contractDate.slice(0, 4) === year);
@@ -876,26 +898,24 @@ export async function getYearlyComparison(modalidade?: ModalidadeFilter) {
       accInYear.reduce((s, a) => s + a.custoTotal, 0);
     const custoMedio = totalCaptado > 0 ? (custoTotalAno / totalCaptado) * 100 : 0;
 
+    const cambio = mediasCambioAcc(accInYear);
+    const r = (v: number | null, d: number) => (v === null ? null : Number(v.toFixed(d)));
+    // Ano sem contrato de um tipo: null (sem barra), nao 0%.
     return {
       year,
-      loanAvgRate: Number(
-        weightedAvg(
-          loansInYear.map((l) => ({
-            rate: annualizedRate(l.interestRate, l.rateBasis),
-            weight: l.contractedValue,
-          }))
-        ).toFixed(2)
-      ),
-      accAvgRate: Number(
-        weightedAvg(accInYear.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))).toFixed(2)
-      ),
+      loanAvgRate: loansInYear.length
+        ? r(weightedAvg(loansInYear.map((l) => ({ rate: annualizedRate(l.interestRate, l.rateBasis), weight: l.contractedValue }))), 2)
+        : null,
+      accAvgRate: accInYear.length
+        ? r(weightedAvg(accInYear.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))), 2)
+        : null,
       totalCaptado: Math.round(totalCaptado),
       custoMedio: Number(custoMedio.toFixed(2)),
       qtdOperacoes: loansInYear.length + accInYear.length,
-      spotMedio: Number(avg(accInYear.map((a) => a.spotRate)).toFixed(4)),
-      fechamentoMedio: Number(avg(accInYear.map((a) => a.closingRate)).toFixed(4)),
-      spreadMedio: Number(avg(accInYear.map((a) => a.exchangeSpread)).toFixed(4)),
-      ptaxMedia: Number(avg(accInYear.map((a) => a.ptaxContracting)).toFixed(4)),
+      spotMedio: r(cambio.spot, 4),
+      fechamentoMedio: r(cambio.fechamento, 4),
+      spreadMedio: r(cambio.spread, 4),
+      ptaxMedia: r(cambio.ptax, 4),
     };
   });
 }
@@ -960,14 +980,8 @@ export async function getEmprestimoAccComparativoAnual(years: string[]) {
             ).toFixed(2)
           )
         : null;
-    const spreadMedio =
-      accContratadosNoAno.length > 0
-        ? Number(
-            (
-              accContratadosNoAno.reduce((s, a) => s + a.exchangeSpread, 0) / accContratadosNoAno.length
-            ).toFixed(4)
-          )
-        : null;
+    const spreadAno = mediasCambioAcc(accContratadosNoAno).spread;
+    const spreadMedio = spreadAno === null ? null : Number(spreadAno.toFixed(4));
     // Valor efetivamente pago em spread cambial no ano (soma de spreadValor das
     // operacoes de ACC contratadas no ano), nao so o percentual medio.
     const valorSpread = Math.round(accContratadosNoAno.reduce((s, a) => s + a.spreadValor, 0));
@@ -1019,14 +1033,16 @@ export async function getRateHeatmap() {
       if (bankLoans.length === 0) return null;
       const values = quarters.map((q) => {
         const inQuarter = bankLoans.filter((l) => quarterKey(l.contractDate) === q);
-        if (inQuarter.length === 0) return 0;
+        // Trimestre sem contrato: null (celula vazia), nao 0%. Taxa anualizada e
+        // ponderada pelo valor, como no resto da tela (bases mensal/anual misturadas).
+        if (inQuarter.length === 0) return null;
         return Number(
-          (inQuarter.reduce((s, l) => s + l.interestRate, 0) / inQuarter.length).toFixed(2)
+          weightedAvg(inQuarter.map((l) => ({ rate: annualizedRate(l.interestRate, l.rateBasis), weight: l.contractedValue }))).toFixed(2)
         );
       });
       return { bank: bank.name, values };
     })
-    .filter((r): r is { bank: string; values: number[] } => r !== null);
+    .filter((r): r is { bank: string; values: (number | null)[] } => r !== null);
 
   return { rows, quarters };
 }
@@ -1037,8 +1053,8 @@ export async function getBankComparison(range?: PeriodRange) {
 
   return banks.map((bank) => {
     const ops = accOperations.filter((a) => a.bankId === bank.id);
-    const qtd = ops.length || 1;
     const valorCaptado = ops.reduce((s, a) => s + a.receivedValueBRL, 0);
+    const cambio = mediasCambioAcc(ops);
     const custoTotalGeral = Number(ops.reduce((s, a) => s + a.custoTotal, 0).toFixed(2));
     return {
       bankId: bank.id,
@@ -1046,18 +1062,20 @@ export async function getBankComparison(range?: PeriodRange) {
       bankColor: bank.color,
       qtdAcc: ops.length,
       valorCaptado,
-      taxaMedia: Number((ops.reduce((s, a) => s + a.interestRate, 0) / qtd).toFixed(2)),
-      spreadMedio: Number((ops.reduce((s, a) => s + a.exchangeSpread, 0) / qtd).toFixed(4)),
-      spotMedio: Number((ops.reduce((s, a) => s + a.spotRate, 0) / qtd).toFixed(4)),
-      fechamentoMedio: Number((ops.reduce((s, a) => s + a.closingRate, 0) / qtd).toFixed(4)),
+      // Medias ponderadas pelo valor de cada ACC (taxa pelo valor em R$; cambio
+      // e spread pelo valor em US$), nao media simples entre contratos.
+      taxaMedia: Number(weightedAvg(ops.map((a) => ({ rate: a.interestRate, weight: a.receivedValueBRL }))).toFixed(2)),
+      spreadMedio: Number((cambio.spread ?? 0).toFixed(4)),
+      spotMedio: Number((cambio.spot ?? 0).toFixed(4)),
+      fechamentoMedio: Number((cambio.fechamento ?? 0).toFixed(4)),
       // Custo medio real: custo total / valor captado (custo efetivo ponderado pelo banco).
       custoMedio: valorCaptado > 0 ? Number(((custoTotalGeral / valorCaptado) * 100).toFixed(2)) : 0,
       // Totais absolutos (soma, nao media) para comparar o custo real pago a cada banco.
-      // Custo total geral = spread + juros pagos + seguro + outros (mesma definicao usada
-      // na tela de ACC). IOF e tarifas sao custos reais mas ficam fora dessa metrica, por
-      // isso aparecem como colunas separadas em vez de somados no total.
+      // Custo total geral = spread + juros + IOF + tarifas + taxa flat + seguro + outros
+      // (mesma definicao de custoTotal na tela de ACC); juros = pagos + projetados
+      // dos ACC em aberto, para as colunas somarem o custo total.
       totalSpread: Number(ops.reduce((s, a) => s + a.spreadValor, 0).toFixed(2)),
-      totalJuros: Number(ops.reduce((s, a) => s + a.jurosPagoValor, 0).toFixed(2)),
+      totalJuros: Number(ops.reduce((s, a) => s + a.jurosCustoValor, 0).toFixed(2)),
       totalIOF: Number(ops.reduce((s, a) => s + a.iof, 0).toFixed(2)),
       totalTarifas: Number(ops.reduce((s, a) => s + a.bankFees, 0).toFixed(2)),
       totalFlat: Number(ops.reduce((s, a) => s + a.flatFeeValor, 0).toFixed(2)),
@@ -1183,11 +1201,47 @@ export async function getSales() {
 
 export type SaleRow = Awaited<ReturnType<typeof getSales>>[number];
 
+// Nome de cliente normalizado para cruzar devolucao x venda: sem acento,
+// pontuacao, caixa e sufixos societarios (SA, S/A, LTDA, ME, EIRELI).
+function normalizarCliente(nome: string) {
+  return nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, " ")
+    .replace(/\b(S A|SA|LTDA|ME|EIRELI|EPP)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Acha o cliente da venda correspondente ao nome digitado na devolucao. O
+// cadastro de vendas traz o nome truncado (~32 caracteres) e as devolucoes vem
+// com o nome completo ou abreviado de outro jeito, entao o nome exato falhava
+// em 38 devolucoes (~R$ 15 mi): elas saiam do total geral mas nao do interno/
+// externo nem do cliente. Ordem: nome exato; normalizado igual; um nome
+// prefixo do outro (min. 12 letras); mesma primeira palavra e as duas primeiras
+// palavras significativas contidas. So aceita quando o candidato e unico.
+function resolverClienteVenda(nome: string, nomesVenda: string[], porNormalizado: Map<string, string>): string | null {
+  if (nomesVenda.includes(nome)) return nome;
+  const n = normalizarCliente(nome);
+  const exato = porNormalizado.get(n);
+  if (exato) return exato;
+  const unico = (lista: string[]) => (lista.length === 1 ? porNormalizado.get(lista[0]) ?? null : null);
+  const normalizados = [...porNormalizado.keys()];
+  const prefixo = normalizados.filter((v) => Math.min(v.length, n.length) >= 12 && (v.startsWith(n) || n.startsWith(v)));
+  if (prefixo.length) return unico(prefixo);
+  const palavras = n.split(" ");
+  const chaves = palavras.filter((w) => w.length > 3).slice(0, 2);
+  const porPalavras = normalizados.filter((v) => v.split(" ")[0] === palavras[0] && chaves.every((w) => v.includes(w)));
+  return unico(porPalavras);
+}
+
 export async function getSaleReturns() {
-  // Devolucao nao guarda tipo de cliente/pais (a tabela so tem clientName), mas
-  // como o nome de um cliente nao muda de interno pra externo, resolvemos isso
-  // aqui cruzando com o cadastro de Sale — assim toda tela que consome devolucao
-  // ja recebe o segmento certo, sem precisar aproximar por proporcao.
+  // Devolucao nao guarda tipo de cliente/pais (a tabela so tem clientName):
+  // resolve cruzando com o cadastro de Sale (resolverClienteVenda), para toda
+  // tela que consome devolucao receber o segmento e o cliente certos.
+  // clientNameVenda = nome do cliente como esta nas vendas (para abater a
+  // devolucao do cliente certo nos rankings); clientName fica como digitado.
   const [returns, salesClients] = await Promise.all([
     prisma.saleReturn.findMany({ orderBy: { returnDate: "desc" } }),
     prisma.sale.findMany({ select: { clientName: true, clientType: true, country: true } }),
@@ -1196,12 +1250,22 @@ export async function getSaleReturns() {
   for (const s of salesClients) {
     if (!clientInfo.has(s.clientName)) clientInfo.set(s.clientName, { clientType: s.clientType, country: s.country });
   }
+  const nomesVenda = [...clientInfo.keys()];
+  const porNormalizado = new Map<string, string>();
+  for (const nome of nomesVenda) {
+    const k = normalizarCliente(nome);
+    if (!porNormalizado.has(k)) porNormalizado.set(k, nome);
+  }
+  const resolvidos = new Map<string, string | null>();
   return returns.map((r) => {
     const quantityKg = n(r.quantityKg);
-    const info = clientInfo.get(r.clientName);
+    if (!resolvidos.has(r.clientName)) resolvidos.set(r.clientName, resolverClienteVenda(r.clientName, nomesVenda, porNormalizado));
+    const clientNameVenda = resolvidos.get(r.clientName) ?? null;
+    const info = clientNameVenda ? clientInfo.get(clientNameVenda) : undefined;
     return {
       id: r.id,
       clientName: r.clientName,
+      clientNameVenda,
       clientType: info?.clientType ?? null,
       country: info?.country ?? null,
       quantityKg,
