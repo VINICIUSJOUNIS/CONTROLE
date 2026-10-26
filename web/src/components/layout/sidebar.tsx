@@ -31,6 +31,7 @@ import {
   ClipboardList,
   CheckCircle2,
   CalendarDays,
+  CalendarRange,
   Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
@@ -99,6 +100,8 @@ const apresentacaoNavItems = [
 
 const creditoNavItems = [
   { href: "/credito", label: "Analise de Credito", icon: LayoutDashboard },
+  { href: "/credito/comparativo-mensal", label: "Comparativo Mensal", icon: BarChart3 },
+  { href: "/credito/trimestre-acumulado", label: "Trimestre Acumulado", icon: CalendarRange },
   { href: "/credito/despesas-fixas", label: "Despesas Fixas", icon: Receipt },
 ];
 

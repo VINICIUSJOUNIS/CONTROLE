@@ -248,7 +248,7 @@ export function calcularDre(d: Dre, depreciacaoBalanco: number | null): DreCalc 
 
 const subtrairDre = (a: Dre, b: Dre) =>
   Object.fromEntries(CAMPOS_DRE.map((c) => [c.chave, a[c.chave] - b[c.chave]])) as Dre;
-const somarDre = (a: Dre, b: Dre) =>
+export const somarDre = (a: Dre, b: Dre) =>
   Object.fromEntries(CAMPOS_DRE.map((c) => [c.chave, a[c.chave] + b[c.chave]])) as Dre;
 
 const mesAnterior = (comp: string) => {
@@ -268,7 +268,7 @@ function dreAcumuladaAno(comp: string, porComp: Map<string, RegistroCredito>): D
 }
 
 // DRE isolada do mes (null quando a DRE e acumulada e falta o mes anterior).
-function dreDoMes(comp: string, porComp: Map<string, RegistroCredito>): Dre | null {
+export function dreDoMes(comp: string, porComp: Map<string, RegistroCredito>): Dre | null {
   const r = porComp.get(comp);
   if (!r) return null;
   if (r.dreTipo === "mensal" || Number(comp.slice(5, 7)) === 1) return r.dre;
@@ -277,7 +277,7 @@ function dreDoMes(comp: string, porComp: Map<string, RegistroCredito>): Dre | nu
 }
 
 // Depreciacao do mes estimada pela variacao da depreciacao acumulada (null sem balanco anterior).
-function depreciacaoDoMes(comp: string, porComp: Map<string, RegistroCredito>): number | null {
+export function depreciacaoDoMes(comp: string, porComp: Map<string, RegistroCredito>): number | null {
   const r = porComp.get(comp);
   if (!r) return null;
   const ant = porComp.get(mesAnterior(comp))?.balanco ?? r.balancoAnterior;
@@ -289,7 +289,20 @@ function depreciacaoDoMes(comp: string, porComp: Map<string, RegistroCredito>): 
 // ---------------------------------------------------------------------------
 // Analise completa de uma competencia
 
-export function analisar(registro: RegistroCredito, historico: RegistroCredito[]): Analise {
+// Periodo customizado (ex.: trimestre): DRE ja somada do periodo, quantidade de
+// meses e o balanco do fim do periodo anterior para as comparacoes. Sem ele,
+// o periodo e o mes isolado da competencia (ou o acumulado do ano).
+export type PeriodoCustom = {
+  descricao: string;
+  meses: number;
+  dre: Dre;
+  balancoAnterior: Balanco | null;
+  fonteAnterior: string;
+  dreAnterior: Dre | null;
+  depreciacaoAnterior: number | null;
+};
+
+export function analisar(registro: RegistroCredito, historico: RegistroCredito[], custom?: PeriodoCustom): Analise {
   const porComp = new Map(historico.map((r) => [r.competencia, r]));
   porComp.set(registro.competencia, registro);
   const comp = registro.competencia;
@@ -297,8 +310,10 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
 
   // Balanco do mes anterior: registro salvo do mes anterior ou a coluna "saldo anterior" do proprio PDF.
   const regAnt = porComp.get(mesAnterior(comp));
-  const balAnt = regAnt?.balanco ?? registro.balancoAnterior;
-  const fonteAnterior = regAnt
+  const balAnt = custom ? custom.balancoAnterior : (regAnt?.balanco ?? registro.balancoAnterior);
+  const fonteAnterior = custom
+    ? custom.fonteAnterior
+    : regAnt
     ? `balanço de ${rotuloCompetencia(regAnt.competencia)} salvo no sistema`
     : registro.balancoAnterior
       ? "coluna de saldo anterior do próprio PDF"
@@ -312,18 +327,27 @@ export function analisar(registro: RegistroCredito, historico: RegistroCredito[]
 
   // Periodo da DRE usada nos indicadores: o mes isolado (30 dias, convencao
   // comercial 30/360 da planilha) ou, sem ele, o acumulado do ano.
-  const mesIsolado = dreDoMes(comp, porComp);
-  const dreBase = mesIsolado ?? registro.dre;
-  const meses = mesIsolado ? 1 : mes;
+  // Periodo custom: DRE e balanco anterior cobrem o mesmo intervalo, entao a
+  // variacao da depreciacao acumulada ja e a do periodo inteiro (sem x meses)
+  // e o fluxo de caixa pode ser montado como no mes isolado.
+  const mesIsolado = custom ? null : dreDoMes(comp, porComp);
+  const dreBase = custom ? custom.dre : (mesIsolado ?? registro.dre);
+  const meses = custom ? custom.meses : mesIsolado ? 1 : mes;
   const periodo = {
-    descricao: mesIsolado ? `mês de ${rotuloCompetencia(comp)}` : `acumulado de jan a ${rotuloCompetencia(comp)}`,
+    descricao: custom ? custom.descricao : mesIsolado ? `mês de ${rotuloCompetencia(comp)}` : `acumulado de jan a ${rotuloCompetencia(comp)}`,
     dias: meses * 30,
     meses,
-    mensal: !!mesIsolado,
+    mensal: custom ? true : !!mesIsolado,
   };
-  const d = calcularDre(dreBase, deprecBalanco !== null && deprecBalanco > 0 ? deprecBalanco * meses : null);
-  const dreAntMes = regAnt ? dreDoMes(regAnt.competencia, porComp) : null;
-  const dAnt = dreAntMes && regAnt ? calcularDre(dreAntMes, depreciacaoDoMes(regAnt.competencia, porComp)) : null;
+  const d = calcularDre(dreBase, deprecBalanco !== null && deprecBalanco > 0 ? (custom ? deprecBalanco : deprecBalanco * meses) : null);
+  const dreAntMes = custom ? custom.dreAnterior : regAnt ? dreDoMes(regAnt.competencia, porComp) : null;
+  const dAnt = custom
+    ? dreAntMes
+      ? calcularDre(dreAntMes, custom.depreciacaoAnterior)
+      : null
+    : dreAntMes && regAnt
+      ? calcularDre(dreAntMes, depreciacaoDoMes(regAnt.competencia, porComp))
+      : null;
 
   // EBITDA dos ultimos 12 meses quando houver 12 meses seguidos; senao anualizado.
   const ltm = ebitdaUltimos12(comp, porComp);
