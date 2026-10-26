@@ -46,6 +46,9 @@ export type ContaDespesa = {
   // Conta do balancete excluida na tela: fica fora de todos os totais do mes,
   // mas continua gravada para poder ser restaurada.
   excluida?: boolean;
+  // Conta trazida do mes anterior so para o acumulado (sem lancamento no mes e
+  // fora do balancete gravado): calculada na leitura, nao da para editar.
+  herdada?: boolean;
   // Valores originais do PDF quando a conta foi editada na tela.
   original?: { saldoAnterior: number; debito: number; credito: number; saldoAtual: number };
 };
@@ -174,6 +177,9 @@ export function classificar(c: ContaDespesa, meses: number, ajustes: Record<stri
 
 export type ResumoDespesas = {
   meses: number;
+  // Balancete so do mes e sem o mes anterior cadastrado: nao ha acumulado do
+  // ano, entao acumulado e medias ficam iguais ao proprio mes (meses = 1).
+  semAcumulado: boolean;
   contas: ContaClassificada[];
   excluidas: ContaDespesa[];
   porNatureza: Record<Natureza, { mes: number; acumulado: number }>;
@@ -185,8 +191,13 @@ export type ResumoDespesas = {
   fixasMediaAnterior: number | null;
 };
 
-export function resumir(contas: ContaDespesa[], competencia: string, ajustes: Record<string, Ajuste>): ResumoDespesas {
-  const meses = Number(competencia.slice(5, 7));
+export function resumir(
+  contas: ContaDespesa[],
+  competencia: string,
+  ajustes: Record<string, Ajuste>,
+  semAcumulado = false
+): ResumoDespesas {
+  const meses = semAcumulado ? 1 : Number(competencia.slice(5, 7));
   const cls = contas.filter((c) => !c.excluida).map((c) => classificar(c, meses, ajustes));
   const porNatureza = Object.fromEntries(
     NATUREZAS.map((n) => {
@@ -210,6 +221,7 @@ export function resumir(contas: ContaDespesa[], competencia: string, ajustes: Re
   const fixasAnterior = soma(fixas, (c) => c.saldoAnterior);
   return {
     meses,
+    semAcumulado,
     contas: cls,
     excluidas: contas.filter((c) => c.excluida),
     porNatureza,
@@ -223,3 +235,56 @@ export function resumir(contas: ContaDespesa[], competencia: string, ajustes: Re
 }
 
 const soma = <T,>(l: T[], f: (x: T) => number) => l.reduce((s, x) => s + f(x), 0);
+
+// ---------------------------------------------------------------------------
+// Acumulado do ano quando o balancete vem so com o movimento do mes
+
+type BalanceteParaEncadear = {
+  competencia: string; // AAAA-MM
+  contas: ContaDespesa[];
+  totalPdf: { saldoAnterior: number };
+};
+
+const mesAnterior = (comp: string) => {
+  const [a, m] = comp.split("-").map(Number);
+  return m === 1 ? `${a - 1}-12` : `${a}-${String(m - 1).padStart(2, "0")}`;
+};
+
+// Balancete do mes isolado: a partir de fevereiro, saldo anterior zerado no
+// total do PDF (o acumulado do ano sempre traz o saldo de jan ate o mes anterior).
+const soDoMes = (b: BalanceteParaEncadear) => Number(b.competencia.slice(5, 7)) > 1 && b.totalPdf.saldoAnterior === 0;
+
+// Monta o acumulado do ano conta a conta quando o balancete e so do mes: saldo
+// anterior = acumulado do mes anterior cadastrado (mesma classificacao) e saldo
+// atual = anterior + movimento do mes. Contas do mes anterior sem lancamento
+// no mes entram com movimento zero, para o acumulado nao perder historico.
+// Sem o mes anterior cadastrado, semAcumulado = true e o mes vale sozinho.
+// Despesa incluida a mao mantem o saldo anterior digitado.
+export function encadearAcumulado<T extends BalanceteParaEncadear>(balancetes: T[]): (T & { semAcumulado: boolean })[] {
+  const ordenados = [...balancetes].sort((a, b) => a.competencia.localeCompare(b.competencia));
+  const porComp = new Map<string, T & { semAcumulado: boolean }>();
+  for (const b of ordenados) {
+    const ant = porComp.get(mesAnterior(b.competencia));
+    if (!soDoMes(b)) {
+      porComp.set(b.competencia, { ...b, semAcumulado: false });
+      continue;
+    }
+    if (!ant || ant.semAcumulado) {
+      porComp.set(b.competencia, { ...b, semAcumulado: true });
+      continue;
+    }
+    const acumAnt = new Map(ant.contas.filter((c) => !c.manual).map((c) => [c.classificacao, c]));
+    const contas: ContaDespesa[] = b.contas.map((c) => {
+      if (c.manual) return c;
+      const saldoAnterior = acumAnt.get(c.classificacao)?.saldoAtual ?? 0;
+      acumAnt.delete(c.classificacao);
+      return { ...c, saldoAnterior, saldoAtual: Math.round((saldoAnterior + c.debito - c.credito) * 100) / 100 };
+    });
+    for (const c of acumAnt.values()) {
+      if (c.saldoAtual === 0) continue;
+      contas.push({ codigo: c.codigo, classificacao: c.classificacao, descricao: c.descricao, saldoAnterior: c.saldoAtual, debito: 0, credito: 0, saldoAtual: c.saldoAtual, herdada: true });
+    }
+    porComp.set(b.competencia, { ...b, contas, semAcumulado: false });
+  }
+  return balancetes.map((b) => porComp.get(b.competencia)!);
+}

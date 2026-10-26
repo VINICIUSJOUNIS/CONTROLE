@@ -278,6 +278,7 @@ function LinhaConta({
         <span className="font-mono text-muted">{x.manual ? "manual" : x.classificacao}</span> {x.descricao}
         {x.periodica && <span className="ml-1 text-muted">(anual/eventual)</span>}
         {x.manual && <span className="ml-1 rounded bg-primary/10 px-1 text-primary">incluída</span>}
+        {x.herdada && <span className="ml-1 text-muted">(sem lançamento no mês; vem do acumulado anterior)</span>}
         {x.nota && <p className="text-muted">{x.nota}</p>}
         {erro && <p className="text-danger">{erro}</p>}
       </td>
@@ -299,7 +300,7 @@ function LinhaConta({
       <td className={cn("py-1.5 pl-4 text-right tabular-nums text-muted", det)}>{brl(x.saldoAtual / meses)}</td>
       <td className="py-1.5 pl-4 print:hidden">
         <div className="flex items-center gap-1">
-          {editando ? (
+          {x.herdada ? null : editando ? (
             <>
               <button type="button" onClick={salvar} disabled={pendente} title="Salvar" className="rounded p-1 text-success hover:bg-border/40">
                 {pendente ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { DespesasExcluidas, EnviarBalancete, ExcluirMesDespesas, IncluirDespesa, TabelaFixas } from "@/components/credito/despesas-fixas-cliente";
 import { listarAjustesDespesa, listarBalancetesDespesas } from "@/lib/credito/despesas-dados";
-import { resumir } from "@/lib/credito/despesas";
+import { encadearAcumulado, resumir } from "@/lib/credito/despesas";
 import { listarRegistrosCredito } from "@/lib/credito/dados";
 import { analisar, rotuloCompetencia } from "@/lib/credito/calculos";
 import { DocumentosLinks } from "@/components/credito/documentos-links";
@@ -13,9 +13,13 @@ const brl = (v: number | null) =>
   v === null ? "-" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 }).format(v);
 const pct = (v: number | null) => (v === null || !Number.isFinite(v) ? "-" : `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1, minimumFractionDigits: 1 })}%`);
 
+type Balancete = ReturnType<typeof encadearAcumulado<Awaited<ReturnType<typeof listarBalancetesDespesas>>[number]>>[number];
+
 export default async function DespesasFixasPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
   const { mes } = await searchParams;
-  const [balancetes, ajustes, registrosCredito] = await Promise.all([listarBalancetesDespesas(), listarAjustesDespesa(), listarRegistrosCredito()]);
+  const [gravados, ajustes, registrosCredito] = await Promise.all([listarBalancetesDespesas(), listarAjustesDespesa(), listarRegistrosCredito()]);
+  // Balancete so do mes ganha o acumulado do ano a partir do mes anterior cadastrado.
+  const balancetes = encadearAcumulado(gravados);
   const atual = balancetes.find((b) => b.competencia === mes) ?? balancetes[balancetes.length - 1];
 
   return (
@@ -44,14 +48,14 @@ async function Conteudo({
   ajustes,
   credito,
 }: {
-  atual: Awaited<ReturnType<typeof listarBalancetesDespesas>>[number];
-  balancetes: Awaited<ReturnType<typeof listarBalancetesDespesas>>;
+  atual: Balancete;
+  balancetes: Balancete[];
   ajustes: Awaited<ReturnType<typeof listarAjustesDespesa>>;
   credito: Awaited<ReturnType<typeof listarRegistrosCredito>>;
 }) {
-  const r = resumir(atual.contas, atual.competencia, ajustes);
+  const r = resumir(atual.contas, atual.competencia, ajustes, atual.semAcumulado);
   const anterior = balancetes[balancetes.indexOf(atual) - 1]; // mes anterior cadastrado
-  const rAnt = anterior ? resumir(anterior.contas, anterior.competencia, ajustes) : null;
+  const rAnt = anterior ? resumir(anterior.contas, anterior.competencia, ajustes, anterior.semAcumulado) : null;
 
   // Cruzamento com a Analise de Credito do mesmo mes: receita, CMV e margem de contribuicao.
   const regCredito = credito.find((c) => c.competencia === atual.competencia);
@@ -70,8 +74,12 @@ async function Conteudo({
   const cards = [
     { t: `Despesas fixas de ${rotuloCompetencia(atual.competencia)}`, v: brl(r.fixasMes), s: rAnt ? `mês anterior: ${brl(rAnt.fixasMes)}` : r.fixasMediaAnterior !== null ? `média mensal até o mês anterior: ${brl(r.fixasMediaAnterior)}` : undefined },
     { t: "Fixas que saem do caixa (sem depreciação)", v: brl(r.fixasMesCaixa) },
-    { t: "Acumulado no ano", v: brl(r.fixasAcumulado), s: `${r.meses} ${r.meses === 1 ? "mês" : "meses"}` },
-    { t: "Média mensal do ano", v: brl(r.fixasMediaMensal), s: "base normalizada para planejamento" },
+    r.semAcumulado
+      ? { t: "Acumulado no ano", v: "-", s: "balancete só do mês: inclua o balancete do mês anterior" }
+      : { t: "Acumulado no ano", v: brl(r.fixasAcumulado), s: `${r.meses} ${r.meses === 1 ? "mês" : "meses"}` },
+    r.semAcumulado
+      ? { t: "Média mensal do ano", v: "-", s: "sem acumulado do ano" }
+      : { t: "Média mensal do ano", v: brl(r.fixasMediaMensal), s: "base normalizada para planejamento" },
     { t: "Fixas sobre a receita líquida do mês", v: pct(receitaLiquida ? r.fixasMes / receitaLiquida : null), s: receitaLiquida ? `receita líquida ${brl(receitaLiquida)}` : "mês sem Análise de Crédito" },
     { t: "Ponto de equilíbrio contábil (receita/mês)", v: brl(peContabil), s: margemContrib !== null ? `margem de contribuição ${pct(margemContrib)}` : "precisa da Análise de Crédito do mês" },
   ];
