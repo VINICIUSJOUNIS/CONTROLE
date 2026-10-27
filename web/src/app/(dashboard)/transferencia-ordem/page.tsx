@@ -14,7 +14,7 @@ export default async function TransferenciaOrdemPage() {
         title="Transferência de Ordem"
         subtitle="Carta de transferência de ordem de pagamento do exterior, no papel timbrado"
       />
-      <div className="p-6">
+      <div className="p-6 print:p-0">
         <TransferenciaOrdemView banks={banks} initialTransferencias={transferencias} />
       </div>
     </div>

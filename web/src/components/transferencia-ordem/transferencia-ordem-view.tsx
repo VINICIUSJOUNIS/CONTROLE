@@ -210,8 +210,12 @@ export function TransferenciaOrdemView({
   return (
     <div className="relative">
       <style>{`
+        /* Pagina nomeada: o @page global (globals.css) e paisagem com margem
+           de 8mm para os relatorios; a carta precisa de A4 retrato sem margem,
+           e uma pagina nomeada tem prioridade sobre o @page generico. */
+        @page carta { size: 210mm 297mm; margin: 0; }
         @media print {
-          @page { size: A4 portrait; margin: 0; }
+          .carta-impressao { page: carta; }
         }
       `}</style>
 
@@ -453,7 +457,7 @@ export function TransferenciaOrdemView({
         </Card>
       </div>
 
-      <div className="hidden print:block">
+      <div className="carta-impressao hidden print:block">
         <CartaPreview form={form} simbolo={simbolo} valorFormatado={valorFormatado} />
       </div>
     </div>
@@ -474,7 +478,7 @@ function CartaPreview({
   const tipoLabel = form.tipo === "PARCIAL" ? "parcial" : "total";
 
   return (
-    <div className={`flex w-full flex-col bg-white text-[#1c2b36] print:h-[297mm] print:w-[210mm] ${className}`}>
+    <div className={`flex w-full flex-col bg-white text-[#1c2b36] print:h-[296mm] print:w-[210mm] print:overflow-hidden ${className}`}>
       <Image
         src="/nayme-letterhead-header.png"
         alt="Nayme Comércio e Exportação de Café"
