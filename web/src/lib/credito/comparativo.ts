@@ -11,6 +11,7 @@ import {
   somarDre,
   type Analise,
   type Formato,
+  type Linha,
   type RegistroCredito,
 } from "./calculos";
 
@@ -49,7 +50,7 @@ export function colunasMensais(registros: RegistroCredito[]): ColunaComparativo[
 
 // --------------------------------------------------------------- Trimestres
 
-const trimestreDe = (comp: string) => `${comp.slice(0, 4)}-T${Math.floor((Number(comp.slice(5, 7)) - 1) / 3) + 1}`;
+export const trimestreDe = (comp: string) => `${comp.slice(0, 4)}-T${Math.floor((Number(comp.slice(5, 7)) - 1) / 3) + 1}`;
 const mesesDoTrimestre = (tri: string) => {
   const ano = tri.slice(0, 4);
   const t = Number(tri.slice(6));
@@ -206,4 +207,51 @@ export function linhasComparativo(colunas: ColunaComparativo[]): LinhaComparativ
     }
   }
   return linhas;
+}
+
+// ------------------------------------------------------ Demonstrativos completos
+
+// Balanco e DRE conta a conta, uma coluna por periodo. Cada Analise ja omite as
+// contas zeradas do seu periodo; aqui as linhas de todas as colunas sao unidas
+// na ordem do demonstrativo, e a conta ausente numa coluna vale 0 nela.
+export type LinhaDemonstrativo = { secao: string; rotulo: string; nivel: 0 | 1 | 2; valores: (number | null)[] };
+
+// O rotulo do EBITDA muda quando a D&A e estimada pelo balanco; e a mesma linha.
+const chaveLinha = (rotulo: string) => (rotulo.startsWith("EBITDA ajustado") ? "EBITDA ajustado" : rotulo);
+
+export function linhasDemonstrativo(colunas: ColunaComparativo[], tipo: "balanco" | "dre"): LinhaDemonstrativo[] {
+  const secoes: [string, (a: Analise) => Linha[]][] =
+    tipo === "dre"
+      ? [["Demonstração do Resultado", (a) => a.dre]]
+      : [
+          ["Ativo", (a) => a.ativo],
+          ["Passivo e Patrimônio Líquido", (a) => a.passivo],
+        ];
+
+  return secoes.flatMap(([secao, linhasDe]) => {
+    const ordem: string[] = [];
+    const nivel = new Map<string, 0 | 1 | 2>();
+    for (const c of colunas) {
+      let pos = -1;
+      for (const l of linhasDe(c.analise)) {
+        const k = chaveLinha(l.rotulo);
+        let idx = ordem.indexOf(k);
+        if (idx < 0) {
+          idx = pos + 1;
+          ordem.splice(idx, 0, k);
+          nivel.set(k, l.nivel);
+        }
+        pos = idx;
+      }
+    }
+    return ordem.map((k) => ({
+      secao,
+      rotulo: k,
+      nivel: nivel.get(k)!,
+      valores: colunas.map((c) => {
+        const l = linhasDe(c.analise).find((x) => chaveLinha(x.rotulo) === k);
+        return l ? l.valor : nivel.get(k) === 2 ? 0 : null;
+      }),
+    }));
+  });
 }

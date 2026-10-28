@@ -35,6 +35,8 @@ import {
   Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
+  Scale,
+  FileSpreadsheet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-state";
@@ -100,6 +102,8 @@ const apresentacaoNavItems = [
 
 const creditoNavItems = [
   { href: "/credito", label: "Analise de Credito", icon: LayoutDashboard },
+  { href: "/credito/balanco", label: "Balanço", icon: Scale },
+  { href: "/credito/dre", label: "DRE", icon: FileSpreadsheet },
   { href: "/credito/comparativo-mensal", label: "Comparativo Mensal", icon: BarChart3 },
   { href: "/credito/trimestre-acumulado", label: "Trimestre Acumulado", icon: CalendarRange },
   { href: "/credito/despesas-fixas", label: "Despesas Fixas", icon: Receipt },
