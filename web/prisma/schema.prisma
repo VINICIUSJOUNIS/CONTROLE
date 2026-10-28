@@ -270,6 +270,33 @@ model AnaliseCredito {
   @@map("analises_credito")
 }
 
+// Balanco e DRE do trimestre acumulado (PDF proprio do trimestre). Mesmo formato
+// de AnaliseCredito; trimestre = "AAAA-Tn".
+model AnaliseCreditoTrimestre {
+  id                  String    @id @default(uuid())
+  trimestre           String    @unique
+  empresa             String
+  cnpj                String
+  dataBalanco         DateTime  @db.Date
+  dataBalancoAnterior DateTime? @db.Date
+  dreTipo             String
+  dreInicio           DateTime? @db.Date
+  dreFim              DateTime  @db.Date
+  balanco             Json
+  balancoAnterior     Json?
+  dre                 Json
+  origens             Json
+  conferenciaPdf      Json
+  observacoes         Json
+  arquivos            String[]
+  documentos          String[]  @default([])
+  modeloIa            String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("analises_credito_trimestre")
+}
+
 // Controle de Despesas Fixas (Analise de Credito): contas analiticas de despesa
 // (grupo 4.2) do balancete mensal. A natureza (fixa/variavel/...) e calculada na
 // leitura por src/lib/credito/despesas.ts; aqui so o balancete e os ajustes.

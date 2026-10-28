@@ -8,5 +8,11 @@ import { removerDocumentos } from "@/lib/credito/documentos";
 export async function excluirAnaliseCredito(id: string) {
   const { documentos } = await prisma.analiseCredito.delete({ where: { id } });
   await removerDocumentos(await createClient(), documentos);
-  revalidatePath("/credito");
+  revalidatePath("/credito", "layout");
+}
+
+export async function excluirAnaliseTrimestre(id: string) {
+  const { documentos } = await prisma.analiseCreditoTrimestre.delete({ where: { id } });
+  await removerDocumentos(await createClient(), documentos);
+  revalidatePath("/credito", "layout");
 }

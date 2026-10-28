@@ -14,6 +14,7 @@ import {
   type Linha,
   type RegistroCredito,
 } from "./calculos";
+import type { RegistroTrimestre } from "./dados";
 
 export type ColunaComparativo = {
   chave: string;
@@ -88,48 +89,114 @@ function acumularTrimestre(tri: string, porComp: Map<string, RegistroCredito>): 
   return meses.length ? { meses, dre, depreciacao } : null;
 }
 
-export function colunasTrimestrais(registros: RegistroCredito[]): ColunaComparativo[] {
+// Coluna do trimestre: o PDF do trimestre acumulado quando foi enviado; senao a
+// soma dos meses incluidos (parcial se faltar mes).
+export function colunasTrimestrais(registros: RegistroCredito[], pdfs: RegistroTrimestre[] = []): ColunaComparativo[] {
   const porComp = new Map(registros.map((r) => [r.competencia, r]));
-  const trimestres = Array.from(new Set(registros.map((r) => trimestreDe(r.competencia)))).sort();
+  const trimestres = Array.from(new Set([...registros.map((r) => trimestreDe(r.competencia)), ...pdfs.map((p) => p.trimestre)])).sort();
 
   return trimestres.flatMap((tri) => {
-    const acc = acumularTrimestre(tri, porComp);
-    if (!acc) return [];
-    const ultimo = porComp.get(acc.meses[acc.meses.length - 1])!;
+    const pdf = pdfs.find((p) => p.trimestre === tri);
+    if (pdf) {
+      const analise = analisarTrimestrePdf(pdf, pdfs, registros);
+      const meses = analise.periodo.meses;
+      return [
+        {
+          chave: tri,
+          rotulo: rotuloTrimestre(tri),
+          detalhe: meses === 3 ? "PDF do trimestre" : `PDF: DRE de ${meses} meses`,
+          parcial: meses !== 3,
+          href: `/credito/trimestre/${tri}`,
+          analise,
+        },
+      ];
+    }
+    const coluna = colunaSomaMeses(tri, registros, porComp);
+    return coluna ? [coluna] : [];
+  });
+}
 
-    // Balanco de comparacao: fim do mes anterior ao primeiro mes usado (registro
-    // salvo ou a coluna de saldo anterior do PDF desse primeiro mes).
-    const antesDoInicio = porComp.get(mesAnterior(acc.meses[0]));
-    const balancoAnterior = antesDoInicio?.balanco ?? porComp.get(acc.meses[0])?.balancoAnterior ?? null;
-    const fonteAnterior = antesDoInicio
-      ? `balanço de ${rotuloCompetencia(antesDoInicio.competencia)}`
-      : balancoAnterior
-        ? `saldo anterior do PDF de ${rotuloCompetencia(acc.meses[0])}`
-        : "sem balanço anterior";
-    const ant = acumularTrimestre(trimestreAnterior(tri), porComp);
+function colunaSomaMeses(tri: string, registros: RegistroCredito[], porComp: Map<string, RegistroCredito>): ColunaComparativo | null {
+  const acc = acumularTrimestre(tri, porComp);
+  if (!acc) return null;
+  const ultimo = porComp.get(acc.meses[acc.meses.length - 1])!;
 
-    const [ano, t] = [tri.slice(0, 4), tri.slice(6)];
-    const parcial = acc.meses.length < 3;
-    const intervalo = `${nomeMes(acc.meses[0])} a ${nomeMes(acc.meses[acc.meses.length - 1])}`;
-    const analise = analisar(ultimo, registros, {
-      descricao: `${t}º trimestre de ${ano} (${acc.meses.length === 1 ? nomeMes(acc.meses[0]) : intervalo})`,
-      meses: acc.meses.length,
-      dre: acc.dre,
-      balancoAnterior,
-      fonteAnterior,
-      dreAnterior: ant?.dre ?? null,
-      depreciacaoAnterior: ant?.depreciacao ?? null,
-    });
-    return [
-      {
-        chave: tri,
-        rotulo: `${t}º tri/${ano}`,
-        detalhe: parcial ? `parcial: ${acc.meses.map(nomeMes).join(", ")}` : intervalo,
-        parcial,
-        href: null,
-        analise,
-      },
-    ];
+  // Balanco de comparacao: fim do mes anterior ao primeiro mes usado (registro
+  // salvo ou a coluna de saldo anterior do PDF desse primeiro mes).
+  const antesDoInicio = porComp.get(mesAnterior(acc.meses[0]));
+  const balancoAnterior = antesDoInicio?.balanco ?? porComp.get(acc.meses[0])?.balancoAnterior ?? null;
+  const fonteAnterior = antesDoInicio
+    ? `balanço de ${rotuloCompetencia(antesDoInicio.competencia)}`
+    : balancoAnterior
+      ? `saldo anterior do PDF de ${rotuloCompetencia(acc.meses[0])}`
+      : "sem balanço anterior";
+  const ant = acumularTrimestre(trimestreAnterior(tri), porComp);
+
+  const [ano, t] = [tri.slice(0, 4), tri.slice(6)];
+  const parcial = acc.meses.length < 3;
+  const intervalo = `${nomeMes(acc.meses[0])} a ${nomeMes(acc.meses[acc.meses.length - 1])}`;
+  const analise = analisar(ultimo, registros, {
+    descricao: `${t}º trimestre de ${ano} (${acc.meses.length === 1 ? nomeMes(acc.meses[0]) : intervalo}, soma dos meses)`,
+    meses: acc.meses.length,
+    dre: acc.dre,
+    balancoAnterior,
+    fonteAnterior,
+    dreAnterior: ant?.dre ?? null,
+    depreciacaoAnterior: ant?.depreciacao ?? null,
+  });
+  return {
+    chave: tri,
+    rotulo: rotuloTrimestre(tri),
+    detalhe: parcial ? `parcial: soma de ${acc.meses.map(nomeMes).join(", ")}` : `soma ${intervalo}`,
+    parcial,
+    href: null,
+    analise,
+  };
+}
+
+// Mesmo trimestre montado pela soma dos meses, para conferir o PDF do trimestre.
+export function somaDosMeses(tri: string, registros: RegistroCredito[]) {
+  return colunaSomaMeses(tri, registros, new Map(registros.map((r) => [r.competencia, r])));
+}
+
+// ------------------------------------------------------ Trimestre pelo PDF
+
+export const rotuloTrimestre = (tri: string) => `${tri.slice(6)}º tri/${tri.slice(0, 4)}`;
+
+const mesesEntre = (inicio: string, fim: string) =>
+  (Number(fim.slice(0, 4)) - Number(inicio.slice(0, 4))) * 12 + Number(fim.slice(5, 7)) - Number(inicio.slice(5, 7)) + 1;
+
+// Balanco do fim do trimestre anterior: PDF desse trimestre, a coluna de saldo
+// anterior do proprio PDF (se for da data certa) ou o balanco do mes salvo.
+function balancoInicial(r: RegistroTrimestre, pdfs: RegistroTrimestre[], mensais: RegistroCredito[]) {
+  const triAnt = trimestreAnterior(r.trimestre);
+  const mesFim = mesesDoTrimestre(triAnt)[2];
+  const pdfAnt = pdfs.find((p) => p.trimestre === triAnt);
+  if (pdfAnt) return { balanco: pdfAnt.balanco, fonte: `balanço do PDF do ${rotuloTrimestre(triAnt)}` };
+  if (r.balancoAnterior && r.dataBalancoAnterior?.slice(0, 7) === mesFim) return { balanco: r.balancoAnterior, fonte: "coluna de saldo anterior do próprio PDF" };
+  const mensal = mensais.find((m) => m.competencia === mesFim);
+  if (mensal) return { balanco: mensal.balanco, fonte: `balanço de ${rotuloCompetencia(mesFim)} salvo no sistema` };
+  return { balanco: null, fonte: "sem balanço do fim do trimestre anterior" };
+}
+
+// Analise do trimestre com a DRE e o balanco do PDF do trimestre (mesmo motor da
+// tela do mes). Comparacoes contra o trimestre anterior quando houver PDF dele.
+export function analisarTrimestrePdf(r: RegistroTrimestre, pdfs: RegistroTrimestre[], mensais: RegistroCredito[]): Analise {
+  const [ano, t] = [r.trimestre.slice(0, 4), r.trimestre.slice(6)];
+  const meses = r.dreInicio ? mesesEntre(r.dreInicio, r.dreFim) : 3;
+  const ini = balancoInicial(r, pdfs, mensais);
+  const ant = pdfs.find((p) => p.trimestre === trimestreAnterior(r.trimestre));
+  const iniAnt = ant ? balancoInicial(ant, pdfs, mensais).balanco : null;
+  const depAnt = ant && iniAnt ? ant.balanco.depreciacaoAcumulada - iniAnt.depreciacaoAcumulada : null;
+  const intervalo = r.dreInicio ? `${nomeMes(r.dreInicio)} a ${nomeMes(r.dreFim)}` : "PDF do trimestre";
+  return analisar(r, [], {
+    descricao: meses === 3 ? `${t}º trimestre de ${ano} (${intervalo})` : `acumulado de ${intervalo}/${ano} (${meses} meses, PDF do ${t}º trimestre)`,
+    meses,
+    dre: r.dre,
+    balancoAnterior: ini.balanco,
+    fonteAnterior: ini.fonte,
+    dreAnterior: ant && (ant.dreInicio ? mesesEntre(ant.dreInicio, ant.dreFim) : 3) === meses ? ant.dre : null,
+    depreciacaoAnterior: depAnt !== null && depAnt > 0 ? depAnt : null,
   });
 }
 

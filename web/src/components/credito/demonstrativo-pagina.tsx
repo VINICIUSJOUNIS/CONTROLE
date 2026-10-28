@@ -4,7 +4,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatar } from "@/lib/credito/calculos";
-import { listarRegistrosCredito } from "@/lib/credito/dados";
+import { listarRegistrosCredito, listarTrimestresCredito } from "@/lib/credito/dados";
 import { formatDate } from "@/lib/format";
 import {
   colunasMensais,
@@ -24,9 +24,9 @@ const TEXTOS: Record<Tipo, { titulo: string; subtitulo: string; nota: Record<Vis
     subtitulo: "Análise de Crédito - balanço patrimonial conta a conta, mês a mês e por trimestre",
     nota: {
       mensal:
-        "Cada mês é o balanço do fim do mês, no plano de contas padronizado da análise (mesmos valores da tela de cada mês). A coluna do trimestre repete a posição do fim do trimestre (último mês incluído). Patrimônio Líquido ajustado: inclui o resultado do período ainda não incorporado ao PL.",
+        "Cada mês é o balanço do fim do mês, no plano de contas padronizado da análise (mesmos valores da tela de cada mês). A coluna do trimestre é o balanço do PDF do trimestre, quando enviado; sem o PDF, repete a posição do último mês incluído. Patrimônio Líquido ajustado: inclui o resultado do período ainda não incorporado ao PL.",
       trimestral:
-        "Cada coluna é a posição do fim do trimestre (último mês incluído). Trimestre parcial (em amarelo) mostra a posição do último mês já incluído.",
+        "Cada coluna é o balanço do PDF do trimestre; sem o PDF, a posição do último mês incluído (em amarelo enquanto faltam meses).",
     },
   },
   dre: {
@@ -34,28 +34,28 @@ const TEXTOS: Record<Tipo, { titulo: string; subtitulo: string; nota: Record<Vis
     subtitulo: "Análise de Crédito - demonstração do resultado conta a conta, mês a mês e por trimestre",
     nota: {
       mensal:
-        "Cada mês é a DRE do mês isolado (quando o PDF é acumulado, desconta-se o acumulado do mês anterior). A coluna do trimestre é a soma dos meses do trimestre. EBITDA usa a D&A estimada pela variação da depreciação acumulada quando a DRE não a destaca.",
+        "Cada mês é a DRE do mês isolado (quando o PDF é acumulado, desconta-se o acumulado do mês anterior). A coluna do trimestre é a DRE do PDF do trimestre acumulado, quando enviado; sem o PDF, a soma dos meses do trimestre. EBITDA usa a D&A estimada pela variação da depreciação acumulada quando a DRE não a destaca.",
       trimestral:
-        "Cada coluna é a soma da DRE isolada dos meses do trimestre. Trimestre parcial (em amarelo) soma só os meses já incluídos.",
+        "Cada coluna é a DRE do PDF do trimestre acumulado; sem o PDF, a soma da DRE isolada dos meses do trimestre. Trimestre parcial (em amarelo) soma só os meses já incluídos.",
     },
   },
 };
 
 export async function DemonstrativoPagina({ tipo, ano, visao }: { tipo: Tipo; ano?: string; visao?: string }) {
-  const registros = await listarRegistrosCredito();
-  const anos = Array.from(new Set(registros.map((r) => r.competencia.slice(0, 4)))).sort();
+  const [registros, pdfsTrimestre] = await Promise.all([listarRegistrosCredito(), listarTrimestresCredito()]);
+  const anos = Array.from(new Set([...registros, ...pdfsTrimestre].map((r) => r.competencia.slice(0, 4)))).sort();
   const anoSel = ano && anos.includes(ano) ? ano : anos[anos.length - 1];
   const visaoSel: Visao = visao === "trimestral" ? "trimestral" : "mensal";
   const textos = TEXTOS[tipo];
 
   // Analise usa o historico inteiro (mes anterior, trimestre anterior); o filtro so escolhe as colunas.
   const doAno = (c: ColunaComparativo) => c.chave.startsWith(anoSel ?? "");
-  const trimestres = colunasTrimestrais(registros).filter(doAno);
+  const trimestres = colunasTrimestrais(registros, pdfsTrimestre).filter(doAno);
   const meses = colunasMensais(registros).filter(doAno);
   const colunas =
     visaoSel === "trimestral"
       ? trimestres
-      : Array.from(new Set(meses.map((m) => trimestreDe(m.chave)))).flatMap((tri) => [
+      : Array.from(new Set([...meses.map((m) => trimestreDe(m.chave)), ...trimestres.map((t) => t.chave)])).sort().flatMap((tri) => [
           ...meses.filter((m) => trimestreDe(m.chave) === tri),
           ...trimestres.filter((t) => t.chave === tri),
         ]);
@@ -95,7 +95,7 @@ function Tabela({ tipo, colunas, linhas }: { tipo: Tipo; colunas: ColunaComparat
   const secoes = Array.from(new Set(linhas.map((l) => l.secao)));
   // Balanco: o que importa no cabecalho e a data da posicao; DRE: o periodo somado.
   const detalhe = (c: ColunaComparativo) =>
-    tipo === "balanco" ? `posição ${formatDate(c.analise.registro.dataBalanco)}` : ehTrimestre(c) ? `soma ${c.detalhe}` : c.detalhe;
+    tipo === "balanco" ? `posição ${formatDate(c.analise.registro.dataBalanco)}` : c.detalhe;
 
   return (
     <Card>

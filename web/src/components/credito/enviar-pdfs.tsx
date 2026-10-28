@@ -9,7 +9,20 @@ import { Card, CardContent } from "@/components/ui/card";
 // Limite de corpo de requisicao da Vercel e ~4,5 MB.
 const TAMANHO_MAXIMO = 4 * 1024 * 1024;
 
-export function EnviarPdfs() {
+const TEXTOS = {
+  mes: {
+    titulo: "Incluir mês",
+    descricao:
+      "Envie o Balanço Patrimonial e a DRE do mês em PDF (um ou dois arquivos). A IA extrai e reclassifica as contas, e o sistema calcula todos os indicadores. Se o mês já existir, ele é substituído.",
+  },
+  trimestre: {
+    titulo: "Incluir trimestre",
+    descricao:
+      "Envie o Balanço Patrimonial do fim do trimestre e a DRE do trimestre acumulado em PDF (um ou dois arquivos). O trimestre sai da data do balanço (março, junho, setembro ou dezembro). Se o trimestre já existir, ele é substituído.",
+  },
+};
+
+export function EnviarPdfs({ periodo = "mes" }: { periodo?: "mes" | "trimestre" }) {
   const router = useRouter();
   const [arquivos, setArquivos] = useState<File[]>([]);
   const [erro, setErro] = useState("");
@@ -33,20 +46,21 @@ export function EnviarPdfs() {
     try {
       const form = new FormData();
       for (const f of arquivos) form.append("arquivos", f);
+      form.append("periodo", periodo);
       const res = await fetch("/api/credito/extrair", { method: "POST", body: form, signal: controller.signal });
       const texto = await res.text();
       const ultima = texto.trim().split("\n").pop() ?? "";
-      let resposta: { competencia?: string; erro?: string } = {};
+      let resposta: { destino?: string; erro?: string } = {};
       try {
         resposta = JSON.parse(ultima.replace(/^\.+/, ""));
       } catch {
         resposta = { erro: "Resposta inesperada do servidor." };
       }
-      if (!res.ok || resposta.erro || !resposta.competencia) {
+      if (!res.ok || resposta.erro || !resposta.destino) {
         setErro(resposta.erro ?? "Falha ao processar os PDFs.");
         return;
       }
-      router.push(`/credito/${resposta.competencia}`);
+      router.push(resposta.destino);
       router.refresh();
     } catch (e) {
       if (!(e instanceof DOMException && e.name === "AbortError")) setErro("Falha de conexão ao enviar os PDFs.");
@@ -61,11 +75,8 @@ export function EnviarPdfs() {
     <Card>
       <CardContent className="space-y-3 p-5">
         <div>
-          <h2 className="text-sm font-semibold">Incluir mês</h2>
-          <p className="text-xs text-muted">
-            Envie o Balanço Patrimonial e a DRE do mês em PDF (um ou dois arquivos). A IA extrai e reclassifica as
-            contas, e o sistema calcula todos os indicadores. Se o mês já existir, ele é substituído.
-          </p>
+          <h2 className="text-sm font-semibold">{TEXTOS[periodo].titulo}</h2>
+          <p className="text-xs text-muted">{TEXTOS[periodo].descricao}</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <label className="min-w-[240px] flex-1">

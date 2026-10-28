@@ -1,11 +1,11 @@
 import { Topbar } from "@/components/layout/topbar";
 import { ComparativoTabela } from "@/components/credito/comparativo-tabela";
-import { listarRegistrosCredito } from "@/lib/credito/dados";
+import { listarRegistrosCredito, listarTrimestresCredito } from "@/lib/credito/dados";
 import { colunasTrimestrais, linhasComparativo } from "@/lib/credito/comparativo";
 
 export default async function TrimestreAcumuladoPage() {
-  const registros = await listarRegistrosCredito();
-  const colunas = colunasTrimestrais(registros);
+  const [registros, pdfs] = await Promise.all([listarRegistrosCredito(), listarTrimestresCredito()]);
+  const colunas = colunasTrimestrais(registros, pdfs);
 
   return (
     <>
@@ -16,7 +16,8 @@ export default async function TrimestreAcumuladoPage() {
         ) : (
           <>
             <p className="text-xs text-muted">
-              DRE: soma dos meses do trimestre. Balanço: fim do último mês do trimestre. Prazos, margens e retornos usam o período do
+              Trimestre com PDF próprio: DRE e balanço do PDF do trimestre acumulado. Sem o PDF: DRE somada dos meses e balanço do
+              fim do último mês. Prazos, margens e retornos usam o período do
               trimestre (dias e anualização pelos meses somados). Trimestre parcial (em amarelo) soma só os meses já incluídos.
             </p>
             <ComparativoTabela colunas={colunas} linhas={linhasComparativo(colunas)} />

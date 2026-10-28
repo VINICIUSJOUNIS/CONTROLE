@@ -22,8 +22,10 @@ const rotuloTom: Record<Tom, string> = { bom: "Saudável", atencao: "Atenção",
 
 const fmtData = (iso: string) => iso.split("-").reverse().join("/");
 
-export function AnaliseView({ analise }: { analise: Analise }) {
+// trimestre: analise do PDF do trimestre acumulado (comparacoes contra o trimestre anterior).
+export function AnaliseView({ analise, trimestre = false }: { analise: Analise; trimestre?: boolean }) {
   const { registro: r, periodo } = analise;
+  const anterior = trimestre ? "trimestre anterior" : "mês anterior";
   const todos = analise.secoes.flatMap((s) => s.indicadores);
   const pega = (k: string) => todos.find((i) => i.chave === k);
   const destaques = ["ebitda", "ncg", "saldoTesouraria", "dividaLiquidaEbitda", "liquidezCorrente", "margemLiquida"]
@@ -37,11 +39,11 @@ export function AnaliseView({ analise }: { analise: Analise }) {
           <div className="space-y-1 text-sm">
             <p className="font-semibold">{r.empresa}</p>
             <p className="text-muted">
-              CNPJ {r.cnpj} · Balanço em {fmtData(r.dataBalanco)} · DRE {r.dreTipo === "mensal" ? "do mês" : "acumulada no ano"}
+              CNPJ {r.cnpj} · Balanço em {fmtData(r.dataBalanco)} · DRE {trimestre ? "do trimestre" : r.dreTipo === "mensal" ? "do mês" : "acumulada no ano"}
               {r.dreInicio ? ` (${fmtData(r.dreInicio)} a ${fmtData(r.dreFim)})` : ""}
             </p>
             <p className="text-xs text-muted">
-              Indicadores sobre o {periodo.descricao} ({periodo.dias} dias). Comparação com o mês anterior: {analise.fonteAnterior}.
+              Indicadores sobre o {periodo.descricao} ({periodo.dias} dias). Comparação com o {anterior}: {analise.fonteAnterior}.
             </p>
             {r.arquivos.length > 0 && (
               <p className="text-xs text-muted">
@@ -86,7 +88,7 @@ export function AnaliseView({ analise }: { analise: Analise }) {
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
                 {s.indicadores.map((i) => (
-                  <IndicadorCard key={i.chave} ind={i} origens={r.origens} />
+                  <IndicadorCard key={i.chave} ind={i} origens={r.origens} anterior={anterior} />
                 ))}
               </div>
             </section>
@@ -95,11 +97,11 @@ export function AnaliseView({ analise }: { analise: Analise }) {
 
         <TabsContent value="balanco">
           <div className="grid gap-4 xl:grid-cols-2">
-            <TabelaLinhas titulo="Ativo" linhas={analise.ativo} origens={r.origens} comAnterior={analise.temAnterior} rotuloAv="AV" />
-            <TabelaLinhas titulo="Passivo e Patrimônio Líquido" linhas={analise.passivo} origens={r.origens} comAnterior={analise.temAnterior} rotuloAv="AV" />
+            <TabelaLinhas titulo="Ativo" linhas={analise.ativo} origens={r.origens} comAnterior={analise.temAnterior} rotuloAv="AV" rotuloAnterior={anterior} />
+            <TabelaLinhas titulo="Passivo e Patrimônio Líquido" linhas={analise.passivo} origens={r.origens} comAnterior={analise.temAnterior} rotuloAv="AV" rotuloAnterior={anterior} />
           </div>
           <p className="text-xs text-muted">
-            AV = participação no ativo total. AH = variação sobre o mês anterior. Clique numa conta para ver de quais contas do PDF ela foi tirada.
+            AV = participação no ativo total. AH = variação sobre o {anterior}. Clique numa conta para ver de quais contas do PDF ela foi tirada.
           </p>
         </TabsContent>
 
@@ -107,17 +109,18 @@ export function AnaliseView({ analise }: { analise: Analise }) {
           <TabelaLinhas
             titulo={`Demonstração do Resultado - ${periodo.descricao}`}
             linhas={analise.dre}
-            origens={periodo.mensal && r.dreTipo === "acumulado" ? {} : r.origens}
+            origens={!trimestre && periodo.mensal && r.dreTipo === "acumulado" ? {} : r.origens}
             comAnterior={analise.dre.some((l) => l.anterior !== null)}
             rotuloAv="% RL"
+            rotuloAnterior={anterior}
           />
-          <p className="text-xs text-muted">% RL = participação na receita líquida. AH = variação sobre o mês anterior cadastrado.</p>
+          <p className="text-xs text-muted">% RL = participação na receita líquida. AH = variação sobre o {anterior} cadastrado.</p>
         </TabsContent>
 
         <TabsContent value="fluxo">
           {analise.dfc ? (
             <>
-              <TabelaLinhas titulo="Demonstração dos Fluxos de Caixa (método indireto) - mês" linhas={analise.dfc} origens={{}} comAnterior={false} rotuloAv="" />
+              <TabelaLinhas titulo={`Demonstração dos Fluxos de Caixa (método indireto) - ${trimestre ? "trimestre" : "mês"}`} linhas={analise.dfc} origens={{}} comAnterior={false} rotuloAv="" />
               <p className="text-xs text-muted">
                 Monta o caixa do mês a partir do EBITDA e das variações de cada conta entre o balanço anterior e o atual. O caixa final
                 calculado tem que bater com o caixa + aplicações do balanço.
@@ -126,7 +129,7 @@ export function AnaliseView({ analise }: { analise: Analise }) {
           ) : (
             <Card>
               <CardContent className="p-5 text-sm text-muted">
-                O fluxo de caixa mensal precisa do balanço do mês anterior e da DRE isolada do mês.
+                {trimestre ? "O fluxo de caixa do trimestre precisa do balanço do fim do trimestre anterior." : "O fluxo de caixa mensal precisa do balanço do mês anterior e da DRE isolada do mês."}
               </CardContent>
             </Card>
           )}
@@ -171,7 +174,7 @@ export function AnaliseView({ analise }: { analise: Analise }) {
   );
 }
 
-function IndicadorCard({ ind, origens }: { ind: Indicador; origens: Origens }) {
+function IndicadorCard({ ind, origens, anterior }: { ind: Indicador; origens: Origens; anterior: string }) {
   const [aberto, setAberto] = useState(false);
   return (
     <Card className={cn("border-l-4", ind.tom === "bom" && "border-l-success", ind.tom === "atencao" && "border-l-warning", ind.tom === "ruim" && "border-l-danger")}>
@@ -180,7 +183,7 @@ function IndicadorCard({ ind, origens }: { ind: Indicador; origens: Origens }) {
           <div>
             <p className="text-sm font-semibold">{ind.titulo}</p>
             {ind.anterior !== null && ind.formato !== "texto" && (
-              <p className="text-xs text-muted">Mês anterior: {formatar(ind.anterior, ind.formato)}</p>
+              <p className="text-xs text-muted first-letter:uppercase">{anterior}: {formatar(ind.anterior, ind.formato)}</p>
             )}
           </div>
           <div className="text-right">
@@ -245,12 +248,14 @@ function TabelaLinhas({
   origens,
   comAnterior,
   rotuloAv,
+  rotuloAnterior = "mês anterior",
 }: {
   titulo: string;
   linhas: Linha[];
   origens: Origens;
   comAnterior: boolean;
   rotuloAv: string;
+  rotuloAnterior?: string;
 }) {
   const [aberta, setAberta] = useState<number | null>(null);
   return (
@@ -265,7 +270,7 @@ function TabelaLinhas({
               <th className="py-2 text-left font-medium">Conta</th>
               <th className="py-2 text-right font-medium">Valor</th>
               {rotuloAv && <th className="py-2 text-right font-medium">{rotuloAv}</th>}
-              {comAnterior && <th className="py-2 text-right font-medium">Mês anterior</th>}
+              {comAnterior && <th className="py-2 text-right font-medium first-letter:uppercase">{rotuloAnterior}</th>}
               {comAnterior && <th className="py-2 text-right font-medium">AH</th>}
             </tr>
           </thead>

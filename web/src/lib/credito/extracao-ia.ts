@@ -105,14 +105,20 @@ export async function lerPdfsComIa(
   }
 }
 
-export async function extrairComIa(pdfs: { nome: string; base64: string }[], signal?: AbortSignal): Promise<Extracao> {
-  const json = await lerPdfsComIa(
-    pdfs,
-    SISTEMA,
-    "Extraia e reclassifique o Balanço Patrimonial e a DRE destes PDFs conforme as regras.",
-    extracaoJsonSchema,
-    signal
-  );
+// PDF do trimestre acumulado: mesmas regras, mas a DRE e a coluna dos tres meses
+// do trimestre (nao do mes nem do ano) e o saldo anterior e o do fim do trimestre anterior.
+const PEDIDO_TRIMESTRE = `Estes PDFs são do TRIMESTRE acumulado, não de um mês. Ajustes às regras:
+- "dre" é a coluna do trimestre (os três meses somados). Use dreTipo "acumulado" e preencha dreInicio e dreFim com o período exato dessa coluna. Se o PDF só trouxer o acumulado do ano, use essa coluna e informe dreInicio = 1º de janeiro, e diga isso em "observacoes".
+- "balanco" é a posição do fim do trimestre. "balancoAnterior" é a coluna de saldo anterior, se houver, com dataBalancoAnterior igual à data dessa coluna.`;
+
+export async function extrairComIa(
+  pdfs: { nome: string; base64: string }[],
+  signal?: AbortSignal,
+  periodo: "mes" | "trimestre" = "mes"
+): Promise<Extracao> {
+  const pedido = "Extraia e reclassifique o Balanço Patrimonial e a DRE destes PDFs conforme as regras.";
+  const texto = periodo === "trimestre" ? `${pedido}\n\n${PEDIDO_TRIMESTRE}` : pedido;
+  const json = await lerPdfsComIa(pdfs, SISTEMA, texto, extracaoJsonSchema, signal);
   const parsed = extracaoSchema.safeParse(normalizarRespostaIa(json));
   if (!parsed.success) throw new ErroExtracao(`Resposta da IA fora do formato: ${parsed.error.issues[0]?.message ?? ""}`);
   return parsed.data as Extracao;
