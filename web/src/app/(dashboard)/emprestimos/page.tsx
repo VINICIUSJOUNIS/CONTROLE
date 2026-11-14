@@ -7,7 +7,7 @@ export default async function EmprestimosPage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Emprestimos" subtitle="Cadastro e controle de operacoes de emprestimo" />
+      <Topbar title="Empréstimos" subtitle="Cadastro e controle de operações de empréstimo" />
       <div className="p-6">
         <EmprestimosView banks={banks} initialLoans={loans} />
       </div>

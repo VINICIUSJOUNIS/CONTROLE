@@ -66,7 +66,7 @@ export default async function HedgeDashboardPage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Dashboard" subtitle="Visao geral dos processos de exportacao" />
+      <Topbar title="Dashboard" subtitle="Visão geral dos processos de exportação" />
       <div className="space-y-6 p-6">
         <div className="grid gap-4 md:grid-cols-4">
           {cards.map((c) => (
@@ -82,7 +82,7 @@ export default async function HedgeDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Proximos Vencimentos</CardTitle>
+            <CardTitle>Próximos Vencimentos</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">
             <table className="w-full whitespace-nowrap text-xs">
@@ -126,7 +126,7 @@ export default async function HedgeDashboardPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Prazos Criticos</CardTitle>
+              <CardTitle>Prazos Críticos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {dashboard.prazosCriticos.map((item) => (

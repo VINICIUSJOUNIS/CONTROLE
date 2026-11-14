@@ -131,7 +131,7 @@ export function HedgeAbaView({
   }
 
   function descadastrar(chave: ChaveCadastro, nome: string) {
-    if (!window.confirm(`Remover "${nome}" da lista? Os lancamentos ja feitos com esse nome continuam como estao.`)) return;
+    if (!window.confirm(`Remover "${nome}" da lista? Os lançamentos já feitos com esse nome continuam como estão.`)) return;
     startTransition(async () => {
       const r = await excluirItemCadastro(chave, nome);
       if (!r.ok) {
@@ -260,12 +260,12 @@ export function HedgeAbaView({
     const p: string[] = [];
     if (config.filtroStatus && status !== "todos") p.push(`${campoPorKey.get(config.filtroStatus)?.label}: ${status}`);
     if (ano !== "todos") p.push(`Ano: ${ano}`);
-    if (mes !== "todos") p.push(`Mes: ${NOMES_MESES[Number(mes) - 1]}`);
+    if (mes !== "todos") p.push(`Mês: ${NOMES_MESES[Number(mes) - 1]}`);
     if (dia !== "todos") p.push(`Dia: ${dia}`);
     if (de) p.push(`De: ${formatarValor(de, "data")}`);
-    if (ate) p.push(`Ate: ${formatarValor(ate, "data")}`);
+    if (ate) p.push(`Até: ${formatarValor(ate, "data")}`);
     for (const [key, valor] of Object.entries(filtrosCampo))
-      if (valor) p.push(`${campoPorKey.get(key)?.label}: ${valor.startsWith("~") ? `contem "${valor.slice(1)}"` : valor}`);
+      if (valor) p.push(`${campoPorKey.get(key)?.label}: ${valor.startsWith("~") ? `contém "${valor.slice(1)}"` : valor}`);
     if (busca.trim()) p.push(`Busca: "${busca.trim()}"`);
     if (soAlertas) p.push("Somente com alerta");
     return p.length ? p.join(" | ") : "Sem filtros";
@@ -340,7 +340,7 @@ export function HedgeAbaView({
   const rotuloGrupo = (chave: string) =>
     agruparPor === "__mes" && /^\d{4}-\d{2}$/.test(chave) ? `${chave.slice(5, 7)}/${chave.slice(0, 4)}` : chave;
   const nomeAgrupamento =
-    agruparPor === "__mes" ? "Mes" : agruparPor === "__ano" ? "Ano" : (campoPorKey.get(agruparPor)?.label ?? "");
+    agruparPor === "__mes" ? "Mês" : agruparPor === "__ano" ? "Ano" : (campoPorKey.get(agruparPor)?.label ?? "");
 
   function tabelasRelatorio(): TabelaRelatorio[] {
     const colunasTotais = config.totais ?? [];
@@ -348,14 +348,14 @@ export function HedgeAbaView({
     if (resumo) {
       tabelas.push({
         titulo: `Resumo por ${nomeAgrupamento}`,
-        colunas: [nomeAgrupamento, "Lancamentos", ...colunasTotais.map((k) => campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label ?? k)],
+        colunas: [nomeAgrupamento, "Lançamentos", ...colunasTotais.map((k) => campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label ?? k)],
         numericas: [false, true, ...colunasTotais.map(() => true)],
         linhas: resumo.map((g) => [rotuloGrupo(g.chave), g.qtd, ...colunasTotais.map((k) => formatarValor(g.somas[k] ?? 0, formatoColuna(k)))]),
         rodape: ["TOTAL", filtradas.length, ...colunasTotais.map((k) => formatarValor(totais[k] ?? 0, formatoColuna(k)))],
       });
     }
     tabelas.push({
-      titulo: `Lancamentos (${filtradas.length})`,
+      titulo: `Lançamentos (${filtradas.length})`,
       colunas: config.colunas.map((k) => campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label ?? k),
       numericas: config.colunas.map((k) => formatoColuna(k) !== "data" && formatoColuna(k) !== undefined && formatoColuna(k) !== "texto"),
       linhas: filtradas.map((l) => config.colunas.map((k) => formatarValor(valorColuna(l, k) ?? null, formatoColuna(k)))),
@@ -375,7 +375,7 @@ export function HedgeAbaView({
     if (resumo) {
       tabelas.push({
         titulo: `${config.label} - Resumo por ${nomeAgrupamento}`,
-        colunas: [nomeAgrupamento, "Lancamentos", ...colunasTotais.map((k) => campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label ?? k)],
+        colunas: [nomeAgrupamento, "Lançamentos", ...colunasTotais.map((k) => campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label ?? k)],
         linhas: resumo.map((g) => [rotuloGrupo(g.chave), g.qtd, ...colunasTotais.map((k) => g.somas[k] ?? 0)]),
         rodape: ["TOTAL", filtradas.length, ...colunasTotais.map((k) => totais[k] ?? 0)],
       });
@@ -438,7 +438,7 @@ export function HedgeAbaView({
       if (c.tipo === "numero") {
         const n = lerNumero(v, c.formato);
         if (Number.isNaN(n)) {
-          setErro(`${c.label}: numero invalido.`);
+          setErro(`${c.label}: número inválido.`);
           return;
         }
         entrada[c.key] = n;
@@ -457,7 +457,7 @@ export function HedgeAbaView({
   }
 
   function excluir(reg: Registro) {
-    if (!window.confirm("Excluir este lancamento? Esta acao nao pode ser desfeita.")) return;
+    if (!window.confirm("Excluir este lançamento? Esta ação não pode ser desfeita.")) return;
     startTransition(async () => {
       const r = await excluirRegistro(slug, reg.id);
       if (!r.ok) window.alert(r.erro);
@@ -573,14 +573,14 @@ export function HedgeAbaView({
           </Button>
         )}
         <div className="ml-auto flex flex-wrap gap-2">
-          <Button variant="outline" onClick={exportarExcel} disabled={!filtradas.length} title="Exporta o que esta filtrado">
+          <Button variant="outline" onClick={exportarExcel} disabled={!filtradas.length} title="Exporta o que está filtrado">
             <Download size={15} /> Excel
           </Button>
-          <Button variant="outline" onClick={imprimir} disabled={!filtradas.length} title="Relatorio para imprimir ou salvar em PDF">
+          <Button variant="outline" onClick={imprimir} disabled={!filtradas.length} title="Relatório para imprimir ou salvar em PDF">
             <Printer size={15} /> Imprimir / PDF
           </Button>
           <Button onClick={abrirNovo}>
-            <Plus size={16} /> Novo lancamento
+            <Plus size={16} /> Novo lançamento
           </Button>
         </div>
       </div>
@@ -602,7 +602,7 @@ export function HedgeAbaView({
                   />
                 </div>
                 <div>
-                  <Label>Data ate</Label>
+                  <Label>Data até</Label>
                   <Input
                     type="date"
                     value={ate}
@@ -619,7 +619,7 @@ export function HedgeAbaView({
                 <Label>{campo.label}</Label>
                 {valores.length > 150 ? (
                   <Input
-                    placeholder="Contem..."
+                    placeholder="Contém..."
                     value={(filtrosCampo[campo.key] ?? "").replace(/^~/, "")}
                     onChange={(e) => {
                       setFiltrosCampo({ ...filtrosCampo, [campo.key]: e.target.value ? `~${e.target.value}` : "" });
@@ -645,10 +645,10 @@ export function HedgeAbaView({
               </div>
             ))}
             <div>
-              <Label>Relatorio: resumir por</Label>
+              <Label>Relatório: resumir por</Label>
               <Select value={agruparPor} onChange={(e) => setAgruparPor(e.target.value)}>
                 <option value="nenhum">Sem resumo</option>
-                {temData && <option value="__mes">Mes</option>}
+                {temData && <option value="__mes">Mês</option>}
                 {temData && <option value="__ano">Ano</option>}
                 {camposAgrupar.map((c) => (
                   <option key={c.key} value={c.key}>
@@ -674,7 +674,7 @@ export function HedgeAbaView({
               <thead className="sticky top-0 bg-card">
                 <tr className="border-b border-border text-left text-muted">
                   <th className="px-3 py-2 font-medium">{nomeAgrupamento}</th>
-                  <th className="px-3 py-2 text-right font-medium">Lancamentos</th>
+                  <th className="px-3 py-2 text-right font-medium">Lançamentos</th>
                   {(config.totais ?? []).map((k) => (
                     <th key={k} className="whitespace-nowrap px-3 py-2 text-right font-medium">
                       {campoPorKey.get(k)?.label ?? calcPorKey.get(k)?.label}
@@ -781,7 +781,7 @@ export function HedgeAbaView({
               {visiveis.length === 0 && (
                 <tr>
                   <td colSpan={config.colunas.length + 2} className="px-2 py-8 text-center text-muted">
-                    Nenhum lancamento.
+                    Nenhum lançamento.
                   </td>
                 </tr>
               )}
@@ -803,8 +803,8 @@ export function HedgeAbaView({
         </div>
         <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted">
           <span>
-            {filtradas.length.toLocaleString("pt-BR")} lancamento(s) - * coluna calculada (passe o mouse no titulo para ver a
-            formula)
+            {filtradas.length.toLocaleString("pt-BR")} lancamento(s) - * coluna calculada (passe o mouse no título para ver a
+            fórmula)
           </span>
           {paginas > 1 && (
             <div className="flex items-center gap-2">
@@ -820,7 +820,7 @@ export function HedgeAbaView({
                 disabled={paginaAtual >= paginas - 1}
                 onClick={() => setPagina(paginaAtual + 1)}
               >
-                Proxima
+                Próxima
               </Button>
             </div>
           )}
@@ -828,7 +828,7 @@ export function HedgeAbaView({
       </Card>
 
       <Dialog open={aberto} onOpenChange={setAberto}>
-        <DialogContent title={editandoId ? `Editar - ${config.label}` : `Novo lancamento - ${config.label}`} className="max-w-3xl">
+        <DialogContent title={editandoId ? `Editar - ${config.label}` : `Novo lançamento - ${config.label}`} className="max-w-3xl">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {config.campos.map((c) => (
               <div key={c.key} className={c.multilinha ? "sm:col-span-2" : undefined}>
@@ -887,7 +887,7 @@ export function HedgeAbaView({
                       </datalist>
                     )}
                     {form[c.key] && !listas[c.cadastro].includes(form[c.key]) && novoItem?.campo !== c.key && (
-                      <p className="mt-1 text-[11px] text-warning">Nao cadastrado: escolha da lista ou clique em Cadastrar.</p>
+                      <p className="mt-1 text-[11px] text-warning">Não cadastrado: escolha da lista ou clique em Cadastrar.</p>
                     )}
                     {novoItem?.campo === c.key && (
                       <div className="mt-2 space-y-2 rounded-lg border border-border bg-border/10 p-2.5">
@@ -944,7 +944,7 @@ export function HedgeAbaView({
                           ))}
                         </ul>
                         <p className="text-[10px] text-muted">
-                          {CADASTROS[c.cadastro].aviso} Remover da lista nao altera lancamentos ja feitos.
+                          {CADASTROS[c.cadastro].aviso} Remover da lista não altera lançamentos já feitos.
                         </p>
                       </div>
                     )}

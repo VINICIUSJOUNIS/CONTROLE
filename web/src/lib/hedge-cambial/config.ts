@@ -31,25 +31,25 @@ export const CADASTROS = {
     titulo: "Corretoras (Trava NDF)",
     cadastrar: "Cadastrar nova corretora",
     nome: "Nome da corretora",
-    aviso: "A nova corretora ja fica selecionada neste lancamento.",
+    aviso: "A nova corretora já fica selecionada neste lançamento.",
   },
   produtores: {
     titulo: "Produtores / Fornecedores",
     cadastrar: "Cadastrar novo produtor / fornecedor",
     nome: "Nome do produtor / fornecedor",
-    aviso: "O novo produtor / fornecedor ja fica selecionado neste lancamento.",
+    aviso: "O novo produtor / fornecedor já fica selecionado neste lançamento.",
   },
   padroes: {
-    titulo: "Padroes de cafe",
-    cadastrar: "Cadastrar novo padrao",
-    nome: "Nome do padrao (ex.: GC1, CD 10% CATA)",
-    aviso: "O novo padrao ja fica selecionado neste lancamento.",
+    titulo: "Padrões de café",
+    cadastrar: "Cadastrar novo padrão",
+    nome: "Nome do padrão (ex.: GC1, CD 10% CATA)",
+    aviso: "O novo padrão já fica selecionado neste lançamento.",
   },
   peneiras: {
     titulo: "Peneiras",
     cadastrar: "Cadastrar nova peneira",
     nome: "Peneira (ex.: 17/18, BC)",
-    aviso: "A nova peneira ja fica selecionada neste lancamento.",
+    aviso: "A nova peneira já fica selecionada neste lançamento.",
   },
 } as const;
 
@@ -203,7 +203,7 @@ export function travaSaldo(d: Dados) {
 const travaNdf: AbaConfig = {
   slug: "trava-ndf-us-nayme",
   label: "",
-  descricao: "Travas e NDFs de dolar: valor contratado, liquidacoes, saldo em aberto e ajuste (resultado) da liquidacao.",
+  descricao: "Travas e NDFs de dólar: valor contratado, liquidações, saldo em aberto e ajuste (resultado) da liquidação.",
   campos: [
     { key: "data", label: "DATA", tipo: "data", obrigatorio: true },
     { key: "tipo", label: "COMPRA/VENDA", tipo: "opcao", opcoes: STATUS_COMPRA_VENDA, obrigatorio: true },
@@ -217,25 +217,25 @@ const travaNdf: AbaConfig = {
     },
     {
       key: "liquidacao",
-      label: "LIQUIDACAO PARCIAL",
+      label: "LIQUIDAÇÃO PARCIAL",
       tipo: "numero",
       formato: "usd",
-      ajuda: "Valor ja liquidado, com o mesmo sinal do valor.",
+      ajuda: "Valor já liquidado, com o mesmo sinal do valor.",
     },
-    { key: "nivelUsd", label: "NIVEL USD", tipo: "numero", formato: "num4", obrigatorio: true, ajuda: "Taxa contratada (R$/US$)." },
-    { key: "nivelVenda", label: "NIVEL VENDA", tipo: "numero", formato: "num4", ajuda: "Taxa de liquidacao (fixing)." },
+    { key: "nivelUsd", label: "NÍVEL USD", tipo: "numero", formato: "num4", obrigatorio: true, ajuda: "Taxa contratada (R$/US$)." },
+    { key: "nivelVenda", label: "NÍVEL VENDA", tipo: "numero", formato: "num4", ajuda: "Taxa de liquidação (fixing)." },
     {
       key: "ajusteInformado",
       label: "AJUSTE R$ (informado)",
       tipo: "numero",
       formato: "brl",
-      ajuda: "Deixe vazio para calcular: liquidado x (nivel venda - nivel USD). Positivo = ganho.",
+      ajuda: "Deixe vazio para calcular: liquidado x (nível venda - nível USD). Positivo = ganho.",
     },
     { key: "corretora", label: "CORRETORA", tipo: "texto", obrigatorio: true, cadastro: "corretoras-ndf" },
     { key: "contrato", label: "CONTRATO TRAVA", tipo: "opcao", opcoes: ["NDF", "TRAVA"], obrigatorio: true },
     { key: "status", label: "STATUS", tipo: "opcao", opcoes: ["A LIQUIDAR", "LIQUIDADA"], obrigatorio: true },
     { key: "vencimento", label: "VENCIMENTO", tipo: "data", obrigatorio: true },
-    { key: "observacao", label: "OBSERVACAO", tipo: "texto" },
+    { key: "observacao", label: "OBSERVAÇÃO", tipo: "texto" },
   ],
   calculados: [
     {
@@ -255,7 +255,7 @@ const travaNdf: AbaConfig = {
       // nocional liquidado x (taxa de liquidacao - taxa contratada), com o nocional
       // com sinal (venda negativa) - positivo = ganho para a Nayme.
       calc: travaAjuste,
-      ajuda: "Liquidado x (nivel venda - nivel USD). Positivo = ganho, negativo = perda.",
+      ajuda: "Liquidado x (nível venda - nível USD). Positivo = ganho, negativo = perda.",
     },
     {
       key: "totalBrl",
@@ -266,24 +266,24 @@ const travaNdf: AbaConfig = {
     },
     {
       key: "aReceber",
-      label: "A RECEBER R$ (dolar do dia)",
+      label: "A RECEBER R$ (dólar do dia)",
       formato: "brl",
       // Novo: ajuste previsto da NDF em aberto no vencimento, pelo dolar do dia.
       calc: (d, ctx) => {
         const a = ndfAjustePrevisto(d, ctx);
         return a !== null && a > 0 ? a : null;
       },
-      ajuda: "NDF em aberto: saldo x (dolar do dia - taxa contratada), quando positivo.",
+      ajuda: "NDF em aberto: saldo x (dólar do dia - taxa contratada), quando positivo.",
     },
     {
       key: "aPagar",
-      label: "A PAGAR R$ (dolar do dia)",
+      label: "A PAGAR R$ (dólar do dia)",
       formato: "brl",
       calc: (d, ctx) => {
         const a = ndfAjustePrevisto(d, ctx);
         return a !== null && a < 0 ? -a : null;
       },
-      ajuda: "NDF em aberto: saldo x (dolar do dia - taxa contratada), quando negativo.",
+      ajuda: "NDF em aberto: saldo x (dólar do dia - taxa contratada), quando negativo.",
     },
   ],
   colunas: [
@@ -312,8 +312,8 @@ const travaNdf: AbaConfig = {
     const l = n0(d, "liquidacao");
     if (txt(d, "tipo") === "COMPRA" && v < 0) return "Compra: o valor em US$ deve ser positivo.";
     if (txt(d, "tipo") === "VENDA" && v > 0) return "Venda: o valor em US$ deve ser negativo.";
-    if (v !== 0 && l !== 0 && Math.sign(v) !== Math.sign(l)) return "A liquidacao deve ter o mesmo sinal do valor.";
-    if (v !== 0 && Math.abs(l) > Math.abs(v)) return "A liquidacao nao pode ser maior que o valor contratado.";
+    if (v !== 0 && l !== 0 && Math.sign(v) !== Math.sign(l)) return "A liquidação deve ter o mesmo sinal do valor.";
+    if (v !== 0 && Math.abs(l) > Math.abs(v)) return "A liquidação não pode ser maior que o valor contratado.";
     return null;
   },
   alerta: (d, ctx) => {
@@ -326,10 +326,10 @@ const travaNdf: AbaConfig = {
     if (txt(d, "status") === "LIQUIDADA" && v !== 0 && l !== 0 && saldo !== 0) return "Status LIQUIDADA com saldo em aberto.";
     // Planilha: sem NIVEL VENDA o desagio virava liquidado x nivel USD (valor cheio em R$).
     if (txt(d, "status") === "LIQUIDADA" && v !== 0 && l !== 0 && !num(d, "nivelVenda") && num(d, "ajusteInformado") === null)
-      return "Liquidada sem NIVEL VENDA: ajuste nao calculado.";
+      return "Liquidada sem NÍVEL VENDA: ajuste não calculado.";
     if (txt(d, "status") === "A LIQUIDAR" && saldo === 0) return "Status A LIQUIDAR sem saldo.";
     const venc = txt(d, "vencimento");
-    if (txt(d, "status") === "A LIQUIDAR" && venc && venc < ctx.hoje) return "Vencimento ja passou.";
+    if (txt(d, "status") === "A LIQUIDAR" && venc && venc < ctx.hoje) return "Vencimento já passou.";
     return null;
   },
   indicadores: (rows, ctx) => {
@@ -348,12 +348,12 @@ const travaNdf: AbaConfig = {
     return [
       { label: "A RECEBER no vencimento (R$)", valor: ctx.dolar ? aReceber : null, formato: "brl", destaque: true },
       { label: "A PAGAR no vencimento (R$)", valor: ctx.dolar ? aPagar : null, formato: "brl", destaque: true },
-      { label: "Saldo liquido (receber - pagar)", valor: ctx.dolar ? aReceber - aPagar : null, formato: "brl", destaque: true },
+      { label: "Saldo líquido (receber - pagar)", valor: ctx.dolar ? aReceber - aPagar : null, formato: "brl", destaque: true },
       { label: "Saldo em aberto (US$)", valor: soma(abertas, travaSaldo), formato: "usd" },
       { label: "Compras em aberto (US$)", valor: soma(compras, travaSaldo), formato: "usd" },
-      { label: "Taxa media compras", valor: taxaMedia(compras), formato: "num4" },
+      { label: "Taxa média compras", valor: taxaMedia(compras), formato: "num4" },
       { label: "Vendas em aberto (US$)", valor: soma(vendas, travaSaldo), formato: "usd" },
-      { label: "Taxa media vendas", valor: taxaMedia(vendas), formato: "num4" },
+      { label: "Taxa média vendas", valor: taxaMedia(vendas), formato: "num4" },
       { label: "Ajuste realizado (R$)", valor: soma(rows, (d) => travaAjuste(d)), formato: "brl" },
       {
         label: "Saldo das LIQUIDADAS (deve ser 0)",
@@ -393,7 +393,7 @@ export function estoqueMovimento(d: Dados) {
 const estoque: AbaConfig = {
   slug: "estoque-cafe-nayme",
   label: "",
-  descricao: "Entradas e saidas de estoque; o saldo e a soma de todos os lancamentos.",
+  descricao: "Entradas e saídas de estoque; o saldo é a soma de todos os lançamentos.",
   campos: [
     { key: "data", label: "DATA", tipo: "data", obrigatorio: true },
     { key: "tipo", label: "TIPO", tipo: "opcao", opcoes: ESTOQUE_TIPOS, obrigatorio: true },
@@ -403,10 +403,10 @@ const estoque: AbaConfig = {
       tipo: "numero",
       formato: "sacas",
       obrigatorio: true,
-      ajuda: "Informe positivo - vendas e devolucoes saem do estoque automaticamente. Ajuste de inventario: use o sinal.",
+      ajuda: "Informe positivo - vendas e devoluções saem do estoque automaticamente. Ajuste de inventário: use o sinal.",
     },
-    { key: "precoMedio", label: "PRECO MEDIO (R$/saca)", tipo: "numero", formato: "brl" },
-    { key: "observacao", label: "OBSERVACAO", tipo: "texto" },
+    { key: "precoMedio", label: "PREÇO MÉDIO (R$/saca)", tipo: "numero", formato: "brl" },
+    { key: "observacao", label: "OBSERVAÇÃO", tipo: "texto" },
   ],
   calculados: [{ key: "movimento", label: "MOVIMENTO (sacas)", formato: "sacas", calc: estoqueMovimento }],
   colunas: ["data", "tipo", "sacas", "movimento", "precoMedio", "observacao"],
@@ -437,11 +437,11 @@ const vendaMi: AbaConfig = {
     { key: "ordemVenda", label: "ORDEM VENDA", tipo: "texto" },
     { key: "valorUnit", label: "VLR. UNIT. R$", tipo: "numero", formato: "brl", obrigatorio: true },
     { key: "ny", label: "NY (c/lb)", tipo: "numero", formato: "centlb" },
-    { key: "dolar", label: "DOLAR", tipo: "numero", formato: "num4" },
-    { key: "padrao", label: "PADRAO", tipo: "texto", sugestoes: true },
-    { key: "mesEntrega", label: "MES ENTREGA", tipo: "data" },
+    { key: "dolar", label: "DÓLAR", tipo: "numero", formato: "num4" },
+    { key: "padrao", label: "PADRÃO", tipo: "texto", sugestoes: true },
+    { key: "mesEntrega", label: "MÊS ENTREGA", tipo: "data" },
     { key: "dataEntrega", label: "DATA ENTREGA", tipo: "data" },
-    { key: "dataLiquidacao", label: "DATA LIQUIDACAO", tipo: "data" },
+    { key: "dataLiquidacao", label: "DATA LIQUIDAÇÃO", tipo: "data" },
     { key: "status", label: "STATUS", tipo: "opcao", opcoes: ["A EMBARCAR", "EMBARCADO"], obrigatorio: true },
   ],
   calculados: [
@@ -450,7 +450,7 @@ const vendaMi: AbaConfig = {
       label: "DIFERENCIAL (c/lb)",
       formato: "centlb",
       calc: (d) => diferencialCentLb(num(d, "valorUnit"), num(d, "ny"), num(d, "dolar")),
-      ajuda: "Vlr. unit. / 1,3228 / dolar - NY.",
+      ajuda: "Vlr. unit. / 1,3228 / dólar - NY.",
     },
     {
       key: "bolsaBrl",
@@ -498,7 +498,7 @@ const vendaMi: AbaConfig = {
         destaque: true,
       },
       { label: "Total vendido (sacas)", valor: sacas, formato: "sacas" },
-      { label: "Preco medio (R$/saca)", valor: sacas ? total / sacas : null, formato: "brl" },
+      { label: "Preço médio (R$/saca)", valor: sacas ? total / sacas : null, formato: "brl" },
     ];
   },
 };
@@ -530,7 +530,7 @@ export function meTotal(d: Dados) {
 const vendasMe: AbaConfig = {
   slug: "vendas-merc-externo-nayme",
   label: "",
-  descricao: "Vendas para o mercado externo (contratos, fixacao, embarque e vinculo com ACC).",
+  descricao: "Vendas para o mercado externo (contratos, fixação, embarque e vínculo com ACC).",
   campos: [
     { key: "data", label: "DATA", tipo: "data", obrigatorio: true },
     { key: "quant", label: "QUANT (sacas)", tipo: "numero", formato: "sacas", obrigatorio: true },
@@ -543,22 +543,22 @@ const vendasMe: AbaConfig = {
     { key: "adto", label: "ADTO (US$)", tipo: "numero", formato: "usd", ajuda: "Adiantamento recebido - abatido do total." },
     {
       key: "unitInformado",
-      label: "UNIT US$ (preco fixo)",
+      label: "UNIT US$ (preço fixo)",
       tipo: "numero",
       formato: "usd",
-      ajuda: "Preencha so quando o preco for fixo em US$/saca. Vazio = (NY + diferencial) x 1,3228.",
+      ajuda: "Preencha só quando o preço for fixo em US$/saca. Vazio = (NY + diferencial) x 1,3228.",
     },
     { key: "oic", label: "OIC", tipo: "texto" },
-    { key: "padrao", label: "PADRAO", tipo: "texto", sugestoes: true },
-    { key: "pais", label: "PAIS", tipo: "texto", sugestoes: true },
-    { key: "dataFixacao", label: "DATA FIXACAO", tipo: "data" },
-    { key: "mesEmbarque", label: "MES EMBARQUE", tipo: "texto", sugestoes: true, ajuda: "Mes/ano ou IMEDIATO." },
+    { key: "padrao", label: "PADRÃO", tipo: "texto", sugestoes: true },
+    { key: "pais", label: "PAÍS", tipo: "texto", sugestoes: true },
+    { key: "dataFixacao", label: "DATA FIXAÇÃO", tipo: "data" },
+    { key: "mesEmbarque", label: "MÊS EMBARQUE", tipo: "texto", sugestoes: true, ajuda: "Mes/ano ou IMEDIATO." },
     { key: "dataEmb", label: "DATA EMB", tipo: "data" },
-    { key: "ndfDolar", label: "NDF DOLAR", tipo: "numero", formato: "num4" },
+    { key: "ndfDolar", label: "NDF DÓLAR", tipo: "numero", formato: "num4" },
     { key: "status", label: "STATUS", tipo: "opcao", opcoes: ME_STATUS, obrigatorio: true },
-    { key: "vinculoAcc", label: "VINCULO CONTRATO ACC", tipo: "texto" },
-    { key: "observacoes", label: "VENCIMENTO / OBSERVACOES", tipo: "texto" },
-    { key: "valorAUtilizar", label: "VALOR A ULTILIZAR", tipo: "numero", formato: "usd" },
+    { key: "vinculoAcc", label: "VÍNCULO CONTRATO ACC", tipo: "texto" },
+    { key: "observacoes", label: "VENCIMENTO / OBSERVAÇÕES", tipo: "texto" },
+    { key: "valorAUtilizar", label: "VALOR A UTILIZAR", tipo: "numero", formato: "usd" },
   ],
   calculados: [
     {
@@ -578,7 +578,7 @@ const vendasMe: AbaConfig = {
     { key: "totalUsd", label: "TOTAL US$", formato: "usd", calc: meTotal },
     {
       key: "totalBrl",
-      label: "TOTAL R$ (dolar do dia)",
+      label: "TOTAL R$ (dólar do dia)",
       formato: "brl",
       calc: (d, ctx) => (ctx.dolar ? meTotal(d) * ctx.dolar : null),
     },
@@ -613,7 +613,7 @@ const vendasMe: AbaConfig = {
   filtroStatus: "status",
   padrao: (ctx) => ({ data: ctx.hoje, status: "A FIXAR", ny: ctx.ny }),
   alerta: (d) => {
-    if (txt(d, "status") !== "A FIXAR" && meUnit(d) === null) return "Sem preco: informe NY + diferencial ou o preco fixo.";
+    if (txt(d, "status") !== "A FIXAR" && meUnit(d) === null) return "Sem preço: informe NY + diferencial ou o preço fixo.";
     return null;
   },
   indicadores: (rows) => {
@@ -623,7 +623,7 @@ const vendasMe: AbaConfig = {
     return [
       { label: "Fixado (sacas)", valor: sacas, formato: "sacas", destaque: true },
       { label: "Fixado (US$)", valor: usd, formato: "usd", destaque: true },
-      { label: "Preco medio fixado (US$/saca)", valor: sacas ? usd / sacas : null, formato: "usd" },
+      { label: "Preço médio fixado (US$/saca)", valor: sacas ? usd / sacas : null, formato: "usd" },
       {
         label: "A fixar (sacas)",
         valor: soma(rows.filter((d) => txt(d, "status") === "A FIXAR"), (d) => num(d, "quant")),
@@ -656,12 +656,12 @@ const camposBolsa: Campo[] = [
     obrigatorio: true,
     ajuda: "Venda negativo, compra positivo (como na planilha).",
   },
-  { key: "nivel", label: "NIVEL (c/lb)", tipo: "numero", formato: "centlb", obrigatorio: true },
+  { key: "nivel", label: "NÍVEL (c/lb)", tipo: "numero", formato: "centlb", obrigatorio: true },
   { key: "corretora", label: "CORRETORA", tipo: "texto", sugestoes: true, sugestoesFixas: ["HEDGEPOINT", "MAREX", "STONEX"] },
   { key: "kc", label: "KC", tipo: "texto", sugestoes: true, obrigatorio: true, ajuda: "Ex.: KCZ6" },
   { key: "status", label: "STATUS", tipo: "opcao", opcoes: STATUS_COMPRA_VENDA, obrigatorio: true },
-  { key: "opcao", label: "OPCAO (vencimento)", tipo: "texto", sugestoes: true },
-  { key: "posicao", label: "STATUS POSICAO", tipo: "opcao", opcoes: ["SHORT", "LONG"] },
+  { key: "opcao", label: "OPÇÃO (vencimento)", tipo: "texto", sugestoes: true },
+  { key: "posicao", label: "STATUS POSIÇÃO", tipo: "opcao", opcoes: ["SHORT", "LONG"] },
 ];
 
 function validarBolsa(d: Dados) {
@@ -675,24 +675,24 @@ function validarBolsa(d: Dados) {
 function alertaBolsa(d: Dados) {
   const l = n0(d, "lotes");
   if ((txt(d, "status") === "VENDA" && l > 0) || (txt(d, "status") === "COMPRA" && l < 0))
-    return "Sinal dos lotes nao bate com COMPRA/VENDA.";
+    return "Sinal dos lotes não bate com COMPRA/VENDA.";
   return null;
 }
 
 const bolsaNy: AbaConfig = {
   slug: "bolsa-ny-nayme",
   label: "",
-  descricao: "Operacoes de futuros de cafe na ICE NY (KC). A soma das sacas e a posicao em bolsa.",
+  descricao: "Operações de futuros de café na ICE NY (KC). A soma das sacas e a posição em bolsa.",
   campos: [
     ...camposBolsa,
     { key: "usdFechamento", label: "US$ FECHAMENTO", tipo: "texto" },
     { key: "valorAjustado", label: "VALOR AJUSTADO", tipo: "texto" },
-    { key: "ajusteDiario", label: "VALOR AJUSTE DIARIO", tipo: "texto" },
-    { key: "observacao", label: "OBSERVACOES ADICIONAIS", tipo: "texto", multilinha: true },
+    { key: "ajusteDiario", label: "VALOR AJUSTE DIÁRIO", tipo: "texto" },
+    { key: "observacao", label: "OBSERVAÇÕES ADICIONAIS", tipo: "texto", multilinha: true },
   ],
   calculados: [
     { key: "sacas", label: "SACAS", formato: "sacas", calc: bolsaSacas, ajuda: "Lotes x 283,5." },
-    { key: "totalUsd", label: "TOTAL US$", formato: "usd", calc: bolsaUsd, ajuda: "Sacas x nivel (c/lb) x 1,3228." },
+    { key: "totalUsd", label: "TOTAL US$", formato: "usd", calc: bolsaUsd, ajuda: "Sacas x nível (c/lb) x 1,3228." },
   ],
   colunas: [
     "data",
@@ -720,10 +720,10 @@ const bolsaNy: AbaConfig = {
     const lotes = soma(rows, (d) => num(d, "lotes"));
     // Posicao por vencimento (KC): o que sobra em aberto em cada contrato.
     return [
-      { label: "Posicao (lotes)", valor: lotes, formato: "lotes", destaque: true },
-      { label: "Posicao (sacas)", valor: sacas, formato: "sacas", destaque: true },
+      { label: "Posição (lotes)", valor: lotes, formato: "lotes", destaque: true },
+      { label: "Posição (sacas)", valor: sacas, formato: "sacas", destaque: true },
       {
-        label: "Posicao a NY atual (US$)",
+        label: "Posição a NY atual (US$)",
         valor: ctx.ny !== null ? sacas * ctx.ny * LB_SACA : null,
         formato: "usd",
       },
@@ -737,7 +737,7 @@ const bolsaNy: AbaConfig = {
 const compras: AbaConfig = {
   slug: "compras-em-reais-nayme",
   label: "",
-  descricao: "Compras de cafe em reais (preco fixo) e entregas.",
+  descricao: "Compras de café em reais (preço fixo) e entregas.",
   campos: [
     { key: "data", label: "DATA", tipo: "data", obrigatorio: true },
     { key: "sacas", label: "QUANTIDADE SACAS", tipo: "numero", formato: "sacas", obrigatorio: true },
@@ -745,13 +745,13 @@ const compras: AbaConfig = {
     { key: "ordemCompra", label: "ORDEM COMPRA", tipo: "texto" },
     { key: "valorSaca", label: "VR. SACA R$", tipo: "numero", formato: "brl", obrigatorio: true },
     { key: "ny", label: "NY (c/lb)", tipo: "numero", formato: "centlb" },
-    { key: "dolar", label: "DOLAR", tipo: "numero", formato: "num4" },
-    { key: "padrao", label: "PADRAO", tipo: "texto", cadastro: "padroes" },
+    { key: "dolar", label: "DÓLAR", tipo: "numero", formato: "num4" },
+    { key: "padrao", label: "PADRÃO", tipo: "texto", cadastro: "padroes" },
     { key: "peneira", label: "PENEIRA", tipo: "texto", cadastro: "peneiras" },
     { key: "dataEntrega", label: "DATA ENTREGA", tipo: "data" },
     { key: "embalagem", label: "EMBALAGEM", tipo: "texto", sugestoes: true, sugestoesFixas: ["GRANEL", "BIG BAG"] },
     { key: "status", label: "STATUS", tipo: "opcao", opcoes: ["COMPRADO", "ENTREGUE"], obrigatorio: true },
-    { key: "observacao", label: "OBSERVACAO", tipo: "texto" },
+    { key: "observacao", label: "OBSERVAÇÃO", tipo: "texto" },
   ],
   calculados: [
     {
@@ -803,7 +803,7 @@ const compras: AbaConfig = {
       },
       { label: "Total comprado (sacas)", valor: sacas, formato: "sacas" },
       // Planilha: E1 = SUM(J)/SUM(B)
-      { label: "Media compra (R$/saca)", valor: sacas ? total / sacas : null, formato: "brl", destaque: true },
+      { label: "Média compra (R$/saca)", valor: sacas ? total / sacas : null, formato: "brl", destaque: true },
     ];
   },
 };
@@ -820,7 +820,7 @@ export function aFixarSaldo(d: Dados) {
 const cafesAFixar: AbaConfig = {
   slug: "cafes-a-fixar-nayme",
   label: "",
-  descricao: "Cafes recebidos com preco a fixar e as fixacoes feitas pelos produtores.",
+  descricao: "Cafés recebidos com preço a fixar e as fixações feitas pelos produtores.",
   campos: [
     { key: "data", label: "DATA", tipo: "data", obrigatorio: true },
     {
@@ -831,15 +831,15 @@ const cafesAFixar: AbaConfig = {
       obrigatorio: true,
       ajuda: "Negativo, como na planilha (ex.: -184).",
     },
-    { key: "fixadas", label: "FIXADAS", tipo: "numero", formato: "sacas", ajuda: "Total ja fixado (positivo)." },
+    { key: "fixadas", label: "FIXADAS", tipo: "numero", formato: "sacas", ajuda: "Total já fixado (positivo)." },
     { key: "produtor", label: "PRODUTOR", tipo: "texto", sugestoes: true, obrigatorio: true },
     { key: "valorSaca", label: "VR. SACA R$", tipo: "numero", formato: "brl" },
-    { key: "padrao", label: "PADRAO", tipo: "texto", sugestoes: true },
+    { key: "padrao", label: "PADRÃO", tipo: "texto", sugestoes: true },
     { key: "peneira", label: "PENEIRA", tipo: "texto", sugestoes: true },
     { key: "ordemCompra", label: "ORDEM COMPRA", tipo: "texto" },
     { key: "ny", label: "NY (c/lb)", tipo: "numero", formato: "centlb" },
-    { key: "dolar", label: "DOLAR", tipo: "numero", formato: "num4" },
-    { key: "dataFixacao", label: "DATA FIXACAO", tipo: "data" },
+    { key: "dolar", label: "DÓLAR", tipo: "numero", formato: "num4" },
+    { key: "dataFixacao", label: "DATA FIXAÇÃO", tipo: "data" },
     { key: "status", label: "STATUS", tipo: "opcao", opcoes: ["A FIXAR", "FIXADO"], obrigatorio: true },
     { key: "adto", label: "ADTO", tipo: "texto" },
   ],
@@ -928,15 +928,15 @@ export function endivJuros(d: Dados, ctx: Ctx) {
 const endividamento: AbaConfig = {
   slug: "endividamento-nayme",
   label: "",
-  descricao: "Contratos de ACC: valor, taxa, liquidacoes, saldo e juros.",
+  descricao: "Contratos de ACC: valor, taxa, liquidações, saldo e juros.",
   campos: [
     { key: "data", label: "DATA", tipo: "data", obrigatorio: true },
     { key: "numContrato", label: "NUM.CONTRATO", tipo: "texto" },
     { key: "banco", label: "BANCO", tipo: "texto", sugestoes: true, obrigatorio: true },
-    { key: "valorUsd", label: "VALOR US$", tipo: "numero", formato: "usd", obrigatorio: true, ajuda: "Negativo (divida), como na planilha." },
+    { key: "valorUsd", label: "VALOR US$", tipo: "numero", formato: "usd", obrigatorio: true, ajuda: "Negativo (dívida), como na planilha." },
     { key: "taxa", label: "TXA (R$/US$)", tipo: "numero", formato: "num4", obrigatorio: true },
     { key: "taxaJuros", label: "TAXA JUROS (% a.a.)", tipo: "numero", formato: "pct", obrigatorio: true },
-    { key: "dataLiquidacao", label: "DATA LIQUIDACAO", tipo: "data", obrigatorio: true },
+    { key: "dataLiquidacao", label: "DATA LIQUIDAÇÃO", tipo: "data", obrigatorio: true },
     { key: "status", label: "STATUS", tipo: "opcao", opcoes: ["A LIQUIDAR", "LIQUIDADO"], obrigatorio: true },
     { key: "invoice", label: "INVOICE VINCULADA", tipo: "texto" },
     {
@@ -944,10 +944,10 @@ const endividamento: AbaConfig = {
       label: "VALOR LIQUIDADO US$",
       tipo: "numero",
       formato: "usd",
-      ajuda: "Soma das liquidacoes (positivo). Detalhe cada liquidacao em Observacao.",
+      ajuda: "Soma das liquidações (positivo). Detalhe cada liquidação em Observação.",
     },
-    { key: "observacao", label: "OBSERVACAO", tipo: "texto" },
-    { key: "cambioPronto", label: "CAMBIO PRONTO", tipo: "texto" },
+    { key: "observacao", label: "OBSERVAÇÃO", tipo: "texto" },
+    { key: "cambioPronto", label: "CÂMBIO PRONTO", tipo: "texto" },
   ],
   calculados: [
     {
@@ -962,11 +962,11 @@ const endividamento: AbaConfig = {
       label: "JUROS ACUMULADOS US$",
       formato: "usd",
       calc: endivJuros,
-      ajuda: "Saldo x taxa x dias corridos / 360, ate a liquidacao ou hoje.",
+      ajuda: "Saldo x taxa x dias corridos / 360, até a liquidação ou hoje.",
     },
     {
       key: "saldoBrlHoje",
-      label: "SALDO R$ (dolar do dia)",
+      label: "SALDO R$ (dólar do dia)",
       formato: "brl",
       calc: (d, ctx) => (ctx.dolar ? (endivSaldo(d) + endivJuros(d, ctx)) * ctx.dolar : null),
     },
@@ -993,18 +993,18 @@ const endividamento: AbaConfig = {
   filtroStatus: "status",
   padrao: (ctx) => ({ data: ctx.hoje, status: "A LIQUIDAR" }),
   validar: (d) => {
-    if (n0(d, "valorUsd") >= 0) return "VALOR US$ deve ser negativo (divida).";
+    if (n0(d, "valorUsd") >= 0) return "VALOR US$ deve ser negativo (dívida).";
     if (Math.abs(n0(d, "liquidado")) > Math.abs(n0(d, "valorUsd")) + 0.01) return "Valor liquidado maior que o contrato.";
     const ini = txt(d, "data");
     const fim = txt(d, "dataLiquidacao");
-    if (ini && fim && fim < ini) return "A data de liquidacao e anterior a data do contrato.";
+    if (ini && fim && fim < ini) return "A data de liquidação é anterior à data do contrato.";
     return null;
   },
   alerta: (d, ctx) => {
     const saldo = endivSaldo(d);
     const ini = txt(d, "data");
     const fim = txt(d, "dataLiquidacao");
-    if (ini && fim && fim < ini) return "Data de liquidacao anterior a data do contrato.";
+    if (ini && fim && fim < ini) return "Data de liquidação anterior à data do contrato.";
     if (txt(d, "status") === "LIQUIDADO" && Math.abs(saldo) > 0.01) return "Status LIQUIDADO com saldo.";
     if (txt(d, "status") === "A LIQUIDAR" && Math.abs(saldo) <= 0.01) return "Saldo zerado: mudar status para LIQUIDADO.";
     if (txt(d, "status") === "A LIQUIDAR" && fim && fim < ctx.hoje) return "Vencido.";
@@ -1019,8 +1019,8 @@ const endividamento: AbaConfig = {
       { label: "Saldo a liquidar (US$)", valor: saldo, formato: "usd", destaque: true },
       { label: "Juros acumulados (US$)", valor: juros, formato: "usd" },
       { label: "Saldo + juros (US$)", valor: saldo + juros, formato: "usd", destaque: true },
-      { label: "Taxa media ponderada (% a.a.)", valor: taxaMedia, formato: "pct" },
-      { label: "Saldo + juros (R$, dolar do dia)", valor: ctx.dolar ? (saldo + juros) * ctx.dolar : null, formato: "brl" },
+      { label: "Taxa média ponderada (% a.a.)", valor: taxaMedia, formato: "pct" },
+      { label: "Saldo + juros (R$, dólar do dia)", valor: ctx.dolar ? (saldo + juros) * ctx.dolar : null, formato: "brl" },
     ];
   },
 };
@@ -1038,12 +1038,12 @@ function futuras(slug: string, nome: "PRODUTOR" | "CLIENTE", descricao: string):
       { key: "sacas", label: "QUANTIDADE SACAS", tipo: "numero", formato: "sacas", obrigatorio: true },
       { key: "nome", label: nome, tipo: "texto", sugestoes: true, obrigatorio: true },
       { key: "valorSaca", label: "VR. SACA R$", tipo: "numero", formato: "brl", obrigatorio: true },
-      { key: "padrao", label: "PADRAO", tipo: "texto", sugestoes: true },
+      { key: "padrao", label: "PADRÃO", tipo: "texto", sugestoes: true },
       { key: "peneira", label: "PENEIRA", tipo: "texto", sugestoes: true },
       { key: "dataEntrega", label: "DATA ENTREGA", tipo: "data" },
       { key: "embalagem", label: "EMBALAGEM", tipo: "texto", sugestoes: true, sugestoesFixas: ["GRANEL", "BIG BAG"] },
       { key: "status", label: "STATUS", tipo: "opcao", opcoes: ["A LIQUIDAR", "LIQUIDADO"], obrigatorio: true },
-      { key: "observacao", label: "OBSERVACAO", tipo: "texto" },
+      { key: "observacao", label: "OBSERVAÇÃO", tipo: "texto" },
     ],
     calculados: [
       { key: "valorTotal", label: "VLR. TOTAL R$", formato: "brl", calc: (d) => n0(d, "sacas") * n0(d, "valorSaca") },
@@ -1105,19 +1105,19 @@ export const RESUMO_FECHAMENTO = ["KC (NY)", "DOLAR COMERCIAL", "ARB. LONDRES X 
 const resumoTrades: AbaConfig = {
   slug: "resumo-trades",
   label: "",
-  descricao: "Resumo diario dos trades: operacoes fisicas, operacoes em bolsa/bancos e fechamento de mercado.",
+  descricao: "Resumo diário dos trades: operações físicas, operações em bolsa/bancos e fechamento de mercado.",
   campos: [
     { key: "data", label: "DATA DO RESUMO", tipo: "data", obrigatorio: true },
     {
       key: "secao",
-      label: "SECAO",
+      label: "SEÇÃO",
       tipo: "opcao",
       opcoes: ["OPERACOES FISICAS", "OPERACOES EM BOLSA/BANCOS", "FECHAMENTO DE MERCADO"],
       obrigatorio: true,
     },
     {
       key: "operacao",
-      label: "OPERACAO",
+      label: "OPERAÇÃO",
       tipo: "texto",
       obrigatorio: true,
       sugestoesFixas: [...RESUMO_OPERACOES_FISICAS, ...RESUMO_OPERACOES_BOLSA, ...RESUMO_FECHAMENTO],
@@ -1126,7 +1126,7 @@ const resumoTrades: AbaConfig = {
     { key: "diferencial", label: "DIFERENCIAL (c/lb)", tipo: "numero", formato: "centlb" },
     { key: "lotes", label: "QUANT. LOTES", tipo: "numero", formato: "lotes" },
     { key: "valor", label: "VALOR / FECHAMENTO", tipo: "numero", formato: "num4" },
-    { key: "observacao", label: "OBSERVACAO", tipo: "texto" },
+    { key: "observacao", label: "OBSERVAÇÃO", tipo: "texto" },
   ],
   calculados: [
     {
@@ -1153,9 +1153,9 @@ const resumoTrades: AbaConfig = {
     return [
       { label: "Resumo mais recente", valor: null, formato: "texto", texto: ultima ? ultima.split("-").reverse().join("/") : "-" },
       { label: "Total de compras (sacas)", valor: soma(grupo("COMPRA"), (d) => num(d, "quantidade")), formato: "sacas", destaque: true },
-      { label: "Diferencial medio compras (c/lb)", valor: medio(grupo("COMPRA")), formato: "centlb" },
+      { label: "Diferencial médio compras (c/lb)", valor: medio(grupo("COMPRA")), formato: "centlb" },
       { label: "Total de vendas (sacas)", valor: soma(grupo("VENDA"), (d) => num(d, "quantidade")), formato: "sacas", destaque: true },
-      { label: "Diferencial medio vendas (c/lb)", valor: medio(grupo("VENDA")), formato: "centlb" },
+      { label: "Diferencial médio vendas (c/lb)", valor: medio(grupo("VENDA")), formato: "centlb" },
     ];
   },
 };
@@ -1204,13 +1204,13 @@ export function normalizarDados(
       const s = String(bruto).trim();
       if (campo.tipo === "numero") {
         const n = typeof bruto === "number" ? bruto : Number(s);
-        if (!Number.isFinite(n)) return { erro: `${campo.label}: numero invalido.` };
+        if (!Number.isFinite(n)) return { erro: `${campo.label}: número inválido.` };
         v = n;
       } else if (campo.tipo === "data") {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return { erro: `${campo.label}: data invalida.` };
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return { erro: `${campo.label}: data inválida.` };
         v = s;
       } else if (campo.tipo === "opcao") {
-        if (campo.opcoes && !campo.opcoes.includes(s)) return { erro: `${campo.label}: opcao invalida.` };
+        if (campo.opcoes && !campo.opcoes.includes(s)) return { erro: `${campo.label}: opção inválida.` };
         v = s;
       } else {
         v = s;
@@ -1218,7 +1218,7 @@ export function normalizarDados(
     }
     if (campo.obrigatorio && v === null) return { erro: `Preencha ${campo.label}.` };
     if (campo.cadastro && v !== null && !(listas[campo.cadastro] ?? []).includes(String(v)) && anterior?.[campo.key] !== v)
-      return { erro: `${campo.label}: escolha uma opcao cadastrada (ou cadastre "${v}").` };
+      return { erro: `${campo.label}: escolha uma opção cadastrada (ou cadastre "${v}").` };
     dados[campo.key] = v;
   }
   const erro = aba.validar?.(dados);

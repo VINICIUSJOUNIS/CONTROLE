@@ -66,10 +66,10 @@ export function PeriodFilter({ years }: { years: string[] }) {
 
       <div className="flex gap-2">
         <Button type="button" variant="outline" size="sm" onClick={() => apply(monthsAgo(12), currentMonth())}>
-          Ultimos 12 meses
+          Últimos 12 meses
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => apply(monthsAgo(24), currentMonth())}>
-          Ultimos 24 meses
+          Últimos 24 meses
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => apply()}>
           Tudo
@@ -87,7 +87,7 @@ export function PeriodFilter({ years }: { years: string[] }) {
           />
         </div>
         <div>
-          <Label>Ate</Label>
+          <Label>Até</Label>
           <Input
             type="month"
             value={customTo}
@@ -100,7 +100,7 @@ export function PeriodFilter({ years }: { years: string[] }) {
           size="sm"
           onClick={() => apply(customFrom || undefined, customTo || undefined)}
         >
-          Aplicar periodo
+          Aplicar período
         </Button>
       </div>
     </div>

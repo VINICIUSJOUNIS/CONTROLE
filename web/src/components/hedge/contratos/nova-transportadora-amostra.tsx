@@ -28,7 +28,7 @@ export function NovaTransportadoraAmostra({ compact = false }: { compact?: boole
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe uma transportadora chamada "${name.trim()}".`);
+        setError(`Já existe uma transportadora chamada "${name.trim()}".`);
       }
     });
   }

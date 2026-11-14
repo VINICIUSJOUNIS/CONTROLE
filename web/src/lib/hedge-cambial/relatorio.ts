@@ -52,7 +52,7 @@ export function imprimirRelatorio(opcoes: {
 }) {
   const janela = window.open("", "_blank");
   if (!janela) {
-    window.alert("O navegador bloqueou a janela do relatorio. Permita pop-ups para este site e tente de novo.");
+    window.alert("O navegador bloqueou a janela do relatório. Permita pop-ups para este site e tente de novo.");
     return;
   }
   const tabelaHtml = (t: TabelaRelatorio) => `

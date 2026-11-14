@@ -66,7 +66,7 @@ export function CorretorasTable({ corretoras }: { corretoras: CorretoraRow[] }) 
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe uma corretora cadastrada com o nome "${payload.name}".`);
+        setError(`Já existe uma corretora cadastrada com o nome "${payload.name}".`);
       }
     });
   }
@@ -75,7 +75,7 @@ export function CorretorasTable({ corretoras }: { corretoras: CorretoraRow[] }) 
     if (!editingId) return;
     if (
       !window.confirm(
-        "Excluir esta corretora/banco? So e possivel excluir corretoras que nao tenham contratos ou operacoes vinculadas."
+        "Excluir esta corretora/banco? Só é possível excluir corretoras que não tenham contratos ou operações vinculadas."
       )
     )
       return;
@@ -86,7 +86,7 @@ export function CorretorasTable({ corretoras }: { corretoras: CorretoraRow[] }) 
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel excluir: esta corretora tem contratos ou operacoes vinculadas.");
+        setError("Não foi possível excluir: esta corretora tem contratos ou operações vinculadas.");
       }
     });
   }
@@ -112,7 +112,7 @@ export function CorretorasTable({ corretoras }: { corretoras: CorretoraRow[] }) 
                 />
               </div>
               <div>
-                <Label>Cor de identificacao</Label>
+                <Label>Cor de identificação</Label>
                 <div className="flex flex-wrap gap-2">
                   {defaultColors.map((c) => (
                     <button
@@ -131,7 +131,7 @@ export function CorretorasTable({ corretoras }: { corretoras: CorretoraRow[] }) 
               </div>
               {error && <p className="text-sm text-danger">{error}</p>}
               <Button className="w-full" onClick={handleSave} disabled={isPending}>
-                {isPending ? "Salvando..." : editingId ? "Salvar alteracoes" : "Salvar corretora"}
+                {isPending ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar corretora"}
               </Button>
               {editingId && (
                 <Button

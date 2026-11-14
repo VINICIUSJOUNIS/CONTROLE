@@ -295,7 +295,7 @@ export function EmprestimosView({
 
   function handleSave() {
     if (!form.contractNumber.trim()) {
-      setError("Informe o numero do contrato.");
+      setError("Informe o número do contrato.");
       return;
     }
     if (!form.primeiroVencimento) {
@@ -347,13 +347,13 @@ export function EmprestimosView({
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel salvar. Verifique se o numero do contrato ja existe.");
+        setError("Não foi possível salvar. Verifique se o número do contrato já existe.");
       }
     });
   }
 
   function handleDelete(loan: LoanRow) {
-    if (!window.confirm(`Excluir o emprestimo ${loan.contractNumber}? Esta acao nao pode ser desfeita.`))
+    if (!window.confirm(`Excluir o empréstimo ${loan.contractNumber}? Esta ação não pode ser desfeita.`))
       return;
     startTransition(async () => {
       await deleteLoan(loan.id);
@@ -369,7 +369,7 @@ export function EmprestimosView({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por numero do contrato"
+            placeholder="Buscar por número do contrato"
             className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm outline-none focus:border-primary"
           />
         </div>
@@ -407,24 +407,24 @@ export function EmprestimosView({
           value={toFilter}
           onChange={(e) => handleToChange(e.target.value)}
           className="w-auto"
-          title="Ate"
+          title="Até"
         />
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreate}>
               <Plus size={16} />
-              Novo emprestimo
+              Novo empréstimo
             </Button>
           </DialogTrigger>
           <DialogContent
-            title={editingId ? "Editar emprestimo" : "Cadastrar novo emprestimo"}
+            title={editingId ? "Editar empréstimo" : "Cadastrar novo empréstimo"}
             className="max-w-2xl"
           >
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Numero do contrato</Label>
+                  <Label>Número do contrato</Label>
                   <Input
                     value={form.contractNumber}
                     onChange={(e) => setForm({ ...form, contractNumber: e.target.value })}
@@ -479,7 +479,7 @@ export function EmprestimosView({
                       setForm({ ...form, rateBasis: e.target.value as RateBasisValue })
                     }
                   >
-                    <option value="MENSAL">Ao mes</option>
+                    <option value="MENSAL">Ao mês</option>
                     <option value="SEMESTRAL">Ao semestre</option>
                     <option value="ANUAL">Ao ano</option>
                   </Select>
@@ -496,12 +496,12 @@ export function EmprestimosView({
                   >
                     <option value="CDI">CDI</option>
                     <option value="SOFR">SOFR</option>
-                    <option value="PRE_FIXADO">Pre-fixado</option>
+                    <option value="PRE_FIXADO">Pré-fixado</option>
                     <option value="SELIC">SELIC</option>
                   </Select>
                 </div>
                 <div>
-                  <Label>Sistema de amortizacao</Label>
+                  <Label>Sistema de amortização</Label>
                   <Select
                     value={form.amortizationSystem}
                     onChange={(e) => {
@@ -518,8 +518,8 @@ export function EmprestimosView({
                     }}
                   >
                     <option value="PRICE">PRICE (parcela fixa)</option>
-                    <option value="SAC">SAC (amortizacao fixa)</option>
-                    <option value="BULLET">BULLET (so juros + principal no final)</option>
+                    <option value="SAC">SAC (amortização fixa)</option>
+                    <option value="BULLET">BULLET (só juros + principal no final)</option>
                   </Select>
                 </div>
               </div>
@@ -533,8 +533,8 @@ export function EmprestimosView({
                   />
                   {form.amortizationSystem === "BULLET" && (
                     <p className="mt-1 text-xs text-muted">
-                      No BULLET, e o numero de vencimentos mensais de juros ate a liquidacao (o
-                      capital entra so na ultima parcela).
+                      No BULLET, é o número de vencimentos mensais de juros até a liquidação (o
+                      capital entra só na última parcela).
                     </p>
                   )}
                 </div>
@@ -556,7 +556,7 @@ export function EmprestimosView({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Data da contratacao</Label>
+                  <Label>Data da contratação</Label>
                   <Input
                     type="date"
                     value={form.contractDate}
@@ -581,7 +581,7 @@ export function EmprestimosView({
                     }}
                   />
                   <p className="mt-1 text-xs text-muted">
-                    As proximas parcelas repetem esse dia do mes.
+                    As próximas parcelas repetem esse dia do mês.
                   </p>
                 </div>
               </div>
@@ -619,7 +619,7 @@ export function EmprestimosView({
 
               {form.status === "LIQUIDADO" && (
                 <div>
-                  <Label>Data da liquidacao</Label>
+                  <Label>Data da liquidação</Label>
                   <Input
                     type="date"
                     value={form.dataLiquidacao}
@@ -639,7 +639,7 @@ export function EmprestimosView({
                     onChange={(e) => setForm({ ...form, hasInsurance: e.target.checked })}
                     className="h-4 w-4 accent-primary"
                   />
-                  Este emprestimo teve seguro
+                  Este empréstimo teve seguro
                 </label>
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div>
@@ -666,14 +666,14 @@ export function EmprestimosView({
 
               {formPreviewSchedule.length > 0 && (
                 <div className="rounded-lg border border-border p-3">
-                  <p className="mb-2 text-sm font-medium">Previa da amortizacao</p>
+                  <p className="mb-2 text-sm font-medium">Prévia da amortização</p>
                   <div className="max-h-52 overflow-y-auto">
                     <table className="w-full whitespace-nowrap text-xs">
                       <thead className="sticky top-0 bg-card">
                         <tr className="border-b border-border text-left text-muted">
                           <th className="py-1.5 pr-3 font-medium">Parcela</th>
                           <th className="py-1.5 pr-3 font-medium">Vencimento</th>
-                          <th className="py-1.5 pr-3 font-medium">Amortizacao</th>
+                          <th className="py-1.5 pr-3 font-medium">Amortização</th>
                           <th className="py-1.5 pr-3 font-medium">Juros</th>
                           <th className="py-1.5 pr-3 font-medium">Parcela</th>
                           <th className="py-1.5 font-medium">Saldo devedor</th>
@@ -700,7 +700,7 @@ export function EmprestimosView({
 
               {error && <p className="text-sm text-danger">{error}</p>}
               <Button className="w-full" onClick={handleSave} disabled={isPending}>
-                {isPending ? "Salvando..." : editingId ? "Salvar alteracoes" : "Salvar emprestimo"}
+                {isPending ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar empréstimo"}
               </Button>
             </div>
           </DialogContent>
@@ -717,10 +717,10 @@ export function EmprestimosView({
                 <th className="px-4 py-3 font-medium">Valor contratado</th>
                 <th className="px-4 py-3 font-medium">Taxa</th>
                 <th className="px-4 py-3 font-medium">Prazo (meses)</th>
-                <th className="px-4 py-3 font-medium">Juros ate hoje</th>
+                <th className="px-4 py-3 font-medium">Juros até hoje</th>
                 <th className="px-4 py-3 font-medium">IOF</th>
                 <th className="px-4 py-3 font-medium">Seguro</th>
-                <th className="px-4 py-3 font-medium">Custo ate hoje</th>
+                <th className="px-4 py-3 font-medium">Custo até hoje</th>
                 <th className="px-4 py-3 font-medium">Vencimento</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium" />
@@ -743,7 +743,7 @@ export function EmprestimosView({
                     {loan.hasInsurance ? (
                       <Badge variant="warning">{formatCompactCurrency(loan.insuranceCost)}</Badge>
                     ) : (
-                      <span className="text-muted">Nao</span>
+                      <span className="text-muted">Não</span>
                     )}
                   </td>
                   <td className="px-4 py-2.5 font-medium">{formatCurrency(loan.custoAcumulado)}</td>
@@ -761,7 +761,7 @@ export function EmprestimosView({
                       <button
                         onClick={() => openAmortizacao(loan)}
                         className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
-                        title="Ver amortizacao"
+                        title="Ver amortização"
                       >
                         <Table2 size={14} />
                       </button>
@@ -769,7 +769,7 @@ export function EmprestimosView({
                         href={`/emprestimos/${loan.id}`}
                         target="_blank"
                         className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
-                        title="Relatorio para imprimir"
+                        title="Relatório para imprimir"
                       >
                         <Printer size={14} />
                       </Link>
@@ -794,7 +794,7 @@ export function EmprestimosView({
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={12} className="px-4 py-8 text-center text-muted">
-                    Nenhum emprestimo encontrado com os filtros atuais.
+                    Nenhum empréstimo encontrado com os filtros atuais.
                   </td>
                 </tr>
               )}
@@ -805,7 +805,7 @@ export function EmprestimosView({
 
       <Dialog open={amortizacaoLoanId !== null} onOpenChange={(next) => !next && setAmortizacaoLoanId(null)}>
         <DialogContent
-          title={amortizacaoLoan ? `Amortizacao - ${amortizacaoLoan.contractNumber}` : "Amortizacao"}
+          title={amortizacaoLoan ? `Amortização - ${amortizacaoLoan.contractNumber}` : "Amortização"}
           className="max-w-4xl"
         >
           <div className="max-h-[65vh] overflow-y-auto">
@@ -814,7 +814,7 @@ export function EmprestimosView({
                 <tr className="border-b border-border text-left text-xs text-muted">
                   <th className="px-3 py-2 font-medium">Parcela</th>
                   <th className="px-3 py-2 font-medium">Vencimento</th>
-                  <th className="px-3 py-2 font-medium">Amortizacao</th>
+                  <th className="px-3 py-2 font-medium">Amortização</th>
                   <th className="px-3 py-2 font-medium">Juros</th>
                   <th className="px-3 py-2 font-medium">Valor da parcela</th>
                   <th className="px-3 py-2 font-medium">Pago acumulado</th>

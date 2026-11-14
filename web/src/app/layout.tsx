@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Controle | Emprestimos & ACC",
-  description: "Plataforma de Tesouraria Corporativa para gestao de emprestimos e ACC",
+  title: "Controle | Empréstimos & ACC",
+  description: "Plataforma de Tesouraria Corporativa para gestão de empréstimos e ACC",
   icons: {
     icon: "/nayme-logo.png",
   },

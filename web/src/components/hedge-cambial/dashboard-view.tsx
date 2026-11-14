@@ -104,7 +104,7 @@ export function HedgeDashboardView({ dashboard, parametros }: { dashboard: Dashb
     const n = lerNumero(ny);
     const p = lerNumero(b3);
     if ([d, n, p].some((v) => Number.isNaN(v))) {
-      setMsg({ tipo: "erro", texto: "Numero invalido." });
+      setMsg({ tipo: "erro", texto: "Número inválido." });
       return;
     }
     startTransition(async () => {
@@ -113,7 +113,7 @@ export function HedgeDashboardView({ dashboard, parametros }: { dashboard: Dashb
         setMsg({ tipo: "erro", texto: r.erro });
         return;
       }
-      setMsg({ tipo: "ok", texto: "Parametros salvos." });
+      setMsg({ tipo: "ok", texto: "Parâmetros salvos." });
       router.refresh();
     });
   }
@@ -122,21 +122,21 @@ export function HedgeDashboardView({ dashboard, parametros }: { dashboard: Dashb
     const v = (x: number | null, fmt: Formato) => (x === null ? null : numerosFormatados ? formatarValor(x, fmt) : x);
     return [
       {
-        titulo: "NAYME - posicao em sacas",
+        titulo: "NAYME - posição em sacas",
         colunas: ["Linha", "Sacas"],
         numericas: [false, true],
         linhas: dashboard.sacas.map((l) => [l.label + (l.foraDoNet ? " (fora do NET)" : ""), v(l.valor, "sacas")]),
         rodape: ["NET", v(dashboard.netSacas, "sacas")],
       },
       {
-        titulo: "LONG X SHORT DOLAR (US$)",
+        titulo: "LONG X SHORT DÓLAR (US$)",
         colunas: ["Linha", "US$"],
         numericas: [false, true],
         linhas: dashboard.dolar.map((l) => [l.label, v(l.valor, "usd")]),
         rodape: ["NET", v(dashboard.netDolar, "usd")],
       },
       {
-        titulo: "Precos medios",
+        titulo: "Preços médios",
         colunas: ["Linha", "Valor"],
         numericas: [false, true],
         linhas: dashboard.precos.map((l) => [l.label, v(l.valor, "num2")]),
@@ -145,7 +145,7 @@ export function HedgeDashboardView({ dashboard, parametros }: { dashboard: Dashb
   }
 
   const subtitulo = () =>
-    `Emitido em ${new Date().toLocaleString("pt-BR")} - Dolar do dia: ${parametros.dolar ?? "-"}${parametros.dolarData ? ` (${parametros.dolarData.split("-").reverse().join("/")})` : ""} - NY atual: ${parametros.ny ?? "-"}`;
+    `Emitido em ${new Date().toLocaleString("pt-BR")} - Dólar do dia: ${parametros.dolar ?? "-"}${parametros.dolarData ? ` (${parametros.dolarData.split("-").reverse().join("/")})` : ""} - NY atual: ${parametros.ny ?? "-"}`;
 
   return (
     <div className="space-y-6">
@@ -164,14 +164,14 @@ export function HedgeDashboardView({ dashboard, parametros }: { dashboard: Dashb
         </Button>
       </div>
       <Card className="p-4">
-        <p className="mb-3 text-sm font-semibold">Parametros de mercado (preencher diariamente)</p>
+        <p className="mb-3 text-sm font-semibold">Parâmetros de mercado (preencher diariamente)</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div>
-            <Label>Dolar do dia (R$/US$)</Label>
+            <Label>Dólar do dia (R$/US$)</Label>
             <Input inputMode="decimal" value={dolar} onChange={(e) => setDolar(e.target.value)} />
           </div>
           <div>
-            <Label>Data do dolar</Label>
+            <Label>Data do dólar</Label>
             <Input type="date" value={dolarData} onChange={(e) => setDolarData(e.target.value)} />
           </div>
           <div>
@@ -179,7 +179,7 @@ export function HedgeDashboardView({ dashboard, parametros }: { dashboard: Dashb
             <Input inputMode="decimal" value={ny} onChange={(e) => setNy(e.target.value)} />
           </div>
           <div>
-            <Label>Posicao B3 (US$)</Label>
+            <Label>Posição B3 (US$)</Label>
             <Input inputMode="decimal" value={b3} onChange={(e) => setB3(e.target.value)} />
           </div>
           <div className="flex items-end gap-2">
@@ -194,23 +194,23 @@ export function HedgeDashboardView({ dashboard, parametros }: { dashboard: Dashb
         {msg && <p className={cn("mt-2 text-sm", msg.tipo === "erro" ? "text-danger" : "text-primary")}>{msg.texto}</p>}
         {parametros.dolar === null && (
           <p className="mt-2 text-sm text-warning">
-            Sem dolar do dia: valores em R$, MTM e precos medios em R$ ficam em branco.
+            Sem dólar do dia: valores em R$, MTM e preços médios em R$ ficam em branco.
           </p>
         )}
         {parametros.ny === null && (
           <p className="mt-1 text-sm text-warning">
-            Sem NY atual: a PRE-FIXACAO usa o preco medio de venda ME (criterio antigo da planilha).
+            Sem NY atual: a PRÉ-FIXAÇÃO usa o preço médio de venda ME (critério antigo da planilha).
           </p>
         )}
       </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Tabela titulo="NAYME - posicao em sacas" linhas={dashboard.sacas} net={dashboard.netSacas} formato="sacas" />
-        <Tabela titulo="LONG X SHORT DOLAR (US$)" linhas={dashboard.dolar} net={dashboard.netDolar} formato="usd" />
+        <Tabela titulo="NAYME - posição em sacas" linhas={dashboard.sacas} net={dashboard.netSacas} formato="sacas" />
+        <Tabela titulo="LONG X SHORT DÓLAR (US$)" linhas={dashboard.dolar} net={dashboard.netDolar} formato="usd" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Tabela titulo="Precos medios" linhas={dashboard.precos} formato="num2" />
+        <Tabela titulo="Preços médios" linhas={dashboard.precos} formato="num2" />
       </div>
     </div>
   );

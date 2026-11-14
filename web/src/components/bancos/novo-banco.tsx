@@ -41,7 +41,7 @@ export function NovoBanco({ compact = false }: { compact?: boolean }) {
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe um banco cadastrado com o nome "${name.trim()}".`);
+        setError(`Já existe um banco cadastrado com o nome "${name.trim()}".`);
       }
     });
   }
@@ -71,7 +71,7 @@ export function NovoBanco({ compact = false }: { compact?: boolean }) {
             />
           </div>
           <div>
-            <Label>Cor de identificacao</Label>
+            <Label>Cor de identificação</Label>
             <div className="flex flex-wrap gap-2">
               {defaultColors.map((c) => (
                 <button

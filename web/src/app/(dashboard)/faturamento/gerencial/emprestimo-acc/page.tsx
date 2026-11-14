@@ -39,7 +39,7 @@ export default async function ApresentacaoEmprestimoAccPage({
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Emprestimo e ACC" />
+      <Topbar title="Empréstimo e ACC" />
       <div className="space-y-6 p-6">
         <div className="print:hidden">
           <GerencialFilter years={years} />

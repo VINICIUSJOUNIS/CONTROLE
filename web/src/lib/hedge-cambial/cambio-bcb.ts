@@ -179,20 +179,20 @@ function sinais(dias: DiaPtax[], projecoes: Focus[]): Sinal[] {
     const b = fechados.at(-6)!;
     const v = pct(a.fechamento!, b.fechamento!);
     out.push({
-      nome: "PTAX em 5 pregoes",
+      nome: "PTAX em 5 pregões",
       direcao: v > 0.5 ? "ALTA" : v < -0.5 ? "QUEDA" : "ESTAVEL",
       detalhe: `${fmtR(a.fechamento!)} x ${fmtR(b.fechamento!)} em ${b.data.split("-").reverse().join("/")} (${fmtPct(v)})`,
     });
-  } else out.push({ nome: "PTAX em 5 pregoes", direcao: "SEM DADO", detalhe: "Menos de 6 fechamentos no periodo." });
+  } else out.push({ nome: "PTAX em 5 pregões", direcao: "SEM DADO", detalhe: "Menos de 6 fechamentos no período." });
   const f = projecoes[0];
   if (f && f.medianaAnterior !== null) {
     const d = f.mediana - f.medianaAnterior;
     out.push({
-      nome: `Focus (dolar fim de ${f.ano})`,
+      nome: `Focus (dólar fim de ${f.ano})`,
       direcao: d > 0.02 ? "ALTA" : d < -0.02 ? "QUEDA" : "ESTAVEL",
       detalhe: `Mediana ${fmtR(f.mediana)} em ${f.data.split("-").reverse().join("/")} x ${fmtR(f.medianaAnterior)} 4 semanas antes`,
     });
-  } else out.push({ nome: "Focus", direcao: "SEM DADO", detalhe: "Sem projecao disponivel." });
+  } else out.push({ nome: "Focus", direcao: "SEM DADO", detalhe: "Sem projeção disponível." });
   return out;
 }
 
@@ -210,7 +210,7 @@ async function buscarCambio() {
     falhas: [
       p.status === "rejected" ? "PTAX" : null,
       f.status === "rejected" ? "Focus" : null,
-      a.status === "rejected" ? "Atuacoes do BCB" : null,
+      a.status === "rejected" ? "Atuações do BCB" : null,
     ].filter((x): x is string => x !== null),
     buscadoEm: new Date().toISOString(),
   };

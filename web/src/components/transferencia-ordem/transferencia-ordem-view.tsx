@@ -210,9 +210,9 @@ export function TransferenciaOrdemView({
   return (
     <div className="relative">
       <style>{`
-        /* Pagina nomeada: o @page global (globals.css) e paisagem com margem
-           de 8mm para os relatorios; a carta precisa de A4 retrato sem margem,
-           e uma pagina nomeada tem prioridade sobre o @page generico. */
+        /* Página nomeada: o @page global (globals.css) e paisagem com margem
+           de 8mm para os relatórios; a carta precisa de A4 retrato sem margem,
+           e uma página nomeada tem prioridade sobre o @page genérico. */
         @page carta { size: 210mm 297mm; margin: 0; }
         @media print {
           .carta-impressao { page: carta; }

@@ -9,8 +9,8 @@ export default async function HedgeNoticiasPage() {
   return (
     <div className="flex flex-col">
       <Topbar
-        title="Ultimas Noticias"
-        subtitle="Noticias do dolar e dados oficiais de cambio do Banco Central - atualiza a cada 5 minutos"
+        title="Últimas Notícias"
+        subtitle="Notícias do dólar e dados oficiais de câmbio do Banco Central - atualiza a cada 5 minutos"
       />
       <div className="p-6">
         <NoticiasView dolar={dolar} fontes={fontes} buscadoEm={buscadoEm} cambio={cambio} />

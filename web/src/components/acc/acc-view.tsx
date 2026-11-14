@@ -226,7 +226,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
 
   function handleSave() {
     if (!form.contractNumber.trim()) {
-      setError("Informe o numero do contrato.");
+      setError("Informe o número do contrato.");
       return;
     }
     if (!form.vencimento) {
@@ -279,13 +279,13 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel salvar. Verifique se o numero do contrato ja existe.");
+        setError("Não foi possível salvar. Verifique se o número do contrato já existe.");
       }
     });
   }
 
   function handleDelete(acc: AccRow) {
-    if (!window.confirm(`Excluir o ACC ${acc.accNumber}? Esta acao nao pode ser desfeita.`)) return;
+    if (!window.confirm(`Excluir o ACC ${acc.accNumber}? Esta ação não pode ser desfeita.`)) return;
     startTransition(async () => {
       await deleteAcc(acc.id);
       router.refresh();
@@ -331,7 +331,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
           value={toFilter}
           onChange={(e) => handleToChange(e.target.value)}
           className="w-auto"
-          title="Ate"
+          title="Até"
         />
 
         <Dialog open={open} onOpenChange={setOpen}>
@@ -341,11 +341,11 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
               Novo ACC
             </Button>
           </DialogTrigger>
-          <DialogContent title={editingId ? "Editar operacao de ACC" : "Cadastrar nova operacao de ACC"}>
+          <DialogContent title={editingId ? "Editar operação de ACC" : "Cadastrar nova operação de ACC"}>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Numero do contrato</Label>
+                  <Label>Número do contrato</Label>
                   <Input
                     value={form.contractNumber}
                     onChange={(e) => setForm({ ...form, contractNumber: e.target.value })}
@@ -409,13 +409,13 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                   />
                 </div>
                 <div>
-                  <Label>Taxa de juros ao mes (%)</Label>
+                  <Label>Taxa de juros ao mês (%)</Label>
                   <Input type="text" readOnly disabled value={formatPercent(monthlyRatePreview, 3)} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Data da contratacao</Label>
+                  <Label>Data da contratação</Label>
                   <Input
                     type="date"
                     value={form.contractDate}
@@ -433,10 +433,10 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
               </div>
 
               <div className="rounded-lg border border-border p-3">
-                <p className="mb-3 text-sm font-medium">Quitacao (preencher ao liquidar)</p>
+                <p className="mb-3 text-sm font-medium">Quitação (preencher ao liquidar)</p>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <Label>Data da quitacao</Label>
+                    <Label>Data da quitação</Label>
                     <Input
                       type="date"
                       value={form.dataQuitacao}
@@ -444,7 +444,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                     />
                   </div>
                   <div>
-                    <Label>Taxa de variacao cambial</Label>
+                    <Label>Taxa de variação cambial</Label>
                     <Input
                       type="number"
                       step="0.0001"
@@ -514,7 +514,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                     onChange={(e) => setForm({ ...form, hasInsurance: e.target.checked })}
                     className="h-4 w-4 accent-primary"
                   />
-                  Esta operacao teve seguro
+                  Esta operação teve seguro
                 </label>
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div>
@@ -541,7 +541,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
 
               {error && <p className="text-sm text-danger">{error}</p>}
               <Button className="w-full" onClick={handleSave} disabled={isPending}>
-                {isPending ? "Salvando..." : editingId ? "Salvar alteracoes" : "Salvar ACC"}
+                {isPending ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar ACC"}
               </Button>
             </div>
           </DialogContent>
@@ -555,16 +555,16 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
               <tr className="border-b border-border text-left text-xs text-muted">
                 <th className="px-4 py-3 font-medium">Contrato</th>
                 <th className="px-4 py-3 font-medium">Banco</th>
-                <th className="px-4 py-3 font-medium">Data contratacao</th>
+                <th className="px-4 py-3 font-medium">Data contratação</th>
                 <th className="px-4 py-3 font-medium">Valor contratado</th>
                 <th className="px-4 py-3 font-medium">Saldo em aberto (USD)</th>
                 <th className="px-4 py-3 font-medium">Recebido (R$)</th>
                 <th className="px-4 py-3 font-medium">Taxa ao ano</th>
-                <th className="px-4 py-3 font-medium">Taxa ao mes</th>
+                <th className="px-4 py-3 font-medium">Taxa ao mês</th>
                 <th className="px-4 py-3 font-medium">Valor do spread</th>
                 <th className="px-4 py-3 font-medium">Juros (US$)</th>
                 <th className="px-4 py-3 font-medium">Juros pagos (US$)</th>
-                <th className="px-4 py-3 font-medium">Taxa cambio quitacao</th>
+                <th className="px-4 py-3 font-medium">Taxa câmbio quitação</th>
                 <th className="px-4 py-3 font-medium">Juros pagos</th>
                 <th className="px-4 py-3 font-medium">IOF</th>
                 <th className="px-4 py-3 font-medium">Tarifas</th>
@@ -573,7 +573,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                 <th className="px-4 py-3 font-medium">Custo total</th>
                 <th className="px-4 py-3 font-medium">% Juros</th>
                 <th className="px-4 py-3 font-medium">Vencimento</th>
-                <th className="px-4 py-3 font-medium">Data quitacao</th>
+                <th className="px-4 py-3 font-medium">Data quitação</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
@@ -627,7 +627,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                     {acc.hasInsurance ? (
                       <Badge variant="warning">{formatCompactCurrency(acc.insuranceCost)}</Badge>
                     ) : (
-                      <span className="text-muted">Nao</span>
+                      <span className="text-muted">Não</span>
                     )}
                   </td>
                   <td className="px-4 py-2.5 font-medium">{formatCurrency(acc.custoTotal)}</td>
@@ -654,7 +654,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
                         href={`/acc/${acc.id}`}
                         target="_blank"
                         className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
-                        title="Relatorio para imprimir"
+                        title="Relatório para imprimir"
                       >
                         <Printer size={14} />
                       </Link>
@@ -679,7 +679,7 @@ export function AccView({ banks, accOperations }: { banks: Bank[]; accOperations
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={23} className="px-4 py-8 text-center text-muted">
-                    Nenhuma operacao de ACC encontrada com os filtros atuais.
+                    Nenhuma operação de ACC encontrada com os filtros atuais.
                   </td>
                 </tr>
               )}

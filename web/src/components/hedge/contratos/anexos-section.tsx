@@ -63,7 +63,7 @@ export function AnexosSection({
       await uploadAnexo(contratoId, status, file);
       router.refresh();
     } catch {
-      setError("Nao foi possivel enviar o arquivo.");
+      setError("Não foi possível enviar o arquivo.");
     } finally {
       setUploading(false);
     }

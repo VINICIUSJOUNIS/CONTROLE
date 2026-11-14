@@ -249,7 +249,7 @@ export async function setPrevisaoEtapa(contratoId: string, etapa: StatusContrato
     await prisma.contratoEtapaPrevisao.deleteMany({ where: { contratoId, etapa } });
   } else {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dataPrevisao) || Number(dataPrevisao.slice(0, 4)) < 1900) {
-      throw new Error("Data de previsao invalida.");
+      throw new Error("Data de previsão inválida.");
     }
     await prisma.contratoEtapaPrevisao.upsert({
       where: { contratoId_etapa: { contratoId, etapa } },
@@ -391,7 +391,7 @@ export async function upsertConfirmacaoNegocio(contratoId: string, input: Confir
 // da etapa juntos, na mesma transacao.
 export async function createContratoComConfirmacao(input: ConfirmacaoNegocioInput) {
   const numeroContrato = input.numeroContrato.trim();
-  if (!numeroContrato) throw new Error("Informe o numero do contrato.");
+  if (!numeroContrato) throw new Error("Informe o número do contrato.");
   if (!input.clienteId) throw new Error("Selecione o cliente.");
 
   await prisma.$transaction(async (tx) => {

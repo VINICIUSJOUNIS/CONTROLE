@@ -9,8 +9,8 @@ export default async function MesaOperacaoPage() {
   return (
     <div className="flex flex-col">
       <Topbar
-        title="Mesa de Operacao"
-        subtitle="Acompanhe os contratos pelas etapas de exportacao"
+        title="Mesa de Operação"
+        subtitle="Acompanhe os contratos pelas etapas de exportação"
       />
       <div className="space-y-6 p-6">
         <MesaOperacaoBoard clientes={clientes} contratos={contratos} />

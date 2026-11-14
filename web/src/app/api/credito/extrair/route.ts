@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         revalidatePath("/credito", "layout");
         controller.enqueue(encoder.encode(`\n${JSON.stringify({ destino })}`));
       } catch (e) {
-        console.error("Analise de credito:", e);
+        console.error("Análise de crédito:", e);
         const erro = e instanceof ErroExtracao ? e.message : "Falha inesperada ao processar os PDFs.";
         controller.enqueue(encoder.encode(`\n${JSON.stringify({ erro })}`));
       } finally {

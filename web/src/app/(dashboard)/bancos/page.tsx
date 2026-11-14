@@ -27,7 +27,7 @@ export default async function BancosPage({
 
   const rankings = [
     sortedByRate[0] && {
-      label: "Menor taxa media",
+      label: "Menor taxa média",
       bank: sortedByRate[0],
       value: formatPercent(sortedByRate[0].taxaMedia),
     },
@@ -37,7 +37,7 @@ export default async function BancosPage({
       value: formatCompactCurrency(sortedByVolume[0].valorCaptado),
     },
     sortedBySpread[0] && {
-      label: "Menor spread medio",
+      label: "Menor spread médio",
       bank: sortedBySpread[0],
       value: formatPercent(sortedBySpread[0].spreadMedio, 4),
     },
@@ -53,7 +53,7 @@ export default async function BancosPage({
     <div className="flex flex-col">
       <Topbar
         title="Comparativo de Bancos"
-        subtitle="Compare condicoes, taxas e custo efetivo entre instituicoes financeiras"
+        subtitle="Compare condições, taxas e custo efetivo entre instituições financeiras"
       />
       <div className="space-y-6 p-6">
         <PeriodFilter years={years} />
@@ -76,12 +76,12 @@ export default async function BancosPage({
         </div>
 
         <BarChartCard
-          title="Taxa media x Custo medio por banco"
+          title="Taxa média x Custo médio por banco"
           data={chartData}
           xKey="name"
           series={[
-            { key: "taxaMedia", name: "Taxa media (%)", color: "#1c8388" },
-            { key: "custoMedio", name: "Custo medio (%)", color: "#f04438" },
+            { key: "taxaMedia", name: "Taxa média (%)", color: "#1c8388" },
+            { key: "custoMedio", name: "Custo médio (%)", color: "#f04438" },
           ]}
         />
 
@@ -96,11 +96,11 @@ export default async function BancosPage({
                   <th className="pb-2 pr-4 font-medium">Banco</th>
                   <th className="pb-2 pr-4 font-medium">Qtde ACC</th>
                   <th className="pb-2 pr-4 font-medium">Valor captado</th>
-                  <th className="pb-2 pr-4 font-medium">Taxa media (ponderada)</th>
-                  <th className="pb-2 pr-4 font-medium">Spread medio (% da spot)</th>
-                  <th className="pb-2 pr-4 font-medium">Spot medio</th>
-                  <th className="pb-2 pr-4 font-medium">Fechamento medio</th>
-                  <th className="pb-2 pr-4 font-medium">Custo medio</th>
+                  <th className="pb-2 pr-4 font-medium">Taxa média (ponderada)</th>
+                  <th className="pb-2 pr-4 font-medium">Spread médio (% da spot)</th>
+                  <th className="pb-2 pr-4 font-medium">Spot médio</th>
+                  <th className="pb-2 pr-4 font-medium">Fechamento médio</th>
+                  <th className="pb-2 pr-4 font-medium">Custo médio</th>
                   <th className="pb-2 font-medium"></th>
                 </tr>
               </thead>

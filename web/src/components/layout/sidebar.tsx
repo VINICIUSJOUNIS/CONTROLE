@@ -73,13 +73,13 @@ const mesaOperacaoSubItems: MesaOperacaoSubItem[] = buildMesaOperacaoSections().
 
 const navItems = [
   { href: "/", label: "Dashboard Executivo", icon: LayoutDashboard },
-  { href: "/emprestimos", label: "Emprestimos", icon: Landmark },
+  { href: "/emprestimos", label: "Empréstimos", icon: Landmark },
   { href: "/conta-garantida", label: "Conta Garantida", icon: Wallet },
   { href: "/acc", label: "ACC", icon: Ship },
   { href: "/cambial", label: "Dashboard Cambial", icon: Globe2 },
-  { href: "/taxas", label: "Evolucao das Taxas", icon: LineChart },
+  { href: "/taxas", label: "Evolução das Taxas", icon: LineChart },
   { href: "/bancos", label: "Comparativo de Bancos", icon: Building2 },
-  { href: "/relatorios", label: "Relatorios", icon: FileText },
+  { href: "/relatorios", label: "Relatórios", icon: FileText },
 ];
 
 const faturamentoNavItems = [
@@ -96,12 +96,12 @@ const apresentacaoNavItems = [
   { href: "/faturamento/gerencial", label: "Faturamento", icon: Gauge },
   { href: "/faturamento/gerencial/volume-sacas", label: "Volume de Sacas", icon: Package },
   { href: "/faturamento/gerencial/paises", label: "Países Exportados", icon: MapPin },
-  { href: "/faturamento/gerencial/emprestimo-acc", label: "Emprestimo e ACC", icon: Landmark },
+  { href: "/faturamento/gerencial/emprestimo-acc", label: "Empréstimo e ACC", icon: Landmark },
   { href: "/faturamento/gerencial/conta-garantida", label: "Conta Garantida", icon: Wallet },
 ];
 
 const creditoNavItems = [
-  { href: "/credito", label: "Analise de Credito", icon: LayoutDashboard },
+  { href: "/credito", label: "Análise de Crédito", icon: LayoutDashboard },
   { href: "/credito/balanco", label: "Balanço", icon: Scale },
   { href: "/credito/dre", label: "DRE", icon: FileSpreadsheet },
   { href: "/credito/comparativo-mensal", label: "Comparativo Mensal", icon: BarChart3 },
@@ -115,22 +115,22 @@ const hedgeNavItems = [
   { href: "/hedge/contrato-compra", label: "Contrato de Compra", icon: ClipboardList },
   {
     href: "/hedge/mesa-operacao",
-    label: "Mesa de Operacao",
+    label: "Mesa de Operação",
     icon: Ship,
     subItems: mesaOperacaoSubItems,
   },
   { href: "/hedge/calendario-estufagens", label: "Calendário de Estufagens", icon: CalendarDays },
   { href: "/hedge/contratos-finalizados", label: "Contratos Finalizados", icon: CheckCircle2 },
-  { href: "/hedge/mapa", label: "Mapa de Exportacao", icon: Globe2 },
-  { href: "/hedge/operacoes-hedge", label: "Operacoes de Hedge", icon: TrendingUp },
+  { href: "/hedge/mapa", label: "Mapa de Exportação", icon: Globe2 },
+  { href: "/hedge/operacoes-hedge", label: "Operações de Hedge", icon: TrendingUp },
   { href: "/hedge/alertas-prazos", label: "Alerta de Prazos", icon: AlertTriangle },
   { href: "/hedge/cadastros", label: "Cadastros", icon: Settings2 },
 ];
 
 const hedgeCambialNavItems = [
   { href: "/hedge-cambial", label: "Dashboard Hedge", icon: TrendingUp },
-  { href: "/hedge-cambial/noticias", label: "ULTIMAS NOTICIAS", icon: Newspaper },
-  { href: "/hedge-cambial/historico-dolar", label: "HISTORICO DOLAR (PTAX)", icon: LineChart },
+  { href: "/hedge-cambial/noticias", label: "ÚLTIMAS NOTÍCIAS", icon: Newspaper },
+  { href: "/hedge-cambial/historico-dolar", label: "HISTÓRICO DÓLAR (PTAX)", icon: LineChart },
   ...hedgeCambialAbas.map((a) => ({ href: `/hedge-cambial/${a.slug}`, label: a.label, icon: FileStack })),
 ];
 
@@ -150,7 +150,7 @@ const roleLabels: Record<string, string> = {
 };
 
 const modules = [
-  { match: (p: string) => p.startsWith("/credito"), label: "Analise de Credito", items: creditoNavItems },
+  { match: (p: string) => p.startsWith("/credito"), label: "Análise de Crédito", items: creditoNavItems },
   {
     match: (p: string) => p.startsWith("/faturamento/gerencial"),
     label: "Apresentação",
@@ -176,7 +176,7 @@ const modules = [
 ];
 
 function getActiveModule(pathname: string) {
-  return modules.find((m) => m.match(pathname)) ?? { label: "Controle de Emprestimos", items: navItems };
+  return modules.find((m) => m.match(pathname)) ?? { label: "Controle de Empréstimos", items: navItems };
 }
 
 export function Sidebar({

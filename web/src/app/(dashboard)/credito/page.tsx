@@ -26,7 +26,7 @@ export default async function CreditoPage() {
 
   return (
     <>
-      <Topbar title="Analise de Credito" subtitle="Balanço e DRE mensais e trimestrais lidos do PDF pela IA, com indicadores de crédito explicados" />
+      <Topbar title="Análise de Crédito" subtitle="Balanço e DRE mensais e trimestrais lidos do PDF pela IA, com indicadores de crédito explicados" />
       <div className="space-y-6 p-6">
         <div className="grid gap-6 xl:grid-cols-2">
           <EnviarPdfs />

@@ -15,7 +15,7 @@ export default async function CreditoMesPage({ params }: { params: Promise<{ com
 
   return (
     <>
-      <Topbar title={`Analise de Credito - ${rotuloCompetencia(competencia)}`} subtitle={registro.empresa} />
+      <Topbar title={`Análise de Crédito - ${rotuloCompetencia(competencia)}`} subtitle={registro.empresa} />
       <div className="space-y-4 p-6">
         <Link href="/credito" className="inline-flex items-center gap-1 text-sm text-primary hover:underline print:hidden">
           <ArrowLeft size={14} />

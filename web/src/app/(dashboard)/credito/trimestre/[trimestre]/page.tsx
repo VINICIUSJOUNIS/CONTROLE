@@ -19,7 +19,7 @@ export default async function CreditoTrimestrePage({ params }: { params: Promise
 
   return (
     <>
-      <Topbar title={`Analise de Credito - ${rotuloTrimestre(trimestre)}`} subtitle={`${registro.empresa} · balanço e DRE do trimestre acumulado`} />
+      <Topbar title={`Análise de Crédito - ${rotuloTrimestre(trimestre)}`} subtitle={`${registro.empresa} · balanço e DRE do trimestre acumulado`} />
       <div className="space-y-4 p-6">
         <Link href="/credito" className="inline-flex items-center gap-1 text-sm text-primary hover:underline print:hidden">
           <ArrowLeft size={14} />

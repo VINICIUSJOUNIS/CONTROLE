@@ -9,7 +9,7 @@ export default async function HedgeCambialPage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Dashboard Hedge" subtitle="Posicao NAYME em sacas e LONG x SHORT dolar" />
+      <Topbar title="Dashboard Hedge" subtitle="Posição NAYME em sacas e LONG x SHORT dólar" />
       <div className="p-6">
         <HedgeDashboardView dashboard={dashboard} parametros={parametros} />
       </div>

@@ -14,9 +14,9 @@ function revalidar(aba?: string) {
 
 export async function salvarRegistro(aba: string, id: string | null, entrada: Record<string, unknown>): Promise<Resultado> {
   const config = getAbaConfig(aba);
-  if (!config) return { ok: false, erro: "Aba invalida." };
+  if (!config) return { ok: false, erro: "Aba inválida." };
   const atual = id ? await prisma.hedgeRegistro.findUnique({ where: { id } }) : null;
-  if (id && (!atual || atual.aba !== aba)) return { ok: false, erro: "Lancamento nao encontrado." };
+  if (id && (!atual || atual.aba !== aba)) return { ok: false, erro: "Lançamento não encontrado." };
   const r = normalizarDados(config, entrada, await getCadastrosDaAba(config), atual?.dados as Dados | undefined);
   if ("erro" in r) return { ok: false, erro: r.erro };
 
@@ -32,7 +32,7 @@ export async function salvarRegistro(aba: string, id: string | null, entrada: Re
 
 export async function excluirRegistro(aba: string, id: string): Promise<Resultado> {
   const atual = await prisma.hedgeRegistro.findUnique({ where: { id } });
-  if (!atual || atual.aba !== aba) return { ok: false, erro: "Lancamento nao encontrado." };
+  if (!atual || atual.aba !== aba) return { ok: false, erro: "Lançamento não encontrado." };
   await prisma.hedgeRegistro.delete({ where: { id } });
   revalidar(aba);
   return { ok: true };
@@ -51,8 +51,8 @@ export async function salvarParametros(entrada: {
     [PARAMETROS.posicaoB3, entrada.posicaoB3],
   ];
   for (const [chave, v] of pares) {
-    if (typeof v === "number" && !Number.isFinite(v)) return { ok: false, erro: "Valor invalido." };
-    if (chave === PARAMETROS.dolar && typeof v === "number" && (v <= 0 || v > 50)) return { ok: false, erro: "Dolar fora da faixa." };
+    if (typeof v === "number" && !Number.isFinite(v)) return { ok: false, erro: "Valor inválido." };
+    if (chave === PARAMETROS.dolar && typeof v === "number" && (v <= 0 || v > 50)) return { ok: false, erro: "Dólar fora da faixa." };
   }
   await prisma.$transaction(
     pares.map(([chave, v]) =>
@@ -69,8 +69,8 @@ export async function salvarParametros(entrada: {
 
 // Grava so o dolar do dia (usado na TRAVA NDF), sem mexer nos outros parametros.
 export async function salvarDolarDoDia(dolar: number, data: string | null): Promise<Resultado> {
-  if (!Number.isFinite(dolar) || dolar <= 0 || dolar > 50) return { ok: false, erro: "Dolar fora da faixa." };
-  if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) return { ok: false, erro: "Data invalida." };
+  if (!Number.isFinite(dolar) || dolar <= 0 || dolar > 50) return { ok: false, erro: "Dólar fora da faixa." };
+  if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) return { ok: false, erro: "Data inválida." };
   await prisma.$transaction([
     prisma.hedgeParametro.upsert({
       where: { chave: PARAMETROS.dolar },
@@ -99,13 +99,13 @@ export async function buscarPtax(): Promise<{ ok: true; dolar: number; data: str
     `?@dataInicial='${fmt(ini)}'&@dataFinalCotacao='${fmt(fim)}'&$format=json&$select=cotacaoVenda,dataHoraCotacao`;
   try {
     const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return { ok: false, erro: "Banco Central indisponivel. Informe o dolar manualmente." };
+    if (!res.ok) return { ok: false, erro: "Banco Central indisponível. Informe o dólar manualmente." };
     const json = (await res.json()) as { value?: { cotacaoVenda: number; dataHoraCotacao: string }[] };
     const ultimo = json.value?.at(-1);
-    if (!ultimo) return { ok: false, erro: "PTAX nao encontrada. Informe o dolar manualmente." };
+    if (!ultimo) return { ok: false, erro: "PTAX não encontrada. Informe o dólar manualmente." };
     return { ok: true, dolar: ultimo.cotacaoVenda, data: ultimo.dataHoraCotacao.slice(0, 10) };
   } catch {
-    return { ok: false, erro: "Falha ao consultar o Banco Central. Informe o dolar manualmente." };
+    return { ok: false, erro: "Falha ao consultar o Banco Central. Informe o dólar manualmente." };
   }
 }
 
@@ -117,13 +117,13 @@ function revalidarCadastro(cadastro: keyof typeof CADASTROS) {
 }
 
 export async function adicionarItemCadastro(cadastro: string, nome: string): Promise<Resultado> {
-  if (!(cadastro in CADASTROS)) return { ok: false, erro: "Cadastro invalido." };
+  if (!(cadastro in CADASTROS)) return { ok: false, erro: "Cadastro inválido." };
   const c = cadastro as keyof typeof CADASTROS;
   const limpo = nome.replace(/\s+/g, " ").trim().toUpperCase();
   if (!limpo) return { ok: false, erro: "Informe o nome." };
   if (limpo.length > 60) return { ok: false, erro: "Nome muito longo." };
   const existentes = await getCadastro(c);
-  if (existentes.some((e) => e.toUpperCase() === limpo)) return { ok: false, erro: `"${limpo}" ja esta cadastrada.` };
+  if (existentes.some((e) => e.toUpperCase() === limpo)) return { ok: false, erro: `"${limpo}" já está cadastrada.` };
   const aba = abaDoCadastro(c);
   const ultimo = await prisma.hedgeRegistro.aggregate({ where: { aba }, _max: { ordem: true } });
   await prisma.hedgeRegistro.create({ data: { aba, ordem: (ultimo._max.ordem ?? 0) + 1, dados: { nome: limpo } } });
@@ -133,7 +133,7 @@ export async function adicionarItemCadastro(cadastro: string, nome: string): Pro
 
 // Remove da lista de opcoes. Lancamentos antigos com esse nome continuam como estao.
 export async function excluirItemCadastro(cadastro: string, nome: string): Promise<Resultado> {
-  if (!(cadastro in CADASTROS)) return { ok: false, erro: "Cadastro invalido." };
+  if (!(cadastro in CADASTROS)) return { ok: false, erro: "Cadastro inválido." };
   const c = cadastro as keyof typeof CADASTROS;
   await prisma.hedgeRegistro.deleteMany({ where: { aba: abaDoCadastro(c), dados: { path: ["nome"], equals: nome } } });
   revalidarCadastro(c);

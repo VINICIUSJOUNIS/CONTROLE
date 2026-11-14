@@ -337,7 +337,7 @@ export function ContaGarantidaView({
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel salvar a conta garantida.");
+        setError("Não foi possível salvar a conta garantida.");
       }
     });
   }
@@ -345,7 +345,7 @@ export function ContaGarantidaView({
   function handleDelete(conta: ContaGarantidaRow) {
     if (
       !window.confirm(
-        `Excluir a conta garantida do ${conta.bankName}? Todas as utilizacoes registradas tambem serao excluidas. Esta acao nao pode ser desfeita.`
+        `Excluir a conta garantida do ${conta.bankName}? Todas as utilizações registradas também serão excluídas. Esta ação não pode ser desfeita.`
       )
     )
       return;
@@ -375,11 +375,11 @@ export function ContaGarantidaView({
       return;
     }
     if (!formUso.dataInicio) {
-      setErrorUso("Informe a data de inicio da utilizacao.");
+      setErrorUso("Informe a data de início da utilização.");
       return;
     }
     if (formUso.dataFim && formUso.dataFim < formUso.dataInicio) {
-      setErrorUso("A data de fim nao pode ser anterior a data de inicio.");
+      setErrorUso("A data de fim não pode ser anterior à data de início.");
       return;
     }
     setErrorUso(null);
@@ -400,13 +400,13 @@ export function ContaGarantidaView({
         setOpenUso(false);
         router.refresh();
       } catch {
-        setErrorUso("Nao foi possivel salvar a utilizacao.");
+        setErrorUso("Não foi possível salvar a utilização.");
       }
     });
   }
 
   function handleDeleteUso(uso: ContaGarantidaUsoRow) {
-    if (!window.confirm("Excluir esta utilizacao? Esta acao nao pode ser desfeita.")) return;
+    if (!window.confirm("Excluir esta utilização? Esta ação não pode ser desfeita.")) return;
     startTransition(async () => {
       await deleteContaGarantidaUso(uso.id);
       router.refresh();
@@ -533,8 +533,8 @@ export function ContaGarantidaView({
               </div>
 
               <p className="text-xs text-muted">
-                O limite aprovado por esse banco. Cada saque/utilizacao do limite (com seu proprio periodo de uso)
-                e registrado separadamente depois de salvar, na lista de utilizacoes da conta.
+                O limite aprovado por esse banco. Cada saque/utilização do limite (com seu próprio período de uso)
+                e registrado separadamente depois de salvar, na lista de utilizações da conta.
               </p>
 
               <div>

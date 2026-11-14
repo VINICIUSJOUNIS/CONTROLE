@@ -16,7 +16,7 @@ const rateBasisSuffix: Record<string, string> = {
 
 type ReportRow = {
   id: string;
-  tipo: "Emprestimo" | "ACC";
+  tipo: "Empréstimo" | "ACC";
   bankName: string;
   contractDate: string;
   valorTomado: number;
@@ -62,7 +62,7 @@ export function RelatorioContratosAbertos({
     const header = [
       "Tipo",
       "Banco",
-      "Data da contratacao",
+      "Data da contratação",
       "Valor tomado",
       "Valor contratado (US$)",
       "Valor em aberto",
@@ -155,7 +155,7 @@ export function RelatorioContratosAbertos({
             <tr className="border-b border-border text-left text-xs text-muted print:text-[9px]">
               <th className="pb-2 pr-4 font-medium print:pb-1">Tipo</th>
               <th className="pb-2 pr-4 font-medium print:pb-1">Banco</th>
-              <th className="pb-2 pr-4 font-medium print:pb-1">Data da contratacao</th>
+              <th className="pb-2 pr-4 font-medium print:pb-1">Data da contratação</th>
               <th className="pb-2 pr-4 font-medium print:pb-1">Valor tomado</th>
               <th className="pb-2 pr-4 font-medium print:pb-1">Valor contratado (US$)</th>
               <th className="pb-2 pr-4 font-medium print:pb-1">Valor em aberto</th>
@@ -210,7 +210,7 @@ export function RelatorioContratosAbertos({
 
         <div className="mt-12 hidden grid-cols-2 gap-12 print:mt-4 print:grid print:gap-8">
           <div className="text-center text-xs print:text-[9px]">
-            <div className="mb-1 border-t border-foreground pt-2 print:pt-1">Assinatura do responsavel</div>
+            <div className="mb-1 border-t border-foreground pt-2 print:pt-1">Assinatura do responsável</div>
           </div>
           <div className="text-center text-xs print:text-[9px]">
             <div className="mb-1 border-t border-foreground pt-2 print:pt-1">Data</div>

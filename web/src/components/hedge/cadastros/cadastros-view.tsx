@@ -162,7 +162,7 @@ export function CadastrosView({
       {tab === "pagamento" && (
         <CatalogoSimplesTable
           itemLabel="Forma de pagamento"
-          placeholder="Ex: Carta de credito, 30/60/90 dias"
+          placeholder="Ex: Carta de crédito, 30/60/90 dias"
           items={formasPagamento}
           createAction={createFormaPagamento}
           updateAction={updateFormaPagamento}
@@ -172,7 +172,7 @@ export function CadastrosView({
       {tab === "amostra" && (
         <CatalogoSimplesTable
           itemLabel="Tipo de amostra"
-          placeholder="Ex: Amostra de pre-embarque"
+          placeholder="Ex: Amostra de pré-embarque"
           items={tiposAmostra}
           createAction={createTipoAmostra}
           updateAction={updateTipoAmostra}

@@ -28,7 +28,7 @@ export function NovaPeneira({ compact = false }: { compact?: boolean }) {
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe uma peneira chamada "${name.trim()}".`);
+        setError(`Já existe uma peneira chamada "${name.trim()}".`);
       }
     });
   }

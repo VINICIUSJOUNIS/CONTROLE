@@ -81,7 +81,7 @@ export default async function DashboardPage({
     .filter((b) => b.value > 0);
 
   const modalityDistribution = [
-    { name: "Emprestimos", value: kpis.totalContratado, color: "#1c8388" },
+    { name: "Empréstimos", value: kpis.totalContratado, color: "#1c8388" },
     { name: "ACC", value: kpis.totalAccContratado, color: "#12b76a" },
   ];
 
@@ -93,7 +93,7 @@ export default async function DashboardPage({
         if (!parcela) return null;
         return {
           id: l.id,
-          tipo: "Emprestimo" as const,
+          tipo: "Empréstimo" as const,
           contractNumber: l.contractNumber,
           bankName: l.bankName,
           valor: parcela.valorParcela,
@@ -122,7 +122,7 @@ export default async function DashboardPage({
     <div className="flex flex-col">
       <Topbar
         title="Dashboard Executivo"
-        subtitle="Visao geral da carteira de emprestimos e ACC"
+        subtitle="Visão geral da carteira de empréstimos e ACC"
       />
       <div className="space-y-6 p-6">
         <div className="flex flex-wrap items-end gap-3">
@@ -135,30 +135,30 @@ export default async function DashboardPage({
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <BarChartCard
-              title="Fluxo de pagamentos - proximos 12 meses"
+              title="Fluxo de pagamentos - próximos 12 meses"
               data={cashFlowData}
               xKey="month"
               series={[
                 { key: "entradas", name: "Entradas", color: "#12b76a" },
-                { key: "saidas", name: "Saidas", color: "#f04438" },
+                { key: "saidas", name: "Saídas", color: "#f04438" },
               ]}
               valueFormat="currency"
             />
           </div>
-          <PieChartCard title="Distribuicao por modalidade" data={modalityDistribution} />
+          <PieChartCard title="Distribuição por modalidade" data={modalityDistribution} />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <LineChartCard
-              title="Evolucao da divida"
+              title="Evolução da dívida"
               data={debtEvolution}
               xKey="month"
               series={[{ key: "saldoDevedor", name: "Saldo devedor", color: "#1c8388" }]}
               valueFormat="currency"
             />
           </div>
-          <PieChartCard title="Distribuicao por banco" data={byBank} />
+          <PieChartCard title="Distribuição por banco" data={byBank} />
         </div>
 
         {yearlyComparison.length > 1 && (
@@ -171,10 +171,10 @@ export default async function DashboardPage({
               valueFormat="currency"
             />
             <BarChartCard
-              title="Custo medio da carteira por ano"
+              title="Custo médio da carteira por ano"
               data={yearlyComparison}
               xKey="year"
-              series={[{ key: "custoMedio", name: "Custo medio (%)", color: "#f04438" }]}
+              series={[{ key: "custoMedio", name: "Custo médio (%)", color: "#f04438" }]}
               valueFormat="percent"
             />
           </div>
@@ -182,7 +182,7 @@ export default async function DashboardPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Proximos vencimentos</CardTitle>
+            <CardTitle>Próximos vencimentos</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <table className="w-full text-sm">

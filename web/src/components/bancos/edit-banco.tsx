@@ -48,7 +48,7 @@ export function EditBanco({ id, name: currentName, color: currentColor }: { id: 
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe um banco cadastrado com o nome "${name.trim()}".`);
+        setError(`Já existe um banco cadastrado com o nome "${name.trim()}".`);
       }
     });
   }
@@ -67,7 +67,7 @@ export function EditBanco({ id, name: currentName, color: currentColor }: { id: 
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Banco Votorantim" />
           </div>
           <div>
-            <Label>Cor de identificacao</Label>
+            <Label>Cor de identificação</Label>
             <div className="flex flex-wrap gap-2">
               {defaultColors.map((c) => (
                 <button
@@ -86,7 +86,7 @@ export function EditBanco({ id, name: currentName, color: currentColor }: { id: 
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}
           <Button className="w-full" onClick={handleSave} disabled={isPending}>
-            {isPending ? "Salvando..." : "Salvar alteracoes"}
+            {isPending ? "Salvando..." : "Salvar alterações"}
           </Button>
         </div>
       </DialogContent>

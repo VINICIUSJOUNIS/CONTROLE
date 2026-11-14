@@ -18,13 +18,13 @@ function Seta({ direcao }: { direcao: Sinal["direcao"] }) {
 
 // Efeito de cada tipo de atuacao do BCB sobre o dolar.
 function efeito(a: Atuacao): { texto: string; tipo: "oferta" | "demanda" | "neutro" } {
-  if (a.composto) return { texto: "Troca swap por dolar a vista (neutro)", tipo: "neutro" };
-  if (a.instrumento === "Venda a Vista") return { texto: "BC vende dolar: segura alta", tipo: "oferta" };
-  if (a.instrumento === "Compra a Vista") return { texto: "BC compra dolar: segura queda", tipo: "demanda" };
+  if (a.composto) return { texto: "Troca swap por dólar à vista (neutro)", tipo: "neutro" };
+  if (a.instrumento === "Venda a Vista") return { texto: "BC vende dólar: segura alta", tipo: "oferta" };
+  if (a.instrumento === "Compra a Vista") return { texto: "BC compra dólar: segura queda", tipo: "demanda" };
   if (a.instrumento === "Swap Cambial" && a.modalidade === "Tradicional")
-    return { texto: "Oferta de hedge (dolar futuro): segura alta - inclui rolagens", tipo: "oferta" };
-  if (a.instrumento === "Swap Cambial" && a.modalidade === "Reverso") return { texto: "Compra de dolar futuro: segura queda", tipo: "demanda" };
-  if (a.instrumento === "Venda com Recompra") return { texto: "Linha: dolar emprestado com recompra (liquidez)", tipo: "oferta" };
+    return { texto: "Oferta de hedge (dólar futuro): segura alta - inclui rolagens", tipo: "oferta" };
+  if (a.instrumento === "Swap Cambial" && a.modalidade === "Reverso") return { texto: "Compra de dólar futuro: segura queda", tipo: "demanda" };
+  if (a.instrumento === "Venda com Recompra") return { texto: "Linha: dólar emprestado com recompra (liquidez)", tipo: "oferta" };
   return { texto: a.instrumento, tipo: "neutro" };
 }
 
@@ -42,13 +42,13 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
   return (
     <div className="space-y-6">
       {painel.falhas.length > 0 && (
-        <p className="text-sm text-warning">Banco Central nao respondeu nesta busca: {painel.falhas.join(", ")}. Clique em Atualizar agora.</p>
+        <p className="text-sm text-warning">Banco Central não respondeu nesta busca: {painel.falhas.join(", ")}. Clique em Atualizar agora.</p>
       )}
 
       {/* Termometro */}
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-          <span className="text-sm font-semibold">Tendencia do dolar pelos dados oficiais</span>
+          <span className="text-sm font-semibold">Tendência do dólar pelos dados oficiais</span>
           <span
             className={cn(
               "rounded-full px-3 py-1 text-sm font-semibold",
@@ -57,7 +57,7 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
               leitura === "ESTAVEL" && "bg-border/50 text-muted"
             )}
           >
-            {leitura === "ESTAVEL" ? "SEM DIRECAO CLARA" : `PRESSAO DE ${leitura}`} ({altas} de alta, {quedas} de queda)
+            {leitura === "ESTAVEL" ? "SEM DIREÇÃO CLARA" : `PRESSÃO DE ${leitura}`} ({altas} de alta, {quedas} de queda)
           </span>
         </div>
         <ul>
@@ -66,7 +66,7 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
               <Seta direcao={s.direcao} />
               <div>
                 <p className="font-medium">
-                  {s.nome}: {s.direcao === "ESTAVEL" ? "estavel" : s.direcao === "SEM DADO" ? "sem dado" : s.direcao}
+                  {s.nome}: {s.direcao === "ESTAVEL" ? "estável" : s.direcao === "SEM DADO" ? "sem dado" : s.direcao}
                 </p>
                 <p className="text-xs text-muted">{s.detalhe}</p>
               </div>
@@ -74,8 +74,8 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
           ))}
         </ul>
         <p className="border-t border-border bg-border/20 px-4 py-2 text-[11px] text-muted">
-          Leitura automatica de 3 sinais oficiais (PTAX no dia, PTAX em 5 pregoes e mediana do Focus). Indica a direcao recente,
-          nao e previsao nem recomendacao de operacao.
+          Leitura automática de 3 sinais oficiais (PTAX no dia, PTAX em 5 pregões e mediana do Focus). Indica a direção recente,
+          não e previsão nem recomendação de operação.
         </p>
       </Card>
 
@@ -115,17 +115,17 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
               </tbody>
             </table>
           ) : (
-            <p className="px-4 py-6 text-sm text-muted">Sem boletins no periodo.</p>
+            <p className="px-4 py-6 text-sm text-muted">Sem boletins no período.</p>
           )}
           <p className="px-4 py-2 text-[11px] text-muted">
-            O BCB publica a PTAX em 4 boletins (cerca de 10h, 11h, 12h e 13h) e o fechamento por volta das 13h10, em dias uteis.
+            O BCB publica a PTAX em 4 boletins (cerca de 10h, 11h, 12h e 13h) e o fechamento por volta das 13h10, em dias úteis.
             {anterior?.fechamento ? ` Fechamento anterior (${dataBr(anterior.data)}): ${taxa(anterior.fechamento)}.` : ""}
           </p>
         </Card>
 
         {/* Fechamentos e Focus */}
         <Card className="overflow-hidden">
-          <div className="border-b border-border px-4 py-3 text-sm font-semibold">PTAX de fechamento - ultimos pregoes</div>
+          <div className="border-b border-border px-4 py-3 text-sm font-semibold">PTAX de fechamento - últimos pregões</div>
           <div className="space-y-1.5 px-4 py-3">
             {fechamentos.map((d) => {
               const largura = max > min ? 15 + ((d.fechamento! - min) / (max - min)) * 85 : 50;
@@ -141,9 +141,9 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
             })}
           </div>
           <div className="border-t border-border px-4 py-3">
-            <p className="mb-2 text-sm font-semibold">Focus - projecao do mercado para o dolar</p>
+            <p className="mb-2 text-sm font-semibold">Focus - projeção do mercado para o dólar</p>
             {painel.projecoes.length === 0 ? (
-              <p className="text-xs text-muted">Sem projecao disponivel.</p>
+              <p className="text-xs text-muted">Sem projeção disponível.</p>
             ) : (
               <table className="w-full text-xs">
                 <tbody>
@@ -170,11 +170,11 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
       <Card className="overflow-hidden">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold">
           <Landmark size={16} className="text-primary" />
-          Atuacoes do Banco Central no cambio - ultimos 90 dias
-          {painel.atuacoesAte && <span className="font-normal text-muted">(arquivo do BCB atualizado ate {dataBr(painel.atuacoesAte)})</span>}
+          Atuações do Banco Central no câmbio - últimos 90 dias
+          {painel.atuacoesAte && <span className="font-normal text-muted">(arquivo do BCB atualizado até {dataBr(painel.atuacoesAte)})</span>}
         </div>
         {painel.atuacoes.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted">Nenhuma atuacao no periodo.</p>
+          <p className="px-4 py-6 text-sm text-muted">Nenhuma atuação no período.</p>
         ) : (
           <div className="max-h-96 overflow-auto">
             <table className="w-full text-xs">
@@ -182,7 +182,7 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
                 <tr className="border-b border-border text-left text-muted">
                   <th className="px-4 py-2 font-medium">Data</th>
                   <th className="px-4 py-2 font-medium">Instrumento</th>
-                  <th className="px-4 py-2 font-medium">Efeito no dolar</th>
+                  <th className="px-4 py-2 font-medium">Efeito no dólar</th>
                   <th className="px-4 py-2 text-right font-medium">Ofertado</th>
                   <th className="px-4 py-2 text-right font-medium">Aceito</th>
                   <th className="px-4 py-2 text-right font-medium">Taxa de corte</th>
@@ -228,12 +228,12 @@ export function CambioBcbView({ painel }: { painel: PainelCambio }) {
         <Info size={16} className="mt-0.5 shrink-0 text-primary" />
         <div className="space-y-1">
           <p>
-            <strong className="text-foreground">Oferta de compra e venda de dolar em tempo real:</strong> o Banco Central nao publica.
-            O livro de ofertas do dolar (a vista e futuro) e dado de mercado da B3, vendido por distribuidores de cotacao.
+            <strong className="text-foreground">Oferta de compra e venda de dólar em tempo real:</strong> o Banco Central não publica.
+            O livro de ofertas do dólar (à vista e futuro) é dado de mercado da B3, vendido por distribuidores de cotação.
           </p>
           <p>
-            <strong className="text-foreground">Fluxo cambial (entradas e saidas de dolares):</strong> o BCB divulga em nota semanal
-            (quartas-feiras, com dados ate a sexta anterior), sem API aberta para o sistema buscar.
+            <strong className="text-foreground">Fluxo cambial (entradas e saídas de dólares):</strong> o BCB divulga em nota semanal
+            (quartas-feiras, com dados até a sexta anterior), sem API aberta para o sistema buscar.
           </p>
         </div>
       </Card>

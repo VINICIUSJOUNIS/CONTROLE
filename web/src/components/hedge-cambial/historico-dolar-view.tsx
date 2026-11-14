@@ -55,7 +55,7 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
     : null;
 
   function exportar() {
-    const linhas = ["Data;Compra;Venda;Variacao dia (%)"].concat(
+    const linhas = ["Data;Compra;Venda;Variação dia (%)"].concat(
       filtrado.map((h) =>
         [dataBr(h.data), taxa(h.compra), taxa(h.venda), h.variacao === null ? "" : h.variacao.toFixed(2).replace(".", ",")].join(";")
       )
@@ -73,7 +73,7 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
       {ultimo && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="border-primary/60 p-4">
-            <p className="text-xs font-medium text-muted">Ultima PTAX ({dataBr(ultimo.data)})</p>
+            <p className="text-xs font-medium text-muted">Última PTAX ({dataBr(ultimo.data)})</p>
             <p className="mt-1.5 text-lg font-semibold">
               Compra {taxa(ultimo.compra)} - Venda {taxa(ultimo.venda)}
             </p>
@@ -84,17 +84,17 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
           {resumo && (
             <>
               <Card className="p-4">
-                <p className="text-xs font-medium text-muted">Media do periodo (venda)</p>
+                <p className="text-xs font-medium text-muted">Média do período (venda)</p>
                 <p className="mt-1.5 text-lg font-semibold">{taxa(resumo.media)}</p>
               </Card>
               <Card className="p-4">
-                <p className="text-xs font-medium text-muted">Minima / maxima (venda)</p>
+                <p className="text-xs font-medium text-muted">Mínima / máxima (venda)</p>
                 <p className="mt-1.5 text-lg font-semibold">
                   {taxa(resumo.min)} / {taxa(resumo.max)}
                 </p>
               </Card>
               <Card className="p-4">
-                <p className="text-xs font-medium text-muted">Variacao no periodo</p>
+                <p className="text-xs font-medium text-muted">Variação no período</p>
                 <p className={cn("mt-1.5 text-lg font-semibold", resumo.variacao > 0 ? "text-danger" : "text-primary")}>
                   {pct(resumo.variacao)}
                 </p>
@@ -153,28 +153,28 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
             </option>
           ))}
         </Select>
-        <span className="text-xs text-muted">ou periodo:</span>
+        <span className="text-xs text-muted">ou período:</span>
         <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} className="w-auto" title="De" />
-        <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-auto" title="Ate" />
+        <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-auto" title="Até" />
         <div className="ml-auto flex gap-2">
           <Button
             variant="outline"
             disabled={!filtrado.length}
             onClick={() =>
               imprimirRelatorio({
-                titulo: "Historico do Dolar (PTAX)",
-                subtitulo: `Emitido em ${new Date().toLocaleString("pt-BR")} - Periodo: ${filtrado[0] ? dataBr(filtrado[0].data) : ""} a ${filtrado.at(-1) ? dataBr(filtrado.at(-1)!.data) : ""}`,
+                titulo: "Histórico do Dólar (PTAX)",
+                subtitulo: `Emitido em ${new Date().toLocaleString("pt-BR")} - Período: ${filtrado[0] ? dataBr(filtrado[0].data) : ""} a ${filtrado.at(-1) ? dataBr(filtrado.at(-1)!.data) : ""}`,
                 indicadores: resumo
                   ? [
-                      { label: "Media (venda)", valor: taxa(resumo.media) },
-                      { label: "Minima / maxima (venda)", valor: `${taxa(resumo.min)} / ${taxa(resumo.max)}` },
-                      { label: "Variacao no periodo", valor: pct(resumo.variacao) },
+                      { label: "Média (venda)", valor: taxa(resumo.media) },
+                      { label: "Mínima / máxima (venda)", valor: `${taxa(resumo.min)} / ${taxa(resumo.max)}` },
+                      { label: "Variação no período", valor: pct(resumo.variacao) },
                     ]
                   : [],
                 tabelas: [
                   {
-                    titulo: `PTAX de fechamento (${filtrado.length} dias uteis)`,
-                    colunas: ["Data", "Compra", "Venda", "Variacao no dia"],
+                    titulo: `PTAX de fechamento (${filtrado.length} dias úteis)`,
+                    colunas: ["Data", "Compra", "Venda", "Variação no dia"],
                     numericas: [false, true, true, true],
                     linhas: [...filtrado].reverse().map((h) => [dataBr(h.data), taxa(h.compra), taxa(h.venda), h.variacao === null ? "-" : pct(h.variacao)]),
                   },
@@ -198,7 +198,7 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
                 <th className="px-4 py-2 font-medium">Data</th>
                 <th className="px-4 py-2 text-right font-medium">Compra</th>
                 <th className="px-4 py-2 text-right font-medium">Venda</th>
-                <th className="px-4 py-2 text-right font-medium">Variacao no dia</th>
+                <th className="px-4 py-2 text-right font-medium">Variação no dia</th>
               </tr>
             </thead>
             <tbody>
@@ -221,7 +221,7 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
               {filtrado.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-muted">
-                    Nenhuma cotacao no periodo.
+                    Nenhuma cotação no período.
                   </td>
                 </tr>
               )}
@@ -230,7 +230,7 @@ export function HistoricoDolarView({ historico }: { historico: PtaxDia[] }) {
         </div>
         <p className="border-t border-border px-4 py-2 text-[11px] text-muted">
           {filtrado.length} dia(s) util(eis). Fonte: Banco Central (PTAX de fechamento, publicada por volta das 13h10). O sistema grava
-          sozinho a PTAX de cada dia e usa a de venda como dolar do dia na TRAVA NDF e no Dashboard Hedge.
+          sozinho a PTAX de cada dia e usa a de venda como dólar do dia na TRAVA NDF e no Dashboard Hedge.
         </p>
       </Card>
     </div>

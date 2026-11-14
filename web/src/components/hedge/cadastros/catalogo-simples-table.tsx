@@ -40,7 +40,7 @@ export function CatalogoSimplesTable({
         setNewName("");
         router.refresh();
       } catch {
-        setError(`Ja existe "${newName.trim()}" cadastrado.`);
+        setError(`Já existe "${newName.trim()}" cadastrado.`);
       }
     });
   }
@@ -60,7 +60,7 @@ export function CatalogoSimplesTable({
         setEditingId(null);
         router.refresh();
       } catch {
-        setError(`Ja existe "${editingName.trim()}" cadastrado.`);
+        setError(`Já existe "${editingName.trim()}" cadastrado.`);
       }
     });
   }
@@ -68,7 +68,7 @@ export function CatalogoSimplesTable({
   function handleDelete(id: string) {
     if (
       !window.confirm(
-        `Excluir este ${itemLabel.toLowerCase()}? Contratos que ja usam esse valor mantem o registro, mas ele deixa de aparecer nas opcoes.`
+        `Excluir este ${itemLabel.toLowerCase()}? Contratos que já usam esse valor mantém o registro, mas ele deixa de aparecer nas opções.`
       )
     )
       return;
@@ -78,7 +78,7 @@ export function CatalogoSimplesTable({
         await deleteAction(id);
         router.refresh();
       } catch {
-        setError(`Nao foi possivel excluir: este ${itemLabel.toLowerCase()} esta em uso em algum contrato.`);
+        setError(`Não foi possível excluir: este ${itemLabel.toLowerCase()} está em uso em algum contrato.`);
       }
     });
   }

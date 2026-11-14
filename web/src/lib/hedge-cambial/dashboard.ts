@@ -78,25 +78,25 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
 
   const sacas: LinhaDashboard[] = [
     { label: "ESTOQUE", valor: estoque, aba: "estoque-cafe-nayme" },
-    { label: "COMPRAS EM R$", valor: comprasR, aba: "compras-em-reais-nayme", ajuda: "Compradas e ainda nao entregues." },
-    { label: "COMPRAS FUTURA", valor: comprasFut, aba: "compras-futuras", ajuda: "Nao liquidadas." },
-    { label: "CAFES A FIXAR", valor: aFixar, aba: "cafes-a-fixar-nayme", ajuda: "Saldo a fixar (status A FIXAR)." },
-    { label: "VENDA MI", valor: vendaMi, aba: "venda-mi", ajuda: "Vendas ainda nao embarcadas." },
+    { label: "COMPRAS EM R$", valor: comprasR, aba: "compras-em-reais-nayme", ajuda: "Compradas e ainda não entregues." },
+    { label: "COMPRAS FUTURA", valor: comprasFut, aba: "compras-futuras", ajuda: "Não liquidadas." },
+    { label: "CAFÉS A FIXAR", valor: aFixar, aba: "cafes-a-fixar-nayme", ajuda: "Saldo a fixar (status A FIXAR)." },
+    { label: "VENDA MI", valor: vendaMi, aba: "venda-mi", ajuda: "Vendas ainda não embarcadas." },
     { label: "VENDA ME USD", valor: vendaMeSacas, aba: "vendas-merc-externo-nayme", ajuda: "Vendas externas com status FIXADO." },
     {
       label: "VENDA ME A FIXAR EMBARCADA",
       valor: meAFixarEmbarcada,
       aba: "vendas-merc-externo-nayme",
-      ajuda: "Embarcada com preco ainda a fixar: risco de NY continua (posicao comprada).",
+      ajuda: "Embarcada com preço ainda a fixar: risco de NY continua (posição comprada).",
     },
-    { label: "VENDA FUTURA", valor: vendaFut, aba: "vendas-futuras", ajuda: "Nao liquidadas." },
+    { label: "VENDA FUTURA", valor: vendaFut, aba: "vendas-futuras", ajuda: "Não liquidadas." },
     { label: "BOLSA NY", valor: bolsa, aba: "bolsa-ny-nayme" },
   ];
   sacas.push({
     label: "VENDA ME A FIXAR (a embarcar)",
     valor: meAFixarEstoque,
     aba: "vendas-merc-externo-nayme",
-    ajuda: "Informativo, fora do NET: so o diferencial esta travado; o NY segue no estoque ate a fixacao.",
+    ajuda: "Informativo, fora do NET: só o diferencial está travado; o NY segue no estoque até a fixação.",
     foraDoNet: true,
   });
   // Planilha: NET = SUM(B4:B12) e NET GERAL = SUM(B12:B13) (sintetico em dobro).
@@ -127,7 +127,7 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
 
   const dolar: LinhaDashboard[] = [
     { label: "ACC", valor: acc, aba: "endividamento-nayme", ajuda: "Saldo a liquidar dos ACC." },
-    { label: "JUROS ACC", valor: jurosAcc, aba: "endividamento-nayme", ajuda: "Juros acumulados ate hoje (base 360)." },
+    { label: "JUROS ACC", valor: jurosAcc, aba: "endividamento-nayme", ajuda: "Juros acumulados até hoje (base 360)." },
     {
       label: "CLIENTE+PORTO",
       valor: clientePorto,
@@ -137,12 +137,12 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
     { label: "VENDAS FIXADAS", valor: vendasFixadasUsd, aba: "vendas-merc-externo-nayme" },
     { label: "NDF/US$", valor: ndf, aba: "trava-ndf-us-nayme", ajuda: "Saldo das NDFs/travas em aberto." },
     {
-      label: "PRE-FIXACAO",
+      label: "PRÉ-FIXAÇÃO",
       valor: preFixacao,
       aba: "bolsa-ny-nayme",
-      ajuda: ctx.ny !== null ? "-(Bolsa NY em sacas x NY atual x 1,3228)." : "Sem NY atual: usando o preco medio de venda ME.",
+      ajuda: ctx.ny !== null ? "-(Bolsa NY em sacas x NY atual x 1,3228)." : "Sem NY atual: usando o preço médio de venda ME.",
     },
-    { label: "POSICAO B3", valor: posicaoB3Usd ?? 0, ajuda: "Parametro (US$) - posicao em dolar futuro na B3." },
+    { label: "POSIÇÃO B3", valor: posicaoB3Usd ?? 0, ajuda: "Parâmetro (US$) - posição em dólar futuro na B3." },
   ];
   const netDolar = dolar.reduce((s, l) => s + (l.foraDoNet ? 0 : (l.valor ?? 0)), 0);
 
@@ -159,19 +159,19 @@ export function calcularDashboard(abas: Record<string, Dados[]>, ctx: Ctx, posic
   const precoCompraCusto = precoCompra === null ? null : precoCompra * 1.015;
 
   const precos: LinhaDashboard[] = [
-    { label: "Preco medio de venda (US$/saca)", valor: precoMedioVenda, ajuda: "Vendas externas FIXADAS." },
-    { label: "Dolar do dia", valor: ctx.dolar },
-    { label: "Preco medio de venda geral (R$/saca)", valor: precoGeral, ajuda: "Vendas ME PORTO + CLIENTE + FIXADO x dolar do dia." },
-    { label: "Preco medio de compra (R$/saca)", valor: precoCompra, ajuda: "Todas as compras em R$." },
+    { label: "Preço médio de venda (US$/saca)", valor: precoMedioVenda, ajuda: "Vendas externas FIXADAS." },
+    { label: "Dólar do dia", valor: ctx.dolar },
+    { label: "Preço médio de venda geral (R$/saca)", valor: precoGeral, ajuda: "Vendas ME PORTO + CLIENTE + FIXADO x dólar do dia." },
+    { label: "Preço médio de compra (R$/saca)", valor: precoCompra, ajuda: "Todas as compras em R$." },
     {
-      label: "Margem media (R$/saca)",
+      label: "Margem média (R$/saca)",
       valor: precoGeral !== null && precoCompra !== null ? precoGeral - precoCompra : null,
     },
-    { label: "Preco medio de compra + 1,5% (R$/saca)", valor: precoCompraCusto },
+    { label: "Preço médio de compra + 1,5% (R$/saca)", valor: precoCompraCusto },
     {
-      label: "Media compra US$",
+      label: "Média compra US$",
       valor: precoCompraCusto !== null && ctx.dolar ? precoCompraCusto / ctx.dolar : null,
-      ajuda: "Preco medio de compra + 1,5% / dolar do dia.",
+      ajuda: "Preço médio de compra + 1,5% / dólar do dia.",
     },
   ];
 

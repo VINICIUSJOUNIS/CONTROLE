@@ -146,13 +146,13 @@ export function HedgeView({
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel salvar a operacao.");
+        setError("Não foi possível salvar a operação.");
       }
     });
   }
 
   function handleDelete(row: HedgeRow) {
-    if (!window.confirm("Excluir esta operacao de hedge? Esta acao nao pode ser desfeita.")) return;
+    if (!window.confirm("Excluir esta operação de hedge? Esta ação não pode ser desfeita.")) return;
     startTransition(async () => {
       await deleteHedge(row.id);
       router.refresh();
@@ -184,10 +184,10 @@ export function HedgeView({
           <DialogTrigger asChild>
             <Button onClick={openCreate}>
               <Plus size={16} />
-              Nova operacao
+              Nova operação
             </Button>
           </DialogTrigger>
-          <DialogContent title={editingId ? "Editar operacao de hedge" : "Cadastrar operacao de hedge"}>
+          <DialogContent title={editingId ? "Editar operação de hedge" : "Cadastrar operação de hedge"}>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -222,7 +222,7 @@ export function HedgeView({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Operacao</Label>
+                  <Label>Operação</Label>
                   <Select
                     value={form.side}
                     onChange={(e) => setForm({ ...form, side: e.target.value as SideValue })}
@@ -254,7 +254,7 @@ export function HedgeView({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Nivel compra (taxa)</Label>
+                  <Label>Nível compra (taxa)</Label>
                   <Input
                     type="number"
                     step="0.0001"
@@ -263,7 +263,7 @@ export function HedgeView({
                   />
                 </div>
                 <div>
-                  <Label>Nivel venda (taxa)</Label>
+                  <Label>Nível venda (taxa)</Label>
                   <Input
                     type="number"
                     step="0.0001"
@@ -275,7 +275,7 @@ export function HedgeView({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Data da operacao</Label>
+                  <Label>Data da operação</Label>
                   <Input
                     type="date"
                     value={form.contractDate}
@@ -294,7 +294,7 @@ export function HedgeView({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Liquidacao parcial (US$)</Label>
+                  <Label>Liquidação parcial (US$)</Label>
                   <Input
                     type="number"
                     value={form.liquidacaoParcialUsd}
@@ -323,7 +323,7 @@ export function HedgeView({
               </div>
 
               <div>
-                <Label>Observacao</Label>
+                <Label>Observação</Label>
                 <Input
                   value={form.observacao}
                   onChange={(e) => setForm({ ...form, observacao: e.target.value })}
@@ -332,7 +332,7 @@ export function HedgeView({
 
               {error && <p className="text-sm text-danger">{error}</p>}
               <Button className="w-full" onClick={handleSave} disabled={isPending}>
-                {isPending ? "Salvando..." : editingId ? "Salvar alteracoes" : "Salvar operacao"}
+                {isPending ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar operação"}
               </Button>
             </div>
           </DialogContent>
@@ -346,15 +346,15 @@ export function HedgeView({
               <tr className="border-b border-border text-left text-xs text-muted">
                 <th className="px-4 py-3 font-medium">Tipo</th>
                 <th className="px-4 py-3 font-medium">Corretora</th>
-                <th className="px-4 py-3 font-medium">Operacao</th>
+                <th className="px-4 py-3 font-medium">Operação</th>
                 <th className="px-4 py-3 font-medium">Data</th>
                 <th className="px-4 py-3 font-medium">Valor US$</th>
-                <th className="px-4 py-3 font-medium">Nivel compra</th>
-                <th className="px-4 py-3 font-medium">Nivel venda</th>
-                <th className="px-4 py-3 font-medium">Liquidacao parcial</th>
+                <th className="px-4 py-3 font-medium">Nível compra</th>
+                <th className="px-4 py-3 font-medium">Nível venda</th>
+                <th className="px-4 py-3 font-medium">Liquidação parcial</th>
                 <th className="px-4 py-3 font-medium">Saldo US$</th>
                 <th className="px-4 py-3 font-medium">Total R$</th>
-                <th className="px-4 py-3 font-medium">Desagio</th>
+                <th className="px-4 py-3 font-medium">Deságio</th>
                 <th className="px-4 py-3 font-medium">Vencimento</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium" />
@@ -403,7 +403,7 @@ export function HedgeView({
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={14} className="px-4 py-8 text-center text-muted">
-                    Nenhuma operacao de hedge encontrada com os filtros atuais.
+                    Nenhuma operação de hedge encontrada com os filtros atuais.
                   </td>
                 </tr>
               )}

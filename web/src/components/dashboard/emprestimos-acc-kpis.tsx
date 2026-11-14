@@ -82,7 +82,7 @@ export async function EmprestimosAccKpis({
         tone="teal"
       />
       <KpiCard
-        label="Emprestimos em aberto"
+        label="Empréstimos em aberto"
         value={formatCompactCurrency(kpis.saldoDevedorLoans)}
         icon={PiggyBank}
         tone="green"
@@ -107,10 +107,10 @@ export async function EmprestimosAccKpis({
       />
       <KpiCard label="Juros pagos" value={formatCompactCurrency(kpis.jurosPagos)} icon={TrendingDown} tone="soft" />
       <KpiCard label="Juros futuros" value={formatCompactCurrency(kpis.jurosFuturos)} icon={TrendingUp} tone="teal" />
-      <KpiCard label="Operacoes ativas" value={String(kpis.operacoesAtivas)} icon={PiggyBank} tone="green" />
+      <KpiCard label="Operações ativas" value={String(kpis.operacoesAtivas)} icon={PiggyBank} tone="green" />
       {!compact && (
         <KpiCard
-          label="Operacoes em atraso"
+          label="Operações em atraso"
           value={String(kpis.operacoesAtraso)}
           icon={AlertTriangle}
           trendPositive={false}
@@ -119,7 +119,7 @@ export async function EmprestimosAccKpis({
       )}
       {!compact && (
         <KpiCard
-          label="Exposicao cambial (ACC aberto)"
+          label="Exposição cambial (ACC aberto)"
           value={formatCompactCurrency(kpis.exposicaoCambial, "USD")}
           icon={TrendingUp}
           tone="teal"
@@ -127,21 +127,21 @@ export async function EmprestimosAccKpis({
       )}
       {!compact && (
         <KpiCard
-          label="Proximo vencimento"
+          label="Próximo vencimento"
           value={upcoming[0] ? formatDate(upcoming[0].vencimento) : "-"}
           icon={CalendarClock}
           tone="green"
         />
       )}
       <KpiCard
-        label="Custo medio ponderado da carteira"
+        label="Custo médio ponderado da carteira"
         value={formatPercent(kpis.custoMedioPonderado)}
         icon={Percent}
         tone="soft"
       />
       {!compact && (
         <KpiCard
-          label="Concentracao no maior banco"
+          label="Concentração no maior banco"
           value={formatPercent(kpis.concentracaoMaiorBanco, 1)}
           icon={PieChart}
           tone="teal"

@@ -17,7 +17,7 @@ export function NovoPadraoCafe({ compact = false }: { compact?: boolean }) {
 
   function handleCreate() {
     if (!name.trim()) {
-      setError("Informe o padrao do cafe.");
+      setError("Informe o padrão do café.");
       return;
     }
     setError(null);
@@ -28,7 +28,7 @@ export function NovoPadraoCafe({ compact = false }: { compact?: boolean }) {
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe um padrao chamado "${name.trim()}".`);
+        setError(`Já existe um padrão chamado "${name.trim()}".`);
       }
     });
   }
@@ -37,7 +37,7 @@ export function NovoPadraoCafe({ compact = false }: { compact?: boolean }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {compact ? (
-          <Button type="button" variant="outline" size="sm" title="Cadastrar novo padrao de cafe">
+          <Button type="button" variant="outline" size="sm" title="Cadastrar novo padrão de café">
             <Plus size={14} />
           </Button>
         ) : (

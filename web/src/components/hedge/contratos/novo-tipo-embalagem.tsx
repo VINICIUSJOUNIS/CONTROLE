@@ -28,7 +28,7 @@ export function NovoTipoEmbalagem({ compact = false }: { compact?: boolean }) {
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe um tipo de embalagem chamado "${name.trim()}".`);
+        setError(`Já existe um tipo de embalagem chamado "${name.trim()}".`);
       }
     });
   }

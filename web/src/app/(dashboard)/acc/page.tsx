@@ -7,7 +7,7 @@ export default async function AccPage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="ACC" subtitle="Adiantamento sobre Contrato de Cambio - controle de operacoes" />
+      <Topbar title="ACC" subtitle="Adiantamento sobre Contrato de Câmbio - controle de operações" />
       <div className="p-6">
         <AccView banks={banks} accOperations={accOperations} />
       </div>

@@ -68,7 +68,7 @@ export default async function CambialPage({
     <div className="flex flex-col">
       <Topbar
         title="Dashboard Cambial"
-        subtitle="Painel exclusivo para operacoes de ACC e exposicao cambial"
+        subtitle="Painel exclusivo para operações de ACC e exposição cambial"
       />
       <div className="space-y-6 p-6">
         <PeriodFilter years={years} />
@@ -87,26 +87,26 @@ export default async function CambialPage({
             tone="green"
           />
           <KpiCard
-            label="Exposicao cambial (aberto)"
+            label="Exposição cambial (aberto)"
             value={formatCompactCurrency(exposicaoAberta)}
             icon={Scale}
             tone="soft"
           />
-          <KpiCard label="Taxa Spot media (ponderada)" value={`R$ ${spotAvg.toFixed(4)}`} icon={TrendingDown} tone="teal" />
+          <KpiCard label="Taxa Spot média (ponderada)" value={`R$ ${spotAvg.toFixed(4)}`} icon={TrendingDown} tone="teal" />
           <KpiCard
-            label="Taxa de fechamento media (ponderada)"
+            label="Taxa de fechamento média (ponderada)"
             value={`R$ ${closingAvg.toFixed(4)}`}
             icon={TrendingUp}
             tone="green"
           />
           <KpiCard
-            label="Spread medio"
+            label="Spread médio"
             value={`R$ ${spreadAvg.toFixed(4)} (${spreadPct.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}%)`}
             icon={Scale}
             tone="soft"
           />
           <KpiCard
-            label="Custo de spread no periodo"
+            label="Custo de spread no período"
             value={formatCompactCurrency(custoSpread)}
             icon={TrendingDown}
             tone="teal"
@@ -114,7 +114,7 @@ export default async function CambialPage({
         </div>
 
         <BarChartCard
-          title="Custo de spread por mes de contratacao"
+          title="Custo de spread por mês de contratação"
           data={monthlyResult}
           xKey="month"
           series={[{ key: "custoSpread", name: "Custo de spread", color: "#7a5af8" }]}
@@ -122,10 +122,10 @@ export default async function CambialPage({
         />
 
         <BarChartCard
-          title="Exposicao cambial por banco (operacoes em aberto)"
+          title="Exposição cambial por banco (operações em aberto)"
           data={exposureByBank}
           xKey="name"
-          series={[{ key: "exposicao", name: "Exposicao", color: "#f79009" }]}
+          series={[{ key: "exposicao", name: "Exposição", color: "#f79009" }]}
           valueFormat="currency"
         />
 
@@ -142,7 +142,7 @@ export default async function CambialPage({
               valueFormat="rate"
             />
             <BarChartCard
-              title="Spread cambial medio por ano (% da spot)"
+              title="Spread cambial médio por ano (% da spot)"
               data={yearlyComparison}
               xKey="year"
               series={[{ key: "spreadMedio", name: "Spread cambial (%)", color: "#7a5af8" }]}

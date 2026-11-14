@@ -103,7 +103,7 @@ function NovoItemForm({ empresaId }: { empresaId: string }) {
         value={descricao}
         onChange={(e) => setDescricao(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-        placeholder="Ex: Frete Santos x Roterda (20')"
+        placeholder="Ex: Frete Santos x Roterdã (20')"
         className="h-8 flex-1"
       />
       <input

@@ -8,7 +8,7 @@ import { sincronizarPtax } from "@/lib/hedge-cambial/ptax";
 export async function GET(request: NextRequest) {
   const segredo = process.env.CRON_SECRET;
   if (!segredo || request.headers.get("authorization") !== `Bearer ${segredo}`) {
-    return NextResponse.json({ erro: "nao autorizado" }, { status: 401 });
+    return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
   try {
     const r = await sincronizarPtax({ forcar: true });

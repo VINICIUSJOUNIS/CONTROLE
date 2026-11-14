@@ -53,7 +53,7 @@ export function BarraAtualizacao({
       <span>
         {pending
           ? `Buscando ${rotulo}...`
-          : `Buscado as ${hora(ultima)}. Proxima atualizacao automatica as ${hora(proxima)} (a cada ${minutos} minutos).`}
+          : `Buscado às ${hora(ultima)}. Próxima atualização automática às ${hora(proxima)} (a cada ${minutos} minutos).`}
       </span>
       <Button variant="outline" size="sm" disabled={pending} onClick={atualizar}>
         <RefreshCw size={13} className={pending ? "animate-spin" : undefined} /> Atualizar agora

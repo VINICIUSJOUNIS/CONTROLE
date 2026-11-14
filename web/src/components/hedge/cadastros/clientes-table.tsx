@@ -59,7 +59,7 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
       return;
     }
     if (!form.country.trim()) {
-      setError("Informe o pais do cliente.");
+      setError("Informe o país do cliente.");
       return;
     }
     setError(null);
@@ -80,7 +80,7 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe um cliente cadastrado com o nome "${payload.name}".`);
+        setError(`Já existe um cliente cadastrado com o nome "${payload.name}".`);
       }
     });
   }
@@ -89,7 +89,7 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
     if (!editingId) return;
     if (
       !window.confirm(
-        "Excluir este cliente? So e possivel excluir clientes que nao tenham contratos vinculados."
+        "Excluir este cliente? Só é possível excluir clientes que não tenham contratos vinculados."
       )
     )
       return;
@@ -100,7 +100,7 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel excluir: este cliente tem contratos vinculados.");
+        setError("Não foi possível excluir: este cliente tem contratos vinculados.");
       }
     });
   }
@@ -135,9 +135,9 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
                   />
                 </div>
                 <div>
-                  <Label>Pais</Label>
+                  <Label>País</Label>
                   <Select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
-                    <option value="">Selecione o pais</option>
+                    <option value="">Selecione o país</option>
                     {COUNTRIES.map((c) => (
                       <option key={c.id} value={c.labelPt}>
                         {c.labelPt}
@@ -167,7 +167,7 @@ export function ClientesTable({ clientes }: { clientes: ClienteRow[] }) {
               </div>
               {error && <p className="text-sm text-danger">{error}</p>}
               <Button className="w-full" onClick={handleSave} disabled={isPending}>
-                {isPending ? "Salvando..." : editingId ? "Salvar alteracoes" : "Salvar cliente"}
+                {isPending ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar cliente"}
               </Button>
               {editingId && (
                 <Button

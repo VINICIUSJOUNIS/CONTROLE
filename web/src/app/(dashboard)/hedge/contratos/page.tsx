@@ -11,7 +11,7 @@ export default async function ContratosPage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Contratos" subtitle="Cadastro completo dos contratos de exportacao" />
+      <Topbar title="Contratos" subtitle="Cadastro completo dos contratos de exportação" />
       <div className="space-y-6 p-6">
         <ContratosTable clientes={clientes} contratos={contratos} corretoras={corretoras} />
       </div>

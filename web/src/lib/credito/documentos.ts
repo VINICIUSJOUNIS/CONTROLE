@@ -29,7 +29,7 @@ export async function salvarDocumentos(
     }
     return caminhos;
   } catch (e) {
-    console.error("Falha ao guardar os PDFs de credito:", e);
+    console.error("Falha ao guardar os PDFs de crédito:", e);
     return [];
   }
 }
@@ -37,7 +37,7 @@ export async function salvarDocumentos(
 export async function removerDocumentos(supabase: SupabaseClient, caminhos: string[]) {
   if (caminhos.length === 0) return;
   const { error } = await supabase.storage.from(BUCKET_DOCUMENTOS).remove(caminhos);
-  if (error) console.error("Falha ao excluir os PDFs de credito:", error);
+  if (error) console.error("Falha ao excluir os PDFs de crédito:", error);
 }
 
 // Link para abrir o PDF guardado (a rota gera uma URL assinada de curta duracao).

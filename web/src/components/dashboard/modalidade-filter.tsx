@@ -21,9 +21,9 @@ export function ModalidadeFilter() {
     <div>
       <Label>Modalidade</Label>
       <Select value={modalidade} onChange={(e) => apply(e.target.value)} className="w-auto">
-        <option value="TODOS">Emprestimos + ACC</option>
-        <option value="EMPRESTIMOS">So Emprestimos</option>
-        <option value="ACC">So ACC</option>
+        <option value="TODOS">Empréstimos + ACC</option>
+        <option value="EMPRESTIMOS">Só Empréstimos</option>
+        <option value="ACC">Só ACC</option>
       </Select>
     </div>
   );

@@ -138,7 +138,7 @@ export default async function RelatorioVendasPage({
     <div className="flex flex-col">
       <Topbar
         title="Relatório Comparativo de Vendas"
-        subtitle="Compare dois ou tres periodos, com o mercado interno e externo juntos ou separados"
+        subtitle="Compare dois ou três períodos, com o mercado interno e externo juntos ou separados"
       />
       <div className="space-y-6 p-6 print:space-y-2 print:p-0">
         <div className="space-y-3 print:hidden">

@@ -7,7 +7,7 @@ export default async function MapaPage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Mapa de Exportacao" subtitle="Paises para onde exportamos" />
+      <Topbar title="Mapa de Exportação" subtitle="Países para onde exportamos" />
       <div className="p-6">
         <WorldMapCard paises={paises} />
       </div>

@@ -37,7 +37,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (error) {
-      setError("E-mail ou senha invalidos.");
+      setError("E-mail ou senha inválidos.");
       return;
     }
 
@@ -72,7 +72,7 @@ export default function LoginPage() {
             />
             <div>
               <p className="text-sm font-semibold">Controle</p>
-              <p className="text-xs text-muted">Emprestimos &amp; ACC</p>
+              <p className="text-xs text-muted">Empréstimos &amp; ACC</p>
             </div>
           </div>
 

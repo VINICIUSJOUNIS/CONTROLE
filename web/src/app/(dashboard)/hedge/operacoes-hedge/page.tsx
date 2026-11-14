@@ -14,7 +14,7 @@ export default async function HedgePage() {
 
   const cards = [
     {
-      label: "Posicao liquida (US$)",
+      label: "Posição líquida (US$)",
       value: `US$ ${kpis.posicaoLiquidaUsd.toLocaleString("pt-BR")}`,
       icon: kpis.posicaoLiquidaUsd >= 0 ? TrendingUp : TrendingDown,
     },
@@ -37,7 +37,7 @@ export default async function HedgePage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Operacoes de Hedge" subtitle="Contratos de NDF/Trava cambial" />
+      <Topbar title="Operações de Hedge" subtitle="Contratos de NDF/Trava cambial" />
       <div className="space-y-6 p-6">
         <div className="grid gap-4 md:grid-cols-4">
           {cards.map((c) => (

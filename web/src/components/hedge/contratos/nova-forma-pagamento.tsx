@@ -28,7 +28,7 @@ export function NovaFormaPagamento({ compact = false }: { compact?: boolean }) {
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe uma forma de pagamento chamada "${name.trim()}".`);
+        setError(`Já existe uma forma de pagamento chamada "${name.trim()}".`);
       }
     });
   }
@@ -54,7 +54,7 @@ export function NovaFormaPagamento({ compact = false }: { compact?: boolean }) {
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Carta de credito, 30/60/90 dias"
+              placeholder="Ex: Carta de crédito, 30/60/90 dias"
             />
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}

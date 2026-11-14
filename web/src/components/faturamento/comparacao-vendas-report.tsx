@@ -45,7 +45,7 @@ export function ComparacaoVendasReport({
 
   function handleExportCsv() {
     const header = [
-      "Metrica",
+      "Métrica",
       periodALabel,
       periodBLabel,
       "Var. A vs B",

@@ -9,14 +9,14 @@ import type { PainelCambio } from "@/lib/hedge-cambial/cambio-bcb";
 const MODELO = "claude-opus-5-5";
 
 const SISTEMA =
-  "Voce e locutor de um boletim de radio sobre o mercado de cambio, para a mesa de uma exportadora de cafe. " +
-  "Escreva o texto que sera lido em voz alta por um sintetizador de voz em portugues do Brasil: de 1 a 2 minutos " +
-  "(no maximo 260 palavras), frases curtas, tom profissional e direto. Use apenas as informacoes fornecidas - " +
-  "nunca invente numeros, fatos ou causas. Comece pelo que o Banco Central mostra (PTAX do dia, tendencia e Focus), " +
-  "depois resuma as noticias mais relevantes agrupando as repetidas, citando a fonte quando ajudar. Escreva valores " +
-  "de forma natural para a fala (por exemplo 'cinco reais e vinte e dois centavos', 'alta de zero virgula tres por cento'). " +
-  "Nao use markdown, listas, emojis, siglas soletradas ou links. Termine com uma frase avisando que o boletim e " +
-  "informativo e nao e recomendacao de operacao.";
+  "Você é locutor de um boletim de rádio sobre o mercado de câmbio, para a mesa de uma exportadora de café. " +
+  "Escreva o texto que será lido em voz alta por um sintetizador de voz em português do Brasil: de 1 a 2 minutos " +
+  "(no máximo 260 palavras), frases curtas, tom profissional e direto. Use apenas as informações fornecidas - " +
+  "nunca invente números, fatos ou causas. Comece pelo que o Banco Central mostra (PTAX do dia, tendência e Focus), " +
+  "depois resuma as notícias mais relevantes agrupando as repetidas, citando a fonte quando ajudar. Escreva valores " +
+  "de forma natural para a fala (por exemplo 'cinco reais e vinte e dois centavos', 'alta de zero vírgula três por cento'). " +
+  "Não use markdown, listas, emojis, siglas soletradas ou links. Termine com uma frase avisando que o boletim é " +
+  "informativo e não é recomendação de operação.";
 
 function dadosParaIa(dolar: Noticia[], cambio: PainelCambio) {
   const ultimoDia = cambio.dias.filter((d) => d.boletins.length).at(-1);
@@ -40,16 +40,16 @@ function dadosParaIa(dolar: Noticia[], cambio: PainelCambio) {
 
 // Roteiro sem IA: tendencia do BCB + manchetes, na ordem.
 export function roteiroSimples(dolar: Noticia[], cambio: PainelCambio) {
-  const partes: string[] = ["Boletim do dolar."];
-  for (const s of cambio.sinais) if (s.direcao !== "SEM DADO") partes.push(`${s.nome}: ${s.direcao === "ESTAVEL" ? "estavel" : s.direcao.toLowerCase()}.`);
-  if (dolar.length) partes.push("Principais noticias.");
+  const partes: string[] = ["Boletim do dólar."];
+  for (const s of cambio.sinais) if (s.direcao !== "SEM DADO") partes.push(`${s.nome}: ${s.direcao === "ESTAVEL" ? "estável" : s.direcao.toLowerCase()}.`);
+  if (dolar.length) partes.push("Principais notícias.");
   for (const n of dolar) partes.push(`${n.titulo}. Fonte: ${n.fonte}.`);
-  partes.push("Boletim informativo, nao e recomendacao de operacao.");
+  partes.push("Boletim informativo, não é recomendação de operação.");
   return partes.join(" ");
 }
 
 export async function gerarBoletimIa(dolar: Noticia[], cambio: PainelCambio): Promise<string> {
-  if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY nao configurada");
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY não configurada");
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   // O SDK instalado (0.68) ainda nao tipa output_config/fallbacks: os campos
   // vao no corpo da requisicao como estao (effort baixo = texto curto e rapido;
@@ -83,6 +83,6 @@ export async function gerarBoletimIa(dolar: Noticia[], cambio: PainelCambio): Pr
     .map((b) => b.text)
     .join("\n")
     .trim();
-  if (!texto) throw new Error("IA nao retornou texto");
+  if (!texto) throw new Error("IA não retornou texto");
   return texto;
 }

@@ -147,7 +147,7 @@ export function ContratosTable({
 
   function handleSave() {
     if (!form.contractNumber.trim()) {
-      setError("Informe o numero do contrato.");
+      setError("Informe o número do contrato.");
       return;
     }
     if (!form.clienteId) {
@@ -199,7 +199,7 @@ export function ContratosTable({
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel salvar o contrato.");
+        setError("Não foi possível salvar o contrato.");
       }
     });
   }
@@ -207,7 +207,7 @@ export function ContratosTable({
   function deleteById(id: string, contractNumber: string) {
     if (
       !window.confirm(
-        `Excluir o contrato ${contractNumber}? Todos os dados da operacao (custos, anexos, vinculos) tambem serao excluidos. Esta acao nao pode ser desfeita.`
+        `Excluir o contrato ${contractNumber}? Todos os dados da operação (custos, anexos, vínculos) também serão excluídos. Esta ação não pode ser desfeita.`
       )
     )
       return;
@@ -217,7 +217,7 @@ export function ContratosTable({
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel excluir o contrato.");
+        setError("Não foi possível excluir o contrato.");
       }
     });
   }
@@ -260,10 +260,10 @@ export function ContratosTable({
               Novo Contrato
             </Button>
           </DialogTrigger>
-          <DialogContent title={editingId ? "Editar contrato" : "Cadastrar contrato de exportacao"}>
+          <DialogContent title={editingId ? "Editar contrato" : "Cadastrar contrato de exportação"}>
             <div className="space-y-3">
               <div>
-                <Label>Numero do contrato</Label>
+                <Label>Número do contrato</Label>
                 <Input
                   value={form.contractNumber}
                   onChange={(e) => setForm({ ...form, contractNumber: e.target.value })}
@@ -305,9 +305,9 @@ export function ContratosTable({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Pais</Label>
+                  <Label>País</Label>
                   <Select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
-                    <option value="">Selecione o pais</option>
+                    <option value="">Selecione o país</option>
                     {COUNTRIES.map((c) => (
                       <option key={c.id} value={c.labelPt}>
                         {c.labelPt}
@@ -422,7 +422,7 @@ export function ContratosTable({
                   ))}
                 </div>
                 <div className="mt-3">
-                  <Label>Observacao do recebimento</Label>
+                  <Label>Observação do recebimento</Label>
                   <Input
                     value={form.recebimento.obsRecebimento}
                     onChange={(e) => handleRecebimentoChange("obsRecebimento", e.target.value)}
@@ -433,7 +433,7 @@ export function ContratosTable({
 
               {error && <p className="text-sm text-danger">{error}</p>}
               <Button className="w-full" onClick={handleSave} disabled={isPending}>
-                {isPending ? "Salvando..." : editingId ? "Salvar alteracoes" : "Salvar contrato"}
+                {isPending ? "Salvando..." : editingId ? "Salvar alterações" : "Salvar contrato"}
               </Button>
               {editingId && (
                 <Button
@@ -459,7 +459,7 @@ export function ContratosTable({
                 <th className="px-4 py-3 font-medium">Contrato</th>
                 <th className="px-4 py-3 font-medium">Cliente</th>
                 <th className="px-4 py-3 font-medium">Corretor</th>
-                <th className="px-4 py-3 font-medium">Pais</th>
+                <th className="px-4 py-3 font-medium">País</th>
                 <th className="px-4 py-3 font-medium">Valor US$</th>
                 <th className="px-4 py-3 font-medium">Saldo a receber US$</th>
                 <th className="px-4 py-3 font-medium">Recebido US$</th>

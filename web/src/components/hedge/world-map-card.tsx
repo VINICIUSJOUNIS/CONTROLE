@@ -20,7 +20,7 @@ export function WorldMapCard({ paises }: { paises: PaisExportacao[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Paises que Exportamos</CardTitle>
+        <CardTitle>Países que Exportamos</CardTitle>
       </CardHeader>
       <CardContent>
         <ComposableMap projectionConfig={{ scale: 140 }} style={{ width: "100%", height: "auto" }}>
@@ -75,7 +75,7 @@ export function WorldMapCard({ paises }: { paises: PaisExportacao[] }) {
           </div>
         )}
         {paises.length === 0 && (
-          <p className="mt-3 text-sm text-muted">Nenhum contrato com pais definido ainda.</p>
+          <p className="mt-3 text-sm text-muted">Nenhum contrato com país definido ainda.</p>
         )}
       </CardContent>
     </Card>

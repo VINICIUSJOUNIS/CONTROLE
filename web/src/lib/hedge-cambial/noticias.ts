@@ -24,7 +24,7 @@ type Feed = { fonte: string; url: string };
 export type StatusFonte = { fonte: string; url: string; ok: boolean; erro?: string };
 
 const FEEDS_DOLAR: Feed[] = [
-  { fonte: "Valor Economico", url: "https://valor.globo.com/rss/valor/" },
+  { fonte: "Valor Econômico", url: "https://valor.globo.com/rss/valor/" },
   { fonte: "Money Times", url: "https://www.moneytimes.com.br/tag/dolar/feed/" },
   { fonte: "InfoMoney", url: "https://www.infomoney.com.br/tudo-sobre/dolar/feed/" },
   { fonte: "Investing.com", url: "https://br.investing.com/rss/news_1.rss" },
@@ -83,7 +83,7 @@ async function baixar(url: string): Promise<{ xml?: string; erro?: string }> {
       if (res.ok) return { xml: await res.text() };
       erro = `HTTP ${res.status}`;
     } catch (e) {
-      erro = e instanceof Error && e.name === "TimeoutError" ? "sem resposta (10s)" : "falha de conexao";
+      erro = e instanceof Error && e.name === "TimeoutError" ? "sem resposta (10s)" : "falha de conexão";
     }
   }
   return { erro };

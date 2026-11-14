@@ -44,7 +44,7 @@ export async function deleteBank(id: string) {
   ]);
 
   if (loanCount > 0 || accCount > 0) {
-    throw new Error("Nao e possivel excluir um banco com emprestimos ou ACC vinculados.");
+    throw new Error("Não é possível excluir um banco com empréstimos ou ACC vinculados.");
   }
 
   await prisma.bank.delete({ where: { id } });

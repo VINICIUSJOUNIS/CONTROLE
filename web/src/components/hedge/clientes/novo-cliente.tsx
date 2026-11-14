@@ -34,7 +34,7 @@ export function NovoCliente({ compact = false }: { compact?: boolean }) {
       return;
     }
     if (!country.trim()) {
-      setError("Informe o pais do cliente.");
+      setError("Informe o país do cliente.");
       return;
     }
     setError(null);
@@ -51,7 +51,7 @@ export function NovoCliente({ compact = false }: { compact?: boolean }) {
         setOpen(false);
         router.refresh();
       } catch {
-        setError(`Ja existe um cliente cadastrado com o nome "${name.trim()}".`);
+        setError(`Já existe um cliente cadastrado com o nome "${name.trim()}".`);
       }
     });
   }
@@ -90,9 +90,9 @@ export function NovoCliente({ compact = false }: { compact?: boolean }) {
               />
             </div>
             <div>
-              <Label>Pais</Label>
+              <Label>País</Label>
               <Select value={country} onChange={(e) => setCountry(e.target.value)}>
-                <option value="">Selecione o pais</option>
+                <option value="">Selecione o país</option>
                 {COUNTRIES.map((c) => (
                   <option key={c.id} value={c.labelPt}>
                     {c.labelPt}

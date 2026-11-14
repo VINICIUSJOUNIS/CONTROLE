@@ -197,13 +197,13 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel salvar a venda.");
+        setError("Não foi possível salvar a venda.");
       }
     });
   }
 
   function handleDelete(sale: SaleRow) {
-    if (!window.confirm(`Excluir a venda de ${sale.clientName}? Esta acao nao pode ser desfeita.`)) return;
+    if (!window.confirm(`Excluir a venda de ${sale.clientName}? Esta ação não pode ser desfeita.`)) return;
     startTransition(async () => {
       await deleteSale(sale.id);
       router.refresh();
@@ -288,7 +288,7 @@ export function FaturamentoView({ sales, returns }: { sales: SaleRow[]; returns:
           value={toFilter}
           onChange={(e) => handleToChange(e.target.value)}
           className="w-auto"
-          title="Ate"
+          title="Até"
         />
 
         <Dialog open={open} onOpenChange={setOpen}>

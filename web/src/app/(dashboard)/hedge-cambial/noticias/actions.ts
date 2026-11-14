@@ -23,7 +23,7 @@ export async function gerarBoletim(): Promise<{ texto: string; ia: boolean; avis
     return {
       texto: roteiroSimples(dolar, cambio),
       ia: false,
-      aviso: "IA indisponivel no momento: lendo as manchetes e a tendencia do Banco Central.",
+      aviso: "IA indisponível no momento: lendo as manchetes e a tendência do Banco Central.",
     };
   }
 }

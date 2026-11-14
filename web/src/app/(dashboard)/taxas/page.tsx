@@ -43,40 +43,40 @@ export default async function TaxasPage({
   const insights: string[] = [];
   if (comAcc.length >= 2) {
     const [a0, a1] = [comAcc[0].accAvgRate!, comAcc[comAcc.length - 1].accAvgRate!];
-    insights.push(`A taxa media ponderada dos ACC ${a1 < a0 ? "caiu" : "subiu"} de ${pct(a0)} (primeiro mes com contrato no periodo) para ${pct(a1)} (ultimo mes com contrato).`);
+    insights.push(`A taxa média ponderada dos ACC ${a1 < a0 ? "caiu" : "subiu"} de ${pct(a0)} (primeiro mês com contrato no período) para ${pct(a1)} (último mês com contrato).`);
   }
   if (comLoan.length >= 2) {
     const [l0, l1] = [comLoan[0].loanAvgRate!, comLoan[comLoan.length - 1].loanAvgRate!];
-    insights.push(`A taxa media ponderada dos emprestimos ${l1 < l0 ? "reduziu" : "aumentou"} de ${pct(l0)} para ${pct(l1)} no periodo analisado.`);
+    insights.push(`A taxa média ponderada dos empréstimos ${l1 < l0 ? "reduziu" : "aumentou"} de ${pct(l0)} para ${pct(l1)} no período analisado.`);
   }
   const ultimoAcc = comAcc[comAcc.length - 1];
   if (ultimoAcc) {
-    insights.push(`Spread cambial medio dos ACC de ${formatMonthLabel(ultimoAcc.month)}: ${pct(ultimoAcc.cambialSpread, 3)} sobre a taxa spot.`);
+    insights.push(`Spread cambial médio dos ACC de ${formatMonthLabel(ultimoAcc.month)}: ${pct(ultimoAcc.cambialSpread, 3)} sobre a taxa spot.`);
   }
   const comCusto = rateHistory.filter((r) => r.financialCost !== null);
   const ultimoCusto = comCusto[comCusto.length - 1];
   if (ultimoCusto) {
-    insights.push(`Contratos de ${formatMonthLabel(ultimoCusto.month)}: custo total de ${pct(ultimoCusto.financialCost)} sobre o valor captado (prazo inteiro do contrato, nao anualizado).`);
+    insights.push(`Contratos de ${formatMonthLabel(ultimoCusto.month)}: custo total de ${pct(ultimoCusto.financialCost)} sobre o valor captado (prazo inteiro do contrato, não anualizado).`);
   }
 
   return (
     <div className="flex flex-col">
       <Topbar
-        title="Evolucao das Taxas"
-        subtitle="Acompanhamento das taxas praticadas ao longo do tempo e identificacao de tendencias"
+        title="Evolução das Taxas"
+        subtitle="Acompanhamento das taxas praticadas ao longo do tempo e identificação de tendências"
       />
       <div className="space-y-6 p-6">
         <PeriodFilter years={years} />
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <KpiCard
-            label="Taxa media ponderada emprestimos"
+            label="Taxa média ponderada empréstimos"
             value={formatPercent(summary.loanAvgRate)}
             icon={Percent}
             tone="teal"
           />
           <KpiCard
-            label="Taxa media ponderada ACC"
+            label="Taxa média ponderada ACC"
             value={formatPercent(summary.accAvgRate)}
             icon={Percent}
             tone="green"
@@ -96,11 +96,11 @@ export default async function TaxasPage({
         </div>
 
         <LineChartCard
-          title="Evolucao das taxas (media ponderada) - Emprestimos x ACC"
+          title="Evolução das taxas (média ponderada) - Empréstimos x ACC"
           data={chartData}
           xKey="month"
           series={[
-            { key: "loanAvgRate", name: "Emprestimos (%)", color: "#1c8388" },
+            { key: "loanAvgRate", name: "Empréstimos (%)", color: "#1c8388" },
             { key: "accAvgRate", name: "ACC (%)", color: "#12b76a" },
           ]}
           valueFormat="percent"
@@ -118,7 +118,7 @@ export default async function TaxasPage({
             valueFormat="rate"
           />
           <LineChartCard
-            title="Evolucao do spread cambial e custo financeiro"
+            title="Evolução do spread cambial e custo financeiro"
             data={chartData}
             xKey="month"
             series={[
@@ -129,7 +129,7 @@ export default async function TaxasPage({
         </div>
 
         <LineChartCard
-          title="Evolucao da PTAX"
+          title="Evolução da PTAX"
           data={chartData}
           xKey="month"
           series={[{ key: "ptax", name: "PTAX", color: "#1c8388" }]}
@@ -144,16 +144,16 @@ export default async function TaxasPage({
               data={yearlyComparison}
               xKey="year"
               series={[
-                { key: "loanAvgRate", name: "Emprestimos (%)", color: "#1c8388" },
+                { key: "loanAvgRate", name: "Empréstimos (%)", color: "#1c8388" },
                 { key: "accAvgRate", name: "ACC (%)", color: "#12b76a" },
               ]}
               valueFormat="percent"
             />
             <BarChartCard
-              title="Custo medio da carteira por ano"
+              title="Custo médio da carteira por ano"
               data={yearlyComparison}
               xKey="year"
-              series={[{ key: "custoMedio", name: "Custo medio (%)", color: "#f04438" }]}
+              series={[{ key: "custoMedio", name: "Custo médio (%)", color: "#f04438" }]}
               valueFormat="percent"
             />
             <BarChartCard
@@ -164,28 +164,28 @@ export default async function TaxasPage({
               valueFormat="currency"
             />
             <BarChartCard
-              title="Quantidade de operacoes por ano"
+              title="Quantidade de operações por ano"
               data={yearlyComparison}
               xKey="year"
-              series={[{ key: "qtdOperacoes", name: "Operacoes", color: "#f79009" }]}
+              series={[{ key: "qtdOperacoes", name: "Operações", color: "#f79009" }]}
             />
           </div>
         )}
 
         {heatmap.rows.length > 0 && (
           <HeatmapTable
-            title="Heatmap das taxas por banco e periodo"
+            title="Heatmap das taxas por banco e período"
             rowLabel="Banco"
             rows={heatmap.rows}
             columns={heatmap.quarters}
           />
         )}
 
-        <InsightsCard title="Insights automaticos" insights={insights} />
+        <InsightsCard title="Insights automáticos" insights={insights} />
 
         <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted">
           <Gauge size={16} />
-          Indicadores calculados a partir dos emprestimos e operacoes de ACC cadastrados no banco de dados.
+          Indicadores calculados a partir dos empréstimos e operações de ACC cadastrados no banco de dados.
         </div>
       </div>
     </div>

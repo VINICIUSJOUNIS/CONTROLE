@@ -42,11 +42,11 @@ function DolarDoDia({ dolar, dolarData }: { dolar: number | null; dolarData: str
   function salvar() {
     const t = valor.trim();
     const n = Number(t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t);
-    if (!Number.isFinite(n) || n <= 0) return setMsg({ erro: true, texto: "Informe o dolar (ex.: 5,2238)." });
+    if (!Number.isFinite(n) || n <= 0) return setMsg({ erro: true, texto: "Informe o dólar (ex.: 5,2238)." });
     startTransition(async () => {
       const r = await salvarDolarDoDia(n, data || null);
       if (!r.ok) return setMsg({ erro: true, texto: r.erro });
-      setMsg({ erro: false, texto: "Dolar salvo. A receber e a pagar recalculados." });
+      setMsg({ erro: false, texto: "Dólar salvo. A receber e a pagar recalculados." });
       router.refresh();
     });
   }
@@ -55,11 +55,11 @@ function DolarDoDia({ dolar, dolarData }: { dolar: number | null; dolarData: str
     <Card className="p-4">
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <Label>Dolar do dia (R$/US$)</Label>
+          <Label>Dólar do dia (R$/US$)</Label>
           <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} className="w-36" />
         </div>
         <div>
-          <Label>Data do dolar</Label>
+          <Label>Data do dólar</Label>
           <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="w-40" />
         </div>
         <Button variant="outline" onClick={ptax} disabled={pending} title="Buscar a PTAX de venda no Banco Central">
@@ -69,12 +69,12 @@ function DolarDoDia({ dolar, dolarData }: { dolar: number | null; dolarData: str
           Salvar
         </Button>
         <p className="text-xs text-muted">
-          Preencha todo dia: o a receber / a pagar de cada NDF em aberto e calculado por este dolar.
-          {dolarData && ` Dolar atual: ${dolar?.toLocaleString("pt-BR", { minimumFractionDigits: 4 })} de ${dataBr(dolarData)}.`}
+          Preencha todo dia: o a receber / a pagar de cada NDF em aberto é calculado por este dólar.
+          {dolarData && ` Dólar atual: ${dolar?.toLocaleString("pt-BR", { minimumFractionDigits: 4 })} de ${dataBr(dolarData)}.`}
         </p>
       </div>
       {msg && <p className={cn("mt-2 text-sm", msg.erro ? "text-danger" : "text-primary")}>{msg.texto}</p>}
-      {dolar === null && <p className="mt-2 text-sm text-warning">Sem dolar do dia: o a receber e o a pagar ficam em branco.</p>}
+      {dolar === null && <p className="mt-2 text-sm text-warning">Sem dólar do dia: o a receber e o a pagar ficam em branco.</p>}
     </Card>
   );
 }
@@ -126,7 +126,7 @@ export function NdfVencimentos({
       <Card className="overflow-hidden">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold">
           <CalendarClock size={16} className="text-primary" />
-          NDFs em aberto por vencimento - a receber e a pagar pelo dolar do dia
+          NDFs em aberto por vencimento - a receber e a pagar pelo dólar do dia
         </div>
         {lista.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted">Nenhuma NDF em aberto.</p>
@@ -141,7 +141,7 @@ export function NdfVencimentos({
                   <th className="px-4 py-2 text-right font-medium">Vendidas (US$)</th>
                   <th className="px-4 py-2 text-right font-medium">A receber (R$)</th>
                   <th className="px-4 py-2 text-right font-medium">A pagar (R$)</th>
-                  <th className="px-4 py-2 text-right font-medium">Liquido (R$)</th>
+                  <th className="px-4 py-2 text-right font-medium">Líquido (R$)</th>
                 </tr>
               </thead>
               <tbody>
@@ -157,7 +157,7 @@ export function NdfVencimentos({
                         {g.vencimento === "sem data" ? "Sem data" : dataBr(g.vencimento)}
                         {dias !== null && (
                           <span className={cn("ml-2 text-[11px]", dias < 0 ? "text-danger" : "text-muted")}>
-                            {dias < 0 ? `vencido ha ${-dias} dia(s)` : dias === 0 ? "vence hoje" : `em ${dias} dia(s)`}
+                            {dias < 0 ? `vencido há ${-dias} dia(s)` : dias === 0 ? "vence hoje" : `em ${dias} dia(s)`}
                           </span>
                         )}
                       </td>
@@ -192,9 +192,9 @@ export function NdfVencimentos({
           </div>
         )}
         <p className="border-t border-border px-4 py-2 text-[11px] text-muted">
-          Previsao: saldo de cada NDF x (dolar do dia - taxa contratada). Compra ganha se o dolar subir; venda ganha se o dolar
-          cair. Na liquidacao, o banco usa a PTAX de venda do dia util anterior ao vencimento, entao o valor final muda com o
-          dolar ate la.
+          Previsão: saldo de cada NDF x (dólar do dia - taxa contratada). Compra ganha se o dólar subir; venda ganha se o dólar
+          cair. Na liquidação, o banco usa a PTAX de venda do dia útil anterior ao vencimento, então o valor final muda com o
+          dólar até la.
         </p>
       </Card>
     </div>

@@ -19,9 +19,9 @@ function quando(iso: string | null, agora: number) {
   if (!iso) return "";
   const min = Math.round((agora - new Date(iso).getTime()) / 60000);
   if (min < 1) return "agora";
-  if (min < 60) return `ha ${min} min`;
+  if (min < 60) return `há ${min} min`;
   const h = Math.round(min / 60);
-  if (h < 24) return `ha ${h} h`;
+  if (h < 24) return `há ${h} h`;
   return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
@@ -98,7 +98,7 @@ export function NoticiasView({
         buscadoEm={buscadoEm}
         intervaloMs={INTERVALO_MS}
         descartarCache={atualizarNoticias}
-        rotulo="as ultimas noticias e os dados do Banco Central"
+        rotulo="as últimas notícias e os dados do Banco Central"
       />
 
       {leitor.suportado ? (
@@ -112,10 +112,10 @@ export function NoticiasView({
               ) : (
                 <Radio size={15} />
               )}
-              {gerando ? "A IA esta preparando o boletim..." : leitor.ativo === "boletim" ? "Parar boletim" : "Ouvir boletim do dolar (IA)"}
+              {gerando ? "A IA esta preparando o boletim..." : leitor.ativo === "boletim" ? "Parar boletim" : "Ouvir boletim do dólar (IA)"}
             </Button>
             <span className="text-xs text-muted">
-              A IA resume em audio as noticias e os dados do Banco Central desta tela. Em cada noticia, o botao Ouvir le a manchete e o resumo.
+              A IA resume em áudio as notícias e os dados do Banco Central desta tela. Em cada notícia, o botão Ouvir le a manchete e o resumo.
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -125,7 +125,7 @@ export function NoticiasView({
               onChange={(e) => leitor.setVozId(e.target.value)}
               className="h-8 w-auto max-w-xs text-xs"
             >
-              {leitor.opcoes.length === 0 && <option value="">Padrao do navegador</option>}
+              {leitor.opcoes.length === 0 && <option value="">Padrão do navegador</option>}
               {leitor.opcoes.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.nome}
@@ -151,7 +151,7 @@ export function NoticiasView({
               onClick={() =>
                 leitor.ativo === "teste"
                   ? leitor.parar()
-                  : leitor.falar("teste", "Bom dia. Este e o boletim do dolar da Nayme, com as ultimas noticias e os dados do Banco Central.")
+                  : leitor.falar("teste", "Bom dia. Este é o boletim do dólar da Nayme, com as últimas notícias e os dados do Banco Central.")
               }
             >
               {leitor.ativo === "teste" ? <Square size={12} /> : <Volume2 size={13} />} Testar voz
@@ -159,9 +159,9 @@ export function NoticiasView({
           </div>
           {!leitor.temNatural && (
             <p className="text-xs text-warning">
-              Este navegador so tem vozes sinteticas mais roboticas. Para uma voz natural, abra o sistema no Microsoft Edge e
-              escolha &quot;Francisca&quot; ou &quot;Antonio&quot; (vozes neurais gratuitas do Edge), ou no Google Chrome a voz
-              &quot;Google portugues do Brasil&quot;.
+              Este navegador só tem vozes sintéticas mais robóticas. Para uma voz natural, abra o sistema no Microsoft Edge e
+              escolha &quot;Francisca&quot; ou &quot;Antônio&quot; (vozes neurais gratuitas do Edge), ou no Google Chrome a voz
+              &quot;Google português do Brasil&quot;.
             </p>
           )}
           {boletim?.aviso && <p className="text-xs text-warning">{boletim.aviso}</p>}
@@ -173,17 +173,17 @@ export function NoticiasView({
           )}
         </Card>
       ) : (
-        <p className="text-xs text-muted">Este navegador nao tem leitura em voz alta. Use o Chrome ou o Edge para ouvir as noticias.</p>
+        <p className="text-xs text-muted">Este navegador não tem leitura em voz alta. Use o Chrome ou o Edge para ouvir as notícias.</p>
       )}
 
       <Card className="overflow-hidden">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-semibold">
           <DollarSign size={16} className="text-primary" />
-          Mercado de Dolar - 10 ultimas noticias
+          Mercado de Dólar - 10 últimas notícias
         </div>
         {dolar.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-muted">
-            Nenhuma noticia recebida das fontes nesta busca. Veja o estado das fontes abaixo e clique em Atualizar agora.
+            Nenhuma notícia recebida das fontes nesta busca. Veja o estado das fontes abaixo e clique em Atualizar agora.
           </p>
         ) : (
           <ol>
@@ -205,7 +205,7 @@ export function NoticiasView({
                     {n.data && ` - ${quando(n.data, agora)}`}
                   </span>
                   <a href={n.link} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
-                    Ler noticia completa
+                    Ler notícia completa
                   </a>
                   {leitor.suportado && (
                     <button
@@ -226,7 +226,7 @@ export function NoticiasView({
 
       <FontesStatus fontes={fontes} />
 
-      <h2 className="pt-2 text-base font-semibold">Cambio - dados oficiais do Banco Central</h2>
+      <h2 className="pt-2 text-base font-semibold">Câmbio - dados oficiais do Banco Central</h2>
       <CambioBcbView painel={cambio} />
     </div>
   );

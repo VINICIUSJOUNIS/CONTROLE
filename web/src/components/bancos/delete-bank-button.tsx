@@ -18,7 +18,7 @@ export function DeleteBankButton({ id, name }: { id: string; name: string }) {
         await deleteBank(id);
         router.refresh();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Nao foi possivel excluir o banco.");
+        setError(e instanceof Error ? e.message : "Não foi possível excluir o banco.");
       }
     });
   }

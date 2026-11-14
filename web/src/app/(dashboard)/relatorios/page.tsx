@@ -32,21 +32,21 @@ export default async function RelatoriosPage({
   ]);
 
   const openRows = [
-    ...openLoans.map((r) => ({ ...r, tipo: "Emprestimo" as const })),
+    ...openLoans.map((r) => ({ ...r, tipo: "Empréstimo" as const })),
     ...openAcc.map((r) => ({ ...r, tipo: "ACC" as const })),
   ].sort((a, b) => a.contractDate.localeCompare(b.contractDate));
 
   const periodRows = [
-    ...periodLoans.map((r) => ({ ...r, tipo: "Emprestimo" as const })),
+    ...periodLoans.map((r) => ({ ...r, tipo: "Empréstimo" as const })),
     ...periodAcc.map((r) => ({ ...r, tipo: "ACC" as const })),
   ].sort((a, b) => a.contractDate.localeCompare(b.contractDate));
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Relatorios" subtitle="Relatorios da carteira de emprestimos e ACC" />
+      <Topbar title="Relatórios" subtitle="Relatórios da carteira de empréstimos e ACC" />
       <div className="space-y-6 p-6 print:p-0">
         <RelatorioContratosAbertos
-          title="Emprestimos e ACC em aberto"
+          title="Empréstimos e ACC em aberto"
           filePrefix="emprestimos-e-acc-em-aberto"
           reportId="em-aberto"
           rows={openRows}
@@ -58,7 +58,7 @@ export default async function RelatoriosPage({
         </div>
 
         <RelatorioContratosAbertos
-          title="Emprestimos e ACC por periodo"
+          title="Empréstimos e ACC por período"
           filePrefix="emprestimos-e-acc-por-periodo"
           reportId="por-periodo"
           rows={periodRows}

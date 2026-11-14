@@ -1067,7 +1067,7 @@ async function getProximosVencimentos(contratos: ContratoRow[]) {
               : null;
       return {
         id: c.id,
-        tipo: "Exportacao" as const,
+        tipo: "Exportação" as const,
         contrato: c.contractNumber,
         banco: c.corretoraName ?? "-",
         valor: c.valorUsd,
@@ -1082,7 +1082,7 @@ async function getProximosVencimentos(contratos: ContratoRow[]) {
     .filter((o) => o.status === "A_LIQUIDAR" && o.saldoUsd !== 0)
     .map((o) => ({
       id: o.id,
-      tipo: "Operacao Hedge" as const,
+      tipo: "Operação Hedge" as const,
       contrato: `${o.contractType}${o.side ? ` ${sideLabels[o.side] ?? o.side}` : ""}`,
       banco: o.corretoraName,
       valor: o.saldoUsd,

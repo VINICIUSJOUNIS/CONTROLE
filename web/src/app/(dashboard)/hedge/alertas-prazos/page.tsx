@@ -14,7 +14,7 @@ export default async function AlertasPrazosPage() {
 
   return (
     <div className="flex flex-col">
-      <Topbar title="Alerta de Prazos" subtitle="Prazos criticos da etapa atual de cada contrato" />
+      <Topbar title="Alerta de Prazos" subtitle="Prazos críticos da etapa atual de cada contrato" />
       <div className="space-y-6 p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <KpiCard
@@ -24,12 +24,12 @@ export default async function AlertasPrazosPage() {
             tone="teal"
             valueClassName={atrasados.length > 0 ? "text-danger" : undefined}
           />
-          <KpiCard label="Vencendo (ate 3 dias)" value={String(proximos.length)} icon={Clock} tone="soft" />
+          <KpiCard label="Vencendo (até 3 dias)" value={String(proximos.length)} icon={Clock} tone="soft" />
         </div>
 
         {alertas.length === 0 ? (
           <Card className="p-6 text-center text-sm text-muted">
-            Nenhum contrato com prazo vencido ou proximo do vencimento na etapa atual.
+            Nenhum contrato com prazo vencido ou próximo do vencimento na etapa atual.
           </Card>
         ) : (
           <div className="space-y-2">

@@ -196,7 +196,7 @@ export function ConfirmacaoNegocioList({
 
   function handleSave() {
     if (!editingContratoId && !form.numeroContrato.trim()) {
-      setError("Informe o numero do contrato.");
+      setError("Informe o número do contrato.");
       return;
     }
     if (!editingContratoId && !form.clienteId) {
@@ -215,7 +215,7 @@ export function ConfirmacaoNegocioList({
         setOpen(false);
         router.refresh();
       } catch {
-        setError("Nao foi possivel salvar. Confira se o numero do contrato ja nao esta em uso.");
+        setError("Não foi possível salvar. Confira se o número do contrato já não está em uso.");
       }
     });
   }

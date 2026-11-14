@@ -39,7 +39,7 @@ export function TopClientesReport({
   topCount: number;
 }) {
   function handleExportCsv() {
-    const header = ["Mercado", "Cliente", "Pais", "Sacas", "Faturamento (R$)", "% do Mercado"];
+    const header = ["Mercado", "Cliente", "País", "Sacas", "Faturamento (R$)", "% do Mercado"];
     const lines = [
       ...internos.map((c) => [
         "Interno",

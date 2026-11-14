@@ -9,8 +9,8 @@ export default async function HistoricoDolarPage() {
   return (
     <div className="flex flex-col">
       <Topbar
-        title="Historico do Dolar (PTAX)"
-        subtitle="PTAX de fechamento do Banco Central, compra e venda, gravada automaticamente todo dia util"
+        title="Histórico do Dólar (PTAX)"
+        subtitle="PTAX de fechamento do Banco Central, compra e venda, gravada automaticamente todo dia útil"
       />
       <div className="p-6">
         <HistoricoDolarView historico={historico} />

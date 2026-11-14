@@ -2,12 +2,12 @@
 // A aba DASHBOARD corresponde ao item "Dashboard Hedge" (/hedge-cambial).
 export const hedgeCambialAbas = [
   { slug: "trava-ndf-us-nayme", label: "TRAVA NDF US$ NAYME" },
-  { slug: "estoque-cafe-nayme", label: "ESTOQUE CAFE NAYME" },
+  { slug: "estoque-cafe-nayme", label: "ESTOQUE CAFÉ NAYME" },
   { slug: "venda-mi", label: "VENDA MI" },
   { slug: "vendas-merc-externo-nayme", label: "VENDAS MERC. EXTERNO NAYME" },
   { slug: "bolsa-ny-nayme", label: "BOLSA NY - NAYME" },
   { slug: "compras-em-reais-nayme", label: "COMPRAS EM R$ - NAYME" },
-  { slug: "cafes-a-fixar-nayme", label: "CAFES A FIXAR - NAYME" },
+  { slug: "cafes-a-fixar-nayme", label: "CAFÉS A FIXAR - NAYME" },
   { slug: "endividamento-nayme", label: "ENDIVIDAMENTO NAYME" },
   { slug: "compras-futuras", label: "COMPRAS FUTURAS" },
   { slug: "vendas-futuras", label: "VENDAS FUTURAS" },
