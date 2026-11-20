@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { BudgetGroup, BudgetScenario } from "@/generated/prisma/client";
+import { calcularVolumesBaseProjecao } from "@/lib/budget-data";
 
 function revalidateAll() {
   revalidatePath("/planejamento-orcamentario");
@@ -105,5 +106,24 @@ export async function renameBudgetLine(id: string, name: string) {
 
 export async function deleteBudgetLine(id: string) {
   await prisma.budgetLine.delete({ where: { id } });
+  revalidateAll();
+}
+
+// Grava a projecao (volume base e parcela externa, mes a mes) no plano.
+// Recalcula no servidor a partir das vendas - nao confia em valores vindos do
+// navegador - e so altera os campos previstos: realizado e receita realizada
+// informados manualmente ficam intactos.
+export async function aplicarProjecaoVolumes(planId: string) {
+  const proj = await calcularVolumesBaseProjecao();
+  if (!proj) throw new Error("Sem histórico de vendas fechado para projetar.");
+  await prisma.$transaction(
+    proj.meses.map((m) =>
+      prisma.budgetVolumeMonth.upsert({
+        where: { budgetPlanId_month: { budgetPlanId: planId, month: m.month } },
+        create: { budgetPlanId: planId, month: m.month, volumeBaseSacas: m.volumeBaseSacas, volumeExternoSacas: m.volumeExternoSacas },
+        update: { volumeBaseSacas: m.volumeBaseSacas, volumeExternoSacas: m.volumeExternoSacas },
+      })
+    )
+  );
   revalidateAll();
 }

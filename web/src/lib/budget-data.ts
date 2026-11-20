@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { BudgetGroup, BudgetScenario } from "@/generated/prisma/client";
 import { BUDGET_GROUP_ORDER, BUDGET_GROUP_LABELS } from "@/lib/budget-constants";
 import { getSales, getSaleReturns } from "@/lib/data";
-import type { HistoricoMes } from "@/lib/budget-projecao";
+import { addMonths, somaJanela, sazonalidade, type HistoricoMes } from "@/lib/budget-projecao";
 
 function n(value: unknown): number {
   return Number(value);
@@ -264,3 +264,25 @@ export async function getHistoricoVendasMensal() {
 }
 
 export type HistoricoVendasData = Awaited<ReturnType<typeof getHistoricoVendasMensal>>;
+
+// Volumes base mes a mes para gravar no plano (BudgetVolumeMonth): ultimos 12
+// meses fechados por mercado, distribuidos pela sazonalidade dos ultimos 24
+// meses - a mesma conta do painel de projecao. SEM crescimento: o plano aplica
+// o multiplicador do cenario na leitura (scenarioMultiplier), entao gravar o
+// volume ja crescido contaria o crescimento duas vezes.
+export async function calcularVolumesBaseProjecao() {
+  const { historico, ultimoMesFechado } = await getHistoricoVendasMensal();
+  if (!ultimoMesFechado) return null;
+  const ltmDe = addMonths(ultimoMesFechado, -11);
+  const sazDe = addMonths(ultimoMesFechado, -23);
+  const baseI = somaJanela(historico, ltmDe, ultimoMesFechado, "INTERNO").sacas;
+  const baseE = somaJanela(historico, ltmDe, ultimoMesFechado, "EXTERNO").sacas;
+  const sazI = sazonalidade(historico, sazDe, ultimoMesFechado, "INTERNO");
+  const sazE = sazonalidade(historico, sazDe, ultimoMesFechado, "EXTERNO");
+  const meses = sazI.map((_, i) => {
+    const interno = Number((baseI * sazI[i]).toFixed(2));
+    const externo = Number((baseE * sazE[i]).toFixed(2));
+    return { month: i + 1, volumeBaseSacas: Number((interno + externo).toFixed(2)), volumeExternoSacas: externo };
+  });
+  return { meses, ultimoMesFechado, ltmDe };
+}

@@ -30,6 +30,8 @@ export default async function PlanejamentoOrcamentarioPage({
             historico={vendas.historico}
             ultimoMesFechado={vendas.ultimoMesFechado}
             cenarioInicial={plan?.scenario ?? "CONSERVADOR"}
+            planId={plan?.id}
+            planName={plan?.name}
             crescimentos={{
               CONSERVADOR: 0,
               MODERADO: plan?.crescimentoModerado ?? 0,

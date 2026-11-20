@@ -1,6 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { aplicarProjecaoVolumes } from "@/app/(dashboard)/planejamento-orcamentario/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/field";
 import { KpiCard } from "@/components/dashboard/kpi-card";
@@ -18,7 +21,7 @@ import {
   variacao,
   type HistoricoMes,
 } from "@/lib/budget-projecao";
-import { Package, TrendingUp, Ship, Store } from "lucide-react";
+import { Package, TrendingUp, Ship, Store, Save } from "lucide-react";
 
 const sc = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 const pct = (v: number | null) => (v === null ? "-" : `${v >= 0 ? "+" : ""}${formatPercent(v * 100, 1)}`);
@@ -31,12 +34,37 @@ export function ProjecaoReceita({
   ultimoMesFechado,
   crescimentos,
   cenarioInicial,
+  planId,
+  planName,
 }: {
   historico: HistoricoMes[];
   ultimoMesFechado: string;
   crescimentos: Record<BudgetScenarioKey, number>;
   cenarioInicial: BudgetScenarioKey;
+  planId?: string;
+  planName?: string;
 }) {
+  const router = useRouter();
+  const [gravando, startGravar] = useTransition();
+  const [gravado, setGravado] = useState(false);
+
+  function gravarNoPlano() {
+    if (!planId) return;
+    const ok = window.confirm(
+      `Gravar os volumes projetados mês a mês em "${planName}"?
+
+` +
+        "Substitui o Volume Base e o Volume Externo previstos dos 12 meses do plano. " +
+        "Os valores realizados não são alterados. O crescimento do cenário continua sendo aplicado pelo plano."
+    );
+    if (!ok) return;
+    startGravar(async () => {
+      await aplicarProjecaoVolumes(planId);
+      setGravado(true);
+      router.refresh();
+    });
+  }
+
   const anoProjecao = Number(ultimoMesFechado.slice(0, 4)) + 1;
   const ltmDe = addMonths(ultimoMesFechado, -11);
   const ltmAntDe = addMonths(ultimoMesFechado, -23);
@@ -229,6 +257,19 @@ export function ProjecaoReceita({
               {mesAno(ultimoMesFechado)}), por mercado.
             </li>
           </ul>
+          {planId && (
+            <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
+              <Button size="sm" onClick={gravarNoPlano} disabled={gravando}>
+                <Save size={14} />
+                {gravando ? "Gravando..." : `Gravar volumes no plano (${planName})`}
+              </Button>
+              <span className="text-[11px] text-muted">
+                {gravado
+                  ? "Volumes gravados no plano."
+                  : "Grava o volume base (sem crescimento) e a parcela externa de cada mês; a receita do plano segue a cotação saca × dólar das Premissas do Plano."}
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
