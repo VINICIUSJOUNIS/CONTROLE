@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { BudgetGroup, BudgetScenario } from "@/generated/prisma/client";
 import { BUDGET_GROUP_ORDER, BUDGET_GROUP_LABELS } from "@/lib/budget-constants";
+import { getSales, getSaleReturns } from "@/lib/data";
+import type { HistoricoMes } from "@/lib/budget-projecao";
 
 function n(value: unknown): number {
   return Number(value);
@@ -209,3 +211,56 @@ export type BudgetPlanData = Awaited<ReturnType<typeof getBudgetPlan>>;
 export type BudgetGroupData = NonNullable<BudgetPlanData>["groups"][number];
 export type BudgetLineData = BudgetGroupData["lines"][number];
 export type BudgetMonthData = NonNullable<BudgetPlanData>["months"][number];
+
+// Historico mensal de vendas liquidas de devolucoes (sacas e R$) por mercado,
+// para a projecao do proximo ano (ver src/lib/budget-projecao.ts). Mesma base
+// de Faturamento: Sale menos SaleReturn, devolucao classificada pelo tipo do
+// cliente resolvido no cadastro de vendas.
+export async function getHistoricoVendasMensal() {
+  const [sales, returns] = await Promise.all([getSales(), getSaleReturns()]);
+  const map = new Map<string, HistoricoMes>();
+  const get = (ym: string) => {
+    let h = map.get(ym);
+    if (!h) {
+      h = { ym, internoSacas: 0, internoReceita: 0, externoSacas: 0, externoReceita: 0 };
+      map.set(ym, h);
+    }
+    return h;
+  };
+  for (const s of sales) {
+    const h = get(s.saleDate.slice(0, 7));
+    if (s.clientType === "INTERNO") {
+      h.internoSacas += s.quantitySacas;
+      h.internoReceita += s.valueBRL;
+    } else {
+      h.externoSacas += s.quantitySacas;
+      h.externoReceita += s.valueBRL;
+    }
+  }
+  let devolucoesSemTipo = 0;
+  for (const r of returns) {
+    if (!r.clientType) {
+      devolucoesSemTipo++;
+      continue;
+    }
+    const h = get(r.returnDate.slice(0, 7));
+    if (r.clientType === "INTERNO") {
+      h.internoSacas -= r.quantitySacas;
+      h.internoReceita -= r.valueBRL;
+    } else {
+      h.externoSacas -= r.quantitySacas;
+      h.externoReceita -= r.valueBRL;
+    }
+  }
+  const historico = [...map.values()].sort((a, b) => a.ym.localeCompare(b.ym));
+
+  // Ultimo mes fechado com dado: o mes corrente (em andamento) nunca entra.
+  const hoje = new Date();
+  const mesCorrente = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+  const fechados = historico.filter((h) => h.ym < mesCorrente);
+  const ultimoMesFechado = fechados.length ? fechados[fechados.length - 1].ym : null;
+
+  return { historico: fechados, ultimoMesFechado, devolucoesSemTipo };
+}
+
+export type HistoricoVendasData = Awaited<ReturnType<typeof getHistoricoVendasMensal>>;

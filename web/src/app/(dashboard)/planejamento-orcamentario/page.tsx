@@ -1,6 +1,7 @@
 import { Topbar } from "@/components/layout/topbar";
 import { PlanejamentoView } from "@/components/planejamento/planejamento-view";
-import { getBudgetPlan, getBudgetYears } from "@/lib/budget-data";
+import { ProjecaoReceita } from "@/components/planejamento/projecao-receita";
+import { getBudgetPlan, getBudgetYears, getHistoricoVendasMensal } from "@/lib/budget-data";
 
 export default async function PlanejamentoOrcamentarioPage({
   searchParams,
@@ -10,7 +11,7 @@ export default async function PlanejamentoOrcamentarioPage({
   const params = await searchParams;
   const years = await getBudgetYears();
   const year = params.year ? Number(params.year) : years[0] ?? new Date().getFullYear();
-  const plan = await getBudgetPlan(year);
+  const [plan, vendas] = await Promise.all([getBudgetPlan(year), getHistoricoVendasMensal()]);
 
   return (
     <div className="flex flex-col">
@@ -23,6 +24,19 @@ export default async function PlanejamentoOrcamentarioPage({
           <PlanejamentoView plan={plan} />
         ) : (
           <p className="text-center text-muted">Nenhum plano orçamentário cadastrado para {year}.</p>
+        )}
+        {vendas.ultimoMesFechado && (
+          <ProjecaoReceita
+            historico={vendas.historico}
+            ultimoMesFechado={vendas.ultimoMesFechado}
+            cenarioInicial={plan?.scenario ?? "CONSERVADOR"}
+            crescimentos={{
+              CONSERVADOR: 0,
+              MODERADO: plan?.crescimentoModerado ?? 0,
+              OTIMISTA: plan?.crescimentoOtimista ?? 0,
+              MUITO_OTIMISTA: plan?.crescimentoMuitoOtimista ?? 0,
+            }}
+          />
         )}
       </div>
     </div>
