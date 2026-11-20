@@ -4,10 +4,12 @@ import { ArrowDownRight, ArrowUpRight, LucideIcon } from "lucide-react";
 
 export type KpiTone = "teal" | "green" | "soft";
 
-const toneVariants: Record<KpiTone, { border: string; icon: string }> = {
-  teal: { border: "border-l-primary", icon: "bg-primary text-primary-foreground" },
-  green: { border: "border-l-success", icon: "bg-success text-success-foreground" },
-  soft: { border: "border-l-accent-soft", icon: "bg-accent-soft text-accent-soft-foreground" },
+// Cada tom define a faixa de destaque no topo do card e o chip do icone
+// (fundo translucido da cor + anel sutil, em vez do bloco solido antigo).
+const toneVariants: Record<KpiTone, { bar: string; icon: string }> = {
+  teal: { bar: "from-primary/90 via-primary/40", icon: "bg-primary/12 text-primary ring-primary/25" },
+  green: { bar: "from-success/90 via-success/40", icon: "bg-success/12 text-success ring-success/25" },
+  soft: { bar: "from-muted/60 via-muted/20", icon: "bg-accent-soft text-accent-soft-foreground ring-border" },
 };
 
 export function KpiCard({
@@ -37,13 +39,17 @@ export function KpiCard({
   // valueClassName em cada tela que usa o card.
   const isNegative = /-[^\d]*\d/.test(value);
   return (
-    <Card className={cn("border-l-4 p-4", variant.border)}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-muted">{label}</p>
+    <Card className="relative overflow-hidden p-4 transition-colors hover:border-primary/40">
+      <span
+        aria-hidden
+        className={cn("absolute inset-x-0 top-0 h-0.5 bg-linear-to-r to-transparent", variant.bar)}
+      />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium tracking-wider text-muted">{label}</p>
           <p
             className={cn(
-              "mt-1.5 text-xl font-semibold tracking-tight",
+              "mt-2 text-xl font-semibold tracking-tight [font-variant-numeric:tabular-nums]",
               isNegative && "text-danger",
               valueClassName
             )}
@@ -51,7 +57,7 @@ export function KpiCard({
             {value}
           </p>
         </div>
-        <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", variant.icon)}>
+        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset", variant.icon)}>
           <Icon size={18} />
         </div>
       </div>

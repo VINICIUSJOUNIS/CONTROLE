@@ -217,14 +217,17 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "hidden shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-[width] md:flex print:hidden",
+        "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/5 bg-sidebar bg-linear-to-b from-white/[0.03] to-transparent text-sidebar-foreground transition-[width] md:flex print:hidden",
         recolhido ? "w-16" : "w-64",
         apresentando && "md:hidden"
       )}
     >
       <div className={cn("flex items-center py-4", recolhido ? "justify-center px-2" : "justify-between pl-5 pr-3")}>
         {!recolhido && (
-          <Link href="/inicio" className="text-sm font-semibold text-white">
+          <Link href="/inicio" className="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-white">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-[#3fc6ce] to-[#14858d] text-xs font-bold text-[#03191c] shadow-md shadow-[#3fc6ce]/20">
+              C
+            </span>
             Controle
           </Link>
         )}
@@ -250,8 +253,8 @@ export function Sidebar({
                 className={cn(
                   "flex items-center gap-3 rounded-lg pr-2 text-sm transition-colors",
                   active
-                    ? "bg-sidebar-active text-white"
-                    : "hover:bg-sidebar-active/60 hover:text-white"
+                    ? "relative bg-[#3fc6ce]/12 text-white ring-1 ring-inset ring-[#3fc6ce]/20 before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-[#3fc6ce]"
+                    : "text-sidebar-foreground/85 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <Link

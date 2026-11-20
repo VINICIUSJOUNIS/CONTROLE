@@ -3,43 +3,45 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #eef5f5;
-  --foreground: #10262a;
+  --background: #f3f7f8;
+  --foreground: #0c2226;
   --card: #ffffff;
-  --card-foreground: #10262a;
-  --border: #d5e5e6;
-  --muted: #3f6063;
-  --sidebar: #0d2b2e;
-  --sidebar-foreground: #c7dfe1;
-  --sidebar-active: #17474c;
-  --primary: #74acb3;
-  --primary-foreground: #08191b;
-  --success: #4c9a6a;
+  --card-foreground: #0c2226;
+  --border: #dde8ea;
+  --muted: #4f6e72;
+  --sidebar: #0a2328;
+  --sidebar-foreground: #bcd8db;
+  --sidebar-active: #15434a;
+  --primary: #14858d;
+  --primary-foreground: #ffffff;
+  --success: #1f9d6b;
   --success-foreground: #f2fbf5;
-  --accent-soft: #d7ecec;
-  --accent-soft-foreground: #10262a;
-  --danger: #c1443a;
+  --accent-soft: #e3f1f2;
+  --accent-soft-foreground: #0c2226;
+  --danger: #d0453b;
   --warning: #d68c2b;
+  --glow: rgba(20, 133, 141, 0.08);
 }
 
 .dark {
-  --background: #071718;
-  --foreground: #d9eef0;
-  --card: #0e2528;
-  --card-foreground: #d9eef0;
-  --border: #234a4e;
-  --muted: #9fc3c5;
-  --sidebar: #041012;
-  --sidebar-foreground: #a8ced1;
-  --sidebar-active: #123236;
-  --primary: #86c8ce;
-  --primary-foreground: #04181a;
-  --success: #6fbd8c;
-  --success-foreground: #042e12;
-  --accent-soft: #163235;
-  --accent-soft-foreground: #d9eef0;
-  --danger: #e5776b;
-  --warning: #f0ac4c;
+  --background: #06141a;
+  --foreground: #e2f1f3;
+  --card: #0b1f26;
+  --card-foreground: #e2f1f3;
+  --border: #1a3740;
+  --muted: #8fb2b8;
+  --sidebar: #040e13;
+  --sidebar-foreground: #a7c9cd;
+  --sidebar-active: #10323a;
+  --primary: #3fc6ce;
+  --primary-foreground: #03191c;
+  --success: #3cc492;
+  --success-foreground: #03251a;
+  --accent-soft: #11303a;
+  --accent-soft-foreground: #e2f1f3;
+  --danger: #f0645c;
+  --warning: #f4aa45;
+  --glow: rgba(63, 198, 206, 0.09);
 }
 
 @theme inline {
@@ -65,7 +67,12 @@
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(1200px 600px at 100% -10%, var(--glow), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, var(--glow), transparent 60%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   text-transform: uppercase;
@@ -84,6 +91,10 @@ option {
   @page {
     size: 297mm 210mm;
     margin: 8mm;
+  }
+
+  body {
+    background-image: none !important;
   }
 
   html,
@@ -112,13 +123,25 @@ option {
   }
 }
 
+table {
+  font-variant-numeric: tabular-nums;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted);
 }
 
 /* Modo apresentacao (botao "Apresentar" da barra superior): tela cheia sem a

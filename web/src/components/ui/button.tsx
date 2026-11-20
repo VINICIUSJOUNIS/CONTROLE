@@ -2,9 +2,9 @@ import { cn } from "@/lib/utils";
 import { ButtonHTMLAttributes } from "react";
 
 const variants = {
-  primary: "bg-primary text-primary-foreground hover:opacity-90",
-  outline: "border border-border bg-transparent hover:bg-border/40",
-  ghost: "bg-transparent hover:bg-border/40",
+  primary: "bg-primary text-primary-foreground shadow-sm shadow-primary/25 hover:brightness-110",
+  outline: "border border-border bg-card/60 hover:border-primary/40 hover:bg-accent-soft",
+  ghost: "bg-transparent hover:bg-accent-soft",
 };
 
 const sizes = {
@@ -25,7 +25,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none",
+        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none",
         variants[variant],
         sizes[size],
         className
