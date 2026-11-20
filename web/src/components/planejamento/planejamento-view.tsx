@@ -10,7 +10,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { LineChartCard } from "@/components/charts/line-chart-card";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { PieChartCard } from "@/components/charts/pie-chart-card";
-import { formatCompactCurrency, formatCurrency, formatCurrencyPrecise, formatPercent } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatPercent } from "@/lib/format";
 import { BudgetPlanData, BudgetGroupData, BudgetLineData } from "@/lib/budget-data";
 import { BUDGET_GROUP_ORDER, SCENARIO_LABELS } from "@/lib/budget-constants";
 import {
@@ -37,6 +37,7 @@ import {
   ChevronRight,
   Settings,
   Ship,
+  TextCursorInput,
 } from "lucide-react";
 
 type BudgetGroup = (typeof BUDGET_GROUP_ORDER)[number];
@@ -732,15 +733,18 @@ function GroupCard({
           </div>
         </button>
         {expanded && (
-          <div className="border-t border-border">
+          <div className="overflow-x-auto border-t border-border">
             <table className="w-full whitespace-nowrap text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted">
-                  <th className="px-4 py-2 font-medium">Linha</th>
-                  <th className="px-4 py-2 font-medium">Total Previsto</th>
-                  <th className="px-4 py-2 font-medium">Total Realizado</th>
-                  <th className="px-4 py-2 font-medium">Var %</th>
-                  <th className="px-4 py-2 font-medium" />
+                  <th className="px-3 py-2 font-medium">Linha</th>
+                  <th className="px-2 py-2 text-center font-medium">Por saca?</th>
+                  <th className="px-2 py-2 font-medium">R$ por saca</th>
+                  <th className="px-2 py-2 font-medium">Incide sobre</th>
+                  <th className="px-3 py-2 font-medium">Total Previsto</th>
+                  <th className="px-3 py-2 font-medium">Total Realizado</th>
+                  <th className="px-3 py-2 font-medium">Var %</th>
+                  <th className="px-3 py-2 font-medium" />
                 </tr>
               </thead>
               <tbody>
@@ -748,21 +752,14 @@ function GroupCard({
                   const lineVar = varPercent(line.totalPrevisto, line.totalRealizado);
                   return (
                     <tr key={line.id} className="border-b border-border/60 last:border-0 hover:bg-border/10">
-                      <td className="px-4 py-2">
-                        {line.name}
-                        {line.tipoCusto === "POR_SACA" && (
-                          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary ring-1 ring-inset ring-primary/25">
-                            {formatCurrencyPrecise(line.valorPorSaca)}/sc ·{" "}
-                            {line.baseVolume === "EXTERNO" ? "externo" : line.baseVolume === "INTERNO" ? "interno" : "total"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2">{formatCurrency(line.totalPrevisto)}</td>
-                      <td className="px-4 py-2">{formatCurrency(line.totalRealizado)}</td>
-                      <td className={`px-4 py-2 ${lineVar !== null && lineVar > 0 ? "text-danger" : "text-success"}`}>
+                      <td className="px-3 py-2">{line.name}</td>
+                      <CustoPorSacaCelulas line={line} />
+                      <td className="px-3 py-2">{formatCurrency(line.totalPrevisto)}</td>
+                      <td className="px-3 py-2">{formatCurrency(line.totalRealizado)}</td>
+                      <td className={`px-3 py-2 ${lineVar !== null && lineVar > 0 ? "text-danger" : "text-success"}`}>
                         {lineVar !== null ? formatPercent(lineVar, 1) : "-"}
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 py-2">
                         <div className="flex gap-1">
                           <button
                             onClick={() => onEditLine(line)}
@@ -773,10 +770,11 @@ function GroupCard({
                           </button>
                           <button
                             onClick={() => onRenameLine(line)}
-                            className="rounded-md px-1.5 py-1 text-[11px] text-muted hover:bg-border/60 hover:text-foreground"
+                            className="rounded-md p-1.5 text-muted hover:bg-border/60 hover:text-foreground"
                             title="Renomear"
+                            aria-label="Renomear"
                           >
-                            renomear
+                            <TextCursorInput size={13} />
                           </button>
                           <button
                             onClick={() => onDeleteLine(line)}
@@ -792,7 +790,7 @@ function GroupCard({
                 })}
                 {groupData.lines.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-4 text-center text-muted">
+                    <td colSpan={8} className="px-4 py-4 text-center text-muted">
                       Nenhuma linha cadastrada neste grupo.
                     </td>
                   </tr>
@@ -809,5 +807,91 @@ function GroupCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// Marcacao direto na lista: a linha e custo por saca? qual o R$/saca e sobre
+// qual volume incide. Grava ao marcar/desmarcar, ao trocar a base e ao sair do
+// campo de valor (ou Enter). Previsto por saca = R$/saca x sacas do mes no
+// cenario ativo (calculado em budget-data.ts).
+function CustoPorSacaCelulas({ line }: { line: BudgetLineData }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const porSaca = line.tipoCusto === "POR_SACA";
+  const [valor, setValor] = useState(porSaca ? String(line.valorPorSaca) : "");
+
+  function salvar(next: { tipoCusto: "FIXO" | "POR_SACA"; valorPorSaca: number; baseVolume: "TOTAL" | "INTERNO" | "EXTERNO" }) {
+    startTransition(async () => {
+      await updateBudgetLineCusto(line.id, next);
+      router.refresh();
+    });
+  }
+
+  function salvarValor() {
+    const v = Number(valor.replace(",", ".")) || 0;
+    if (v === line.valorPorSaca) return;
+    salvar({ tipoCusto: "POR_SACA", valorPorSaca: v, baseVolume: line.baseVolume });
+  }
+
+  return (
+    <>
+      <td className="px-2 py-2 text-center">
+        <input
+          type="checkbox"
+          aria-label={`${line.name}: custo por saca`}
+          className="h-4 w-4 cursor-pointer accent-[var(--primary)]"
+          checked={porSaca}
+          disabled={isPending}
+          onChange={(e) =>
+            salvar({
+              tipoCusto: e.target.checked ? "POR_SACA" : "FIXO",
+              valorPorSaca: e.target.checked ? Number(valor.replace(",", ".")) || 0 : 0,
+              baseVolume: line.baseVolume,
+            })
+          }
+        />
+      </td>
+      <td className="px-2 py-2">
+        {porSaca ? (
+          <Input
+            type="number"
+            step="0.01"
+            placeholder="0,00"
+            className="h-8 w-24"
+            value={valor}
+            disabled={isPending}
+            onChange={(e) => setValor(e.target.value)}
+            onBlur={salvarValor}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            }}
+          />
+        ) : (
+          <span className="text-muted">-</span>
+        )}
+      </td>
+      <td className="px-2 py-2">
+        {porSaca ? (
+          <Select
+            className="h-8 w-40"
+            value={line.baseVolume}
+            disabled={isPending}
+            onChange={(e) =>
+              salvar({
+                tipoCusto: "POR_SACA",
+                valorPorSaca: Number(valor.replace(",", ".")) || 0,
+                baseVolume: e.target.value as "TOTAL" | "INTERNO" | "EXTERNO",
+              })
+            }
+          >
+            <option value="TOTAL">Volume total</option>
+            <option value="INTERNO">Mercado interno</option>
+            <option value="EXTERNO">Mercado externo</option>
+          </Select>
+        ) : (
+          <span className="text-muted">-</span>
+        )}
+      </td>
+    </>
   );
 }
