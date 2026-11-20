@@ -217,19 +217,14 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/5 bg-sidebar bg-linear-to-b from-white/[0.03] to-transparent text-sidebar-foreground transition-[width] md:flex print:hidden",
+        "sticky top-14 hidden h-[calc(100vh-3.5rem)] shrink-0 flex-col border-r border-white/5 bg-sidebar bg-linear-to-b from-white/[0.03] to-transparent text-sidebar-foreground transition-[width] md:flex print:hidden",
         recolhido ? "w-16" : "w-64",
         apresentando && "md:hidden"
       )}
     >
       <div className={cn("flex items-center py-4", recolhido ? "justify-center px-2" : "justify-between pl-5 pr-3")}>
         {!recolhido && (
-          <Link href="/inicio" className="flex items-center gap-2.5 text-sm font-semibold tracking-wide text-white">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-[#3fc6ce] to-[#14858d] text-xs font-bold text-[#03191c] shadow-md shadow-[#3fc6ce]/20">
-              C
-            </span>
-            Controle
-          </Link>
+          <p className="truncate text-xs font-semibold tracking-wider text-white/90">{activeModule.label}</p>
         )}
         <button
           type="button"

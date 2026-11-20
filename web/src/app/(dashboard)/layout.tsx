@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/layout/sidebar";
+import { CabecalhoModulos } from "@/components/layout/cabecalho-modulos";
 import { SidebarProvider } from "@/components/layout/sidebar-state";
 import { ControleInatividade } from "@/components/auth/inatividade";
 import { getCurrentProfile } from "@/lib/auth";
@@ -20,7 +21,8 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       <ControleInatividade />
-      <div className="flex min-h-screen">
+      <CabecalhoModulos />
+      <div className="flex min-h-[calc(100vh-3.5rem)]">
         <Sidebar
           profile={profile}
           mesaOperacaoCount={mesaOperacaoCount}

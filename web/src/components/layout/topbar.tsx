@@ -4,7 +4,7 @@ import { ApresentarButton } from "@/components/layout/sidebar-state";
 
 export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-border/70 bg-background/70 px-6 py-4 backdrop-blur-xl print:hidden ocultar-em-apresentacao">
+    <header className="sticky top-14 z-30 flex items-center justify-between gap-4 border-b border-border/70 bg-background/70 px-6 py-4 backdrop-blur-xl print:hidden ocultar-em-apresentacao">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
         {subtitle && <p className="mt-0.5 text-xs text-muted">{subtitle}</p>}
