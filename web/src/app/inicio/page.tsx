@@ -1,9 +1,11 @@
-import Link from "next/link";
+import Image from "next/image";
 import { getCurrentProfile } from "@/lib/auth";
 import { ControleInatividade } from "@/components/auth/inatividade";
 import { CabecalhoModulos } from "@/components/layout/cabecalho-modulos";
-import { MODULOS } from "@/lib/modulos";
 
+// Tela de boas-vindas (aberta apos o login e pelo logo do cabecalho): so o
+// cabecalho com os modulos e a foto da lavoura com a marca Nayme. Os cards dos
+// modulos sairam daqui - o cabecalho fixo ja leva a cada um deles.
 export default async function InicioPage() {
   await getCurrentProfile();
 
@@ -11,26 +13,12 @@ export default async function InicioPage() {
     <div className="flex min-h-screen flex-col">
       <ControleInatividade />
       <CabecalhoModulos comTema />
-
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-        <div className="grid w-full max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {MODULOS.map((m) => {
-            const Icon = m.icon;
-            return (
-              <Link
-                key={m.href}
-                href={m.href}
-                className="group flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40"
-              >
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
-                  <Icon size={22} />
-                </div>
-                <h2 className="text-base font-semibold">{m.label}</h2>
-              </Link>
-            );
-          })}
-        </div>
-      </main>
+      {/* Mesma foto do fundo do sistema, com pelicula mais leve que a das
+          outras telas (65%) para a marca aparecer. */}
+      <div aria-hidden className="fixed inset-0 -z-10">
+        <Image src="/nayme-watermark.jpg" alt="" fill priority sizes="100vw" className="object-cover" />
+        <div className="absolute inset-0 bg-background/25" />
+      </div>
     </div>
   );
 }
