@@ -4,12 +4,24 @@ import { ArrowDownRight, ArrowUpRight, LucideIcon } from "lucide-react";
 
 export type KpiTone = "teal" | "green" | "soft";
 
-// Cada tom define a faixa de destaque no topo do card e o chip do icone
-// (fundo translucido da cor + anel sutil, em vez do bloco solido antigo).
-const toneVariants: Record<KpiTone, { bar: string; icon: string }> = {
-  teal: { bar: "from-primary/90 via-primary/40", icon: "bg-primary/12 text-primary ring-primary/25" },
-  green: { bar: "from-success/90 via-success/40", icon: "bg-success/12 text-success ring-success/25" },
-  soft: { bar: "from-muted/60 via-muted/20", icon: "bg-accent-soft text-accent-soft-foreground ring-border" },
+// Cada tom define: a linha de destaque no topo, o brilho difuso no canto e o
+// chip do icone (degrade translucido da cor + anel sutil).
+const toneVariants: Record<KpiTone, { bar: string; glow: string; icon: string }> = {
+  teal: {
+    bar: "from-primary via-primary/50",
+    glow: "bg-primary/20",
+    icon: "from-primary/25 to-primary/5 text-primary ring-primary/30",
+  },
+  green: {
+    bar: "from-success via-success/50",
+    glow: "bg-success/20",
+    icon: "from-success/25 to-success/5 text-success ring-success/30",
+  },
+  soft: {
+    bar: "from-muted/70 via-muted/25",
+    glow: "bg-muted/15",
+    icon: "from-accent-soft to-accent-soft/40 text-accent-soft-foreground ring-border",
+  },
 };
 
 export function KpiCard({
@@ -39,37 +51,47 @@ export function KpiCard({
   // valueClassName em cada tela que usa o card.
   const isNegative = /-[^\d]*\d/.test(value);
   return (
-    <Card className="relative overflow-hidden p-4 transition-colors hover:border-primary/40">
+    <Card className="group relative isolate overflow-hidden p-5 transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_18px_40px_-22px_var(--primary)] print:transform-none">
       <span
         aria-hidden
-        className={cn("absolute inset-x-0 top-0 h-0.5 bg-linear-to-r to-transparent", variant.bar)}
+        className={cn("absolute inset-x-0 top-0 h-[3px] bg-linear-to-r to-transparent", variant.bar)}
+      />
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute -right-12 -top-12 -z-10 h-36 w-36 rounded-full opacity-60 blur-3xl transition-opacity duration-300 group-hover:opacity-100 print:hidden",
+          variant.glow
+        )}
       />
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[11px] font-medium tracking-wider text-muted">{label}</p>
-          <p
-            className={cn(
-              "mt-2 text-xl font-semibold tracking-tight [font-variant-numeric:tabular-nums]",
-              isNegative && "text-danger",
-              valueClassName
-            )}
-          >
-            {value}
-          </p>
-        </div>
-        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset", variant.icon)}>
-          <Icon size={18} />
+        <p className="min-w-0 pt-1 text-[11px] font-semibold tracking-[0.08em] text-muted">{label}</p>
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ring-1 ring-inset transition-transform duration-300 group-hover:scale-105",
+            variant.icon
+          )}
+        >
+          <Icon size={19} strokeWidth={2} />
         </div>
       </div>
+      <p
+        className={cn(
+          "mt-3 break-words text-[22px] font-semibold leading-tight tracking-tight [font-variant-numeric:tabular-nums]",
+          isNegative && "text-danger",
+          valueClassName
+        )}
+      >
+        {value}
+      </p>
       {trend && (
-        <div className="mt-3 flex items-center gap-1 text-xs">
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <span
             className={cn(
-              "flex items-center gap-0.5 font-medium",
-              trendPositive ? "text-success" : "text-danger"
+              "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold ring-1 ring-inset",
+              trendPositive ? "bg-success/10 text-success ring-success/25" : "bg-danger/10 text-danger ring-danger/25"
             )}
           >
-            {trendPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+            {trendPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
             {trend}
           </span>
           {trendLabel && <span className="text-muted">{trendLabel}</span>}
