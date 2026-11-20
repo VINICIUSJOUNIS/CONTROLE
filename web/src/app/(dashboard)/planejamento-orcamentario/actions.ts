@@ -91,6 +91,24 @@ export async function upsertBudgetLineMonths(lineId: string, rows: BudgetLineMon
   revalidateAll();
 }
 
+export type BudgetLineCustoInput = {
+  tipoCusto: "FIXO" | "POR_SACA";
+  valorPorSaca: number;
+  baseVolume: "TOTAL" | "INTERNO" | "EXTERNO";
+};
+
+// Define como o previsto da linha e formado: fixo (digitado mes a mes) ou por
+// saca (R$/saca x volume do mes do plano, calculado na leitura).
+export async function updateBudgetLineCusto(lineId: string, input: BudgetLineCustoInput) {
+  const tipoCusto = input.tipoCusto === "POR_SACA" ? "POR_SACA" : "FIXO";
+  const baseVolume = ["TOTAL", "INTERNO", "EXTERNO"].includes(input.baseVolume) ? input.baseVolume : "TOTAL";
+  await prisma.budgetLine.update({
+    where: { id: lineId },
+    data: { tipoCusto, valorPorSaca: Number.isFinite(input.valorPorSaca) ? input.valorPorSaca : 0, baseVolume },
+  });
+  revalidateAll();
+}
+
 export async function createBudgetLine(planId: string, group: BudgetGroup, name: string) {
   const count = await prisma.budgetLine.count({ where: { budgetPlanId: planId, group } });
   await prisma.budgetLine.create({

@@ -81,12 +81,31 @@ export async function getBudgetPlan(year: number) {
 
   const volumeByMonth = new Map(plan.volumes.map((v) => [v.month, v]));
 
+  // Volume previsto do mes ja ajustado pelo cenario (mesma conta de `months`
+  // abaixo), usado pelas linhas de custo por saca.
+  const volumePrevistoMes = (m: number, base: string) => {
+    // Arredondado como em `months` (2 casas), para o previsto bater com
+    // valor por saca x sacas exibidas na tela.
+    const v = volumeByMonth.get(m);
+    const total = (v ? n(v.volumeBaseSacas) : 0) * multiplier;
+    const externo = (v ? n(v.volumeExternoSacas) : 0) * multiplier;
+    if (base === "EXTERNO") return Number(externo.toFixed(2));
+    if (base === "INTERNO") return Number((total - externo).toFixed(2));
+    return Number(total.toFixed(2));
+  };
+
   const lines = plan.lines.map((line) => {
     const monthsByNum = new Map(line.months.map((m) => [m.month, m]));
+    const porSaca = line.tipoCusto === "POR_SACA";
+    const valorPorSaca = n(line.valorPorSaca);
     const months = Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
       const row = monthsByNum.get(m);
-      const previsto = row ? n(row.valorPrevisto) : 0;
+      const previsto = porSaca
+        ? Number((valorPorSaca * volumePrevistoMes(m, line.baseVolume)).toFixed(2))
+        : row
+          ? n(row.valorPrevisto)
+          : 0;
       const realizado = row ? n(row.valorRealizado) : 0;
       return { month: m, previsto, realizado, variacao: Number((realizado - previsto).toFixed(2)) };
     });
@@ -97,6 +116,9 @@ export async function getBudgetPlan(year: number) {
       group: line.group,
       name: line.name,
       orderIndex: line.orderIndex,
+      tipoCusto: line.tipoCusto as "FIXO" | "POR_SACA",
+      valorPorSaca,
+      baseVolume: line.baseVolume as "TOTAL" | "INTERNO" | "EXTERNO",
       months,
       totalPrevisto,
       totalRealizado,

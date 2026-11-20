@@ -10,13 +10,14 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { LineChartCard } from "@/components/charts/line-chart-card";
 import { BarChartCard } from "@/components/charts/bar-chart-card";
 import { PieChartCard } from "@/components/charts/pie-chart-card";
-import { formatCompactCurrency, formatCurrency, formatPercent } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatCurrencyPrecise, formatPercent } from "@/lib/format";
 import { BudgetPlanData, BudgetGroupData, BudgetLineData } from "@/lib/budget-data";
 import { BUDGET_GROUP_ORDER, SCENARIO_LABELS } from "@/lib/budget-constants";
 import {
   updateBudgetPlanAssumptions,
   upsertBudgetVolumeMonths,
   upsertBudgetLineMonths,
+  updateBudgetLineCusto,
   createBudgetLine,
   renameBudgetLine,
   deleteBudgetLine,
@@ -88,6 +89,20 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
   const [openLine, setOpenLine] = useState(false);
   const [editingLine, setEditingLine] = useState<BudgetLineData | null>(null);
   const [lineForm, setLineForm] = useState<{ month: number; previsto: string; realizado: string }[]>([]);
+  const [custoForm, setCustoForm] = useState<{ tipo: "FIXO" | "POR_SACA"; valor: string; base: "TOTAL" | "INTERNO" | "EXTERNO" }>({
+    tipo: "FIXO",
+    valor: "",
+    base: "TOTAL",
+  });
+
+  // Volume previsto do mes (cenario ativo) para a base escolhida - mesma conta
+  // do servidor (budget-data.ts), so para mostrar o previsto por saca no dialogo.
+  function volumeDoMes(idx: number, base: "TOTAL" | "INTERNO" | "EXTERNO") {
+    const m = plan.months[idx];
+    return base === "EXTERNO" ? m.volumeExternoPrevisto : base === "INTERNO" ? m.volumeInternoPrevisto : m.volumeAjustado;
+  }
+  const previstoPorSaca = (idx: number) =>
+    Number(((Number(custoForm.valor) || 0) * volumeDoMes(idx, custoForm.base)).toFixed(2));
 
   const [openNewLine, setOpenNewLine] = useState(false);
   const [newLineGroup, setNewLineGroup] = useState<BudgetGroup | null>(null);
@@ -191,17 +206,30 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
   function openLineDialog(line: BudgetLineData) {
     setEditingLine(line);
     setLineForm(line.months.map((m) => ({ month: m.month, previsto: String(m.previsto), realizado: String(m.realizado) })));
+    setCustoForm({
+      tipo: line.tipoCusto,
+      valor: line.tipoCusto === "POR_SACA" ? String(line.valorPorSaca) : "",
+      base: line.baseVolume,
+    });
     setOpenLine(true);
   }
 
   function handleSaveLine() {
     if (!editingLine) return;
-    const rows: BudgetLineMonthInput[] = lineForm.map((r) => ({
+    const porSaca = custoForm.tipo === "POR_SACA";
+    const rows: BudgetLineMonthInput[] = lineForm.map((r, idx) => ({
       month: r.month,
-      valorPrevisto: Number(r.previsto) || 0,
+      // Por saca o previsto e recalculado na leitura; grava o valor do momento
+      // so para nao perder a referencia se a linha voltar a ser fixa.
+      valorPrevisto: porSaca ? previstoPorSaca(idx) : Number(r.previsto) || 0,
       valorRealizado: Number(r.realizado) || 0,
     }));
     startTransition(async () => {
+      await updateBudgetLineCusto(editingLine.id, {
+        tipoCusto: custoForm.tipo,
+        valorPorSaca: porSaca ? Number(custoForm.valor) || 0 : 0,
+        baseVolume: custoForm.base,
+      });
       await upsertBudgetLineMonths(editingLine.id, rows);
       setOpenLine(false);
       router.refresh();
@@ -550,11 +578,53 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
       <Dialog open={openLine} onOpenChange={setOpenLine}>
         <DialogContent title={editingLine ? `Editar valores: ${editingLine.name}` : "Editar valores"} className="max-w-2xl">
           <div className="space-y-3">
+            <div className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-3">
+              <div>
+                <Label>Tipo de custo</Label>
+                <Select
+                  value={custoForm.tipo}
+                  onChange={(e) => setCustoForm({ ...custoForm, tipo: e.target.value as "FIXO" | "POR_SACA" })}
+                >
+                  <option value="FIXO">Valor fixo por mês</option>
+                  <option value="POR_SACA">Por saca</option>
+                </Select>
+              </div>
+              {custoForm.tipo === "POR_SACA" && (
+                <>
+                  <div>
+                    <Label>Valor por saca (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Ex.: 6,00"
+                      value={custoForm.valor}
+                      onChange={(e) => setCustoForm({ ...custoForm, valor: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Incide sobre</Label>
+                    <Select
+                      value={custoForm.base}
+                      onChange={(e) => setCustoForm({ ...custoForm, base: e.target.value as "TOTAL" | "INTERNO" | "EXTERNO" })}
+                    >
+                      <option value="TOTAL">Volume total</option>
+                      <option value="INTERNO">Volume mercado interno</option>
+                      <option value="EXTERNO">Volume mercado externo</option>
+                    </Select>
+                  </div>
+                  <p className="text-[11px] text-muted sm:col-span-3">
+                    Previsto de cada mês = valor por saca × sacas previstas do mês no cenário {SCENARIO_LABELS[plan.scenario]}. Atualiza sozinho
+                    quando o volume ou o cenário do plano mudam. O realizado continua digitado.
+                  </p>
+                </>
+              )}
+            </div>
             <div className="max-h-[60vh] overflow-auto rounded-lg border border-border">
               <table className="w-full whitespace-nowrap text-xs">
                 <thead className="sticky top-0 z-10 bg-card">
                   <tr className="border-b border-border text-left text-muted">
                     <th className="px-2 py-2 font-medium">Mês</th>
+                    {custoForm.tipo === "POR_SACA" && <th className="px-2 py-2 font-medium">Sacas</th>}
                     <th className="px-2 py-2 font-medium">Previsto (R$)</th>
                     <th className="px-2 py-2 font-medium">Realizado (R$)</th>
                   </tr>
@@ -563,11 +633,17 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
                   {lineForm.map((row, idx) => (
                     <tr key={row.month} className="border-b border-border/60 last:border-0">
                       <td className="px-2 py-1.5 font-medium">{plan.months[idx].label}</td>
+                      {custoForm.tipo === "POR_SACA" && (
+                        <td className="px-2 py-1.5 tabular-nums text-muted">
+                          {volumeDoMes(idx, custoForm.base).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                        </td>
+                      )}
                       <td className="px-2 py-1.5">
                         <Input
                           type="number"
                           className="h-8 w-32"
-                          value={row.previsto}
+                          disabled={custoForm.tipo === "POR_SACA"}
+                          value={custoForm.tipo === "POR_SACA" ? String(previstoPorSaca(idx)) : row.previsto}
                           onChange={(e) => {
                             const next = [...lineForm];
                             next[idx] = { ...next[idx], previsto: e.target.value };
@@ -672,7 +748,15 @@ function GroupCard({
                   const lineVar = varPercent(line.totalPrevisto, line.totalRealizado);
                   return (
                     <tr key={line.id} className="border-b border-border/60 last:border-0 hover:bg-border/10">
-                      <td className="px-4 py-2">{line.name}</td>
+                      <td className="px-4 py-2">
+                        {line.name}
+                        {line.tipoCusto === "POR_SACA" && (
+                          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary ring-1 ring-inset ring-primary/25">
+                            {formatCurrencyPrecise(line.valorPorSaca)}/sc ·{" "}
+                            {line.baseVolume === "EXTERNO" ? "externo" : line.baseVolume === "INTERNO" ? "interno" : "total"}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-2">{formatCurrency(line.totalPrevisto)}</td>
                       <td className="px-4 py-2">{formatCurrency(line.totalRealizado)}</td>
                       <td className={`px-4 py-2 ${lineVar !== null && lineVar > 0 ? "text-danger" : "text-success"}`}>
