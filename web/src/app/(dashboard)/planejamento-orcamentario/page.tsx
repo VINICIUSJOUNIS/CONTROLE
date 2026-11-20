@@ -1,7 +1,7 @@
 import { Topbar } from "@/components/layout/topbar";
 import { PlanejamentoView } from "@/components/planejamento/planejamento-view";
 import { ProjecaoReceita } from "@/components/planejamento/projecao-receita";
-import { getBudgetPlan, getBudgetYears, getHistoricoVendasMensal } from "@/lib/budget-data";
+import { getBaseFiscalDre, getBudgetPlan, getBudgetYears, getHistoricoVendasMensal } from "@/lib/budget-data";
 
 export default async function PlanejamentoOrcamentarioPage({
   searchParams,
@@ -11,7 +11,18 @@ export default async function PlanejamentoOrcamentarioPage({
   const params = await searchParams;
   const years = await getBudgetYears();
   const year = params.year ? Number(params.year) : years[0] ?? new Date().getFullYear();
-  const [plan, vendas] = await Promise.all([getBudgetPlan(year), getHistoricoVendasMensal()]);
+  const [plan, vendas, baseFiscal] = await Promise.all([getBudgetPlan(year), getHistoricoVendasMensal(), getBaseFiscalDre()]);
+  // Despesas previstas com fornecedores PJ (geram credito de CBS/IBS em 2027):
+  // mercado interno/externo, administrativas e, do custo do fornecedor, so
+  // fretes e armazenagem (o custo do cafe e o Funrural ficam de fora).
+  const despesasCreditaveis = (plan?.groups ?? [])
+    .flatMap((g) => g.lines.map((l) => ({ group: g.group, name: l.name, total: l.totalPrevisto })))
+    .filter(
+      (l) =>
+        ["DESPESA_MERCADO_INTERNO", "DESPESA_MERCADO_EXTERNO", "DESPESA_ADM_FIXA", "DESPESA_ADM_VARIAVEL"].includes(l.group) ||
+        (l.group === "CUSTO_FORNECEDOR" && /frete|armazen/i.test(l.name))
+    )
+    .reduce((s, l) => s + l.total, 0);
 
   return (
     <div className="flex flex-col">
@@ -32,6 +43,8 @@ export default async function PlanejamentoOrcamentarioPage({
             cenarioInicial={plan?.scenario ?? "CONSERVADOR"}
             planId={plan?.id}
             planName={plan?.name}
+            baseFiscal={baseFiscal}
+            despesasCreditaveis={despesasCreditaveis}
             crescimentos={{
               CONSERVADOR: 0,
               MODERADO: plan?.crescimentoModerado ?? 0,

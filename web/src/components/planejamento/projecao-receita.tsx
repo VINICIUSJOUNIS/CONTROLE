@@ -22,6 +22,7 @@ import {
   type HistoricoMes,
 } from "@/lib/budget-projecao";
 import { Package, TrendingUp, Ship, Store, Save } from "lucide-react";
+import { ImpostosReforma } from "@/components/planejamento/impostos-reforma";
 
 const sc = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 const pct = (v: number | null) => (v === null ? "-" : `${v >= 0 ? "+" : ""}${formatPercent(v * 100, 1)}`);
@@ -36,6 +37,8 @@ export function ProjecaoReceita({
   cenarioInicial,
   planId,
   planName,
+  baseFiscal,
+  despesasCreditaveis = 0,
 }: {
   historico: HistoricoMes[];
   ultimoMesFechado: string;
@@ -43,6 +46,8 @@ export function ProjecaoReceita({
   cenarioInicial: BudgetScenarioKey;
   planId?: string;
   planName?: string;
+  baseFiscal?: { de: string; ate: string; cmvSobreReceita: number; lairSobreReceita: number } | null;
+  despesasCreditaveis?: number;
 }) {
   const router = useRouter();
   const [gravando, startGravar] = useTransition();
@@ -356,6 +361,13 @@ export function ProjecaoReceita({
           </table>
         </CardContent>
       </Card>
+      <ImpostosReforma
+        ano={anoProjecao}
+        receitaInterna={t.internoReceita}
+        receitaExterna={t.externoReceita}
+        baseFiscal={baseFiscal ?? null}
+        despesasCreditaveis={despesasCreditaveis}
+      />
     </div>
   );
 }

@@ -286,3 +286,30 @@ export async function calcularVolumesBaseProjecao() {
   });
   return { meses, ultimoMesFechado, ltmDe };
 }
+
+// Base real para estimar compras de cafe e IRPJ/CSLL no quadro de impostos do
+// orcamento: ultimos 3 meses de DRE da Analise de Credito (PDF contabil).
+//  - cmvSobreReceita = CMV / receita bruta (proxy do valor de compra de cafe;
+//    a Nayme e comercial exportadora, o CMV e quase todo cafe comprado);
+//  - lairSobreReceita = (lucro liquido + provisao IRPJ/CSLL) / receita bruta.
+export async function getBaseFiscalDre() {
+  const regs = await prisma.analiseCredito.findMany({ orderBy: { competencia: "desc" }, take: 3 });
+  if (regs.length === 0) return null;
+  let receita = 0;
+  let cmv = 0;
+  let lair = 0;
+  for (const r of regs) {
+    const dre = r.dre as Record<string, number>;
+    const conf = r.conferenciaPdf as Record<string, number>;
+    receita += Number(dre.receitaBruta ?? 0);
+    cmv += Number(dre.cmv ?? 0);
+    lair += Number(conf.lucroLiquido ?? 0) + Number(dre.irCs ?? 0);
+  }
+  const meses = regs.map((r) => r.competencia.toISOString().slice(0, 7)).sort();
+  return {
+    de: meses[0],
+    ate: meses[meses.length - 1],
+    cmvSobreReceita: receita > 0 ? cmv / receita : 0,
+    lairSobreReceita: receita > 0 ? lair / receita : 0,
+  };
+}
