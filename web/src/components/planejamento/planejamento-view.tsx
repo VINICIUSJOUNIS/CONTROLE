@@ -45,7 +45,16 @@ function varPercent(previsto: number, realizado: number) {
   return ((realizado - previsto) / Math.abs(previsto)) * 100;
 }
 
-export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }) {
+// Base do ano anterior para o % de crescimento dos cards: vendas reais
+// (menos devolucoes) dos ultimos 12 meses fechados.
+export type AnoAnteriorBase = { rotulo: string; volume: number; volInt: number; volExt: number; receita: number };
+
+function variacaoPct(anterior: number, atual: number) {
+  if (!(anterior > 0)) return null;
+  return ((atual - anterior) / anterior) * 100;
+}
+
+export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<BudgetPlanData>; anoAnterior?: AnoAnteriorBase | null }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -204,6 +213,12 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
   const sc = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
   const receitaPorSaca = volPrevisto > 0 ? plan.totais.receitaPrevista / volPrevisto : 0;
   const despesaPorSaca = volPrevisto > 0 ? plan.totais.despesaPrevista / volPrevisto : null;
+  const fmtVar = (v: number | null) =>
+    v === null ? undefined : `${v >= 0 ? "+" : ""}${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+  const varVol = anoAnterior ? variacaoPct(anoAnterior.volume, volPrevisto) : null;
+  const varVolInt = anoAnterior ? variacaoPct(anoAnterior.volInt, volIntPrevisto) : null;
+  const varVolExt = anoAnterior ? variacaoPct(anoAnterior.volExt, volExtPrevisto) : null;
+  const varRec = anoAnterior ? variacaoPct(anoAnterior.receita, plan.totais.receitaPrevista) : null;
   const peSacas =
     plan.pontoEquilibrio.valorReais !== null && receitaPorSaca > 0 ? plan.pontoEquilibrio.valorReais / receitaPorSaca : null;
 
@@ -236,10 +251,12 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
         <KpiCard
           label={`Volume Previsto (${SCENARIO_LABELS[plan.scenario]})`}
           value={`${sc(volPrevisto)} sc`}
-          valueClassName="leading-tight"
           icon={Package}
           tone="teal"
-          trendLabel={`Interno ${sc(volIntPrevisto)} sc · Externo ${sc(volExtPrevisto)} sc`}
+          trend={fmtVar(varVol)}
+          trendPositive={(varVol ?? 0) >= 0}
+          trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volume)} sc em ${anoAnterior.rotulo}` : undefined}
+          detalhe={`Interno ${sc(volIntPrevisto)} sc${varVolInt !== null ? ` (${fmtVar(varVolInt)})` : ""} · Externo ${sc(volExtPrevisto)} sc${varVolExt !== null ? ` (${fmtVar(varVolExt)})` : ""}`}
         />
         <KpiCard
           label="Volume Realizado"
@@ -267,6 +284,9 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
           value={formatCompactCurrency(plan.totais.receitaPrevista)}
           icon={TrendingUp}
           tone="teal"
+          trend={fmtVar(varRec)}
+          trendPositive={(varRec ?? 0) >= 0}
+          trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.receita)} em ${anoAnterior.rotulo}` : undefined}
         />
         <KpiCard
           label="Despesa Prevista"

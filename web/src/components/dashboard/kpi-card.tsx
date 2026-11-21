@@ -31,6 +31,7 @@ export function KpiCard({
   icon: Icon,
   trend,
   trendLabel,
+  detalhe,
   trendPositive = true,
   tone = "teal",
 }: {
@@ -40,6 +41,8 @@ export function KpiCard({
   icon: LucideIcon;
   trend?: string;
   trendLabel?: string;
+  // Linha extra de detalhe abaixo da tendencia (ex.: divisao interno/externo).
+  detalhe?: string;
   trendPositive?: boolean;
   tone?: KpiTone;
 }) {
@@ -99,6 +102,7 @@ export function KpiCard({
           {trendLabel && <span className="text-[11px] text-muted">{trendLabel}</span>}
         </div>
       )}
+      {detalhe && <p className="mt-1.5 text-[11px] text-muted">{detalhe}</p>}
     </Card>
   );
 }
