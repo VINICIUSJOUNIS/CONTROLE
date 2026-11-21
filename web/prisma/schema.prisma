@@ -1159,6 +1159,10 @@ model BudgetPlan {
   crescimentoModerado      Decimal        @default(0) @db.Decimal(6, 4)
   crescimentoOtimista      Decimal        @default(0) @db.Decimal(6, 4)
   crescimentoMuitoOtimista Decimal        @default(0) @db.Decimal(6, 4)
+  // Preco R$/saca da projecao de receita (pagina Premissas). Nulo = usar o
+  // preco medio liquido do ultimo trimestre fechado (calculado na leitura).
+  precoSacaInterno         Decimal?       @db.Decimal(18, 2)
+  precoSacaExterno         Decimal?       @db.Decimal(18, 2)
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
 

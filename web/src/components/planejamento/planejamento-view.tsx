@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -14,14 +15,12 @@ import { formatCompactCurrency, formatCurrency, formatPercent } from "@/lib/form
 import { BudgetPlanData, BudgetGroupData, BudgetLineData } from "@/lib/budget-data";
 import { BUDGET_GROUP_ORDER, SCENARIO_LABELS } from "@/lib/budget-constants";
 import {
-  updateBudgetPlanAssumptions,
   upsertBudgetVolumeMonths,
   upsertBudgetLineMonths,
   updateBudgetLineCusto,
   createBudgetLine,
   renameBudgetLine,
   deleteBudgetLine,
-  BudgetPlanAssumptionsInput,
   BudgetVolumeMonthInput,
   BudgetLineMonthInput,
 } from "@/app/(dashboard)/planejamento-orcamentario/actions";
@@ -63,17 +62,6 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-
-  const [openAssumptions, setOpenAssumptions] = useState(false);
-  const [assumptionsForm, setAssumptionsForm] = useState(() => ({
-    name: plan.name,
-    scenario: plan.scenario,
-    cotacaoSacaUsd: String(plan.cotacaoSacaUsd),
-    cotacaoDolar: String(plan.cotacaoDolar),
-    crescimentoModerado: String(plan.crescimentoModerado * 100),
-    crescimentoOtimista: String(plan.crescimentoOtimista * 100),
-    crescimentoMuitoOtimista: String(plan.crescimentoMuitoOtimista * 100),
-  }));
 
   const [openVolumes, setOpenVolumes] = useState(false);
   const [volumesForm, setVolumesForm] = useState(() =>
@@ -141,36 +129,6 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
       if (next.has(group)) next.delete(group);
       else next.add(group);
       return next;
-    });
-  }
-
-  function openAssumptionsDialog() {
-    setAssumptionsForm({
-      name: plan.name,
-      scenario: plan.scenario,
-      cotacaoSacaUsd: String(plan.cotacaoSacaUsd),
-      cotacaoDolar: String(plan.cotacaoDolar),
-      crescimentoModerado: String(plan.crescimentoModerado * 100),
-      crescimentoOtimista: String(plan.crescimentoOtimista * 100),
-      crescimentoMuitoOtimista: String(plan.crescimentoMuitoOtimista * 100),
-    });
-    setOpenAssumptions(true);
-  }
-
-  function handleSaveAssumptions() {
-    const payload: BudgetPlanAssumptionsInput = {
-      name: assumptionsForm.name.trim() || plan.name,
-      scenario: assumptionsForm.scenario,
-      cotacaoSacaUsd: Number(assumptionsForm.cotacaoSacaUsd) || 0,
-      cotacaoDolar: Number(assumptionsForm.cotacaoDolar) || 0,
-      crescimentoModerado: (Number(assumptionsForm.crescimentoModerado) || 0) / 100,
-      crescimentoOtimista: (Number(assumptionsForm.crescimentoOtimista) || 0) / 100,
-      crescimentoMuitoOtimista: (Number(assumptionsForm.crescimentoMuitoOtimista) || 0) / 100,
-    };
-    startTransition(async () => {
-      await updateBudgetPlanAssumptions(plan.id, payload);
-      setOpenAssumptions(false);
-      router.refresh();
     });
   }
 
@@ -326,10 +284,13 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={openAssumptionsDialog}>
+        <Link
+          href="/planejamento-orcamentario/premissas"
+          className="inline-flex h-8 items-center gap-2 rounded-lg border border-border bg-card/60 px-3 text-xs font-medium transition-all hover:border-primary/40 hover:bg-accent-soft"
+        >
           <Settings size={14} />
           Premissas do Plano
-        </Button>
+        </Link>
         <Button variant="outline" size="sm" onClick={openVolumesDialog}>
           <Ship size={14} />
           Volume e Receita (Interno x Externo)
@@ -389,94 +350,6 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
           />
         ))}
       </div>
-
-      {/* Premissas do Plano */}
-      <Dialog open={openAssumptions} onOpenChange={setOpenAssumptions}>
-        <DialogContent title="Premissas do Plano Orçamentário">
-          <div className="space-y-3">
-            <div>
-              <Label>Nome do Plano</Label>
-              <Input
-                value={assumptionsForm.name}
-                onChange={(e) => setAssumptionsForm({ ...assumptionsForm, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Cenário Ativo</Label>
-              <Select
-                value={assumptionsForm.scenario}
-                onChange={(e) =>
-                  setAssumptionsForm({ ...assumptionsForm, scenario: e.target.value as typeof plan.scenario })
-                }
-              >
-                {Object.entries(SCENARIO_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Cotação Saca (US$)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={assumptionsForm.cotacaoSacaUsd}
-                  onChange={(e) => setAssumptionsForm({ ...assumptionsForm, cotacaoSacaUsd: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Cotação Dólar (R$)</Label>
-                <Input
-                  type="number"
-                  step="0.0001"
-                  value={assumptionsForm.cotacaoDolar}
-                  onChange={(e) => setAssumptionsForm({ ...assumptionsForm, cotacaoDolar: e.target.value })}
-                />
-              </div>
-            </div>
-            <p className="text-xs text-muted">
-              Crescimento de volume sobre o cenário Conservador (0%), aplicado ao Volume Base em Sacas para
-              projetar a receita de cada cenário.
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label>Moderado (%)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={assumptionsForm.crescimentoModerado}
-                  onChange={(e) => setAssumptionsForm({ ...assumptionsForm, crescimentoModerado: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Otimista (%)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={assumptionsForm.crescimentoOtimista}
-                  onChange={(e) => setAssumptionsForm({ ...assumptionsForm, crescimentoOtimista: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Muito Otimista (%)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={assumptionsForm.crescimentoMuitoOtimista}
-                  onChange={(e) =>
-                    setAssumptionsForm({ ...assumptionsForm, crescimentoMuitoOtimista: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <Button className="w-full" onClick={handleSaveAssumptions} disabled={isPending}>
-              {isPending ? "Salvando..." : "Salvar premissas"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Volume e Receita */}
       <Dialog open={openVolumes} onOpenChange={setOpenVolumes}>

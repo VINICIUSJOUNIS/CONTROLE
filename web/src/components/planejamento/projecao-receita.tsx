@@ -3,7 +3,7 @@
 import { createContext, useContext, useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { aplicarProjecaoVolumes } from "@/app/(dashboard)/planejamento-orcamentario/actions";
+import { aplicarProjecaoVolumes, salvarPrecosProjecao } from "@/app/(dashboard)/planejamento-orcamentario/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/field";
 import { KpiCard } from "@/components/dashboard/kpi-card";
@@ -30,11 +30,21 @@ const mesAno = (ym: string) => `${MESES_CURTOS[Number(ym.slice(5, 7)) - 1].toLow
 
 const SCENARIOS: BudgetScenarioKey[] = ["CONSERVADOR", "MODERADO", "OTIMISTA", "MUITO_OTIMISTA"];
 
+// Classes das tabelas: cabecalho de grupo (Mercado Interno / Externo / Total)
+// e divisoria entre grupos - sacas e receita de cada mercado lado a lado.
+const TH = "px-2 py-1.5 font-medium text-right";
+const TD = "px-2 py-1 text-right";
+const GRUPO = "border-l border-border px-2 py-1.5 text-center text-primary";
+const SEP = "border-l border-border";
+
 type ProjecaoDados = {
   historico: HistoricoMes[];
   ultimoMesFechado: string;
   crescimentos: Record<BudgetScenarioKey, number>;
   cenarioInicial: BudgetScenarioKey;
+  // Preco R$/saca salvo no plano (Premissas); null = ultimo trimestre fechado.
+  precoSalvoI?: number | null;
+  precoSalvoE?: number | null;
 };
 
 function calcularBase(historico: HistoricoMes[], ultimoMesFechado: string) {
@@ -59,11 +69,18 @@ function calcularBase(historico: HistoricoMes[], ultimoMesFechado: string) {
 // Estado da projecao (cenario e precos) compartilhado pela pagina: os
 // indicadores ficam no topo (KpisProjecao) e premissas, tabelas e tributos mais
 // abaixo (ProjecaoReceita) - os dois leem o mesmo cenario e os mesmos precos.
-function useProjecaoEstado({ historico, ultimoMesFechado, crescimentos, cenarioInicial }: ProjecaoDados) {
+function useProjecaoEstado({
+  historico,
+  ultimoMesFechado,
+  crescimentos,
+  cenarioInicial,
+  precoSalvoI = null,
+  precoSalvoE = null,
+}: ProjecaoDados) {
   const base = useMemo(() => calcularBase(historico, ultimoMesFechado), [historico, ultimoMesFechado]);
   const [cenario, setCenario] = useState<BudgetScenarioKey>(cenarioInicial);
-  const [precoI, setPrecoI] = useState(() => base.precoTriI.toFixed(2));
-  const [precoE, setPrecoE] = useState(() => base.precoTriE.toFixed(2));
+  const [precoI, setPrecoI] = useState(() => (precoSalvoI ?? base.precoTriI).toFixed(2));
+  const [precoE, setPrecoE] = useState(() => (precoSalvoE ?? base.precoTriE).toFixed(2));
   const crescimento = crescimentos[cenario] ?? 0;
   const proj = useMemo(
     () =>
@@ -86,6 +103,8 @@ function useProjecaoEstado({ historico, ultimoMesFechado, crescimentos, cenarioI
     setPrecoI,
     precoE,
     setPrecoE,
+    precoSalvoI,
+    precoSalvoE,
     proj,
   };
 }
@@ -138,7 +157,7 @@ export function KpisProjecao() {
         <div>
           <h2 className="text-base font-semibold">Projeção {anoProjecao}</h2>
           <p className="text-[11px] text-muted">
-            Variações sobre os últimos 12 meses realizados. Premissas e detalhamento mês a mês mais abaixo.
+            Variações sobre os últimos 12 meses realizados. Preços R$/saca e metodologia em Premissas.
           </p>
         </div>
         <BotoesCenario />
@@ -173,43 +192,13 @@ export function KpisProjecao() {
   );
 }
 
-export function ProjecaoReceita({
-  planId,
-  planName,
-  baseFiscal,
-  despesasCreditaveis = 0,
-}: {
-  planId?: string;
-  planName?: string;
-  baseFiscal?: { de: string; ate: string; cmvSobreReceita: number; lairSobreReceita: number } | null;
-  despesasCreditaveis?: number;
-}) {
-  const { historico, ultimoMesFechado, anoProjecao, base, cenario, precoI, setPrecoI, precoE, setPrecoE, proj } = useProjecao();
-  const router = useRouter();
-  const [gravando, startGravar] = useTransition();
-  const [gravado, setGravado] = useState(false);
-
-  function gravarNoPlano() {
-    if (!planId) return;
-    const ok = window.confirm(
-      `Gravar os volumes projetados mês a mês em "${planName}"?
-
-` +
-        "Substitui o Volume Base e o Volume Externo previstos dos 12 meses do plano. " +
-        "Os valores realizados não são alterados. O crescimento do cenário continua sendo aplicado pelo plano."
-    );
-    if (!ok) return;
-    startGravar(async () => {
-      await aplicarProjecaoVolumes(planId);
-      setGravado(true);
-      router.refresh();
-    });
-  }
-
+// Historico anual + grafico de volume + projecao mensal (pagina Historico e
+// Projecoes).
+export function HistoricoProjecoes() {
+  const { historico, ultimoMesFechado, anoProjecao, base, cenario, proj } = useProjecao();
   const ltmDe = addMonths(ultimoMesFechado, -11);
   const ltmAntDe = addMonths(ultimoMesFechado, -23);
   const ltmAntAte = addMonths(ultimoMesFechado, -12);
-  const triDe = addMonths(ultimoMesFechado, -2);
 
   // Historico anual: anos completos + ano corrente parcial + ultimos 12 meses.
   const linhasHistorico = useMemo(() => {
@@ -247,21 +236,11 @@ export function ProjecaoReceita({
     { ano: `${anoProjecao} (proj.)`, Interno: Math.round(t.internoSacas), Externo: Math.round(t.externoSacas) },
   ];
 
-  const th = "px-2 py-1.5 font-medium text-right";
-  const td = "px-2 py-1 text-right";
-  // Cabecalho de grupo (Mercado Interno / Externo / Total) e divisoria entre
-  // grupos: sacas e receita de cada mercado ficam lado a lado.
-  const grupo = "border-l border-border px-2 py-1.5 text-center text-primary";
-  const sep = "border-l border-border";
-
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-base font-semibold">Histórico e Projeção {anoProjecao}: Volume e Receita</h2>
-        <p className="text-xs text-muted">
-          Vendas menos devoluções (mesma base do Faturamento), dados fechados até {mesAno(ultimoMesFechado)}.
-        </p>
-      </div>
+      <p className="text-xs text-muted">
+        Vendas menos devoluções (mesma base do Faturamento), dados fechados até {mesAno(ultimoMesFechado)}.
+      </p>
 
       <Card>
         <CardHeader>
@@ -274,21 +253,21 @@ export function ProjecaoReceita({
                 <th rowSpan={2} className="border-b border-border px-2 py-1.5 text-left align-bottom font-medium text-muted">
                   Período
                 </th>
-                <th colSpan={3} className={grupo}>Mercado Interno</th>
-                <th colSpan={3} className={grupo}>Mercado Externo</th>
-                <th colSpan={4} className={grupo}>Total</th>
+                <th colSpan={3} className={GRUPO}>Mercado Interno</th>
+                <th colSpan={3} className={GRUPO}>Mercado Externo</th>
+                <th colSpan={4} className={GRUPO}>Total</th>
               </tr>
               <tr className="border-b border-border text-[11px] text-muted">
-                <th className={cn(th, sep)}>Sacas</th>
-                <th className={th}>Receita</th>
-                <th className={th}>R$/saca</th>
-                <th className={cn(th, sep)}>Sacas</th>
-                <th className={th}>Receita</th>
-                <th className={th}>R$/saca</th>
-                <th className={cn(th, sep)}>Sacas</th>
-                <th className={th}>Receita</th>
-                <th className={th}>% Externo</th>
-                <th className={th}>Var. Volume</th>
+                <th className={cn(TH, SEP)}>Sacas</th>
+                <th className={TH}>Receita</th>
+                <th className={TH}>R$/saca</th>
+                <th className={cn(TH, SEP)}>Sacas</th>
+                <th className={TH}>Receita</th>
+                <th className={TH}>R$/saca</th>
+                <th className={cn(TH, SEP)}>Sacas</th>
+                <th className={TH}>Receita</th>
+                <th className={TH}>% Externo</th>
+                <th className={TH}>Var. Volume</th>
               </tr>
             </thead>
             <tbody>
@@ -298,16 +277,16 @@ export function ProjecaoReceita({
                   className={cn("border-b border-border last:border-0", l.destaque && "bg-primary/5 font-medium")}
                 >
                   <td className="px-2 py-1 font-medium">{l.label}</td>
-                  <td className={cn(td, sep)}>{sc(l.i.sacas)}</td>
-                  <td className={td}>{formatCurrency(l.i.receita)}</td>
-                  <td className={cn(td, "text-muted")}>{l.i.sacas > 0 ? formatCurrency(precoMedio(l.i)) : "-"}</td>
-                  <td className={cn(td, sep)}>{sc(l.e.sacas)}</td>
-                  <td className={td}>{formatCurrency(l.e.receita)}</td>
-                  <td className={cn(td, "text-muted")}>{l.e.sacas > 0 ? formatCurrency(precoMedio(l.e)) : "-"}</td>
-                  <td className={cn(td, sep, "font-semibold")}>{sc(l.total)}</td>
-                  <td className={cn(td, "font-semibold")}>{formatCurrency(l.receita)}</td>
-                  <td className={td}>{l.total > 0 ? formatPercent((l.e.sacas / l.total) * 100, 1) : "-"}</td>
-                  <td className={td}>{pct(l.varTotal)}</td>
+                  <td className={cn(TD, SEP)}>{sc(l.i.sacas)}</td>
+                  <td className={TD}>{formatCurrency(l.i.receita)}</td>
+                  <td className={cn(TD, "text-muted")}>{l.i.sacas > 0 ? formatCurrency(precoMedio(l.i)) : "-"}</td>
+                  <td className={cn(TD, SEP)}>{sc(l.e.sacas)}</td>
+                  <td className={TD}>{formatCurrency(l.e.receita)}</td>
+                  <td className={cn(TD, "text-muted")}>{l.e.sacas > 0 ? formatCurrency(precoMedio(l.e)) : "-"}</td>
+                  <td className={cn(TD, SEP, "font-semibold")}>{sc(l.total)}</td>
+                  <td className={cn(TD, "font-semibold")}>{formatCurrency(l.receita)}</td>
+                  <td className={TD}>{l.total > 0 ? formatPercent((l.e.sacas / l.total) * 100, 1) : "-"}</td>
+                  <td className={TD}>{pct(l.varTotal)}</td>
                 </tr>
               ))}
             </tbody>
@@ -322,59 +301,6 @@ export function ProjecaoReceita({
           </p>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Premissas da projeção {anoProjecao}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
-          <BotoesCenario />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label>Preço R$/saca: Mercado Interno</Label>
-              <Input type="number" step="0.01" value={precoI} onChange={(e) => setPrecoI(e.target.value)} />
-              <p className="mt-1 text-[11px] text-muted">
-                Último trimestre ({mesAno(triDe)} a {mesAno(ultimoMesFechado)}): {formatCurrency(base.precoTriI)} · Últimos 12
-                meses: {formatCurrency(precoMedio(base.ltmI))}
-              </p>
-            </div>
-            <div>
-              <Label>Preço R$/saca: Mercado Externo</Label>
-              <Input type="number" step="0.01" value={precoE} onChange={(e) => setPrecoE(e.target.value)} />
-              <p className="mt-1 text-[11px] text-muted">
-                Último trimestre ({mesAno(triDe)} a {mesAno(ultimoMesFechado)}): {formatCurrency(base.precoTriE)} · Últimos 12
-                meses: {formatCurrency(precoMedio(base.ltmE))}
-              </p>
-            </div>
-          </div>
-          <ul className="list-disc space-y-0.5 pl-4 text-[11px] text-muted">
-            <li>
-              Volume base: últimos 12 meses fechados ({mesAno(ltmDe)} a {mesAno(ultimoMesFechado)}): Interno{" "}
-              {sc(base.ltmI.sacas)} sc, Externo {sc(base.ltmE.sacas)} sc, sem extrapolar meses ainda não fechados.
-            </li>
-            <li>Crescimento de volume: percentual do cenário (definido em Premissas do Plano), igual para os dois mercados.</li>
-            <li>Receita: volume projetado × preço R$/saca. Padrão = preço médio líquido do último trimestre fechado (preço corrente).</li>
-            <li>
-              Distribuição mensal: participação de cada mês no volume dos últimos 24 meses ({mesAno(ltmAntDe)} a{" "}
-              {mesAno(ultimoMesFechado)}), por mercado.
-            </li>
-          </ul>
-          {planId && (
-            <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
-              <Button size="sm" onClick={gravarNoPlano} disabled={gravando}>
-                <Save size={14} />
-                {gravando ? "Gravando..." : `Gravar volumes no plano (${planName})`}
-              </Button>
-              <span className="text-[11px] text-muted">
-                {gravado
-                  ? "Volumes gravados no plano."
-                  : "Grava o volume base (sem crescimento) e a parcela externa de cada mês; a receita do plano segue a cotação saca × dólar das Premissas do Plano."}
-              </span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
 
       <BarChartCard
         title="Volume anual em sacas: realizado x projeção"
@@ -400,44 +326,180 @@ export function ProjecaoReceita({
                 <th rowSpan={2} className="border-b border-border px-2 py-1.5 text-left align-bottom font-medium text-muted">
                   Mês
                 </th>
-                <th colSpan={2} className={grupo}>Mercado Interno</th>
-                <th colSpan={2} className={grupo}>Mercado Externo</th>
-                <th colSpan={2} className={grupo}>Total</th>
+                <th colSpan={2} className={GRUPO}>Mercado Interno</th>
+                <th colSpan={2} className={GRUPO}>Mercado Externo</th>
+                <th colSpan={2} className={GRUPO}>Total</th>
               </tr>
               <tr className="border-b border-border text-[11px] text-muted">
-                <th className={cn(th, sep)}>Sacas</th>
-                <th className={th}>Receita</th>
-                <th className={cn(th, sep)}>Sacas</th>
-                <th className={th}>Receita</th>
-                <th className={cn(th, sep)}>Sacas</th>
-                <th className={th}>Receita</th>
+                <th className={cn(TH, SEP)}>Sacas</th>
+                <th className={TH}>Receita</th>
+                <th className={cn(TH, SEP)}>Sacas</th>
+                <th className={TH}>Receita</th>
+                <th className={cn(TH, SEP)}>Sacas</th>
+                <th className={TH}>Receita</th>
               </tr>
             </thead>
             <tbody>
               {proj.meses.map((m) => (
                 <tr key={m.month} className="border-b border-border">
                   <td className="px-2 py-1 font-medium">{m.label}</td>
-                  <td className={cn(td, sep)}>{sc(m.internoSacas)}</td>
-                  <td className={td}>{formatCurrency(m.internoReceita)}</td>
-                  <td className={cn(td, sep)}>{sc(m.externoSacas)}</td>
-                  <td className={td}>{formatCurrency(m.externoReceita)}</td>
-                  <td className={cn(td, sep, "font-semibold")}>{sc(m.internoSacas + m.externoSacas)}</td>
-                  <td className={cn(td, "font-semibold")}>{formatCurrency(m.internoReceita + m.externoReceita)}</td>
+                  <td className={cn(TD, SEP)}>{sc(m.internoSacas)}</td>
+                  <td className={TD}>{formatCurrency(m.internoReceita)}</td>
+                  <td className={cn(TD, SEP)}>{sc(m.externoSacas)}</td>
+                  <td className={TD}>{formatCurrency(m.externoReceita)}</td>
+                  <td className={cn(TD, SEP, "font-semibold")}>{sc(m.internoSacas + m.externoSacas)}</td>
+                  <td className={cn(TD, "font-semibold")}>{formatCurrency(m.internoReceita + m.externoReceita)}</td>
                 </tr>
               ))}
               <tr className="font-semibold">
                 <td className="px-2 py-1">Total</td>
-                <td className={cn(td, sep)}>{sc(t.internoSacas)}</td>
-                <td className={td}>{formatCurrency(t.internoReceita)}</td>
-                <td className={cn(td, sep)}>{sc(t.externoSacas)}</td>
-                <td className={td}>{formatCurrency(t.externoReceita)}</td>
-                <td className={cn(td, sep)}>{sc(volTotal)}</td>
-                <td className={td}>{formatCurrency(recTotal)}</td>
+                <td className={cn(TD, SEP)}>{sc(t.internoSacas)}</td>
+                <td className={TD}>{formatCurrency(t.internoReceita)}</td>
+                <td className={cn(TD, SEP)}>{sc(t.externoSacas)}</td>
+                <td className={TD}>{formatCurrency(t.externoReceita)}</td>
+                <td className={cn(TD, SEP)}>{sc(volTotal)}</td>
+                <td className={TD}>{formatCurrency(recTotal)}</td>
               </tr>
             </tbody>
           </table>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// Premissas da projecao (pagina Premissas): preco R$/saca salvo no plano,
+// metodologia e gravacao dos volumes no plano.
+export function PremissasProjecao({ planId, planName }: { planId?: string; planName?: string }) {
+  const { ultimoMesFechado, anoProjecao, base, precoI, setPrecoI, precoE, setPrecoE, precoSalvoI, precoSalvoE } = useProjecao();
+  const router = useRouter();
+  const [salvando, startSalvar] = useTransition();
+  const [gravando, startGravar] = useTransition();
+  const [aviso, setAviso] = useState<string | null>(null);
+  const ltmDe = addMonths(ultimoMesFechado, -11);
+  const ltmAntDe = addMonths(ultimoMesFechado, -23);
+  const triDe = addMonths(ultimoMesFechado, -2);
+  const alterado =
+    (Number(precoI) || 0) !== (precoSalvoI ?? Number(base.precoTriI.toFixed(2))) ||
+    (Number(precoE) || 0) !== (precoSalvoE ?? Number(base.precoTriE.toFixed(2)));
+
+  function salvarPrecos(padrao = false) {
+    if (!planId) return;
+    startSalvar(async () => {
+      await salvarPrecosProjecao(planId, padrao ? null : Number(precoI) || null, padrao ? null : Number(precoE) || null);
+      if (padrao) {
+        setPrecoI(base.precoTriI.toFixed(2));
+        setPrecoE(base.precoTriE.toFixed(2));
+      }
+      setAviso(padrao ? "Preços voltaram ao padrão (último trimestre)." : "Preços salvos.");
+      router.refresh();
+    });
+  }
+
+  function gravarNoPlano() {
+    if (!planId) return;
+    const ok = window.confirm(
+      `Gravar os volumes projetados mês a mês em "${planName}"?\n\n` +
+        "Substitui o Volume Base e o Volume Externo previstos dos 12 meses do plano. " +
+        "Os valores realizados não são alterados. O crescimento do cenário continua sendo aplicado pelo plano."
+    );
+    if (!ok) return;
+    startGravar(async () => {
+      await aplicarProjecaoVolumes(planId);
+      setAviso("Volumes gravados no plano.");
+      router.refresh();
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Premissas da projeção {anoProjecao}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 pt-0">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label>Preço R$/saca: Mercado Interno</Label>
+            <Input type="number" step="0.01" value={precoI} onChange={(e) => setPrecoI(e.target.value)} />
+            <p className="mt-1 text-[11px] text-muted">
+              Último trimestre ({mesAno(triDe)} a {mesAno(ultimoMesFechado)}): {formatCurrency(base.precoTriI)} · Últimos 12
+              meses: {formatCurrency(precoMedio(base.ltmI))}
+              {precoSalvoI !== null && " · valor salvo pelo usuário"}
+            </p>
+          </div>
+          <div>
+            <Label>Preço R$/saca: Mercado Externo</Label>
+            <Input type="number" step="0.01" value={precoE} onChange={(e) => setPrecoE(e.target.value)} />
+            <p className="mt-1 text-[11px] text-muted">
+              Último trimestre ({mesAno(triDe)} a {mesAno(ultimoMesFechado)}): {formatCurrency(base.precoTriE)} · Últimos 12
+              meses: {formatCurrency(precoMedio(base.ltmE))}
+              {precoSalvoE !== null && " · valor salvo pelo usuário"}
+            </p>
+          </div>
+        </div>
+        {planId && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" onClick={() => salvarPrecos()} disabled={salvando || !alterado}>
+              <Save size={14} />
+              {salvando ? "Salvando..." : "Salvar preços"}
+            </Button>
+            {(precoSalvoI !== null || precoSalvoE !== null) && (
+              <Button size="sm" variant="outline" onClick={() => salvarPrecos(true)} disabled={salvando}>
+                Voltar ao padrão (último trimestre)
+              </Button>
+            )}
+            <span className="text-[11px] text-muted">Os preços salvos valem em Histórico e Projeções e em Tributos {anoProjecao}.</span>
+          </div>
+        )}
+        <ul className="list-disc space-y-0.5 pl-4 text-[11px] text-muted">
+          <li>
+            Volume base: últimos 12 meses fechados ({mesAno(ltmDe)} a {mesAno(ultimoMesFechado)}): Interno {sc(base.ltmI.sacas)} sc,
+            Externo {sc(base.ltmE.sacas)} sc, sem extrapolar meses ainda não fechados.
+          </li>
+          <li>Crescimento de volume: percentual do cenário (Premissas do Plano, acima), igual para os dois mercados.</li>
+          <li>Receita: volume projetado × preço R$/saca. Padrão = preço médio líquido do último trimestre fechado (preço corrente).</li>
+          <li>
+            Distribuição mensal: participação de cada mês no volume dos últimos 24 meses ({mesAno(ltmAntDe)} a {mesAno(ultimoMesFechado)}),
+            por mercado.
+          </li>
+        </ul>
+        {planId && (
+          <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
+            <Button size="sm" variant="outline" onClick={gravarNoPlano} disabled={gravando}>
+              <Save size={14} />
+              {gravando ? "Gravando..." : `Gravar volumes no plano (${planName})`}
+            </Button>
+            <span className="text-[11px] text-muted">
+              Grava o volume base (sem crescimento) e a parcela externa de cada mês; a receita do plano segue a cotação saca × dólar das
+              Premissas do Plano.
+            </span>
+          </div>
+        )}
+        {aviso && <p className="text-[11px] font-medium text-success">{aviso}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Tributos do ano projetado (pagina Tributos), sobre a receita do cenario.
+export function TributosProjecao({
+  baseFiscal,
+  despesasCreditaveis = 0,
+}: {
+  baseFiscal?: { de: string; ate: string; cmvSobreReceita: number; lairSobreReceita: number } | null;
+  despesasCreditaveis?: number;
+}) {
+  const { anoProjecao, cenario, proj } = useProjecao();
+  const t = proj.totais;
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted">
+          Receita {anoProjecao} do cenário {SCENARIO_LABELS[cenario]}: {formatCurrency(t.internoReceita + t.externoReceita)} (interno{" "}
+          {formatCurrency(t.internoReceita)} · externo {formatCurrency(t.externoReceita)}).
+        </p>
+        <BotoesCenario />
+      </div>
       <ImpostosReforma
         ano={anoProjecao}
         receitaInterna={t.internoReceita}

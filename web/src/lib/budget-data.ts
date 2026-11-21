@@ -221,6 +221,8 @@ export async function getBudgetPlan(year: number) {
     crescimentoModerado: n(plan.crescimentoModerado),
     crescimentoOtimista: n(plan.crescimentoOtimista),
     crescimentoMuitoOtimista: n(plan.crescimentoMuitoOtimista),
+    precoSacaInterno: plan.precoSacaInterno != null ? n(plan.precoSacaInterno) : null,
+    precoSacaExterno: plan.precoSacaExterno != null ? n(plan.precoSacaExterno) : null,
     months,
     groups,
     totais,
@@ -334,4 +336,31 @@ export async function getBaseFiscalDre() {
     cmvSobreReceita: receita > 0 ? cmv / receita : 0,
     lairSobreReceita: receita > 0 ? lair / receita : 0,
   };
+}
+
+// Tudo que as paginas de Historico e Projecoes, Premissas e Tributos precisam:
+// plano do ano, historico de vendas, base fiscal da DRE, despesas que geram
+// credito de CBS/IBS e os crescimentos por cenario.
+export async function getContextoProjecao(yearParam?: string) {
+  const years = await getBudgetYears();
+  const year = yearParam ? Number(yearParam) : years[0] ?? new Date().getFullYear();
+  const [plan, vendas, baseFiscal] = await Promise.all([getBudgetPlan(year), getHistoricoVendasMensal(), getBaseFiscalDre()]);
+  // Despesas previstas com fornecedores PJ (geram credito de CBS/IBS em 2027):
+  // mercado interno/externo, administrativas e, do custo do fornecedor, so
+  // fretes e armazenagem (o custo do cafe e o Funrural ficam de fora).
+  const despesasCreditaveis = (plan?.groups ?? [])
+    .flatMap((g) => g.lines.map((l) => ({ group: g.group, name: l.name, total: l.totalPrevisto })))
+    .filter(
+      (l) =>
+        ["DESPESA_MERCADO_INTERNO", "DESPESA_MERCADO_EXTERNO", "DESPESA_ADM_FIXA", "DESPESA_ADM_VARIAVEL"].includes(l.group) ||
+        (l.group === "CUSTO_FORNECEDOR" && /frete|armazen/i.test(l.name))
+    )
+    .reduce((s, l) => s + l.total, 0);
+  const crescimentos = {
+    CONSERVADOR: 0,
+    MODERADO: plan?.crescimentoModerado ?? 0,
+    OTIMISTA: plan?.crescimentoOtimista ?? 0,
+    MUITO_OTIMISTA: plan?.crescimentoMuitoOtimista ?? 0,
+  };
+  return { year, plan, vendas, baseFiscal, despesasCreditaveis, crescimentos };
 }

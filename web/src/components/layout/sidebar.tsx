@@ -135,7 +135,10 @@ const hedgeCambialNavItems = [
 ];
 
 const planejamentoNavItems = [
-  { href: "/planejamento-orcamentario", label: "Planejamento Orçamentário", icon: Target },
+  { href: "/planejamento-orcamentario", label: "Orçamento", icon: Target },
+  { href: "/planejamento-orcamentario/historico-projecoes", label: "Histórico e Projeções", icon: LineChart },
+  { href: "/planejamento-orcamentario/premissas", label: "Premissas", icon: Settings2 },
+  { href: "/planejamento-orcamentario/tributos", label: "Tributos 2027", icon: Scale },
 ];
 
 const transferenciaOrdemNavItems = [

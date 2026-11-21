@@ -6,7 +6,9 @@ import { BudgetGroup, BudgetScenario } from "@/generated/prisma/client";
 import { calcularVolumesBaseProjecao } from "@/lib/budget-data";
 
 function revalidateAll() {
-  revalidatePath("/planejamento-orcamentario");
+  // layout: revalida todas as paginas do modulo (orcamento, historico e
+  // projecoes, premissas, tributos).
+  revalidatePath("/planejamento-orcamentario", "layout");
 }
 
 export type BudgetPlanAssumptionsInput = {
@@ -143,5 +145,16 @@ export async function aplicarProjecaoVolumes(planId: string) {
       })
     )
   );
+  revalidateAll();
+}
+
+// Preco R$/saca da projecao (pagina Premissas). null = voltar ao padrao
+// (preco medio liquido do ultimo trimestre fechado).
+export async function salvarPrecosProjecao(planId: string, precoInterno: number | null, precoExterno: number | null) {
+  const ok = (v: number | null) => (v !== null && Number.isFinite(v) && v > 0 ? v : null);
+  await prisma.budgetPlan.update({
+    where: { id: planId },
+    data: { precoSacaInterno: ok(precoInterno), precoSacaExterno: ok(precoExterno) },
+  });
   revalidateAll();
 }
