@@ -74,7 +74,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
   const [openLine, setOpenLine] = useState(false);
   const [editingLine, setEditingLine] = useState<BudgetLineData | null>(null);
   const [lineForm, setLineForm] = useState<{ month: number; previsto: string; realizado: string }[]>([]);
-  const [custoForm, setCustoForm] = useState<{ tipo: "FIXO" | "POR_SACA"; valor: string; base: "TOTAL" | "INTERNO" | "EXTERNO" }>({
+  const [custoForm, setCustoForm] = useState<{ tipo: "FIXO" | "MENSAL" | "POR_SACA"; valor: string; base: "TOTAL" | "INTERNO" | "EXTERNO" }>({
     tipo: "FIXO",
     valor: "",
     base: "TOTAL",
@@ -87,7 +87,11 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
     return base === "EXTERNO" ? m.volumeExternoPrevisto : base === "INTERNO" ? m.volumeInternoPrevisto : m.volumeAjustado;
   }
   const previstoPorSaca = (idx: number) =>
-    Number(((Number(custoForm.valor) || 0) * volumeDoMes(idx, custoForm.base)).toFixed(2));
+    custoForm.tipo === "MENSAL"
+      ? Number((Number(custoForm.valor) || 0).toFixed(2))
+      : Number(((Number(custoForm.valor) || 0) * volumeDoMes(idx, custoForm.base)).toFixed(2));
+  // Mensal e por saca: o previsto e calculado (nao digitado).
+  const previstoCalculado = custoForm.tipo !== "FIXO";
 
   const [openNewLine, setOpenNewLine] = useState(false);
   const [newLineGroup, setNewLineGroup] = useState<BudgetGroup | null>(null);
@@ -137,7 +141,8 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
     setLineForm(line.months.map((m) => ({ month: m.month, previsto: String(m.previsto), realizado: String(m.realizado) })));
     setCustoForm({
       tipo: line.tipoCusto,
-      valor: line.tipoCusto === "POR_SACA" ? String(line.valorPorSaca) : "",
+      valor:
+        line.tipoCusto === "POR_SACA" ? String(line.valorPorSaca) : line.tipoCusto === "MENSAL" ? String(line.valorMensal) : "",
       base: line.baseVolume,
     });
     setOpenLine(true);
@@ -146,17 +151,19 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
   function handleSaveLine() {
     if (!editingLine) return;
     const porSaca = custoForm.tipo === "POR_SACA";
+    const calculado = custoForm.tipo !== "FIXO";
     const rows: BudgetLineMonthInput[] = lineForm.map((r, idx) => ({
       month: r.month,
       // Por saca o previsto e recalculado na leitura; grava o valor do momento
       // so para nao perder a referencia se a linha voltar a ser fixa.
-      valorPrevisto: porSaca ? previstoPorSaca(idx) : Number(r.previsto) || 0,
+      valorPrevisto: calculado ? previstoPorSaca(idx) : Number(r.previsto) || 0,
       valorRealizado: Number(r.realizado) || 0,
     }));
     startTransition(async () => {
       await updateBudgetLineCusto(editingLine.id, {
         tipoCusto: custoForm.tipo,
-        valorPorSaca: porSaca ? Number(custoForm.valor) || 0 : 0,
+        valorPorSaca: porSaca ? Number(custoForm.valor) || 0 : editingLine.valorPorSaca,
+        valorMensal: custoForm.tipo === "MENSAL" ? Number(custoForm.valor) || 0 : editingLine.valorMensal,
         baseVolume: custoForm.base,
       });
       await upsertBudgetLineMonths(editingLine.id, rows);
@@ -467,12 +474,30 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
                 <Label>Tipo de custo</Label>
                 <Select
                   value={custoForm.tipo}
-                  onChange={(e) => setCustoForm({ ...custoForm, tipo: e.target.value as "FIXO" | "POR_SACA" })}
+                  onChange={(e) => setCustoForm({ ...custoForm, tipo: e.target.value as "FIXO" | "MENSAL" | "POR_SACA" })}
                 >
-                  <option value="FIXO">Valor fixo por mês</option>
+                  <option value="FIXO">Mês a mês</option>
+                  <option value="MENSAL">Fixo mensal</option>
                   <option value="POR_SACA">Por saca</option>
                 </Select>
               </div>
+              {custoForm.tipo === "MENSAL" && (
+                <>
+                  <div>
+                    <Label>Valor por mês (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Ex.: 3.500,00"
+                      value={custoForm.valor}
+                      onChange={(e) => setCustoForm({ ...custoForm, valor: e.target.value })}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted sm:col-span-3">
+                    O mesmo valor previsto nos 12 meses. O realizado continua digitado mês a mês.
+                  </p>
+                </>
+              )}
               {custoForm.tipo === "POR_SACA" && (
                 <>
                   <div>
@@ -526,8 +551,8 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
                         <Input
                           type="number"
                           className="h-8 w-32"
-                          disabled={custoForm.tipo === "POR_SACA"}
-                          value={custoForm.tipo === "POR_SACA" ? String(previstoPorSaca(idx)) : row.previsto}
+                          disabled={previstoCalculado}
+                          value={previstoCalculado ? String(previstoPorSaca(idx)) : row.previsto}
                           onChange={(e) => {
                             const next = [...lineForm];
                             next[idx] = { ...next[idx], previsto: e.target.value };
@@ -621,8 +646,8 @@ function GroupCard({
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted">
                   <th className="px-3 py-2 font-medium">Linha</th>
-                  <th className="px-2 py-2 text-center font-medium">Por saca?</th>
-                  <th className="px-2 py-2 font-medium">R$ por saca</th>
+                  <th className="px-2 py-2 font-medium">Tipo de custo</th>
+                  <th className="px-2 py-2 font-medium">Valor (R$)</th>
                   <th className="px-2 py-2 font-medium">Incide sobre</th>
                   <th className="px-3 py-2 font-medium">Total Previsto</th>
                   <th className="px-3 py-2 font-medium">Total Realizado</th>
@@ -636,7 +661,7 @@ function GroupCard({
                   return (
                     <tr key={line.id} className="border-b border-border/60 last:border-0 hover:bg-border/10">
                       <td className="px-3 py-2">{line.name}</td>
-                      <CustoPorSacaCelulas line={line} />
+                      <CustoTipoCelulas line={line} />
                       <td className="px-3 py-2">{formatCurrency(line.totalPrevisto)}</td>
                       <td className="px-3 py-2">{formatCurrency(line.totalRealizado)}</td>
                       <td className={`px-3 py-2 ${lineVar !== null && lineVar > 0 ? "text-danger" : "text-success"}`}>
@@ -693,79 +718,88 @@ function GroupCard({
   );
 }
 
-// Marcacao direto na lista: a linha e custo por saca? qual o R$/saca e sobre
-// qual volume incide. Grava ao marcar/desmarcar, ao trocar a base e ao sair do
-// campo de valor (ou Enter). Previsto por saca = R$/saca x sacas do mes no
-// cenario ativo (calculado em budget-data.ts).
-function CustoPorSacaCelulas({ line }: { line: BudgetLineData }) {
+type TipoCusto = "FIXO" | "MENSAL" | "POR_SACA";
+type BaseVolume = "TOTAL" | "INTERNO" | "EXTERNO";
+
+// Tipo de custo direto na lista: mes a mes (digitado no lapis), fixo mensal
+// (mesmo valor nos 12 meses) ou por saca (R$/saca x sacas do mes no cenario).
+// Grava ao trocar o tipo ou a base e ao sair do campo de valor (ou Enter).
+function CustoTipoCelulas({ line }: { line: BudgetLineData }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const porSaca = line.tipoCusto === "POR_SACA";
-  const [valor, setValor] = useState(porSaca ? String(line.valorPorSaca) : "");
+  const tipo = line.tipoCusto;
+  const valorAtual = tipo === "POR_SACA" ? line.valorPorSaca : tipo === "MENSAL" ? line.valorMensal : 0;
+  const [valor, setValor] = useState(valorAtual ? String(valorAtual) : "");
 
-  function salvar(next: { tipoCusto: "FIXO" | "POR_SACA"; valorPorSaca: number; baseVolume: "TOTAL" | "INTERNO" | "EXTERNO" }) {
+  function salvar(novoTipo: TipoCusto, novoValor: number, base: BaseVolume = line.baseVolume) {
     startTransition(async () => {
-      await updateBudgetLineCusto(line.id, next);
+      await updateBudgetLineCusto(line.id, {
+        tipoCusto: novoTipo,
+        valorPorSaca: novoTipo === "POR_SACA" ? novoValor : line.valorPorSaca,
+        valorMensal: novoTipo === "MENSAL" ? novoValor : line.valorMensal,
+        baseVolume: base,
+      });
       router.refresh();
     });
   }
 
+  function trocarTipo(novoTipo: TipoCusto) {
+    // Ao trocar, aproveita o ultimo valor salvo daquele tipo.
+    const v = novoTipo === "POR_SACA" ? line.valorPorSaca : novoTipo === "MENSAL" ? line.valorMensal : 0;
+    setValor(v ? String(v) : "");
+    salvar(novoTipo, v);
+  }
+
   function salvarValor() {
     const v = Number(valor.replace(",", ".")) || 0;
-    if (v === line.valorPorSaca) return;
-    salvar({ tipoCusto: "POR_SACA", valorPorSaca: v, baseVolume: line.baseVolume });
+    if (v === valorAtual) return;
+    salvar(tipo, v);
   }
 
   return (
     <>
-      <td className="px-2 py-2 text-center">
-        <input
-          type="checkbox"
-          aria-label={`${line.name}: custo por saca`}
-          className="h-4 w-4 cursor-pointer accent-[var(--primary)]"
-          checked={porSaca}
+      <td className="px-2 py-2">
+        <Select
+          aria-label={`${line.name}: tipo de custo`}
+          className="h-8 w-36"
+          value={tipo}
           disabled={isPending}
-          onChange={(e) =>
-            salvar({
-              tipoCusto: e.target.checked ? "POR_SACA" : "FIXO",
-              valorPorSaca: e.target.checked ? Number(valor.replace(",", ".")) || 0 : 0,
-              baseVolume: line.baseVolume,
-            })
-          }
-        />
+          onChange={(e) => trocarTipo(e.target.value as TipoCusto)}
+        >
+          <option value="FIXO">Mês a mês</option>
+          <option value="MENSAL">Fixo mensal</option>
+          <option value="POR_SACA">Por saca</option>
+        </Select>
       </td>
       <td className="px-2 py-2">
-        {porSaca ? (
-          <Input
-            type="number"
-            step="0.01"
-            placeholder="0,00"
-            className="h-8 w-24"
-            value={valor}
-            disabled={isPending}
-            onChange={(e) => setValor(e.target.value)}
-            onBlur={salvarValor}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-            }}
-          />
+        {tipo === "FIXO" ? (
+          <span className="text-[11px] text-muted">no lápis</span>
         ) : (
-          <span className="text-muted">-</span>
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="0,00"
+              className="h-8 w-28"
+              value={valor}
+              disabled={isPending}
+              onChange={(e) => setValor(e.target.value)}
+              onBlur={salvarValor}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
+            />
+            <span className="text-[11px] text-muted">{tipo === "MENSAL" ? "/mês" : "/sc"}</span>
+          </div>
         )}
       </td>
       <td className="px-2 py-2">
-        {porSaca ? (
+        {tipo === "POR_SACA" ? (
           <Select
             className="h-8 w-40"
             value={line.baseVolume}
             disabled={isPending}
-            onChange={(e) =>
-              salvar({
-                tipoCusto: "POR_SACA",
-                valorPorSaca: Number(valor.replace(",", ".")) || 0,
-                baseVolume: e.target.value as "TOTAL" | "INTERNO" | "EXTERNO",
-              })
-            }
+            onChange={(e) => salvar("POR_SACA", Number(valor.replace(",", ".")) || 0, e.target.value as BaseVolume)}
           >
             <option value="TOTAL">Volume total</option>
             <option value="INTERNO">Mercado interno</option>

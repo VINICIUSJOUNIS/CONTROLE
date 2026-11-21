@@ -94,19 +94,26 @@ export async function upsertBudgetLineMonths(lineId: string, rows: BudgetLineMon
 }
 
 export type BudgetLineCustoInput = {
-  tipoCusto: "FIXO" | "POR_SACA";
+  tipoCusto: "FIXO" | "MENSAL" | "POR_SACA";
   valorPorSaca: number;
+  valorMensal?: number;
   baseVolume: "TOTAL" | "INTERNO" | "EXTERNO";
 };
 
-// Define como o previsto da linha e formado: fixo (digitado mes a mes) ou por
-// saca (R$/saca x volume do mes do plano, calculado na leitura).
+// Define como o previsto da linha e formado: mes a mes (digitado), fixo mensal
+// (mesmo valor nos 12 meses) ou por saca (R$/saca x volume do mes do plano).
 export async function updateBudgetLineCusto(lineId: string, input: BudgetLineCustoInput) {
-  const tipoCusto = input.tipoCusto === "POR_SACA" ? "POR_SACA" : "FIXO";
+  const tipoCusto = input.tipoCusto === "POR_SACA" || input.tipoCusto === "MENSAL" ? input.tipoCusto : "FIXO";
+  const valorMensal = Number(input.valorMensal);
   const baseVolume = ["TOTAL", "INTERNO", "EXTERNO"].includes(input.baseVolume) ? input.baseVolume : "TOTAL";
   await prisma.budgetLine.update({
     where: { id: lineId },
-    data: { tipoCusto, valorPorSaca: Number.isFinite(input.valorPorSaca) ? input.valorPorSaca : 0, baseVolume },
+    data: {
+      tipoCusto,
+      valorPorSaca: Number.isFinite(input.valorPorSaca) ? input.valorPorSaca : 0,
+      ...(input.valorMensal !== undefined ? { valorMensal: Number.isFinite(valorMensal) ? valorMensal : 0 } : {}),
+      baseVolume,
+    },
   });
   revalidateAll();
 }

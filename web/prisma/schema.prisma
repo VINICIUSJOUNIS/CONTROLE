@@ -1202,11 +1202,13 @@ model BudgetLine {
   orderIndex   Int         @default(0)
   createdAt    DateTime    @default(now())
   // Como o previsto e formado: "FIXO" = digitado mes a mes (BudgetLineMonth);
-  // "POR_SACA" = valorPorSaca x volume do mes no cenario ativo, calculado na
-  // leitura (o valorPrevisto gravado e ignorado). baseVolume diz qual volume:
-  // "TOTAL", "INTERNO" ou "EXTERNO". Realizado e sempre digitado.
+  // "MENSAL" = valorMensal igual nos 12 meses; "POR_SACA" = valorPorSaca x
+  // volume do mes no cenario ativo. MENSAL e POR_SACA sao calculados na leitura
+  // (o valorPrevisto gravado e ignorado). baseVolume diz qual volume: "TOTAL",
+  // "INTERNO" ou "EXTERNO". Realizado e sempre digitado.
   tipoCusto    String      @default("FIXO")
   valorPorSaca Decimal     @default(0) @db.Decimal(18, 4)
+  valorMensal  Decimal     @default(0) @db.Decimal(18, 2)
   baseVolume   String      @default("TOTAL")
 
   months BudgetLineMonth[]
