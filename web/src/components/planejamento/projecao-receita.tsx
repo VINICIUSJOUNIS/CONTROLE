@@ -149,6 +149,10 @@ export function ProjecaoReceita({
 
   const th = "px-2 py-1.5 font-medium text-right";
   const td = "px-2 py-1 text-right";
+  // Cabecalho de grupo (Mercado Interno / Externo / Total) e divisoria entre
+  // grupos: sacas e receita de cada mercado ficam lado a lado.
+  const grupo = "border-l border-border px-2 py-1.5 text-center text-primary";
+  const sep = "border-l border-border";
 
   return (
     <div className="space-y-4">
@@ -166,18 +170,25 @@ export function ProjecaoReceita({
         <CardContent className="overflow-x-auto pt-0">
           <table className="w-full whitespace-nowrap text-xs [font-variant-numeric:tabular-nums]">
             <thead>
+              <tr className="text-[11px] font-semibold tracking-wider">
+                <th rowSpan={2} className="border-b border-border px-2 py-1.5 text-left align-bottom font-medium text-muted">
+                  Período
+                </th>
+                <th colSpan={3} className={grupo}>Mercado Interno</th>
+                <th colSpan={3} className={grupo}>Mercado Externo</th>
+                <th colSpan={4} className={grupo}>Total</th>
+              </tr>
               <tr className="border-b border-border text-[11px] text-muted">
-                <th className="px-2 py-1.5 text-left font-medium">Período</th>
-                <th className={th}>Sacas Interno</th>
-                <th className={th}>Sacas Externo</th>
-                <th className={th}>Sacas Total</th>
+                <th className={cn(th, sep)}>Sacas</th>
+                <th className={th}>Receita</th>
+                <th className={th}>R$/saca</th>
+                <th className={cn(th, sep)}>Sacas</th>
+                <th className={th}>Receita</th>
+                <th className={th}>R$/saca</th>
+                <th className={cn(th, sep)}>Sacas</th>
+                <th className={th}>Receita</th>
                 <th className={th}>% Externo</th>
                 <th className={th}>Var. Volume</th>
-                <th className={th}>Receita Interna</th>
-                <th className={th}>Receita Externa</th>
-                <th className={th}>Receita Total</th>
-                <th className={th}>R$/saca Int.</th>
-                <th className={th}>R$/saca Ext.</th>
               </tr>
             </thead>
             <tbody>
@@ -187,16 +198,16 @@ export function ProjecaoReceita({
                   className={cn("border-b border-border last:border-0", l.destaque && "bg-primary/5 font-medium")}
                 >
                   <td className="px-2 py-1 font-medium">{l.label}</td>
-                  <td className={td}>{sc(l.i.sacas)}</td>
-                  <td className={td}>{sc(l.e.sacas)}</td>
-                  <td className={td}>{sc(l.total)}</td>
+                  <td className={cn(td, sep)}>{sc(l.i.sacas)}</td>
+                  <td className={td}>{formatCurrency(l.i.receita)}</td>
+                  <td className={cn(td, "text-muted")}>{l.i.sacas > 0 ? formatCurrency(precoMedio(l.i)) : "-"}</td>
+                  <td className={cn(td, sep)}>{sc(l.e.sacas)}</td>
+                  <td className={td}>{formatCurrency(l.e.receita)}</td>
+                  <td className={cn(td, "text-muted")}>{l.e.sacas > 0 ? formatCurrency(precoMedio(l.e)) : "-"}</td>
+                  <td className={cn(td, sep, "font-semibold")}>{sc(l.total)}</td>
+                  <td className={cn(td, "font-semibold")}>{formatCurrency(l.receita)}</td>
                   <td className={td}>{l.total > 0 ? formatPercent((l.e.sacas / l.total) * 100, 1) : "-"}</td>
                   <td className={td}>{pct(l.varTotal)}</td>
-                  <td className={td}>{formatCurrency(l.i.receita)}</td>
-                  <td className={td}>{formatCurrency(l.e.receita)}</td>
-                  <td className={td}>{formatCurrency(l.receita)}</td>
-                  <td className={td}>{l.i.sacas > 0 ? formatCurrency(precoMedio(l.i)) : "-"}</td>
-                  <td className={td}>{l.e.sacas > 0 ? formatCurrency(precoMedio(l.e)) : "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -326,35 +337,42 @@ export function ProjecaoReceita({
         <CardContent className="overflow-x-auto pt-0">
           <table className="w-full whitespace-nowrap text-xs [font-variant-numeric:tabular-nums]">
             <thead>
+              <tr className="text-[11px] font-semibold tracking-wider">
+                <th rowSpan={2} className="border-b border-border px-2 py-1.5 text-left align-bottom font-medium text-muted">
+                  Mês
+                </th>
+                <th colSpan={2} className={grupo}>Mercado Interno</th>
+                <th colSpan={2} className={grupo}>Mercado Externo</th>
+                <th colSpan={2} className={grupo}>Total</th>
+              </tr>
               <tr className="border-b border-border text-[11px] text-muted">
-                <th className="px-2 py-1.5 text-left font-medium">Mês</th>
-                <th className={th}>Sacas Interno</th>
-                <th className={th}>Sacas Externo</th>
-                <th className={th}>Sacas Total</th>
-                <th className={th}>Receita Interna</th>
-                <th className={th}>Receita Externa</th>
-                <th className={th}>Receita Total</th>
+                <th className={cn(th, sep)}>Sacas</th>
+                <th className={th}>Receita</th>
+                <th className={cn(th, sep)}>Sacas</th>
+                <th className={th}>Receita</th>
+                <th className={cn(th, sep)}>Sacas</th>
+                <th className={th}>Receita</th>
               </tr>
             </thead>
             <tbody>
               {proj.meses.map((m) => (
                 <tr key={m.month} className="border-b border-border">
                   <td className="px-2 py-1 font-medium">{m.label}</td>
-                  <td className={td}>{sc(m.internoSacas)}</td>
-                  <td className={td}>{sc(m.externoSacas)}</td>
-                  <td className={td}>{sc(m.internoSacas + m.externoSacas)}</td>
+                  <td className={cn(td, sep)}>{sc(m.internoSacas)}</td>
                   <td className={td}>{formatCurrency(m.internoReceita)}</td>
+                  <td className={cn(td, sep)}>{sc(m.externoSacas)}</td>
                   <td className={td}>{formatCurrency(m.externoReceita)}</td>
-                  <td className={td}>{formatCurrency(m.internoReceita + m.externoReceita)}</td>
+                  <td className={cn(td, sep, "font-semibold")}>{sc(m.internoSacas + m.externoSacas)}</td>
+                  <td className={cn(td, "font-semibold")}>{formatCurrency(m.internoReceita + m.externoReceita)}</td>
                 </tr>
               ))}
               <tr className="font-semibold">
                 <td className="px-2 py-1">Total</td>
-                <td className={td}>{sc(t.internoSacas)}</td>
-                <td className={td}>{sc(t.externoSacas)}</td>
-                <td className={td}>{sc(volTotal)}</td>
+                <td className={cn(td, sep)}>{sc(t.internoSacas)}</td>
                 <td className={td}>{formatCurrency(t.internoReceita)}</td>
+                <td className={cn(td, sep)}>{sc(t.externoSacas)}</td>
                 <td className={td}>{formatCurrency(t.externoReceita)}</td>
+                <td className={cn(td, sep)}>{sc(volTotal)}</td>
                 <td className={td}>{formatCurrency(recTotal)}</td>
               </tr>
             </tbody>
