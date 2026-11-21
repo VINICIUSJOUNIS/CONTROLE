@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { Loader2, LogOut } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { MODULOS, moduloAtivo } from "@/lib/modulos";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -14,6 +17,18 @@ import { ThemeToggle } from "@/components/theme-toggle";
 export function CabecalhoModulos({ comTema = false }: { comTema?: boolean }) {
   const pathname = usePathname();
   const ativo = moduloAtivo(pathname);
+  const router = useRouter();
+  const [saindo, setSaindo] = useState(false);
+
+  // Sair do sistema: encerra a sessao no Supabase e volta para a tela de
+  // entrada. Fica no cabecalho para estar em todas as telas (a Inicio nao tem
+  // menu lateral, onde ficava o unico "Sair").
+  async function sair() {
+    setSaindo(true);
+    await createClient().auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-border bg-card/85 px-4 backdrop-blur-xl print:hidden ocultar-em-apresentacao">
@@ -55,6 +70,17 @@ export function CabecalhoModulos({ comTema = false }: { comTema?: boolean }) {
         })}
       </nav>
       {comTema && <ThemeToggle />}
+      <span aria-hidden className="h-6 w-px shrink-0 bg-border" />
+      <button
+        type="button"
+        onClick={sair}
+        disabled={saindo}
+        title="Sair do sistema"
+        className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-semibold text-muted transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-60"
+      >
+        {saindo ? <Loader2 size={15} className="animate-spin" /> : <LogOut size={15} />}
+        Sair
+      </button>
     </header>
   );
 }
