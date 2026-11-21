@@ -1,6 +1,6 @@
 import { Topbar } from "@/components/layout/topbar";
 import { PlanejamentoView } from "@/components/planejamento/planejamento-view";
-import { ProjecaoReceita } from "@/components/planejamento/projecao-receita";
+import { KpisProjecao, ProjecaoProvider, ProjecaoReceita } from "@/components/planejamento/projecao-receita";
 import { getBaseFiscalDre, getBudgetPlan, getBudgetYears, getHistoricoVendasMensal } from "@/lib/budget-data";
 
 export default async function PlanejamentoOrcamentarioPage({
@@ -24,6 +24,18 @@ export default async function PlanejamentoOrcamentarioPage({
     )
     .reduce((s, l) => s + l.total, 0);
 
+  const crescimentos = {
+    CONSERVADOR: 0,
+    MODERADO: plan?.crescimentoModerado ?? 0,
+    OTIMISTA: plan?.crescimentoOtimista ?? 0,
+    MUITO_OTIMISTA: plan?.crescimentoMuitoOtimista ?? 0,
+  };
+  const conteudoPlano = plan ? (
+    <PlanejamentoView plan={plan} />
+  ) : (
+    <p className="text-center text-muted">Nenhum plano orçamentário cadastrado para {year}.</p>
+  );
+
   return (
     <div className="flex flex-col">
       <Topbar
@@ -31,27 +43,28 @@ export default async function PlanejamentoOrcamentarioPage({
         subtitle="Cenários de receita, despesas por grupo e acompanhamento Previsto x Realizado"
       />
       <div className="space-y-6 p-6">
-        {plan ? (
-          <PlanejamentoView plan={plan} />
-        ) : (
-          <p className="text-center text-muted">Nenhum plano orçamentário cadastrado para {year}.</p>
-        )}
-        {vendas.ultimoMesFechado && (
-          <ProjecaoReceita
+        {vendas.ultimoMesFechado ? (
+          // Indicadores da projecao no topo; o cenario e os precos escolhidos
+          // (no topo ou nas premissas) valem para toda a pagina.
+          <ProjecaoProvider
             historico={vendas.historico}
             ultimoMesFechado={vendas.ultimoMesFechado}
             cenarioInicial={plan?.scenario ?? "CONSERVADOR"}
-            planId={plan?.id}
-            planName={plan?.name}
-            baseFiscal={baseFiscal}
-            despesasCreditaveis={despesasCreditaveis}
-            crescimentos={{
-              CONSERVADOR: 0,
-              MODERADO: plan?.crescimentoModerado ?? 0,
-              OTIMISTA: plan?.crescimentoOtimista ?? 0,
-              MUITO_OTIMISTA: plan?.crescimentoMuitoOtimista ?? 0,
-            }}
-          />
+            crescimentos={crescimentos}
+          >
+            <div className="space-y-6">
+              <KpisProjecao />
+              {conteudoPlano}
+              <ProjecaoReceita
+                planId={plan?.id}
+                planName={plan?.name}
+                baseFiscal={baseFiscal}
+                despesasCreditaveis={despesasCreditaveis}
+              />
+            </div>
+          </ProjecaoProvider>
+        ) : (
+          conteudoPlano
         )}
       </div>
     </div>

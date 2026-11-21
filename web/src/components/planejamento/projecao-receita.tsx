@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { createContext, useContext, useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { aplicarProjecaoVolumes } from "@/app/(dashboard)/planejamento-orcamentario/actions";
@@ -30,25 +30,161 @@ const mesAno = (ym: string) => `${MESES_CURTOS[Number(ym.slice(5, 7)) - 1].toLow
 
 const SCENARIOS: BudgetScenarioKey[] = ["CONSERVADOR", "MODERADO", "OTIMISTA", "MUITO_OTIMISTA"];
 
+type ProjecaoDados = {
+  historico: HistoricoMes[];
+  ultimoMesFechado: string;
+  crescimentos: Record<BudgetScenarioKey, number>;
+  cenarioInicial: BudgetScenarioKey;
+};
+
+function calcularBase(historico: HistoricoMes[], ultimoMesFechado: string) {
+  const ltmDe = addMonths(ultimoMesFechado, -11);
+  const ltmAntDe = addMonths(ultimoMesFechado, -23);
+  const ltmAntAte = addMonths(ultimoMesFechado, -12);
+  const triDe = addMonths(ultimoMesFechado, -2);
+  const triI = somaJanela(historico, triDe, ultimoMesFechado, "INTERNO");
+  const triE = somaJanela(historico, triDe, ultimoMesFechado, "EXTERNO");
+  return {
+    ltmI: somaJanela(historico, ltmDe, ultimoMesFechado, "INTERNO"),
+    ltmE: somaJanela(historico, ltmDe, ultimoMesFechado, "EXTERNO"),
+    antI: somaJanela(historico, ltmAntDe, ltmAntAte, "INTERNO"),
+    antE: somaJanela(historico, ltmAntDe, ltmAntAte, "EXTERNO"),
+    precoTriI: precoMedio(triI),
+    precoTriE: precoMedio(triE),
+    sazI: sazonalidade(historico, ltmAntDe, ultimoMesFechado, "INTERNO"),
+    sazE: sazonalidade(historico, ltmAntDe, ultimoMesFechado, "EXTERNO"),
+  };
+}
+
+// Estado da projecao (cenario e precos) compartilhado pela pagina: os
+// indicadores ficam no topo (KpisProjecao) e premissas, tabelas e tributos mais
+// abaixo (ProjecaoReceita) - os dois leem o mesmo cenario e os mesmos precos.
+function useProjecaoEstado({ historico, ultimoMesFechado, crescimentos, cenarioInicial }: ProjecaoDados) {
+  const base = useMemo(() => calcularBase(historico, ultimoMesFechado), [historico, ultimoMesFechado]);
+  const [cenario, setCenario] = useState<BudgetScenarioKey>(cenarioInicial);
+  const [precoI, setPrecoI] = useState(() => base.precoTriI.toFixed(2));
+  const [precoE, setPrecoE] = useState(() => base.precoTriE.toFixed(2));
+  const crescimento = crescimentos[cenario] ?? 0;
+  const proj = useMemo(
+    () =>
+      projetarAno(base.ltmI.sacas, base.ltmE.sacas, base.sazI, base.sazE, {
+        crescimento,
+        precoInterno: Number(precoI) || 0,
+        precoExterno: Number(precoE) || 0,
+      }),
+    [base, crescimento, precoI, precoE]
+  );
+  return {
+    historico,
+    ultimoMesFechado,
+    crescimentos,
+    anoProjecao: Number(ultimoMesFechado.slice(0, 4)) + 1,
+    base,
+    cenario,
+    setCenario,
+    precoI,
+    setPrecoI,
+    precoE,
+    setPrecoE,
+    proj,
+  };
+}
+
+const ProjecaoCtx = createContext<ReturnType<typeof useProjecaoEstado> | null>(null);
+
+function useProjecao() {
+  const ctx = useContext(ProjecaoCtx);
+  if (!ctx) throw new Error("Use dentro de ProjecaoProvider");
+  return ctx;
+}
+
+export function ProjecaoProvider({ children, ...dados }: ProjecaoDados & { children: ReactNode }) {
+  const estado = useProjecaoEstado(dados);
+  return <ProjecaoCtx.Provider value={estado}>{children}</ProjecaoCtx.Provider>;
+}
+
+function BotoesCenario() {
+  const { cenario, setCenario, crescimentos } = useProjecao();
+  return (
+    <div className="flex flex-wrap gap-2">
+      {SCENARIOS.map((s) => (
+        <button
+          key={s}
+          type="button"
+          onClick={() => setCenario(s)}
+          className={cn(
+            "rounded-md border px-3 py-1.5 text-xs font-medium",
+            cenario === s ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-primary/5"
+          )}
+        >
+          {SCENARIO_LABELS[s]} ({pct(crescimentos[s] ?? 0)})
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Indicadores da projecao do proximo ano, no topo da pagina.
+export function KpisProjecao() {
+  const { proj, base, cenario, anoProjecao } = useProjecao();
+  const t = proj.totais;
+  const volTotal = t.internoSacas + t.externoSacas;
+  const recTotal = t.internoReceita + t.externoReceita;
+  const ltmVol = base.ltmI.sacas + base.ltmE.sacas;
+  const ltmRec = base.ltmI.receita + base.ltmE.receita;
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Projeção {anoProjecao}</h2>
+          <p className="text-[11px] text-muted">
+            Variações sobre os últimos 12 meses realizados. Premissas e detalhamento mês a mês mais abaixo.
+          </p>
+        </div>
+        <BotoesCenario />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          label={`Volume ${anoProjecao} (${SCENARIO_LABELS[cenario]})`}
+          value={`${sc(volTotal)} sc (${pct(variacao(ltmVol, volTotal))})`}
+          icon={Package}
+          tone="teal"
+        />
+        <KpiCard
+          label={`Receita ${anoProjecao} (${SCENARIO_LABELS[cenario]})`}
+          value={`${formatCurrency(recTotal)} (${pct(variacao(ltmRec, recTotal))})`}
+          icon={TrendingUp}
+          tone="green"
+        />
+        <KpiCard
+          label="Mercado Interno"
+          value={`${sc(t.internoSacas)} sc · ${formatCurrency(t.internoReceita)}`}
+          icon={Store}
+          tone="soft"
+        />
+        <KpiCard
+          label="Mercado Externo"
+          value={`${sc(t.externoSacas)} sc · ${formatCurrency(t.externoReceita)}`}
+          icon={Ship}
+          tone="teal"
+        />
+      </div>
+    </div>
+  );
+}
+
 export function ProjecaoReceita({
-  historico,
-  ultimoMesFechado,
-  crescimentos,
-  cenarioInicial,
   planId,
   planName,
   baseFiscal,
   despesasCreditaveis = 0,
 }: {
-  historico: HistoricoMes[];
-  ultimoMesFechado: string;
-  crescimentos: Record<BudgetScenarioKey, number>;
-  cenarioInicial: BudgetScenarioKey;
   planId?: string;
   planName?: string;
   baseFiscal?: { de: string; ate: string; cmvSobreReceita: number; lairSobreReceita: number } | null;
   despesasCreditaveis?: number;
 }) {
+  const { historico, ultimoMesFechado, anoProjecao, base, cenario, precoI, setPrecoI, precoE, setPrecoE, proj } = useProjecao();
   const router = useRouter();
   const [gravando, startGravar] = useTransition();
   const [gravado, setGravado] = useState(false);
@@ -70,30 +206,10 @@ export function ProjecaoReceita({
     });
   }
 
-  const anoProjecao = Number(ultimoMesFechado.slice(0, 4)) + 1;
   const ltmDe = addMonths(ultimoMesFechado, -11);
   const ltmAntDe = addMonths(ultimoMesFechado, -23);
   const ltmAntAte = addMonths(ultimoMesFechado, -12);
   const triDe = addMonths(ultimoMesFechado, -2);
-
-  const base = useMemo(() => {
-    const ltmI = somaJanela(historico, ltmDe, ultimoMesFechado, "INTERNO");
-    const ltmE = somaJanela(historico, ltmDe, ultimoMesFechado, "EXTERNO");
-    const antI = somaJanela(historico, ltmAntDe, ltmAntAte, "INTERNO");
-    const antE = somaJanela(historico, ltmAntDe, ltmAntAte, "EXTERNO");
-    const triI = somaJanela(historico, triDe, ultimoMesFechado, "INTERNO");
-    const triE = somaJanela(historico, triDe, ultimoMesFechado, "EXTERNO");
-    return {
-      ltmI,
-      ltmE,
-      antI,
-      antE,
-      precoTriI: precoMedio(triI),
-      precoTriE: precoMedio(triE),
-      sazI: sazonalidade(historico, ltmAntDe, ultimoMesFechado, "INTERNO"),
-      sazE: sazonalidade(historico, ltmAntDe, ultimoMesFechado, "EXTERNO"),
-    };
-  }, [historico, ltmDe, ltmAntDe, ltmAntAte, triDe, ultimoMesFechado]);
 
   // Historico anual: anos completos + ano corrente parcial + ultimos 12 meses.
   const linhasHistorico = useMemo(() => {
@@ -118,26 +234,10 @@ export function ProjecaoReceita({
     });
   }, [historico, ultimoMesFechado, ltmDe]);
 
-  const [cenario, setCenario] = useState<BudgetScenarioKey>(cenarioInicial);
-  const [precoI, setPrecoI] = useState(() => base.precoTriI.toFixed(2));
-  const [precoE, setPrecoE] = useState(() => base.precoTriE.toFixed(2));
-
-  const crescimento = crescimentos[cenario] ?? 0;
-  const proj = useMemo(
-    () =>
-      projetarAno(base.ltmI.sacas, base.ltmE.sacas, base.sazI, base.sazE, {
-        crescimento,
-        precoInterno: Number(precoI) || 0,
-        precoExterno: Number(precoE) || 0,
-      }),
-    [base, crescimento, precoI, precoE]
-  );
-
   const t = proj.totais;
   const volTotal = t.internoSacas + t.externoSacas;
   const recTotal = t.internoReceita + t.externoReceita;
   const ltmVol = base.ltmI.sacas + base.ltmE.sacas;
-  const ltmRec = base.ltmI.receita + base.ltmE.receita;
 
   const chartData = [
     ...linhasHistorico
@@ -228,21 +328,7 @@ export function ProjecaoReceita({
           <CardTitle>Premissas da projeção {anoProjecao}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-0">
-          <div className="flex flex-wrap gap-2">
-            {SCENARIOS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setCenario(s)}
-                className={cn(
-                  "rounded-md border px-3 py-1.5 text-xs font-medium",
-                  cenario === s ? "border-primary bg-primary text-white" : "border-border hover:bg-primary/5"
-                )}
-              >
-                {SCENARIO_LABELS[s]} ({pct(crescimentos[s] ?? 0)})
-              </button>
-            ))}
-          </div>
+          <BotoesCenario />
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Preço R$/saca: Mercado Interno</Label>
@@ -289,33 +375,6 @@ export function ProjecaoReceita({
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          label={`Volume ${anoProjecao} (${SCENARIO_LABELS[cenario]})`}
-          value={`${sc(volTotal)} sc (${pct(variacao(ltmVol, volTotal))})`}
-          icon={Package}
-          tone="teal"
-        />
-        <KpiCard
-          label={`Receita ${anoProjecao} (${SCENARIO_LABELS[cenario]})`}
-          value={`${formatCurrency(recTotal)} (${pct(variacao(ltmRec, recTotal))})`}
-          icon={TrendingUp}
-          tone="green"
-        />
-        <KpiCard
-          label="Mercado Interno"
-          value={`${sc(t.internoSacas)} sc · ${formatCurrency(t.internoReceita)}`}
-          icon={Store}
-          tone="soft"
-        />
-        <KpiCard
-          label="Mercado Externo"
-          value={`${sc(t.externoSacas)} sc · ${formatCurrency(t.externoReceita)}`}
-          icon={Ship}
-          tone="teal"
-        />
-      </div>
-      <p className="-mt-2 text-[11px] text-muted">Variações sobre os últimos 12 meses realizados.</p>
 
       <BarChartCard
         title="Volume anual em sacas: realizado x projeção"
