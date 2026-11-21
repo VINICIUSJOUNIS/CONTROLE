@@ -82,22 +82,17 @@ export default function LoginPage() {
       <main className="flex w-full items-center justify-center px-5 py-10 xl:justify-end xl:pr-[6vw] 2xl:pr-[9vw]">
         <div className="w-full max-w-[400px]">
           <div className="rounded-3xl border border-white/10 bg-[#0b1f26]/70 p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] ring-1 ring-inset ring-white/5 backdrop-blur-2xl sm:p-9">
-            <div className="flex items-center gap-3.5">
-              <Image
-                src="/nayme-logo.png"
-                alt="Nayme"
-                width={48}
-                height={48}
-                className="rounded-full ring-2 ring-white/10"
-                priority
-              />
-              <div>
-                <p className="text-base font-semibold tracking-wide text-white">Controle</p>
-                <p className="text-[11px] tracking-wider text-muted">Nayme Exportadora de Café</p>
-              </div>
-            </div>
+            <Image
+              src="/nayme-logo-banner.png"
+              alt="Nayme - The future of coffee follows its origins"
+              width={957}
+              height={328}
+              priority
+              className="h-auto w-full rounded-2xl ring-1 ring-white/10"
+            />
+            <p className="mt-4 text-[11px] font-semibold tracking-[0.2em] text-muted">Controle</p>
 
-            <div className="mt-8 mb-6">
+            <div className="mt-1 mb-6">
               <h1 className="text-2xl font-semibold tracking-tight text-white">Bem-vindo</h1>
               <p className="mt-1 text-xs text-muted">Entre com seu e-mail e senha para acessar o sistema.</p>
             </div>

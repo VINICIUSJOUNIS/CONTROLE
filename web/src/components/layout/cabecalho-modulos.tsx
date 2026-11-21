@@ -33,8 +33,15 @@ export function CabecalhoModulos({ comTema = false }: { comTema?: boolean }) {
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-border bg-card/85 px-4 backdrop-blur-xl print:hidden ocultar-em-apresentacao">
       <Link href="/inicio" title="Início" className="flex shrink-0 items-center gap-2.5">
-        <Image src="/nayme-logo.png" alt="Nayme" width={30} height={30} className="rounded-full" />
-        <span className="hidden text-sm font-semibold tracking-wide 2xl:inline">Controle</span>
+        {/* Logo da marca (arte com a frase), 957x328 - exibida a 40px de altura. */}
+        <Image
+          src="/nayme-logo-banner.png"
+          alt="Nayme - The future of coffee follows its origins"
+          width={117}
+          height={40}
+          priority
+          className="h-10 w-auto rounded-md ring-1 ring-white/10"
+        />
       </Link>
       <span aria-hidden className="h-6 w-px shrink-0 bg-border" />
       {/* 8 colunas de largura igual: os modulos ficam alinhados e com o mesmo
