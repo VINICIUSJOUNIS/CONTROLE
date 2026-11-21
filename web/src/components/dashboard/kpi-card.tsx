@@ -83,18 +83,20 @@ export function KpiCard({
       >
         {value}
       </p>
-      {trend && (
+      {(trend || trendLabel) && (
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-          <span
-            className={cn(
-              "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold ring-1 ring-inset",
-              trendPositive ? "bg-success/10 text-success ring-success/25" : "bg-danger/10 text-danger ring-danger/25"
-            )}
-          >
-            {trendPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-            {trend}
-          </span>
-          {trendLabel && <span className="text-muted">{trendLabel}</span>}
+          {trend && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold ring-1 ring-inset",
+                trendPositive ? "bg-success/10 text-success ring-success/25" : "bg-danger/10 text-danger ring-danger/25"
+              )}
+            >
+              {trendPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+              {trend}
+            </span>
+          )}
+          {trendLabel && <span className="text-[11px] text-muted">{trendLabel}</span>}
         </div>
       )}
     </Card>

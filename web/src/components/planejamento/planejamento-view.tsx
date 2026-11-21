@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,10 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { LineChartCard } from "@/components/charts/line-chart-card";
-import { BarChartCard } from "@/components/charts/bar-chart-card";
-import { PieChartCard } from "@/components/charts/pie-chart-card";
-import { formatCompactCurrency, formatCurrency, formatPercent } from "@/lib/format";
+import { formatCompactCurrency, formatCurrency, formatCurrencyPrecise, formatPercent } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { BudgetPlanData, BudgetGroupData, BudgetLineData } from "@/lib/budget-data";
 import { BUDGET_GROUP_ORDER, SCENARIO_LABELS } from "@/lib/budget-constants";
 import {
@@ -36,22 +34,11 @@ import {
   ChevronRight,
   Settings,
   Ship,
+  Package,
   TextCursorInput,
 } from "lucide-react";
 
 type BudgetGroup = (typeof BUDGET_GROUP_ORDER)[number];
-
-const GROUP_COLORS: Record<BudgetGroup, string> = {
-  CUSTO_FORNECEDOR: "#1c8388",
-  DESPESA_MERCADO_INTERNO: "#7a5af8",
-  DESPESA_MERCADO_EXTERNO: "#12b76a",
-  DESPESA_ADM_FIXA: "#d68c2b",
-  DESPESA_ADM_VARIAVEL: "#f0ac4c",
-  DESPESA_PESSOAL: "#f04438",
-  IMPOSTOS: "#e5776b",
-  FINANCIAMENTO: "#a8c5c8",
-  INVESTIMENTOS: "#9fc3c5",
-};
 
 function varPercent(previsto: number, realizado: number) {
   if (!previsto) return null;
@@ -96,32 +83,6 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
   const [openNewLine, setOpenNewLine] = useState(false);
   const [newLineGroup, setNewLineGroup] = useState<BudgetGroup | null>(null);
   const [newLineName, setNewLineName] = useState("");
-
-  const custoChartData = useMemo(
-    () =>
-      plan.groups
-        .filter((g) => g.totalPrevisto > 0 || g.totalRealizado > 0)
-        .map((g) => ({ name: g.label, value: g.totalPrevisto, color: GROUP_COLORS[g.group] })),
-    [plan.groups]
-  );
-
-  const receitaEvolucaoData = useMemo(
-    () => plan.months.map((m) => ({ mes: m.label.slice(0, 3), Previsto: m.receitaPrevista, Realizado: m.receitaRealizada })),
-    [plan.months]
-  );
-
-  const resultadoEvolucaoData = useMemo(
-    () => plan.months.map((m) => ({ mes: m.label.slice(0, 3), Previsto: m.resultadoPrevisto, Realizado: m.resultadoRealizado })),
-    [plan.months]
-  );
-
-  const groupChartData = useMemo(
-    () =>
-      plan.groups
-        .filter((g) => g.totalPrevisto > 0 || g.totalRealizado > 0)
-        .map((g) => ({ grupo: g.label, Previsto: g.totalPrevisto, Realizado: g.totalRealizado })),
-    [plan.groups]
-  );
 
   function toggleGroup(group: string) {
     setExpandedGroups((prev) => {
@@ -230,9 +191,77 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
   const resultadoRealizadoPercent =
     plan.totais.receitaRealizada > 0 ? (plan.totais.resultadoRealizado / plan.totais.receitaRealizada) * 100 : 0;
 
+  // Volume do ano (cenario exibido): previsto = volume base x crescimento do
+  // cenario; realizado = digitado mes a mes.
+  const somaMeses = (k: "volumeAjustado" | "volumeInternoPrevisto" | "volumeExternoPrevisto" | "volumeInternoRealizado" | "volumeExternoRealizado") =>
+    plan.months.reduce((acc, m) => acc + m[k], 0);
+  const volPrevisto = somaMeses("volumeAjustado");
+  const volIntPrevisto = somaMeses("volumeInternoPrevisto");
+  const volExtPrevisto = somaMeses("volumeExternoPrevisto");
+  const volIntRealizado = somaMeses("volumeInternoRealizado");
+  const volExtRealizado = somaMeses("volumeExternoRealizado");
+  const volRealizado = volIntRealizado + volExtRealizado;
+  const sc = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+  const receitaPorSaca = volPrevisto > 0 ? plan.totais.receitaPrevista / volPrevisto : 0;
+  const despesaPorSaca = volPrevisto > 0 ? plan.totais.despesaPrevista / volPrevisto : null;
+  const peSacas =
+    plan.pontoEquilibrio.valorReais !== null && receitaPorSaca > 0 ? plan.pontoEquilibrio.valorReais / receitaPorSaca : null;
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[11px] text-muted">
+          Cenário exibido: <span className="font-semibold text-foreground">{SCENARIO_LABELS[plan.scenario]}</span>. Os botões simulam o
+          cenário nesta página; o cenário salvo no plano muda em Premissas.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(SCENARIO_LABELS) as (keyof typeof SCENARIO_LABELS)[]).map((c) => (
+            <Link
+              key={c}
+              href={`/planejamento-orcamentario?year=${plan.year}&cenario=${c}`}
+              scroll={false}
+              className={cn(
+                "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                plan.scenario === c ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-primary/5"
+              )}
+            >
+              {SCENARIO_LABELS[c]}
+              {plan.scenarioSalvo === c && <span className="ml-1 text-[10px] opacity-80">(ativo no plano)</span>}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          label={`Volume Previsto (${SCENARIO_LABELS[plan.scenario]})`}
+          value={`${sc(volPrevisto)} sc`}
+          valueClassName="leading-tight"
+          icon={Package}
+          tone="teal"
+          trendLabel={`Interno ${sc(volIntPrevisto)} sc · Externo ${sc(volExtPrevisto)} sc`}
+        />
+        <KpiCard
+          label="Volume Realizado"
+          value={`${sc(volRealizado)} sc`}
+          icon={Package}
+          tone="green"
+          trendLabel={`Interno ${sc(volIntRealizado)} sc · Externo ${sc(volExtRealizado)} sc`}
+        />
+        <KpiCard
+          label="Despesa Prevista por Saca"
+          value={despesaPorSaca !== null ? formatCurrencyPrecise(despesaPorSaca) : "-"}
+          icon={TrendingDown}
+          tone="soft"
+          trendLabel={`Receita prevista por saca: ${receitaPorSaca > 0 ? formatCurrencyPrecise(receitaPorSaca) : "-"}`}
+        />
+        <KpiCard
+          label="Ponto de Equilíbrio em Sacas"
+          value={peSacas !== null ? `${sc(peSacas)} sc` : "-"}
+          icon={Ship}
+          tone="teal"
+          trendLabel="Sacas a vender para cobrir os custos fixos"
+        />
         <KpiCard
           label={`Receita Prevista (${SCENARIO_LABELS[plan.scenario]})`}
           value={formatCompactCurrency(plan.totais.receitaPrevista)}
@@ -295,45 +324,6 @@ export function PlanejamentoView({ plan }: { plan: NonNullable<BudgetPlanData> }
           <Ship size={14} />
           Volume e Receita (Interno x Externo)
         </Button>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <LineChartCard
-            title="Receita: Previsto x Realizado"
-            data={receitaEvolucaoData}
-            xKey="mes"
-            series={[
-              { key: "Previsto", name: "Previsto", color: "#1c8388" },
-              { key: "Realizado", name: "Realizado", color: "#12b76a" },
-            ]}
-            valueFormat="currency"
-          />
-        </div>
-        <PieChartCard title="Despesas Previstas por Grupo" data={custoChartData} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <LineChartCard
-          title="Resultado: Previsto x Realizado"
-          data={resultadoEvolucaoData}
-          xKey="mes"
-          series={[
-            { key: "Previsto", name: "Previsto", color: "#7a5af8" },
-            { key: "Realizado", name: "Realizado", color: "#f0ac4c" },
-          ]}
-          valueFormat="currency"
-        />
-        <BarChartCard
-          title="Despesas por Grupo: Previsto x Realizado"
-          data={groupChartData}
-          xKey="grupo"
-          series={[
-            { key: "Previsto", name: "Previsto", color: "#a8c5c8" },
-            { key: "Realizado", name: "Realizado", color: "#1c8388" },
-          ]}
-          valueFormat="currency"
-        />
       </div>
 
       <div className="space-y-3">

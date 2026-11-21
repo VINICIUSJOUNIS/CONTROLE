@@ -1,18 +1,19 @@
 import { Topbar } from "@/components/layout/topbar";
 import { PlanejamentoView } from "@/components/planejamento/planejamento-view";
 import { getBudgetPlan, getBudgetYears } from "@/lib/budget-data";
+import type { BudgetScenario } from "@/generated/prisma/client";
 
 // Orcamento: indicadores do plano, graficos e despesas por grupo. Historico e
 // projecoes, premissas e tributos ficam em paginas proprias do modulo.
 export default async function PlanejamentoOrcamentarioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string }>;
+  searchParams: Promise<{ year?: string; cenario?: string }>;
 }) {
   const params = await searchParams;
   const years = await getBudgetYears();
   const year = params.year ? Number(params.year) : years[0] ?? new Date().getFullYear();
-  const plan = await getBudgetPlan(year);
+  const plan = await getBudgetPlan(year, params.cenario as BudgetScenario | undefined);
 
   return (
     <div className="flex flex-col">

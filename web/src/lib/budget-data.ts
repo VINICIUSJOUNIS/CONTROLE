@@ -60,7 +60,9 @@ function scenarioMultiplier(plan: {
   }
 }
 
-export async function getBudgetPlan(year: number) {
+// cenarioOverride: simula outro cenario so na leitura (botoes da pagina
+// Orcamento), sem alterar o cenario salvo no plano.
+export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenario) {
   const plan = await prisma.budgetPlan.findUnique({
     where: { year },
     include: {
@@ -72,8 +74,10 @@ export async function getBudgetPlan(year: number) {
 
   const cotacaoSacaUsd = n(plan.cotacaoSacaUsd);
   const cotacaoDolar = n(plan.cotacaoDolar);
+  const cenario: BudgetScenario =
+    cenarioOverride && Object.values(BudgetScenario).includes(cenarioOverride) ? cenarioOverride : plan.scenario;
   const multiplier = scenarioMultiplier({
-    scenario: plan.scenario,
+    scenario: cenario,
     crescimentoModerado: n(plan.crescimentoModerado),
     crescimentoOtimista: n(plan.crescimentoOtimista),
     crescimentoMuitoOtimista: n(plan.crescimentoMuitoOtimista),
@@ -215,7 +219,8 @@ export async function getBudgetPlan(year: number) {
     id: plan.id,
     year: plan.year,
     name: plan.name,
-    scenario: plan.scenario,
+    scenario: cenario,
+    scenarioSalvo: plan.scenario,
     cotacaoSacaUsd,
     cotacaoDolar,
     crescimentoModerado: n(plan.crescimentoModerado),
