@@ -102,8 +102,10 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
     const monthsByNum = new Map(line.months.map((m) => [m.month, m]));
     const porSaca = line.tipoCusto === "POR_SACA";
     const mensal = line.tipoCusto === "MENSAL";
+    const percentual = line.tipoCusto === "PERCENTUAL";
     const valorPorSaca = n(line.valorPorSaca);
     const valorMensal = n(line.valorMensal);
+    const valorPercentual = n(line.valorPercentual);
     const months = Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
       const row = monthsByNum.get(m);
@@ -111,6 +113,8 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
         ? Number((valorPorSaca * volumePrevistoMes(m, line.baseVolume)).toFixed(2))
         : mensal
           ? valorMensal
+          : percentual
+          ? Number(((valorPercentual / 100) * volumePrevistoMes(m, line.baseVolume) * cotacaoSacaUsd * cotacaoDolar).toFixed(2))
           : row
           ? n(row.valorPrevisto)
           : 0;
@@ -124,9 +128,10 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
       group: line.group,
       name: line.name,
       orderIndex: line.orderIndex,
-      tipoCusto: line.tipoCusto as "FIXO" | "MENSAL" | "POR_SACA",
+      tipoCusto: line.tipoCusto as "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL",
       valorPorSaca,
       valorMensal,
+      valorPercentual,
       baseVolume: line.baseVolume as "TOTAL" | "INTERNO" | "EXTERNO",
       months,
       totalPrevisto,

@@ -1205,11 +1205,14 @@ model BudgetLine {
   // "MENSAL" = valorMensal igual nos 12 meses; "POR_SACA" = valorPorSaca x
   // volume do mes no cenario ativo. MENSAL e POR_SACA sao calculados na leitura
   // (o valorPrevisto gravado e ignorado). baseVolume diz qual volume: "TOTAL",
-  // "INTERNO" ou "EXTERNO". Realizado e sempre digitado.
-  tipoCusto    String      @default("FIXO")
-  valorPorSaca Decimal     @default(0) @db.Decimal(18, 4)
-  valorMensal  Decimal     @default(0) @db.Decimal(18, 2)
-  baseVolume   String      @default("TOTAL")
+  // "INTERNO" ou "EXTERNO". "PERCENTUAL" = valorPercentual % da receita
+  // prevista do mes na mesma base (volume da base x preco da saca do plano).
+  // Realizado e sempre digitado.
+  tipoCusto       String      @default("FIXO")
+  valorPorSaca    Decimal     @default(0) @db.Decimal(18, 4)
+  valorMensal     Decimal     @default(0) @db.Decimal(18, 2)
+  valorPercentual Decimal     @default(0) @db.Decimal(9, 4)
+  baseVolume      String      @default("TOTAL")
 
   months BudgetLineMonth[]
 

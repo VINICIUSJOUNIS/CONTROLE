@@ -75,7 +75,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
   const [openLine, setOpenLine] = useState(false);
   const [editingLine, setEditingLine] = useState<BudgetLineData | null>(null);
   const [lineForm, setLineForm] = useState<{ month: number; previsto: string; realizado: string }[]>([]);
-  const [custoForm, setCustoForm] = useState<{ tipo: "FIXO" | "MENSAL" | "POR_SACA"; valor: string; base: "TOTAL" | "INTERNO" | "EXTERNO" }>({
+  const [custoForm, setCustoForm] = useState<{ tipo: TipoCusto; valor: string; base: "TOTAL" | "INTERNO" | "EXTERNO" }>({
     tipo: "FIXO",
     valor: "",
     base: "TOTAL",
@@ -87,9 +87,16 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
     const m = plan.months[idx];
     return base === "EXTERNO" ? m.volumeExternoPrevisto : base === "INTERNO" ? m.volumeInternoPrevisto : m.volumeAjustado;
   }
+  // Receita prevista do mes na base escolhida (sacas x preco da saca do plano),
+  // mesma conta do servidor, para o tipo percentual.
+  function receitaDoMes(idx: number, base: "TOTAL" | "INTERNO" | "EXTERNO") {
+    return volumeDoMes(idx, base) * plan.cotacaoSacaUsd * plan.cotacaoDolar;
+  }
   const previstoPorSaca = (idx: number) =>
     custoForm.tipo === "MENSAL"
       ? Number((Number(custoForm.valor) || 0).toFixed(2))
+      : custoForm.tipo === "PERCENTUAL"
+      ? Number((((Number(custoForm.valor) || 0) / 100) * receitaDoMes(idx, custoForm.base)).toFixed(2))
       : Number(((Number(custoForm.valor) || 0) * volumeDoMes(idx, custoForm.base)).toFixed(2));
   // Mensal e por saca: o previsto e calculado (nao digitado).
   const previstoCalculado = custoForm.tipo !== "FIXO";
@@ -143,7 +150,13 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
     setCustoForm({
       tipo: line.tipoCusto,
       valor:
-        line.tipoCusto === "POR_SACA" ? String(line.valorPorSaca) : line.tipoCusto === "MENSAL" ? String(line.valorMensal) : "",
+        line.tipoCusto === "POR_SACA"
+          ? String(line.valorPorSaca)
+          : line.tipoCusto === "MENSAL"
+          ? String(line.valorMensal)
+          : line.tipoCusto === "PERCENTUAL"
+          ? String(line.valorPercentual)
+          : "",
       base: line.baseVolume,
     });
     setOpenLine(true);
@@ -165,6 +178,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         tipoCusto: custoForm.tipo,
         valorPorSaca: porSaca ? Number(custoForm.valor) || 0 : editingLine.valorPorSaca,
         valorMensal: custoForm.tipo === "MENSAL" ? Number(custoForm.valor) || 0 : editingLine.valorMensal,
+        valorPercentual: custoForm.tipo === "PERCENTUAL" ? Number(custoForm.valor) || 0 : editingLine.valorPercentual,
         baseVolume: custoForm.base,
       });
       await upsertBudgetLineMonths(editingLine.id, rows);
@@ -475,13 +489,43 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
                 <Label>Tipo de custo</Label>
                 <Select
                   value={custoForm.tipo}
-                  onChange={(e) => setCustoForm({ ...custoForm, tipo: e.target.value as "FIXO" | "MENSAL" | "POR_SACA" })}
+                  onChange={(e) => setCustoForm({ ...custoForm, tipo: e.target.value as TipoCusto })}
                 >
                   <option value="FIXO">Mês a mês</option>
                   <option value="MENSAL">Fixo mensal</option>
                   <option value="POR_SACA">Por saca</option>
+                  <option value="PERCENTUAL">% da receita</option>
                 </Select>
               </div>
+              {custoForm.tipo === "PERCENTUAL" && (
+                <>
+                  <div>
+                    <Label>Percentual (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Ex.: 1,5"
+                      value={custoForm.valor}
+                      onChange={(e) => setCustoForm({ ...custoForm, valor: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Incide sobre</Label>
+                    <Select
+                      value={custoForm.base}
+                      onChange={(e) => setCustoForm({ ...custoForm, base: e.target.value as "TOTAL" | "INTERNO" | "EXTERNO" })}
+                    >
+                      <option value="TOTAL">Receita total</option>
+                      <option value="INTERNO">Receita mercado interno</option>
+                      <option value="EXTERNO">Receita mercado externo</option>
+                    </Select>
+                  </div>
+                  <p className="text-[11px] text-muted sm:col-span-3">
+                    Previsto de cada mês = percentual × receita prevista do mês no cenário {SCENARIO_LABELS[plan.scenario]}. Atualiza sozinho
+                    quando o volume, o preço ou o cenário do plano mudam. O realizado continua digitado.
+                  </p>
+                </>
+              )}
               {custoForm.tipo === "MENSAL" && (
                 <>
                   <div>
@@ -535,6 +579,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
                   <tr className="border-b border-border text-left text-muted">
                     <th className="px-2 py-2 font-medium">Mês</th>
                     {custoForm.tipo === "POR_SACA" && <th className="px-2 py-2 font-medium">Sacas</th>}
+                    {custoForm.tipo === "PERCENTUAL" && <th className="px-2 py-2 font-medium">Receita prevista (R$)</th>}
                     <th className="px-2 py-2 font-medium">Previsto (R$)</th>
                     <th className="px-2 py-2 font-medium">Realizado (R$)</th>
                   </tr>
@@ -546,6 +591,11 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
                       {custoForm.tipo === "POR_SACA" && (
                         <td className="px-2 py-1.5 tabular-nums text-muted">
                           {volumeDoMes(idx, custoForm.base).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                        </td>
+                      )}
+                      {custoForm.tipo === "PERCENTUAL" && (
+                        <td className="px-2 py-1.5 tabular-nums text-muted">
+                          {receitaDoMes(idx, custoForm.base).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
                         </td>
                       )}
                       <td className="px-2 py-1.5">
@@ -719,7 +769,7 @@ function GroupCard({
   );
 }
 
-type TipoCusto = "FIXO" | "MENSAL" | "POR_SACA";
+type TipoCusto = "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL";
 type BaseVolume = "TOTAL" | "INTERNO" | "EXTERNO";
 
 // Tipo de custo direto na lista: mes a mes (digitado no lapis), fixo mensal
@@ -729,7 +779,9 @@ function CustoTipoCelulas({ line }: { line: BudgetLineData }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const tipo = line.tipoCusto;
-  const valorAtual = tipo === "POR_SACA" ? line.valorPorSaca : tipo === "MENSAL" ? line.valorMensal : 0;
+  const valorDoTipo = (t: TipoCusto) =>
+    t === "POR_SACA" ? line.valorPorSaca : t === "MENSAL" ? line.valorMensal : t === "PERCENTUAL" ? line.valorPercentual : 0;
+  const valorAtual = valorDoTipo(tipo);
   const [valor, setValor] = useState(valorAtual ? String(valorAtual) : "");
 
   function salvar(novoTipo: TipoCusto, novoValor: number, base: BaseVolume = line.baseVolume) {
@@ -738,6 +790,7 @@ function CustoTipoCelulas({ line }: { line: BudgetLineData }) {
         tipoCusto: novoTipo,
         valorPorSaca: novoTipo === "POR_SACA" ? novoValor : line.valorPorSaca,
         valorMensal: novoTipo === "MENSAL" ? novoValor : line.valorMensal,
+        valorPercentual: novoTipo === "PERCENTUAL" ? novoValor : line.valorPercentual,
         baseVolume: base,
       });
       router.refresh();
@@ -746,7 +799,7 @@ function CustoTipoCelulas({ line }: { line: BudgetLineData }) {
 
   function trocarTipo(novoTipo: TipoCusto) {
     // Ao trocar, aproveita o ultimo valor salvo daquele tipo.
-    const v = novoTipo === "POR_SACA" ? line.valorPorSaca : novoTipo === "MENSAL" ? line.valorMensal : 0;
+    const v = valorDoTipo(novoTipo);
     setValor(v ? String(v) : "");
     salvar(novoTipo, v);
   }
@@ -770,6 +823,7 @@ function CustoTipoCelulas({ line }: { line: BudgetLineData }) {
           <option value="FIXO">Mês a mês</option>
           <option value="MENSAL">Fixo mensal</option>
           <option value="POR_SACA">Por saca</option>
+          <option value="PERCENTUAL">% da receita</option>
         </Select>
       </td>
       <td className="px-2 py-2">
@@ -790,19 +844,19 @@ function CustoTipoCelulas({ line }: { line: BudgetLineData }) {
                 if (e.key === "Enter") (e.target as HTMLInputElement).blur();
               }}
             />
-            <span className="text-[11px] text-muted">{tipo === "MENSAL" ? "/mês" : "/sc"}</span>
+            <span className="text-[11px] text-muted">{tipo === "MENSAL" ? "/mês" : tipo === "PERCENTUAL" ? "%" : "/sc"}</span>
           </div>
         )}
       </td>
       <td className="px-2 py-2">
-        {tipo === "POR_SACA" ? (
+        {tipo === "POR_SACA" || tipo === "PERCENTUAL" ? (
           <Select
             className="h-8 w-40"
             value={line.baseVolume}
             disabled={isPending}
-            onChange={(e) => salvar("POR_SACA", Number(valor.replace(",", ".")) || 0, e.target.value as BaseVolume)}
+            onChange={(e) => salvar(tipo, Number(valor.replace(",", ".")) || 0, e.target.value as BaseVolume)}
           >
-            <option value="TOTAL">Volume total</option>
+            <option value="TOTAL">{tipo === "PERCENTUAL" ? "Receita total" : "Volume total"}</option>
             <option value="INTERNO">Mercado interno</option>
             <option value="EXTERNO">Mercado externo</option>
           </Select>
