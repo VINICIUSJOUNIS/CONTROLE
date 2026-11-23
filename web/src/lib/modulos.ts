@@ -1,4 +1,4 @@
-import { Landmark, Scale, Receipt, ShieldCheck, Target, Send, Gauge, TrendingUp, type LucideIcon } from "lucide-react";
+import { Landmark, Scale, Receipt, ShieldCheck, Target, Send, Gauge, TrendingUp, Warehouse, type LucideIcon } from "lucide-react";
 
 // Modulos do sistema: cards da tela Inicio e abas do cabecalho fixo. `match`
 // diz se uma rota pertence ao modulo; a ordem de verificacao fica em
@@ -69,6 +69,13 @@ export const MODULOS: Modulo[] = [
     description: "Filtros por ano, mês e dia. Faturamento geral, mercado interno e mercado externo.",
     icon: Gauge,
     match: (p) => p.startsWith("/faturamento/gerencial"),
+  },
+  {
+    href: "/armazem",
+    label: "Armazém",
+    description: "Controle do armazém.",
+    icon: Warehouse,
+    match: (p) => p.startsWith("/armazem"),
   },
 ];
 

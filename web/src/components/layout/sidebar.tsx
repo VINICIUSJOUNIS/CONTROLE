@@ -37,6 +37,7 @@ import {
   PanelLeftOpen,
   Scale,
   FileSpreadsheet,
+  Warehouse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-state";
@@ -145,6 +146,8 @@ const transferenciaOrdemNavItems = [
   { href: "/transferencia-ordem", label: "Transferência de Ordem", icon: Send },
 ];
 
+const armazemNavItems = [{ href: "/armazem", label: "Armazém", icon: Warehouse }];
+
 const roleLabels: Record<string, string> = {
   ADMINISTRADOR: "Administrador",
   TESOURARIA: "Tesouraria",
@@ -176,6 +179,7 @@ const modules = [
     label: "Transferência de Ordem",
     items: transferenciaOrdemNavItems,
   },
+  { match: (p: string) => p.startsWith("/armazem"), label: "Armazém", items: armazemNavItems },
 ];
 
 function getActiveModule(pathname: string) {
