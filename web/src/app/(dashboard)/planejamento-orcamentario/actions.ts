@@ -182,3 +182,44 @@ export async function salvarPrecosProjecao(planId: string, precoInterno: number 
   });
   revalidateAll();
 }
+
+export type RealizadoMesInput = {
+  volumeInternoRealizado: number;
+  volumeExternoRealizado: number;
+  receitaRealizada: number;
+  linhas: { lineId: string; valorRealizado: number }[];
+};
+
+// Acompanhamento Mensal: grava SO o realizado de um mes (volume, receita e
+// despesa de cada linha). O previsto (volume base, valores digitados) nao e
+// tocado - quando o registro do mes ainda nao existe, nasce com previsto 0,
+// que e o mesmo que "sem registro" na leitura.
+export async function salvarRealizadoMes(planId: string, month: number, input: RealizadoMesInput) {
+  if (!Number.isInteger(month) || month < 1 || month > 12) throw new Error("Mês inválido");
+  const num = (v: number) => (Number.isFinite(v) ? v : 0);
+  const linhasDoPlano = new Set(
+    (await prisma.budgetLine.findMany({ where: { budgetPlanId: planId }, select: { id: true } })).map((l) => l.id)
+  );
+  const volume = {
+    volumeInternoRealizado: num(input.volumeInternoRealizado),
+    volumeExternoRealizado: num(input.volumeExternoRealizado),
+    receitaRealizada: num(input.receitaRealizada),
+  };
+  await prisma.$transaction([
+    prisma.budgetVolumeMonth.upsert({
+      where: { budgetPlanId_month: { budgetPlanId: planId, month } },
+      create: { budgetPlanId: planId, month, ...volume },
+      update: volume,
+    }),
+    ...input.linhas
+      .filter((l) => linhasDoPlano.has(l.lineId))
+      .map((l) =>
+        prisma.budgetLineMonth.upsert({
+          where: { budgetLineId_month: { budgetLineId: l.lineId, month } },
+          create: { budgetLineId: l.lineId, month, valorRealizado: num(l.valorRealizado) },
+          update: { valorRealizado: num(l.valorRealizado) },
+        })
+      ),
+  ]);
+  revalidateAll();
+}
