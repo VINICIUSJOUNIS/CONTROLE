@@ -1173,6 +1173,10 @@ model BudgetPlan {
   // preco medio liquido do ultimo trimestre fechado (calculado na leitura).
   precoSacaInterno         Decimal?       @db.Decimal(18, 2)
   precoSacaExterno         Decimal?       @db.Decimal(18, 2)
+  // DARE (ICMS interestadual) automatico: fracao das vendas internas que vai
+  // para fora de MG (dentro de MG o ICMS do cafe cru e diferido) e aliquota.
+  icmsPctInterestadual      Decimal        @default(0) @db.Decimal(6, 4)
+  icmsAliquotaInterestadual Decimal        @default(0.12) @db.Decimal(6, 4)
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
 
@@ -1223,6 +1227,9 @@ model BudgetLine {
   valorMensal     Decimal     @default(0) @db.Decimal(18, 2)
   valorPercentual Decimal     @default(0) @db.Decimal(9, 4)
   baseVolume      String      @default("TOTAL")
+  // tipoCusto "AUTOMATICO": imposto calculado pela regra (PIS, COFINS, IRPJ,
+  // CSLL ou DARE) - ver budget-data.ts.
+  regraImposto    String?
 
   months BudgetLineMonth[]
 

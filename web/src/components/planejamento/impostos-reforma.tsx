@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/field";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ALIQ_CBS_2027, ALIQ_IBS_2027 } from "@/lib/budget-constants";
 
 // Quadro de tributos do orcamento no ano da reforma (2027: CBS no lugar de
 // PIS/COFINS, IBS em teste a 0,1%, ICMS ainda integral). Visao de comercial
@@ -12,8 +13,6 @@ import { cn } from "@/lib/utils";
 // Premissas sem dado no sistema ficam em branco ate o usuario informar - o
 // quadro nao inventa mix de compras nem destino das vendas internas.
 
-const ALIQ_CBS_2027 = 11.2; // referencia TCU 11,3% menos 0,1 p.p. (2027-2028)
-const ALIQ_IBS_2027 = 0.1; // 0,05% estadual + 0,05% municipal
 const FUNRURAL_PF = 1.63; // 1,32% INSS + 0,11% RAT + 0,20% SENAR (desde 04/2026, LC 224/2025)
 const IRPJ_ADICIONAL_LIMITE = 240_000;
 

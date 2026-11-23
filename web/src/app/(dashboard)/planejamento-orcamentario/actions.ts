@@ -24,6 +24,8 @@ export type BudgetPlanAssumptionsInput = {
   crescimentoModeradoExterno: number;
   crescimentoOtimistaExterno: number;
   crescimentoMuitoOtimistaExterno: number;
+  icmsPctInterestadual: number; // fracao, ex. 0.3
+  icmsAliquotaInterestadual: number; // fracao, ex. 0.12
 };
 
 export async function updateBudgetPlanAssumptions(planId: string, input: BudgetPlanAssumptionsInput) {
@@ -43,6 +45,8 @@ export async function updateBudgetPlanAssumptions(planId: string, input: BudgetP
       crescimentoModeradoExterno: input.crescimentoModeradoExterno,
       crescimentoOtimistaExterno: input.crescimentoOtimistaExterno,
       crescimentoMuitoOtimistaExterno: input.crescimentoMuitoOtimistaExterno,
+      icmsPctInterestadual: input.icmsPctInterestadual,
+      icmsAliquotaInterestadual: input.icmsAliquotaInterestadual,
     },
   });
   revalidateAll();
@@ -105,7 +109,8 @@ export async function upsertBudgetLineMonths(lineId: string, rows: BudgetLineMon
 }
 
 export type BudgetLineCustoInput = {
-  tipoCusto: "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL";
+  tipoCusto: "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL" | "AUTOMATICO";
+  regraImposto?: "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS" | null;
   valorPorSaca: number;
   valorMensal?: number;
   valorPercentual?: number;
@@ -116,7 +121,10 @@ export type BudgetLineCustoInput = {
 // (mesmo valor nos 12 meses), por saca (R$/saca x volume do mes do plano) ou
 // percentual (% da receita prevista do mes).
 export async function updateBudgetLineCusto(lineId: string, input: BudgetLineCustoInput) {
-  const tipoCusto = ["POR_SACA", "MENSAL", "PERCENTUAL"].includes(input.tipoCusto) ? input.tipoCusto : "FIXO";
+  const tipoCusto = ["POR_SACA", "MENSAL", "PERCENTUAL", "AUTOMATICO"].includes(input.tipoCusto) ? input.tipoCusto : "FIXO";
+  const regraImposto =
+    input.regraImposto && ["PIS", "COFINS", "IRPJ", "CSLL", "DARE", "CREDITO_CBS_IBS"].includes(input.regraImposto) ? input.regraImposto : null;
+  if (tipoCusto === "AUTOMATICO" && !regraImposto) throw new Error("Escolha a regra do imposto");
   const valorMensal = Number(input.valorMensal);
   const valorPercentual = Number(input.valorPercentual);
   const baseVolume = ["TOTAL", "INTERNO", "EXTERNO"].includes(input.baseVolume) ? input.baseVolume : "TOTAL";
@@ -130,6 +138,7 @@ export async function updateBudgetLineCusto(lineId: string, input: BudgetLineCus
         ? { valorPercentual: Number.isFinite(valorPercentual) ? valorPercentual : 0 }
         : {}),
       baseVolume,
+      ...(input.regraImposto !== undefined ? { regraImposto } : {}),
     },
   });
   revalidateAll();

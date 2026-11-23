@@ -50,3 +50,17 @@ export const SCENARIO_LABELS: Record<BudgetScenarioKey, string> = {
   OTIMISTA: "Otimista",
   MUITO_OTIMISTA: "Muito Otimista",
 };
+
+// Reforma tributaria, ano de 2027 (mesmas premissas do quadro de Tributos).
+export const ALIQ_CBS_2027 = 11.2; // referencia TCU 11,3% menos 0,1 p.p. (2027-2028)
+export const ALIQ_IBS_2027 = 0.1; // 0,05% estadual + 0,05% municipal
+
+// Despesas com fornecedores PJ que geram credito de CBS/IBS: mercado interno/
+// externo, administrativas e, do custo do fornecedor, so fretes e armazenagem
+// (o custo do cafe - alíquota zero - e o Funrural ficam de fora).
+export function ehDespesaCreditavel(group: string, name: string) {
+  return (
+    ["DESPESA_MERCADO_INTERNO", "DESPESA_MERCADO_EXTERNO", "DESPESA_ADM_FIXA", "DESPESA_ADM_VARIAVEL"].includes(group) ||
+    (group === "CUSTO_FORNECEDOR" && /frete|armazen/i.test(name))
+  );
+}

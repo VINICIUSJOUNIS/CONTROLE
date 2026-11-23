@@ -25,6 +25,8 @@ type PlanoPremissas = {
   crescimentoModeradoExterno: number;
   crescimentoOtimistaExterno: number;
   crescimentoMuitoOtimistaExterno: number;
+  icmsPctInterestadual: number;
+  icmsAliquotaInterestadual: number;
 };
 
 function formDe(plan: PlanoPremissas) {
@@ -40,6 +42,8 @@ function formDe(plan: PlanoPremissas) {
     crescimentoModeradoExterno: String(plan.crescimentoModeradoExterno * 100),
     crescimentoOtimistaExterno: String(plan.crescimentoOtimistaExterno * 100),
     crescimentoMuitoOtimistaExterno: String(plan.crescimentoMuitoOtimistaExterno * 100),
+    icmsPctInterestadual: String(plan.icmsPctInterestadual * 100),
+    icmsAliquotaInterestadual: String(plan.icmsAliquotaInterestadual * 100),
   };
 }
 
@@ -74,6 +78,8 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
         crescimentoModeradoExterno: (Number(form.crescimentoModeradoExterno) || 0) / 100,
         crescimentoOtimistaExterno: (Number(form.crescimentoOtimistaExterno) || 0) / 100,
         crescimentoMuitoOtimistaExterno: (Number(form.crescimentoMuitoOtimistaExterno) || 0) / 100,
+        icmsPctInterestadual: (Number(form.icmsPctInterestadual) || 0) / 100,
+        icmsAliquotaInterestadual: (Number(form.icmsAliquotaInterestadual) || 0) / 100,
       });
       setSalvo(true);
       router.refresh();
@@ -165,6 +171,33 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+        <div>
+          <p className="mb-2 text-xs text-muted">
+            DARE (ICMS interestadual), usado pela linha automática DARE do grupo Impostos: dentro de MG o ICMS do café cru é diferido e
+            na exportação não incide; paga-se só nas vendas internas para outros estados.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>% das vendas internas para outros estados</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={form.icmsPctInterestadual}
+                onChange={(e) => set("icmsPctInterestadual", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Alíquota ICMS interestadual (%)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={form.icmsAliquotaInterestadual}
+                onChange={(e) => set("icmsAliquotaInterestadual", e.target.value)}
+              />
+              <p className="mt-1 text-[11px] text-muted">12% para S/SE; 7% para N, NE, CO e ES.</p>
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">

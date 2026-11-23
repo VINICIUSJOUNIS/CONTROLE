@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { BudgetGroup, BudgetScenario } from "@/generated/prisma/client";
-import { BUDGET_GROUP_ORDER, BUDGET_GROUP_LABELS } from "@/lib/budget-constants";
+import { ALIQ_CBS_2027, ALIQ_IBS_2027, ehDespesaCreditavel, BUDGET_GROUP_ORDER, BUDGET_GROUP_LABELS } from "@/lib/budget-constants";
 import { getSales, getSaleReturns } from "@/lib/data";
 import { addMonths, somaJanela, sazonalidade, type HistoricoMes } from "@/lib/budget-projecao";
 
@@ -19,6 +19,10 @@ const CUSTO_VARIAVEL_GROUPS: BudgetGroup[] = [
   "IMPOSTOS",
 ];
 const CUSTO_FIXO_GROUPS: BudgetGroup[] = ["DESPESA_ADM_FIXA", "DESPESA_PESSOAL", "FINANCIAMENTO"];
+
+export type RegraImposto = "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS";
+// Adicional de IRPJ: 10% sobre o lucro acima de R$ 240 mil/ano = R$ 20 mil/mes.
+const IRPJ_ADICIONAL_MES = 20_000;
 
 const MONTH_LABELS = [
   "Janeiro",
@@ -153,7 +157,8 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
       group: line.group,
       name: line.name,
       orderIndex: line.orderIndex,
-      tipoCusto: line.tipoCusto as "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL",
+      tipoCusto: line.tipoCusto as "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL" | "AUTOMATICO",
+      regraImposto: (line.regraImposto ?? null) as RegraImposto | null,
       valorPorSaca,
       valorMensal,
       valorPercentual,
@@ -163,6 +168,62 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
       totalRealizado,
     };
   });
+
+  // Impostos automaticos (tipoCusto AUTOMATICO), mes a mes, regras de 2027:
+  //  - PIS e COFINS: extintos em 01/01/2027 (CBS no lugar; cafe cru tem
+  //    aliquota zero no mercado interno e exportacao e imune) -> 0;
+  //  - DARE (ICMS interestadual): receita interna x % para outros estados x
+  //    aliquota (dentro de MG o ICMS do cafe cru e diferido; exportacao nao
+  //    incide);
+  //  - IRPJ e CSLL (Lucro Real, estimativa mensal): lucro do mes = receita
+  //    prevista - despesas previstas das demais linhas (sem Investimentos, que
+  //    nao sao despesa) - DARE; IRPJ = 15% + 10% sobre o que passar de
+  //    R$ 20 mil no mes (R$ 240 mil/ano); CSLL = 9%. Sem lucro, zero.
+  const precoSaca = cotacaoSacaUsd * cotacaoDolar;
+  const icmsPct = n(plan.icmsPctInterestadual);
+  const icmsAliq = n(plan.icmsAliquotaInterestadual);
+  const automaticas = lines.filter((l) => l.tipoCusto === "AUTOMATICO");
+  const dareMes = (m: number) => Number((volumePrevistoMes(m, "INTERNO") * precoSaca * icmsPct * icmsAliq).toFixed(2));
+  const temDare = automaticas.some((l) => l.regraImposto === "DARE");
+  //  - Credito de CBS/IBS (valor negativo): exportacao imune e venda interna
+  //    de cafe cru com aliquota zero MANTEM os creditos das compras; credito =
+  //    parcela de CBS/IBS contida no total das despesas creditaveis do mes
+  //    (notas com o tributo "por fora" somado: total x aliq / (100 + aliq)).
+  const aliqCbsIbs = ALIQ_CBS_2027 + ALIQ_IBS_2027;
+  const creditoMes = (m: number) =>
+    -Number(
+      (
+        lines
+          .filter((l) => l.tipoCusto !== "AUTOMATICO" && ehDespesaCreditavel(l.group, l.name))
+          .reduce((s, l) => s + l.months[m - 1].previsto, 0) *
+        (aliqCbsIbs / (100 + aliqCbsIbs))
+      ).toFixed(2)
+    );
+  const temCredito = automaticas.some((l) => l.regraImposto === "CREDITO_CBS_IBS");
+  const lucroMes = (m: number) =>
+    volumePrevistoMes(m, "TOTAL") * precoSaca -
+    lines
+      .filter((l) => l.tipoCusto !== "AUTOMATICO" && l.group !== "INVESTIMENTOS")
+      .reduce((s, l) => s + l.months[m - 1].previsto, 0) -
+    (temDare ? dareMes(m) : 0) -
+    (temCredito ? creditoMes(m) : 0);
+  for (const l of automaticas) {
+    l.months = l.months.map((mm) => {
+      const lucro = Math.max(lucroMes(mm.month), 0);
+      const previsto =
+        l.regraImposto === "DARE"
+          ? dareMes(mm.month)
+          : l.regraImposto === "CREDITO_CBS_IBS"
+          ? creditoMes(mm.month)
+          : l.regraImposto === "IRPJ"
+            ? Number((lucro * 0.15 + Math.max(lucro - IRPJ_ADICIONAL_MES, 0) * 0.1).toFixed(2))
+            : l.regraImposto === "CSLL"
+              ? Number((lucro * 0.09).toFixed(2))
+              : 0;
+      return { ...mm, previsto, previstoBase: previsto, variacao: Number((mm.realizado - previsto).toFixed(2)) };
+    });
+    l.totalPrevisto = Number(l.months.reduce((s, mm) => s + mm.previsto, 0).toFixed(2));
+  }
 
   // Volume/receita mes a mes: volume ajustado pelo cenario x cotacao saca x
   // cambio. Realizado (volume e receita) e informado manualmente.
@@ -269,6 +330,8 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
     fatorDespesas: { interno: multInterno, externo: multExterno, total: fatorTotal },
     precoSacaInterno: plan.precoSacaInterno != null ? n(plan.precoSacaInterno) : null,
     precoSacaExterno: plan.precoSacaExterno != null ? n(plan.precoSacaExterno) : null,
+    icmsPctInterestadual: icmsPct,
+    icmsAliquotaInterestadual: icmsAliq,
     months,
     groups,
     totais,
@@ -396,11 +459,7 @@ export async function getContextoProjecao(yearParam?: string) {
   // fretes e armazenagem (o custo do cafe e o Funrural ficam de fora).
   const despesasCreditaveis = (plan?.groups ?? [])
     .flatMap((g) => g.lines.map((l) => ({ group: g.group, name: l.name, total: l.totalPrevisto })))
-    .filter(
-      (l) =>
-        ["DESPESA_MERCADO_INTERNO", "DESPESA_MERCADO_EXTERNO", "DESPESA_ADM_FIXA", "DESPESA_ADM_VARIAVEL"].includes(l.group) ||
-        (l.group === "CUSTO_FORNECEDOR" && /frete|armazen/i.test(l.name))
-    )
+    .filter((l) => ehDespesaCreditavel(l.group, l.name))
     .reduce((s, l) => s + l.total, 0);
   const crescimentos = {
     CONSERVADOR: { interno: 0, externo: 0 },

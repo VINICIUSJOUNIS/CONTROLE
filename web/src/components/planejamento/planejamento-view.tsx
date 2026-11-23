@@ -92,10 +92,11 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
   const [openLine, setOpenLine] = useState(false);
   const [editingLine, setEditingLine] = useState<BudgetLineData | null>(null);
   const [lineForm, setLineForm] = useState<{ month: number; previsto: string; realizado: string }[]>([]);
-  const [custoForm, setCustoForm] = useState<{ tipo: TipoCusto; valor: string; base: "TOTAL" | "INTERNO" | "EXTERNO" }>({
+  const [custoForm, setCustoForm] = useState<{ tipo: TipoCusto; valor: string; base: "TOTAL" | "INTERNO" | "EXTERNO"; regra: Regra }>({
     tipo: "FIXO",
     valor: "",
     base: "TOTAL",
+    regra: "IRPJ",
   });
 
   // Volume previsto do mes (cenario ativo) para a base escolhida - mesma conta
@@ -110,7 +111,11 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
     return volumeDoMes(idx, base) * plan.cotacaoSacaUsd * plan.cotacaoDolar;
   }
   const previstoPorSaca = (idx: number) =>
-    custoForm.tipo === "MENSAL"
+    custoForm.tipo === "AUTOMATICO"
+      ? editingLine?.tipoCusto === "AUTOMATICO" && editingLine.regraImposto === custoForm.regra
+        ? editingLine.months[idx].previsto
+        : 0
+      : custoForm.tipo === "MENSAL"
       ? Number((Number(custoForm.valor) || 0).toFixed(2))
       : custoForm.tipo === "PERCENTUAL"
       ? Number((((Number(custoForm.valor) || 0) / 100) * receitaDoMes(idx, custoForm.base)).toFixed(2))
@@ -175,6 +180,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
           ? String(line.valorPercentual)
           : "",
       base: line.baseVolume,
+      regra: line.regraImposto ?? regraPeloNome(line.name),
     });
     setOpenLine(true);
   }
@@ -197,6 +203,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         valorMensal: custoForm.tipo === "MENSAL" ? Number(custoForm.valor) || 0 : editingLine.valorMensal,
         valorPercentual: custoForm.tipo === "PERCENTUAL" ? Number(custoForm.valor) || 0 : editingLine.valorPercentual,
         baseVolume: custoForm.base,
+        regraImposto: custoForm.tipo === "AUTOMATICO" ? custoForm.regra : editingLine.regraImposto,
       });
       await upsertBudgetLineMonths(editingLine.id, rows);
       setOpenLine(false);
@@ -821,8 +828,27 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
                   <option value="MENSAL">Fixo mensal</option>
                   <option value="POR_SACA">Por saca</option>
                   <option value="PERCENTUAL">% da receita</option>
+                  <option value="AUTOMATICO">Automático (regra)</option>
                 </Select>
               </div>
+              {custoForm.tipo === "AUTOMATICO" && (
+                <>
+                  <div className="sm:col-span-2">
+                    <Label>Regra do imposto</Label>
+                    <Select value={custoForm.regra} onChange={(e) => setCustoForm({ ...custoForm, regra: e.target.value as Regra })}>
+                      {REGRAS.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <p className="text-[11px] text-muted sm:col-span-3">
+                    {REGRA_TEXTO[custoForm.regra]} Calculado sozinho a cada mês no cenário {SCENARIO_LABELS[plan.scenario]}; o previsto
+                    abaixo atualiza ao salvar. O realizado continua digitado.
+                  </p>
+                </>
+              )}
               {custoForm.tipo === "PERCENTUAL" && (
                 <>
                   <div>
@@ -1113,7 +1139,31 @@ function GroupCard({
   );
 }
 
-type TipoCusto = "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL";
+type TipoCusto = "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL" | "AUTOMATICO";
+type Regra = "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS";
+const REGRAS: { value: Regra; label: string }[] = [
+  { value: "PIS", label: "PIS" },
+  { value: "COFINS", label: "COFINS" },
+  { value: "IRPJ", label: "IRPJ" },
+  { value: "CSLL", label: "CSLL" },
+  { value: "DARE", label: "DARE (ICMS interestadual)" },
+  { value: "CREDITO_CBS_IBS", label: "Crédito CBS/IBS (compras)" },
+];
+// Regra sugerida pelo nome da linha ao escolher "Automático".
+const regraPeloNome = (nome: string): Regra => {
+  const n = nome.trim().toUpperCase();
+  if (n.includes("CRÉDITO") || n.includes("CREDITO")) return "CREDITO_CBS_IBS";
+  return (REGRAS.find((r) => n.includes(r.value))?.value ?? "IRPJ") as Regra;
+};
+const REGRA_TEXTO: Record<Regra, string> = {
+  PIS: "Extinto em 01/01/2027 (substituído pela CBS: alíquota zero no café cru e imune na exportação) - previsto R$ 0.",
+  COFINS: "Extinta em 01/01/2027 (substituída pela CBS: alíquota zero no café cru e imune na exportação) - previsto R$ 0.",
+  IRPJ: "Lucro Real, estimativa mensal: 15% do lucro do mês + 10% sobre o que passar de R$ 20 mil no mês (R$ 240 mil/ano). Lucro do mês = receita prevista - demais despesas previstas (sem Investimentos) - DARE.",
+  CSLL: "Lucro Real, estimativa mensal: 9% do lucro do mês (receita prevista - demais despesas previstas, sem Investimentos, - DARE).",
+  DARE: "ICMS interestadual: receita interna prevista × % das vendas internas para outros estados × alíquota (Premissas). Dentro de MG é diferido; exportação não incide.",
+  CREDITO_CBS_IBS:
+    "Valor negativo (reduz a despesa). Exportação imune e venda interna de café cru com alíquota zero mantêm os créditos das compras (LC 214/2025): crédito = CBS 11,2% + IBS 0,1% contidos no total das despesas com fornecedores PJ (mercado interno/externo, administrativas, fretes e armazenagem) - total × 11,3 / 111,3. Saldo pode ser ressarcido.",
+};
 type BaseVolume = "TOTAL" | "INTERNO" | "EXTERNO";
 
 // Tipo de custo direto na lista: mes a mes (digitado no lapis), fixo mensal
@@ -1128,10 +1178,11 @@ function CustoTipoCelulas({ line }: { line: BudgetLineData }) {
   const valorAtual = valorDoTipo(tipo);
   const [valor, setValor] = useState(valorAtual ? String(valorAtual) : "");
 
-  function salvar(novoTipo: TipoCusto, novoValor: number, base: BaseVolume = line.baseVolume) {
+  function salvar(novoTipo: TipoCusto, novoValor: number, base: BaseVolume = line.baseVolume, regra?: Regra) {
     startTransition(async () => {
       await updateBudgetLineCusto(line.id, {
         tipoCusto: novoTipo,
+        regraImposto: novoTipo === "AUTOMATICO" ? (regra ?? line.regraImposto ?? regraPeloNome(line.name)) : line.regraImposto,
         valorPorSaca: novoTipo === "POR_SACA" ? novoValor : line.valorPorSaca,
         valorMensal: novoTipo === "MENSAL" ? novoValor : line.valorMensal,
         valorPercentual: novoTipo === "PERCENTUAL" ? novoValor : line.valorPercentual,
@@ -1168,10 +1219,26 @@ function CustoTipoCelulas({ line }: { line: BudgetLineData }) {
           <option value="MENSAL">Fixo mensal</option>
           <option value="POR_SACA">Por saca</option>
           <option value="PERCENTUAL">% da receita</option>
+          <option value="AUTOMATICO">Automático (regra)</option>
         </Select>
       </td>
       <td className="px-2 py-2">
-        {tipo === "FIXO" ? (
+        {tipo === "AUTOMATICO" ? (
+          <Select
+            aria-label={`${line.name}: regra do imposto`}
+            title={REGRA_TEXTO[line.regraImposto ?? regraPeloNome(line.name)]}
+            className="h-8 w-44"
+            value={line.regraImposto ?? regraPeloNome(line.name)}
+            disabled={isPending}
+            onChange={(e) => salvar("AUTOMATICO", 0, line.baseVolume, e.target.value as Regra)}
+          >
+            {REGRAS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </Select>
+        ) : tipo === "FIXO" ? (
           <span className="text-[11px] text-muted">no lápis</span>
         ) : (
           <div className="flex items-center gap-1.5">
