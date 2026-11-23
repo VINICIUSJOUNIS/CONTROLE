@@ -44,9 +44,9 @@ export function CabecalhoModulos({ comTema = false }: { comTema?: boolean }) {
         />
       </Link>
       <span aria-hidden className="h-6 w-px shrink-0 bg-border" />
-      {/* 8 colunas de largura igual: os modulos ficam alinhados e com o mesmo
-          espaco entre si, independente do tamanho do nome. */}
-      <nav className="grid min-w-0 flex-1 grid-cols-[repeat(8,minmax(7.5rem,1fr))] items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Uma coluna de largura igual por modulo (grid-flow-col: sempre numa
+          linha so, qualquer que seja a quantidade de modulos). */}
+      <nav className="grid min-w-0 flex-1 grid-flow-col auto-cols-[minmax(7.5rem,1fr)] items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {MODULOS.map((m) => {
           const Icon = m.icon;
           const selecionado = ativo?.href === m.href;
