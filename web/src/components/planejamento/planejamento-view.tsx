@@ -399,6 +399,17 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         logica="Lucro (ou prejuízo) planejado para o ano antes de qualquer valor realizado."
       />
     ),
+    recReal: (
+      <ExplicacaoSecoes
+        origem={<>Receita realizada digitada mês a mês no botão &quot;Volume e Receita (Interno x Externo)&quot; desta página.</>}
+        calculo={[
+          `Receita realizada (soma dos 12 meses) = ${R(plan.totais.receitaRealizada)}`,
+          `Receita prevista = ${R(plan.totais.receitaPrevista)}`,
+          `Atingido = ${plan.totais.receitaPrevista > 0 ? formatPercent((plan.totais.receitaRealizada / plan.totais.receitaPrevista) * 100, 1) : "-"} da receita prevista`,
+        ]}
+        logica="Faturamento de fato no ano do plano, para comparar com a receita prevista. Fica zerado enquanto os meses não forem preenchidos."
+      />
+    ),
     resReal: (
       <ExplicacaoSecoes
         origem="Receita realizada (digitada no botão Volume e Receita) e despesas realizadas (digitadas no lápis de cada linha)."
@@ -505,141 +516,169 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          label={`Volume Previsto (${SCENARIO_LABELS[plan.scenario]})`}
-          explicacao={exp.volPrev}
-          value={`${sc(volPrevisto)} sc`}
-          icon={Package}
-          tone="teal"
-          trend={fmtVar(varVol)}
-          trendPositive={(varVol ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volume)} sc em ${anoAnterior.rotulo}` : undefined}
-        />
-        <KpiCard
-          label="Volume Realizado"
-          explicacao={exp.volReal}
-          value={`${sc(volRealizado)} sc`}
-          icon={Package}
-          tone="green"
-          trendLabel={`Interno ${sc(volIntRealizado)} sc · Externo ${sc(volExtRealizado)} sc`}
-        />
-        <KpiCard
-          label="Despesa Prevista por Saca"
-          explicacao={exp.despSaca}
-          value={despesaPorSaca !== null ? formatCurrencyPrecise(despesaPorSaca) : "-"}
-          icon={TrendingDown}
-          tone="soft"
-          trendLabel={`Receita prevista por saca: ${receitaPorSaca > 0 ? formatCurrencyPrecise(receitaPorSaca) : "-"}`}
-        />
-        <KpiCard
-          label="Ponto de Equilíbrio em Sacas"
-          explicacao={exp.peSacas}
-          value={peSacas !== null ? `${sc(peSacas)} sc` : "-"}
-          icon={Ship}
-          tone="teal"
-          trendLabel="Sacas a vender para cobrir os custos fixos"
-        />
-        <KpiCard
-          label={`Receita Prevista (${SCENARIO_LABELS[plan.scenario]})`}
-          explicacao={exp.recPrev}
-          value={formatCompactCurrency(plan.totais.receitaPrevista)}
-          icon={TrendingUp}
-          tone="teal"
-          trend={fmtVar(varRec)}
-          trendPositive={(varRec ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.receita)} em ${anoAnterior.rotulo}` : undefined}
-        />
-        <KpiCard
-          label="Despesa Prevista"
-          explicacao={exp.despPrev}
-          value={formatCompactCurrency(plan.totais.despesaPrevista)}
-          icon={TrendingDown}
-          tone="soft"
-        />
-        <KpiCard
-          label="Resultado Previsto"
-          explicacao={exp.resPrev}
-          value={formatCompactCurrency(plan.totais.resultadoPrevisto)}
-          icon={Wallet}
-          tone="green"
-        />
-        <KpiCard
-          label="Resultado Realizado"
-          explicacao={exp.resReal}
-          value={`${formatCompactCurrency(plan.totais.resultadoRealizado)} (${formatPercent(resultadoRealizadoPercent, 1)})`}
-          icon={PiggyBank}
-          tone="teal"
-        />
-        <KpiCard
-          label={`Volume Interno (${SCENARIO_LABELS[plan.scenario]})`}
-          explicacao={exp.volInt}
-          value={`${sc(volIntPrevisto)} sc`}
-          icon={Package}
-          tone="teal"
-          trend={fmtVar(varVolInt)}
-          trendPositive={(varVolInt ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volInt)} sc em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
-        />
-        <KpiCard
-          label={`Volume Externo (${SCENARIO_LABELS[plan.scenario]})`}
-          explicacao={exp.volExt}
-          value={`${sc(volExtPrevisto)} sc`}
-          icon={Package}
-          tone="teal"
-          trend={fmtVar(varVolExt)}
-          trendPositive={(varVolExt ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volExt)} sc em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
-        />
-        <KpiCard
-          label={`Receita Interna (${SCENARIO_LABELS[plan.scenario]})`}
-          explicacao={exp.recInt}
-          value={formatCompactCurrency(recIntPrevisto)}
-          icon={TrendingUp}
-          tone="teal"
-          trend={fmtVar(varRecInt)}
-          trendPositive={(varRecInt ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.recInt)} em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
-        />
-        <KpiCard
-          label={`Receita Externa (${SCENARIO_LABELS[plan.scenario]})`}
-          explicacao={exp.recExt}
-          value={formatCompactCurrency(recExtPrevisto)}
-          icon={TrendingUp}
-          tone="teal"
-          trend={fmtVar(varRecExt)}
-          trendPositive={(varRecExt ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.recExt)} em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
-        />
-        <KpiCard
-          label="Ponto de Equilíbrio"
-          explicacao={exp.pe}
-          value={plan.pontoEquilibrio.valorReais !== null ? formatCompactCurrency(plan.pontoEquilibrio.valorReais) : "-"}
-          icon={Ship}
-          tone="soft"
-        />
-        <KpiCard
-          label="Caixa de Segurança (Bom / 6 meses)"
-          explicacao={exp.caixa(6, plan.caixaSeguranca.bom)}
-          value={formatCompactCurrency(plan.caixaSeguranca.bom)}
-          icon={PiggyBank}
-          tone="green"
-        />
-        <KpiCard
-          label="Caixa de Segurança (Ótimo / 12 meses)"
-          explicacao={exp.caixa(12, plan.caixaSeguranca.otimo)}
-          value={formatCompactCurrency(plan.caixaSeguranca.otimo)}
-          icon={PiggyBank}
-          tone="teal"
-        />
-        <KpiCard
-          label="Caixa de Segurança (Excelente / 18 meses)"
-          explicacao={exp.caixa(18, plan.caixaSeguranca.excelente)}
-          value={formatCompactCurrency(plan.caixaSeguranca.excelente)}
-          icon={PiggyBank}
-          tone="soft"
-        />
-      </div>
+      <section className="space-y-2">
+        <h2 className="text-[11px] font-semibold tracking-[0.12em] text-muted">VOLUME</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            label={`Volume Previsto (${SCENARIO_LABELS[plan.scenario]})`}
+            explicacao={exp.volPrev}
+            value={`${sc(volPrevisto)} sc`}
+            icon={Package}
+            tone="teal"
+            trend={fmtVar(varVol)}
+            trendPositive={(varVol ?? 0) >= 0}
+            trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volume)} sc em ${anoAnterior.rotulo}` : undefined}
+          />
+          <KpiCard
+            label={`Volume Interno (${SCENARIO_LABELS[plan.scenario]})`}
+            explicacao={exp.volInt}
+            value={`${sc(volIntPrevisto)} sc`}
+            icon={Package}
+            tone="teal"
+            trend={fmtVar(varVolInt)}
+            trendPositive={(varVolInt ?? 0) >= 0}
+            trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volInt)} sc em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
+          />
+          <KpiCard
+            label={`Volume Externo (${SCENARIO_LABELS[plan.scenario]})`}
+            explicacao={exp.volExt}
+            value={`${sc(volExtPrevisto)} sc`}
+            icon={Package}
+            tone="teal"
+            trend={fmtVar(varVolExt)}
+            trendPositive={(varVolExt ?? 0) >= 0}
+            trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volExt)} sc em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
+          />
+          <KpiCard
+            label="Volume Realizado"
+            explicacao={exp.volReal}
+            value={`${sc(volRealizado)} sc`}
+            icon={Package}
+            tone="green"
+            trendLabel={`Interno ${sc(volIntRealizado)} sc · Externo ${sc(volExtRealizado)} sc`}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-[11px] font-semibold tracking-[0.12em] text-muted">RECEITA</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            label={`Receita Prevista (${SCENARIO_LABELS[plan.scenario]})`}
+            explicacao={exp.recPrev}
+            value={formatCompactCurrency(plan.totais.receitaPrevista)}
+            icon={TrendingUp}
+            tone="teal"
+            trend={fmtVar(varRec)}
+            trendPositive={(varRec ?? 0) >= 0}
+            trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.receita)} em ${anoAnterior.rotulo}` : undefined}
+          />
+          <KpiCard
+            label={`Receita Interna (${SCENARIO_LABELS[plan.scenario]})`}
+            explicacao={exp.recInt}
+            value={formatCompactCurrency(recIntPrevisto)}
+            icon={TrendingUp}
+            tone="teal"
+            trend={fmtVar(varRecInt)}
+            trendPositive={(varRecInt ?? 0) >= 0}
+            trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.recInt)} em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
+          />
+          <KpiCard
+            label={`Receita Externa (${SCENARIO_LABELS[plan.scenario]})`}
+            explicacao={exp.recExt}
+            value={formatCompactCurrency(recExtPrevisto)}
+            icon={TrendingUp}
+            tone="teal"
+            trend={fmtVar(varRecExt)}
+            trendPositive={(varRecExt ?? 0) >= 0}
+            trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.recExt)} em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
+          />
+          <KpiCard
+            label="Receita Realizada"
+            value={formatCompactCurrency(plan.totais.receitaRealizada)}
+            icon={TrendingUp}
+            tone="green"
+            explicacao={exp.recReal}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-[11px] font-semibold tracking-[0.12em] text-muted">RESULTADO</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            label="Despesa Prevista"
+            explicacao={exp.despPrev}
+            value={formatCompactCurrency(plan.totais.despesaPrevista)}
+            icon={TrendingDown}
+            tone="soft"
+          />
+          <KpiCard
+            label="Despesa Prevista por Saca"
+            explicacao={exp.despSaca}
+            value={despesaPorSaca !== null ? formatCurrencyPrecise(despesaPorSaca) : "-"}
+            icon={TrendingDown}
+            tone="soft"
+            trendLabel={`Receita prevista por saca: ${receitaPorSaca > 0 ? formatCurrencyPrecise(receitaPorSaca) : "-"}`}
+          />
+          <KpiCard
+            label="Resultado Previsto"
+            explicacao={exp.resPrev}
+            value={formatCompactCurrency(plan.totais.resultadoPrevisto)}
+            icon={Wallet}
+            tone="green"
+          />
+          <KpiCard
+            label="Resultado Realizado"
+            explicacao={exp.resReal}
+            value={`${formatCompactCurrency(plan.totais.resultadoRealizado)} (${formatPercent(resultadoRealizadoPercent, 1)})`}
+            icon={PiggyBank}
+            tone="teal"
+          />
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-[11px] font-semibold tracking-[0.12em] text-muted">PONTO DE EQUILÍBRIO E CAIXA DE SEGURANÇA</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <KpiCard
+            label="Ponto de Equilíbrio"
+            explicacao={exp.pe}
+            value={plan.pontoEquilibrio.valorReais !== null ? formatCompactCurrency(plan.pontoEquilibrio.valorReais) : "-"}
+            icon={Ship}
+            tone="soft"
+          />
+          <KpiCard
+            label="Ponto de Equilíbrio em Sacas"
+            explicacao={exp.peSacas}
+            value={peSacas !== null ? `${sc(peSacas)} sc` : "-"}
+            icon={Ship}
+            tone="teal"
+            trendLabel="Sacas a vender para cobrir os custos fixos"
+          />
+          <KpiCard
+            label="Caixa de Segurança (Bom / 6 meses)"
+            explicacao={exp.caixa(6, plan.caixaSeguranca.bom)}
+            value={formatCompactCurrency(plan.caixaSeguranca.bom)}
+            icon={PiggyBank}
+            tone="green"
+          />
+          <KpiCard
+            label="Caixa de Segurança (Ótimo / 12 meses)"
+            explicacao={exp.caixa(12, plan.caixaSeguranca.otimo)}
+            value={formatCompactCurrency(plan.caixaSeguranca.otimo)}
+            icon={PiggyBank}
+            tone="teal"
+          />
+          <KpiCard
+            label="Caixa de Segurança (Excelente / 18 meses)"
+            explicacao={exp.caixa(18, plan.caixaSeguranca.excelente)}
+            value={formatCompactCurrency(plan.caixaSeguranca.excelente)}
+            icon={PiggyBank}
+            tone="soft"
+          />
+        </div>
+      </section>
 
       <div className="flex flex-wrap gap-2">
         <Link
