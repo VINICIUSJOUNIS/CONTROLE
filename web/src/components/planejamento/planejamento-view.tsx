@@ -45,9 +45,19 @@ function varPercent(previsto: number, realizado: number) {
   return ((realizado - previsto) / Math.abs(previsto)) * 100;
 }
 
-// Base do ano anterior para o % de crescimento dos cards: vendas reais
-// (menos devolucoes) dos ultimos 12 meses fechados.
-export type AnoAnteriorBase = { rotulo: string; volume: number; volInt: number; volExt: number; receita: number };
+// Base do % de crescimento dos cards: media mensal das vendas reais (menos
+// devolucoes) dos meses ja realizados do ano corrente; volume/volInt/volExt/
+// receita vem anualizados (media x 12) para comparar com o total do plano.
+export type AnoAnteriorBase = {
+  rotulo: string;
+  meses: number;
+  mediaVolume: number;
+  mediaReceita: number;
+  volume: number;
+  volInt: number;
+  volExt: number;
+  receita: number;
+};
 
 function variacaoPct(anterior: number, atual: number) {
   if (!(anterior > 0)) return null;
@@ -262,7 +272,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
           tone="teal"
           trend={fmtVar(varVol)}
           trendPositive={(varVol ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volume)} sc em ${anoAnterior.rotulo}` : undefined}
+          trendLabel={anoAnterior ? `vs média ${sc(anoAnterior.mediaVolume)} sc/mês (${anoAnterior.rotulo}) x 12 = ${sc(anoAnterior.volume)} sc` : undefined}
           detalhe={`Interno ${sc(volIntPrevisto)} sc${varVolInt !== null ? ` (${fmtVar(varVolInt)})` : ""} · Externo ${sc(volExtPrevisto)} sc${varVolExt !== null ? ` (${fmtVar(varVolExt)})` : ""}`}
         />
         <KpiCard
@@ -293,7 +303,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
           tone="teal"
           trend={fmtVar(varRec)}
           trendPositive={(varRec ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.receita)} em ${anoAnterior.rotulo}` : undefined}
+          trendLabel={anoAnterior ? `vs média ${formatCompactCurrency(anoAnterior.mediaReceita)}/mês (${anoAnterior.rotulo}) x 12 = ${formatCompactCurrency(anoAnterior.receita)}` : undefined}
         />
         <KpiCard
           label="Despesa Prevista"

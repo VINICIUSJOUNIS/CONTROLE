@@ -1,7 +1,7 @@
 import { Topbar } from "@/components/layout/topbar";
 import { PlanejamentoView } from "@/components/planejamento/planejamento-view";
 import { getBudgetPlan, getBudgetYears, getHistoricoVendasMensal } from "@/lib/budget-data";
-import { addMonths, MESES_CURTOS, somaJanela } from "@/lib/budget-projecao";
+import { MESES_CURTOS, somaJanela } from "@/lib/budget-projecao";
 import type { BudgetScenario } from "@/generated/prisma/client";
 
 // Orcamento: indicadores do plano, graficos e despesas por grupo. Historico e
@@ -18,21 +18,27 @@ export default async function PlanejamentoOrcamentarioPage({
     getBudgetPlan(year, params.cenario as BudgetScenario | undefined),
     getHistoricoVendasMensal(),
   ]);
-  // Ano anterior ao orcado = ultimos 12 meses fechados de vendas reais (o ano
-  // corrente ainda nao fechou), mesma base da projecao.
+  // Base de comparacao dos cards = media mensal dos meses ja realizados do ano
+  // corrente (janeiro ate o ultimo mes fechado), anualizada (x 12) para
+  // comparar com o total previsto no plano.
   const u = vendas.ultimoMesFechado;
   const anoAnterior = u
     ? (() => {
-        const de = addMonths(u, -11);
+        const de = `${u.slice(0, 4)}-01`;
+        const meses = Number(u.slice(5, 7));
         const i = somaJanela(vendas.historico, de, u, "INTERNO");
         const e = somaJanela(vendas.historico, de, u, "EXTERNO");
         const mes = (ym: string) => `${MESES_CURTOS[Number(ym.slice(5, 7)) - 1].toLowerCase()}/${ym.slice(2, 4)}`;
+        const anual = (v: number) => (v / meses) * 12;
         return {
-          rotulo: `${u.slice(0, 4)} (12 meses até ${mes(u)})`,
-          volume: i.sacas + e.sacas,
-          volInt: i.sacas,
-          volExt: e.sacas,
-          receita: i.receita + e.receita,
+          rotulo: meses === 1 ? mes(u) : `${mes(de)} a ${mes(u)}`,
+          meses,
+          mediaVolume: (i.sacas + e.sacas) / meses,
+          mediaReceita: (i.receita + e.receita) / meses,
+          volume: anual(i.sacas + e.sacas),
+          volInt: anual(i.sacas),
+          volExt: anual(e.sacas),
+          receita: anual(i.receita + e.receita),
         };
       })()
     : null;
