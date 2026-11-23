@@ -256,7 +256,6 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
   const recExtPrevisto = volExtPrevisto * precoSacaPlano;
   const varRecInt = anoAnterior ? variacaoPct(anoAnterior.recInt, recIntPrevisto) : null;
   const varRecExt = anoAnterior ? variacaoPct(anoAnterior.recExt, recExtPrevisto) : null;
-  const comVar = (v: number | null) => (v !== null ? ` (${fmtVar(v)})` : "");
   const peSacas =
     plan.pontoEquilibrio.valorReais !== null && receitaPorSaca > 0 ? plan.pontoEquilibrio.valorReais / receitaPorSaca : null;
 
@@ -294,10 +293,6 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
           trend={fmtVar(varVol)}
           trendPositive={(varVol ?? 0) >= 0}
           trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volume)} sc em ${anoAnterior.rotulo}` : undefined}
-          detalhe={
-            `Interno ${sc(volIntPrevisto)} sc${anoAnterior ? ` vs ${sc(anoAnterior.volInt)} sc` : ""}${comVar(varVolInt)}\n` +
-            `Externo ${sc(volExtPrevisto)} sc${anoAnterior ? ` vs ${sc(anoAnterior.volExt)} sc` : ""}${comVar(varVolExt)}`
-          }
         />
         <KpiCard
           label="Volume Realizado"
@@ -328,10 +323,6 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
           trend={fmtVar(varRec)}
           trendPositive={(varRec ?? 0) >= 0}
           trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.receita)} em ${anoAnterior.rotulo}` : undefined}
-          detalhe={
-            `Interno ${formatCompactCurrency(recIntPrevisto)}${anoAnterior ? ` vs ${formatCompactCurrency(anoAnterior.recInt)}` : ""}${comVar(varRecInt)}\n` +
-            `Externo ${formatCompactCurrency(recExtPrevisto)}${anoAnterior ? ` vs ${formatCompactCurrency(anoAnterior.recExt)}` : ""}${comVar(varRecExt)}`
-          }
         />
         <KpiCard
           label="Despesa Prevista"
@@ -350,6 +341,42 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
           value={`${formatCompactCurrency(plan.totais.resultadoRealizado)} (${formatPercent(resultadoRealizadoPercent, 1)})`}
           icon={PiggyBank}
           tone="teal"
+        />
+        <KpiCard
+          label={`Volume Interno (${SCENARIO_LABELS[plan.scenario]})`}
+          value={`${sc(volIntPrevisto)} sc`}
+          icon={Package}
+          tone="teal"
+          trend={fmtVar(varVolInt)}
+          trendPositive={(varVolInt ?? 0) >= 0}
+          trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volInt)} sc em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
+        />
+        <KpiCard
+          label={`Volume Externo (${SCENARIO_LABELS[plan.scenario]})`}
+          value={`${sc(volExtPrevisto)} sc`}
+          icon={Package}
+          tone="teal"
+          trend={fmtVar(varVolExt)}
+          trendPositive={(varVolExt ?? 0) >= 0}
+          trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volExt)} sc em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
+        />
+        <KpiCard
+          label={`Receita Interna (${SCENARIO_LABELS[plan.scenario]})`}
+          value={formatCompactCurrency(recIntPrevisto)}
+          icon={TrendingUp}
+          tone="teal"
+          trend={fmtVar(varRecInt)}
+          trendPositive={(varRecInt ?? 0) >= 0}
+          trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.recInt)} em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
+        />
+        <KpiCard
+          label={`Receita Externa (${SCENARIO_LABELS[plan.scenario]})`}
+          value={formatCompactCurrency(recExtPrevisto)}
+          icon={TrendingUp}
+          tone="teal"
+          trend={fmtVar(varRecExt)}
+          trendPositive={(varRecExt ?? 0) >= 0}
+          trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.recExt)} em ${anoAnterior.rotulo.slice(0, 4)}` : undefined}
         />
         <KpiCard
           label="Ponto de Equilíbrio"
