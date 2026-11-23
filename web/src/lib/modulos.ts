@@ -1,4 +1,4 @@
-import { Landmark, Scale, Receipt, ShieldCheck, Target, Send, Gauge, TrendingUp, Warehouse, type LucideIcon } from "lucide-react";
+import { Landmark, Scale, Receipt, ShieldCheck, Target, Send, Gauge, TrendingUp, Warehouse, ShoppingCart, type LucideIcon } from "lucide-react";
 
 // Modulos do sistema: cards da tela Inicio e abas do cabecalho fixo. `match`
 // diz se uma rota pertence ao modulo; a ordem de verificacao fica em
@@ -76,6 +76,13 @@ export const MODULOS: Modulo[] = [
     description: "Controle do armazém.",
     icon: Warehouse,
     match: (p) => p.startsWith("/armazem"),
+  },
+  {
+    href: "/compras",
+    label: "Compras",
+    description: "Compras de sacas de café de produtores e comerciantes.",
+    icon: ShoppingCart,
+    match: (p) => p.startsWith("/compras"),
   },
 ];
 

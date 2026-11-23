@@ -37,6 +37,7 @@ import {
   PanelLeftOpen,
   Scale,
   FileSpreadsheet,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-state";
@@ -156,6 +157,8 @@ const armazemNavItems = [
   { href: "/armazem/despesas-fixas", label: "Despesas Fixas", icon: Receipt },
 ];
 
+const comprasNavItems = [{ href: "/compras", label: "Compras", icon: ShoppingCart }];
+
 const roleLabels: Record<string, string> = {
   ADMINISTRADOR: "Administrador",
   TESOURARIA: "Tesouraria",
@@ -188,6 +191,7 @@ const modules = [
     items: transferenciaOrdemNavItems,
   },
   { match: (p: string) => p.startsWith("/armazem"), label: "Armazém", items: armazemNavItems },
+  { match: (p: string) => p.startsWith("/compras"), label: "Compras", items: comprasNavItems },
 ];
 
 function getActiveModule(pathname: string) {
