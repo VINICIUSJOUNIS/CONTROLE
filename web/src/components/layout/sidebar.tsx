@@ -37,7 +37,6 @@ import {
   PanelLeftOpen,
   Scale,
   FileSpreadsheet,
-  Warehouse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/layout/sidebar-state";
@@ -146,7 +145,16 @@ const transferenciaOrdemNavItems = [
   { href: "/transferencia-ordem", label: "Transferência de Ordem", icon: Send },
 ];
 
-const armazemNavItems = [{ href: "/armazem", label: "Armazém", icon: Warehouse }];
+// Armazem e outra empresa: mesmos menus da Analise de Credito, mas paginas
+// proprias (vazias ate entrarem os dados do armazem).
+const armazemNavItems = [
+  { href: "/armazem", label: "Análise de Crédito", icon: LayoutDashboard },
+  { href: "/armazem/balanco", label: "Balanço", icon: Scale },
+  { href: "/armazem/dre", label: "DRE", icon: FileSpreadsheet },
+  { href: "/armazem/comparativo-mensal", label: "Comparativo Mensal", icon: BarChart3 },
+  { href: "/armazem/trimestre-acumulado", label: "Trimestre Acumulado", icon: CalendarRange },
+  { href: "/armazem/despesas-fixas", label: "Despesas Fixas", icon: Receipt },
+];
 
 const roleLabels: Record<string, string> = {
   ADMINISTRADOR: "Administrador",
