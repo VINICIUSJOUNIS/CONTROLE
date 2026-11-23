@@ -41,7 +41,8 @@ export async function getBudgetYears() {
 }
 
 // Multiplicador de crescimento do cenario selecionado sobre o volume base
-// (Conservador = 1, sem crescimento).
+// (Conservador = 1, sem crescimento). Chamado uma vez por mercado (interno e
+// externo tem % proprios).
 function scenarioMultiplier(plan: {
   scenario: BudgetScenario;
   crescimentoModerado: number;
@@ -76,11 +77,17 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
   const cotacaoDolar = n(plan.cotacaoDolar);
   const cenario: BudgetScenario =
     cenarioOverride && Object.values(BudgetScenario).includes(cenarioOverride) ? cenarioOverride : plan.scenario;
-  const multiplier = scenarioMultiplier({
+  const multInterno = scenarioMultiplier({
     scenario: cenario,
     crescimentoModerado: n(plan.crescimentoModerado),
     crescimentoOtimista: n(plan.crescimentoOtimista),
     crescimentoMuitoOtimista: n(plan.crescimentoMuitoOtimista),
+  });
+  const multExterno = scenarioMultiplier({
+    scenario: cenario,
+    crescimentoModerado: n(plan.crescimentoModeradoExterno),
+    crescimentoOtimista: n(plan.crescimentoOtimistaExterno),
+    crescimentoMuitoOtimista: n(plan.crescimentoMuitoOtimistaExterno),
   });
 
   const volumeByMonth = new Map(plan.volumes.map((v) => [v.month, v]));
@@ -91,15 +98,35 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
     // Arredondado como em `months` (2 casas), para o previsto bater com
     // valor por saca x sacas exibidas na tela.
     const v = volumeByMonth.get(m);
-    const total = (v ? n(v.volumeBaseSacas) : 0) * multiplier;
-    const externo = (v ? n(v.volumeExternoSacas) : 0) * multiplier;
-    if (base === "EXTERNO") return Number(externo.toFixed(2));
-    if (base === "INTERNO") return Number((total - externo).toFixed(2));
-    return Number(total.toFixed(2));
+    const baseTotal = v ? n(v.volumeBaseSacas) : 0;
+    const baseExterno = v ? n(v.volumeExternoSacas) : 0;
+    const interno = Number(((baseTotal - baseExterno) * multInterno).toFixed(2));
+    const externo = Number((baseExterno * multExterno).toFixed(2));
+    if (base === "EXTERNO") return externo;
+    if (base === "INTERNO") return interno;
+    return Number((interno + externo).toFixed(2));
   };
+
+  // Despesas digitadas (mes a mes e fixo mensal) tambem crescem com o cenario:
+  // os valores gravados sao a base (Conservador) e o previsto exibido =
+  // base x fator. Despesas do mercado interno/externo usam o % do proprio
+  // mercado; os demais grupos, o crescimento do volume total do ano (media
+  // ponderada pelo volume base de cada mercado). Por saca e % da receita ja
+  // acompanham o volume do cenario e nao recebem fator.
+  let baseIntAno = 0;
+  let baseExtAno = 0;
+  for (const v of plan.volumes) {
+    baseIntAno += n(v.volumeBaseSacas) - n(v.volumeExternoSacas);
+    baseExtAno += n(v.volumeExternoSacas);
+  }
+  const fatorTotal =
+    baseIntAno + baseExtAno > 0 ? (baseIntAno * multInterno + baseExtAno * multExterno) / (baseIntAno + baseExtAno) : 1;
+  const fatorDespesa = (group: string) =>
+    group === "DESPESA_MERCADO_INTERNO" ? multInterno : group === "DESPESA_MERCADO_EXTERNO" ? multExterno : fatorTotal;
 
   const lines = plan.lines.map((line) => {
     const monthsByNum = new Map(line.months.map((m) => [m.month, m]));
+    const fator = fatorDespesa(line.group);
     const porSaca = line.tipoCusto === "POR_SACA";
     const mensal = line.tipoCusto === "MENSAL";
     const percentual = line.tipoCusto === "PERCENTUAL";
@@ -109,17 +136,15 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
     const months = Array.from({ length: 12 }, (_, i) => {
       const m = i + 1;
       const row = monthsByNum.get(m);
+      // previstoBase = valor digitado (Conservador), usado na edicao.
+      const previstoBase = mensal ? valorMensal : row ? n(row.valorPrevisto) : 0;
       const previsto = porSaca
         ? Number((valorPorSaca * volumePrevistoMes(m, line.baseVolume)).toFixed(2))
-        : mensal
-          ? valorMensal
-          : percentual
+        : percentual
           ? Number(((valorPercentual / 100) * volumePrevistoMes(m, line.baseVolume) * cotacaoSacaUsd * cotacaoDolar).toFixed(2))
-          : row
-          ? n(row.valorPrevisto)
-          : 0;
+          : Number((previstoBase * fator).toFixed(2));
       const realizado = row ? n(row.valorRealizado) : 0;
-      return { month: m, previsto, realizado, variacao: Number((realizado - previsto).toFixed(2)) };
+      return { month: m, previsto, previstoBase, realizado, variacao: Number((realizado - previsto).toFixed(2)) };
     });
     const totalPrevisto = Number(months.reduce((s, m) => s + m.previsto, 0).toFixed(2));
     const totalRealizado = Number(months.reduce((s, m) => s + m.realizado, 0).toFixed(2));
@@ -146,9 +171,9 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
     const v = volumeByMonth.get(m);
     const volumeBaseSacas = v ? n(v.volumeBaseSacas) : 0;
     const volumeExternoSacas = v ? n(v.volumeExternoSacas) : 0;
-    const volumeAjustado = Number((volumeBaseSacas * multiplier).toFixed(2));
-    const volumeInternoPrevisto = Number((volumeAjustado - volumeExternoSacas * multiplier).toFixed(2));
-    const volumeExternoPrevisto = Number((volumeExternoSacas * multiplier).toFixed(2));
+    const volumeInternoPrevisto = Number(((volumeBaseSacas - volumeExternoSacas) * multInterno).toFixed(2));
+    const volumeExternoPrevisto = Number((volumeExternoSacas * multExterno).toFixed(2));
+    const volumeAjustado = Number((volumeInternoPrevisto + volumeExternoPrevisto).toFixed(2));
     const receitaPrevista = Number((volumeAjustado * cotacaoSacaUsd * cotacaoDolar).toFixed(2));
     const receitaRealizada = v ? n(v.receitaRealizada) : 0;
     const despesaPrevista = Number(
@@ -236,6 +261,10 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
     crescimentoModerado: n(plan.crescimentoModerado),
     crescimentoOtimista: n(plan.crescimentoOtimista),
     crescimentoMuitoOtimista: n(plan.crescimentoMuitoOtimista),
+    crescimentoModeradoExterno: n(plan.crescimentoModeradoExterno),
+    crescimentoOtimistaExterno: n(plan.crescimentoOtimistaExterno),
+    crescimentoMuitoOtimistaExterno: n(plan.crescimentoMuitoOtimistaExterno),
+    fatorDespesas: { interno: multInterno, externo: multExterno, total: fatorTotal },
     precoSacaInterno: plan.precoSacaInterno != null ? n(plan.precoSacaInterno) : null,
     precoSacaExterno: plan.precoSacaExterno != null ? n(plan.precoSacaExterno) : null,
     months,
@@ -372,10 +401,10 @@ export async function getContextoProjecao(yearParam?: string) {
     )
     .reduce((s, l) => s + l.total, 0);
   const crescimentos = {
-    CONSERVADOR: 0,
-    MODERADO: plan?.crescimentoModerado ?? 0,
-    OTIMISTA: plan?.crescimentoOtimista ?? 0,
-    MUITO_OTIMISTA: plan?.crescimentoMuitoOtimista ?? 0,
+    CONSERVADOR: { interno: 0, externo: 0 },
+    MODERADO: { interno: plan?.crescimentoModerado ?? 0, externo: plan?.crescimentoModeradoExterno ?? 0 },
+    OTIMISTA: { interno: plan?.crescimentoOtimista ?? 0, externo: plan?.crescimentoOtimistaExterno ?? 0 },
+    MUITO_OTIMISTA: { interno: plan?.crescimentoMuitoOtimista ?? 0, externo: plan?.crescimentoMuitoOtimistaExterno ?? 0 },
   };
   return { year, plan, vendas, baseFiscal, despesasCreditaveis, crescimentos };
 }

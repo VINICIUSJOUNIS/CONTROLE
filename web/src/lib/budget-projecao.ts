@@ -68,7 +68,8 @@ export function sazonalidade(hist: HistoricoMes[], de: string, ate: string, merc
 }
 
 export type ProjecaoPremissas = {
-  crescimento: number; // fracao, ex. 0.05
+  crescimentoInterno: number; // fracao, ex. 0.05
+  crescimentoExterno: number;
   precoInterno: number;
   precoExterno: number;
 };
@@ -80,8 +81,8 @@ export function projetarAno(
   sazExterno: number[],
   p: ProjecaoPremissas
 ) {
-  const volInterno = baseInterno * (1 + p.crescimento);
-  const volExterno = baseExterno * (1 + p.crescimento);
+  const volInterno = baseInterno * (1 + p.crescimentoInterno);
+  const volExterno = baseExterno * (1 + p.crescimentoExterno);
   const meses = MESES_CURTOS.map((label, i) => {
     const interno = volInterno * sazInterno[i];
     const externo = volExterno * sazExterno[i];

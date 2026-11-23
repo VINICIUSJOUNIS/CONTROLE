@@ -146,7 +146,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
 
   function openLineDialog(line: BudgetLineData) {
     setEditingLine(line);
-    setLineForm(line.months.map((m) => ({ month: m.month, previsto: String(m.previsto), realizado: String(m.realizado) })));
+    setLineForm(line.months.map((m) => ({ month: m.month, previsto: String(m.previstoBase), realizado: String(m.realizado) })));
     setCustoForm({
       tipo: line.tipoCusto,
       valor:
@@ -571,6 +571,24 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
                     quando o volume ou o cenário do plano mudam. O realizado continua digitado.
                   </p>
                 </>
+              )}
+              {(custoForm.tipo === "FIXO" || custoForm.tipo === "MENSAL") && editingLine && (
+                <p className="text-[11px] text-muted sm:col-span-3">
+                  Digite o previsto do cenário Conservador. Nos outros cenários ele cresce junto com o volume:{" "}
+                  {editingLine.group === "DESPESA_MERCADO_INTERNO"
+                    ? "% do mercado interno"
+                    : editingLine.group === "DESPESA_MERCADO_EXTERNO"
+                    ? "% do mercado externo"
+                    : "crescimento do volume total"}
+                  {plan.scenario !== "CONSERVADOR" &&
+                    ` (no cenário ${SCENARIO_LABELS[plan.scenario]}: x ${(editingLine.group === "DESPESA_MERCADO_INTERNO"
+                      ? plan.fatorDespesas.interno
+                      : editingLine.group === "DESPESA_MERCADO_EXTERNO"
+                      ? plan.fatorDespesas.externo
+                      : plan.fatorDespesas.total
+                    ).toLocaleString("pt-BR", { maximumFractionDigits: 4 })})`}
+                  .
+                </p>
               )}
             </div>
             <div className="max-h-[60vh] overflow-auto rounded-lg border border-border">

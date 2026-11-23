@@ -19,6 +19,9 @@ export type BudgetPlanAssumptionsInput = {
   crescimentoModerado: number;
   crescimentoOtimista: number;
   crescimentoMuitoOtimista: number;
+  crescimentoModeradoExterno: number;
+  crescimentoOtimistaExterno: number;
+  crescimentoMuitoOtimistaExterno: number;
 };
 
 export async function updateBudgetPlanAssumptions(planId: string, input: BudgetPlanAssumptionsInput) {
@@ -32,6 +35,9 @@ export async function updateBudgetPlanAssumptions(planId: string, input: BudgetP
       crescimentoModerado: input.crescimentoModerado,
       crescimentoOtimista: input.crescimentoOtimista,
       crescimentoMuitoOtimista: input.crescimentoMuitoOtimista,
+      crescimentoModeradoExterno: input.crescimentoModeradoExterno,
+      crescimentoOtimistaExterno: input.crescimentoOtimistaExterno,
+      crescimentoMuitoOtimistaExterno: input.crescimentoMuitoOtimistaExterno,
     },
   });
   revalidateAll();

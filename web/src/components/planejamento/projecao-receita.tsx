@@ -40,7 +40,7 @@ const SEP = "border-l border-border";
 type ProjecaoDados = {
   historico: HistoricoMes[];
   ultimoMesFechado: string;
-  crescimentos: Record<BudgetScenarioKey, number>;
+  crescimentos: Record<BudgetScenarioKey, { interno: number; externo: number }>;
   cenarioInicial: BudgetScenarioKey;
   // Preco R$/saca salvo no plano (Premissas); null = ultimo trimestre fechado.
   precoSalvoI?: number | null;
@@ -81,15 +81,17 @@ function useProjecaoEstado({
   const [cenario, setCenario] = useState<BudgetScenarioKey>(cenarioInicial);
   const [precoI, setPrecoI] = useState(() => (precoSalvoI ?? base.precoTriI).toFixed(2));
   const [precoE, setPrecoE] = useState(() => (precoSalvoE ?? base.precoTriE).toFixed(2));
-  const crescimento = crescimentos[cenario] ?? 0;
+  const crescI = crescimentos[cenario]?.interno ?? 0;
+  const crescE = crescimentos[cenario]?.externo ?? 0;
   const proj = useMemo(
     () =>
       projetarAno(base.ltmI.sacas, base.ltmE.sacas, base.sazI, base.sazE, {
-        crescimento,
+        crescimentoInterno: crescI,
+        crescimentoExterno: crescE,
         precoInterno: Number(precoI) || 0,
         precoExterno: Number(precoE) || 0,
       }),
-    [base, crescimento, precoI, precoE]
+    [base, crescI, crescE, precoI, precoE]
   );
   return {
     historico,
@@ -136,7 +138,7 @@ function BotoesCenario() {
             cenario === s ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-primary/5"
           )}
         >
-          {SCENARIO_LABELS[s]} ({pct(crescimentos[s] ?? 0)})
+          {SCENARIO_LABELS[s]} (Int {pct(crescimentos[s]?.interno ?? 0)} · Ext {pct(crescimentos[s]?.externo ?? 0)})
         </button>
       ))}
     </div>

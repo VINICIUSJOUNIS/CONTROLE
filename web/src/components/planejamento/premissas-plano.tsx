@@ -19,6 +19,9 @@ type PlanoPremissas = {
   crescimentoModerado: number;
   crescimentoOtimista: number;
   crescimentoMuitoOtimista: number;
+  crescimentoModeradoExterno: number;
+  crescimentoOtimistaExterno: number;
+  crescimentoMuitoOtimistaExterno: number;
 };
 
 function formDe(plan: PlanoPremissas) {
@@ -30,6 +33,9 @@ function formDe(plan: PlanoPremissas) {
     crescimentoModerado: String(plan.crescimentoModerado * 100),
     crescimentoOtimista: String(plan.crescimentoOtimista * 100),
     crescimentoMuitoOtimista: String(plan.crescimentoMuitoOtimista * 100),
+    crescimentoModeradoExterno: String(plan.crescimentoModeradoExterno * 100),
+    crescimentoOtimistaExterno: String(plan.crescimentoOtimistaExterno * 100),
+    crescimentoMuitoOtimistaExterno: String(plan.crescimentoMuitoOtimistaExterno * 100),
   };
 }
 
@@ -58,6 +64,9 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
         crescimentoModerado: (Number(form.crescimentoModerado) || 0) / 100,
         crescimentoOtimista: (Number(form.crescimentoOtimista) || 0) / 100,
         crescimentoMuitoOtimista: (Number(form.crescimentoMuitoOtimista) || 0) / 100,
+        crescimentoModeradoExterno: (Number(form.crescimentoModeradoExterno) || 0) / 100,
+        crescimentoOtimistaExterno: (Number(form.crescimentoOtimistaExterno) || 0) / 100,
+        crescimentoMuitoOtimistaExterno: (Number(form.crescimentoMuitoOtimistaExterno) || 0) / 100,
       });
       setSalvo(true);
       router.refresh();
@@ -99,26 +108,43 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
         </p>
         <div>
           <p className="mb-2 text-xs text-muted">
-            Crescimento de volume sobre o cenário Conservador (0%), aplicado ao volume base em sacas de cada cenário.
+            Crescimento de volume sobre o cenário Conservador (0%), separado por mercado: cada % é aplicado ao volume base em sacas
+            daquele mercado.
           </p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <Label>Moderado (%)</Label>
-              <Input type="number" step="0.01" value={form.crescimentoModerado} onChange={(e) => set("crescimentoModerado", e.target.value)} />
-            </div>
-            <div>
-              <Label>Otimista (%)</Label>
-              <Input type="number" step="0.01" value={form.crescimentoOtimista} onChange={(e) => set("crescimentoOtimista", e.target.value)} />
-            </div>
-            <div>
-              <Label>Muito Otimista (%)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={form.crescimentoMuitoOtimista}
-                onChange={(e) => set("crescimentoMuitoOtimista", e.target.value)}
-              />
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted">
+                  <th className="py-1 pr-3 font-medium">Mercado</th>
+                  <th className="px-2 py-1 font-medium">Moderado (%)</th>
+                  <th className="px-2 py-1 font-medium">Otimista (%)</th>
+                  <th className="px-2 py-1 font-medium">Muito Otimista (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(
+                  [
+                    ["Mercado interno", "crescimentoModerado", "crescimentoOtimista", "crescimentoMuitoOtimista"],
+                    ["Mercado externo", "crescimentoModeradoExterno", "crescimentoOtimistaExterno", "crescimentoMuitoOtimistaExterno"],
+                  ] as const
+                ).map(([rotulo, ...campos]) => (
+                  <tr key={rotulo}>
+                    <td className="py-1 pr-3 text-xs font-medium">{rotulo}</td>
+                    {campos.map((c) => (
+                      <td key={c} className="px-2 py-1">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          aria-label={`${rotulo}: ${c}`}
+                          value={form[c]}
+                          onChange={(e) => set(c, e.target.value)}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
