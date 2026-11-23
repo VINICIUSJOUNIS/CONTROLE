@@ -45,19 +45,10 @@ function varPercent(previsto: number, realizado: number) {
   return ((realizado - previsto) / Math.abs(previsto)) * 100;
 }
 
-// Base do % de crescimento dos cards: media mensal das vendas reais (menos
-// devolucoes) dos meses ja realizados do ano corrente; volume/volInt/volExt/
-// receita vem anualizados (media x 12) para comparar com o total do plano.
-export type AnoAnteriorBase = {
-  rotulo: string;
-  meses: number;
-  mediaVolume: number;
-  mediaReceita: number;
-  volume: number;
-  volInt: number;
-  volExt: number;
-  receita: number;
-};
+// Base do % de crescimento dos cards: ano corrente estimado - vendas reais
+// (menos devolucoes) dos meses ja fechados + meses que faltam pela media do
+// mesmo mes nos dois anos anteriores.
+export type AnoAnteriorBase = { rotulo: string; volume: number; volInt: number; volExt: number; receita: number };
 
 function variacaoPct(anterior: number, atual: number) {
   if (!(anterior > 0)) return null;
@@ -272,7 +263,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
           tone="teal"
           trend={fmtVar(varVol)}
           trendPositive={(varVol ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs média ${sc(anoAnterior.mediaVolume)} sc/mês (${anoAnterior.rotulo}) x 12 = ${sc(anoAnterior.volume)} sc` : undefined}
+          trendLabel={anoAnterior ? `vs ${sc(anoAnterior.volume)} sc em ${anoAnterior.rotulo}` : undefined}
           detalhe={`Interno ${sc(volIntPrevisto)} sc${varVolInt !== null ? ` (${fmtVar(varVolInt)})` : ""} · Externo ${sc(volExtPrevisto)} sc${varVolExt !== null ? ` (${fmtVar(varVolExt)})` : ""}`}
         />
         <KpiCard
@@ -303,7 +294,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
           tone="teal"
           trend={fmtVar(varRec)}
           trendPositive={(varRec ?? 0) >= 0}
-          trendLabel={anoAnterior ? `vs média ${formatCompactCurrency(anoAnterior.mediaReceita)}/mês (${anoAnterior.rotulo}) x 12 = ${formatCompactCurrency(anoAnterior.receita)}` : undefined}
+          trendLabel={anoAnterior ? `vs ${formatCompactCurrency(anoAnterior.receita)} em ${anoAnterior.rotulo}` : undefined}
         />
         <KpiCard
           label="Despesa Prevista"
