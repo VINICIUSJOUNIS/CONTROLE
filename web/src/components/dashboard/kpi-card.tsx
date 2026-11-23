@@ -102,7 +102,7 @@ export function KpiCard({
           {trendLabel && <span className="text-[11px] text-muted">{trendLabel}</span>}
         </div>
       )}
-      {detalhe && <p className="mt-1.5 text-[11px] text-muted">{detalhe}</p>}
+      {detalhe && <p className="mt-1.5 whitespace-pre-line text-[11px] text-muted">{detalhe}</p>}
     </Card>
   );
 }

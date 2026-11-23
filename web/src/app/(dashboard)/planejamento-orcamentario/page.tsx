@@ -53,6 +53,8 @@ export default async function PlanejamentoOrcamentarioPage({
           volInt: ri.sacas + pi.sacas,
           volExt: re.sacas + pe.sacas,
           receita: ri.receita + re.receita + pi.receita + pe.receita,
+          recInt: ri.receita + pi.receita,
+          recExt: re.receita + pe.receita,
         };
       })()
     : null;
