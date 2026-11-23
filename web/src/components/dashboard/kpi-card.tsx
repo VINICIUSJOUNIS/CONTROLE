@@ -1,6 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight, LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import { KpiExplicacao } from "@/components/dashboard/kpi-explicacao";
 
 export type KpiTone = "teal" | "green" | "soft";
 
@@ -34,6 +36,7 @@ export function KpiCard({
   detalhe,
   trendPositive = true,
   tone = "teal",
+  explicacao,
 }: {
   label: string;
   value: string;
@@ -45,6 +48,8 @@ export function KpiCard({
   detalhe?: string;
   trendPositive?: boolean;
   tone?: KpiTone;
+  // Conteudo da lupa (origem, calculo e logica do numero). Sem ele, sem lupa.
+  explicacao?: ReactNode;
 }) {
   const variant = toneVariants[tone];
   // Detecta valor negativo pelo "-" que antecede um digito, permitindo
@@ -68,6 +73,11 @@ export function KpiCard({
       />
       <div className="flex items-start justify-between gap-3">
         <p className="min-w-0 pt-1 text-[11px] font-semibold tracking-[0.08em] text-muted">{label}</p>
+        {explicacao && (
+          <div className="ml-auto pt-1.5">
+            <KpiExplicacao titulo={label}>{explicacao}</KpiExplicacao>
+          </div>
+        )}
         <div
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ring-1 ring-inset transition-transform duration-300 group-hover:scale-105",

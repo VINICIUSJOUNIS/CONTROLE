@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input, Label, Select } from "@/components/ui/field";
 import { KpiCard } from "@/components/dashboard/kpi-card";
+import { ExplicacaoSecoes } from "@/components/dashboard/kpi-explicacao";
 import { formatCompactCurrency, formatCurrency, formatCurrencyPrecise, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { BudgetPlanData, BudgetGroupData, BudgetLineData } from "@/lib/budget-data";
@@ -56,6 +57,14 @@ export type AnoAnteriorBase = {
   receita: number;
   recInt: number;
   recExt: number;
+  partes?: {
+    realizado: string;
+    projetado: string | null;
+    realInt: { sacas: number; receita: number };
+    realExt: { sacas: number; receita: number };
+    projInt: { sacas: number; receita: number };
+    projExt: { sacas: number; receita: number };
+  };
 };
 
 function variacaoPct(anterior: number, atual: number) {
@@ -259,6 +268,218 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
   const peSacas =
     plan.pontoEquilibrio.valorReais !== null && receitaPorSaca > 0 ? plan.pontoEquilibrio.valorReais / receitaPorSaca : null;
 
+  // ---- Explicacoes da lupa de cada card (origem, calculo com os valores
+  // atuais e logica). Mesmas variaveis usadas nos cards acima.
+  const R = (v: number) => formatCurrencyPrecise(v);
+  const P = (v: number) => `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+  const cen = SCENARIO_LABELS[plan.scenario];
+  const crescI = plan.fatorDespesas.interno - 1;
+  const crescE = plan.fatorDespesas.externo - 1;
+  // Volume base (Conservador) de cada mercado = previsto ÷ fator do cenario.
+  const volBaseInt = plan.fatorDespesas.interno > 0 ? volIntPrevisto / plan.fatorDespesas.interno : 0;
+  const volBaseExt = plan.fatorDespesas.externo > 0 ? volExtPrevisto / plan.fatorDespesas.externo : 0;
+  const sacaUsd = plan.cotacaoSacaUsd;
+  const linhaPreco = `Preço da saca = (bolsa ${plan.nivelBolsa.toLocaleString("pt-BR")} + diferencial ${plan.diferencial.toLocaleString("pt-BR")} c/lb) × 1,3228 = US$ ${sacaUsd.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} × dólar ${plan.cotacaoDolar.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} = ${R(precoSacaPlano)}/saca`;
+  const baseTexto = (
+    <>
+      Base de comparação ({anoAnterior?.rotulo ?? "-"}): vendas reais do sistema (menu Faturamento: vendas menos devoluções, 60 kg por
+      saca) dos meses já fechados do ano; os meses que faltam são projetados pela média do mesmo mês nos dois anos anteriores.
+    </>
+  );
+  const linhasBase = (k: "Int" | "Ext" | "Tot", tipo: "sacas" | "receita") => {
+    const pt = anoAnterior?.partes;
+    if (!pt) return [] as string[];
+    const f = (v: number) => (tipo === "sacas" ? `${sc(v)} sc` : R(v));
+    const pega = (o: { sacas: number; receita: number }) => o[tipo];
+    const real = k === "Int" ? pega(pt.realInt) : k === "Ext" ? pega(pt.realExt) : pega(pt.realInt) + pega(pt.realExt);
+    const proj = k === "Int" ? pega(pt.projInt) : k === "Ext" ? pega(pt.projExt) : pega(pt.projInt) + pega(pt.projExt);
+    return [
+      `Base: realizado ${pt.realizado} = ${f(real)}` + (pt.projetado ? ` + projetado ${pt.projetado} = ${f(proj)}` : ""),
+      `Base total = ${f(real + proj)}`,
+    ];
+  };
+  const varTexto = (prev: string, base: string, v: number | null) =>
+    v === null ? "Sem base de comparação." : `Variação = ${prev} ÷ ${base} − 1 = ${fmtVar(v)}`;
+  const gruposPrev = plan.groups.filter((g) => g.totalPrevisto !== 0);
+  const exp = {
+    volPrev: (
+      <ExplicacaoSecoes
+        origem={
+          <>
+            Volume base mês a mês gravado no plano (botão &quot;Volume e Receita (Interno x Externo)&quot; ou &quot;Gravar no plano&quot; da
+            página Histórico e Projeções), com o crescimento do cenário {cen} definido em Premissas, separado por mercado. {baseTexto}
+          </>
+        }
+        calculo={[
+          `Interno: ${sc(volBaseInt)} sc (base) × (1 + ${P(crescI)}) = ${sc(volIntPrevisto)} sc`,
+          `Externo: ${sc(volBaseExt)} sc (base) × (1 + ${P(crescE)}) = ${sc(volExtPrevisto)} sc`,
+          `Volume previsto = ${sc(volIntPrevisto)} + ${sc(volExtPrevisto)} = ${sc(volPrevisto)} sc`,
+          ...linhasBase("Tot", "sacas"),
+          varTexto(`${sc(volPrevisto)}`, `${sc(anoAnterior?.volume ?? 0)}`, varVol),
+        ]}
+        logica="Quanto a empresa planeja vender no ano em sacas. O cenário Conservador é o volume base sem crescimento; os outros cenários aplicam o % de cada mercado sobre o volume daquele mercado. A variação mostra se o plano está acima ou abaixo do ritmo real deste ano."
+      />
+    ),
+    volReal: (
+      <ExplicacaoSecoes
+        origem={<>Volume realizado digitado mês a mês no botão &quot;Volume e Receita (Interno x Externo)&quot; desta página.</>}
+        calculo={[
+          `Interno realizado (soma dos 12 meses) = ${sc(volIntRealizado)} sc`,
+          `Externo realizado (soma dos 12 meses) = ${sc(volExtRealizado)} sc`,
+          `Volume realizado = ${sc(volIntRealizado)} + ${sc(volExtRealizado)} = ${sc(volRealizado)} sc`,
+        ]}
+        logica="Acompanha o que já foi vendido de fato no ano do plano, para comparar com o volume previsto. Fica zerado enquanto os meses não forem preenchidos."
+      />
+    ),
+    despSaca: (
+      <ExplicacaoSecoes
+        origem="Despesa prevista total (todas as linhas de despesa do plano) e volume previsto, ambos no cenário exibido."
+        calculo={[
+          `Despesa prevista = ${R(plan.totais.despesaPrevista)}`,
+          `Volume previsto = ${sc(volPrevisto)} sc`,
+          `Despesa por saca = ${R(plan.totais.despesaPrevista)} ÷ ${sc(volPrevisto)} = ${despesaPorSaca !== null ? R(despesaPorSaca) : "-"}`,
+          `Receita por saca = ${R(plan.totais.receitaPrevista)} ÷ ${sc(volPrevisto)} = ${R(receitaPorSaca)}`,
+          linhaPreco,
+        ]}
+        logica="Quanto custa, em média, cada saca vendida. Comparando com a receita por saca, mostra a margem por saca: receita por saca − despesa por saca."
+      />
+    ),
+    peSacas: (
+      <ExplicacaoSecoes
+        origem="Ponto de equilíbrio em R$ (card Ponto de Equilíbrio) e receita prevista por saca."
+        calculo={[
+          `Ponto de equilíbrio = ${plan.pontoEquilibrio.valorReais !== null ? R(plan.pontoEquilibrio.valorReais) : "-"}`,
+          `Receita por saca = ${R(receitaPorSaca)}`,
+          `Sacas = ${plan.pontoEquilibrio.valorReais !== null ? R(plan.pontoEquilibrio.valorReais) : "-"} ÷ ${R(receitaPorSaca)} = ${peSacas !== null ? `${sc(peSacas)} sc` : "-"}`,
+        ]}
+        logica="Quantas sacas é preciso vender no ano para a receita cobrir os custos fixos e os variáveis, ou seja, resultado zero. Acima disso a empresa dá lucro."
+      />
+    ),
+    recPrev: (
+      <ExplicacaoSecoes
+        origem={
+          <>
+            Volume previsto do cenário {cen} × preço da saca das Premissas (nível de bolsa + diferencial, convertidos pelo fator 1,3228,
+            igual ao contrato de exportação, × dólar). {baseTexto}
+          </>
+        }
+        calculo={[
+          linhaPreco,
+          `Receita prevista = ${sc(volPrevisto)} sc × ${R(precoSacaPlano)} = ${R(plan.totais.receitaPrevista)}`,
+          ...linhasBase("Tot", "receita"),
+          varTexto(R(plan.totais.receitaPrevista), R(anoAnterior?.receita ?? 0), varRec),
+        ]}
+        logica="Faturamento planejado para o ano. Muda junto com o volume do cenário e com a bolsa, o diferencial e o dólar das Premissas."
+      />
+    ),
+    despPrev: (
+      <ExplicacaoSecoes
+        origem={
+          <>
+            Soma de todas as linhas dos grupos de despesa abaixo. Cada linha forma o previsto pelo tipo de custo: mês a mês ou fixo mensal
+            (valor digitado para o Conservador, × fator do cenário), por saca (R$/saca × sacas previstas) ou % da receita (% × receita
+            prevista).
+          </>
+        }
+        calculo={[
+          ...gruposPrev.map((g) => `${g.label}: ${R(g.totalPrevisto)}`),
+          `Despesa prevista = ${R(plan.totais.despesaPrevista)}`,
+          `Fator do cenário ${cen}: mercado interno × ${plan.fatorDespesas.interno.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · externo × ${plan.fatorDespesas.externo.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · demais grupos × ${plan.fatorDespesas.total.toLocaleString("pt-BR", { maximumFractionDigits: 4 })}`,
+        ]}
+        logica="Total de custos e despesas planejados no ano. Despesas digitadas crescem com o cenário; linhas por saca e % da receita acompanham sozinhas o volume e a receita."
+      />
+    ),
+    resPrev: (
+      <ExplicacaoSecoes
+        origem="Receita prevista e despesa prevista do plano, no cenário exibido."
+        calculo={[
+          `Resultado previsto = ${R(plan.totais.receitaPrevista)} − ${R(plan.totais.despesaPrevista)} = ${R(plan.totais.resultadoPrevisto)}`,
+          `Margem = ${plan.totais.receitaPrevista > 0 ? formatPercent((plan.totais.resultadoPrevisto / plan.totais.receitaPrevista) * 100, 1) : "-"} da receita`,
+        ]}
+        logica="Lucro (ou prejuízo) planejado para o ano antes de qualquer valor realizado."
+      />
+    ),
+    resReal: (
+      <ExplicacaoSecoes
+        origem="Receita realizada (digitada no botão Volume e Receita) e despesas realizadas (digitadas no lápis de cada linha)."
+        calculo={[
+          `Receita realizada = ${R(plan.totais.receitaRealizada)}`,
+          `Despesa realizada = ${R(plan.totais.despesaRealizada)}`,
+          `Resultado realizado = ${R(plan.totais.receitaRealizada)} − ${R(plan.totais.despesaRealizada)} = ${R(plan.totais.resultadoRealizado)}`,
+          `% = resultado ÷ receita realizada = ${formatPercent(resultadoRealizadoPercent, 1)}`,
+        ]}
+        logica="Lucro de fato até agora no ano do plano, para comparar com o resultado previsto."
+      />
+    ),
+    volInt: (
+      <ExplicacaoSecoes
+        origem={<>Parte do volume base do mercado interno (volume base − volume externo, mês a mês) com o crescimento do mercado interno do cenário {cen}. {baseTexto}</>}
+        calculo={[
+          `Volume interno = ${sc(volBaseInt)} sc × (1 + ${P(crescI)}) = ${sc(volIntPrevisto)} sc`,
+          ...linhasBase("Int", "sacas"),
+          varTexto(`${sc(volIntPrevisto)}`, `${sc(anoAnterior?.volInt ?? 0)}`, varVolInt),
+        ]}
+        logica="Sacas que o plano prevê vender no mercado interno e como isso se compara ao ritmo real do mercado interno neste ano."
+      />
+    ),
+    volExt: (
+      <ExplicacaoSecoes
+        origem={<>Volume externo mês a mês do plano com o crescimento do mercado externo do cenário {cen}. {baseTexto}</>}
+        calculo={[
+          `Volume externo = ${sc(volBaseExt)} sc × (1 + ${P(crescE)}) = ${sc(volExtPrevisto)} sc`,
+          ...linhasBase("Ext", "sacas"),
+          varTexto(`${sc(volExtPrevisto)}`, `${sc(anoAnterior?.volExt ?? 0)}`, varVolExt),
+        ]}
+        logica="Sacas que o plano prevê exportar e como isso se compara ao ritmo real das exportações neste ano."
+      />
+    ),
+    recInt: (
+      <ExplicacaoSecoes
+        origem={<>Volume interno previsto × preço da saca do plano. {baseTexto}</>}
+        calculo={[
+          linhaPreco,
+          `Receita interna = ${sc(volIntPrevisto)} sc × ${R(precoSacaPlano)} = ${R(recIntPrevisto)}`,
+          ...linhasBase("Int", "receita"),
+          varTexto(R(recIntPrevisto), R(anoAnterior?.recInt ?? 0), varRecInt),
+        ]}
+        logica="Faturamento planejado no mercado interno. O plano usa um preço único por saca para os dois mercados; a base usa o preço real de cada venda."
+      />
+    ),
+    recExt: (
+      <ExplicacaoSecoes
+        origem={<>Volume externo previsto × preço da saca do plano. {baseTexto}</>}
+        calculo={[
+          linhaPreco,
+          `Receita externa = ${sc(volExtPrevisto)} sc × ${R(precoSacaPlano)} = ${R(recExtPrevisto)}`,
+          ...linhasBase("Ext", "receita"),
+          varTexto(R(recExtPrevisto), R(anoAnterior?.recExt ?? 0), varRecExt),
+        ]}
+        logica="Faturamento planejado com exportação. O plano usa um preço único por saca para os dois mercados; a base usa o preço real de cada venda."
+      />
+    ),
+    pe: (
+      <ExplicacaoSecoes
+        origem="Grupos de despesa do plano: custos fixos = Despesas Administrativas Fixas + Despesa com Pessoal + Empréstimo e Financiamento; custos variáveis = Custo Fornecedor + Despesas Mercado Interno + Despesas Mercado Externo + Despesas Administrativas Variáveis + Impostos. Investimentos ficam fora."
+        calculo={[
+          `Custos fixos = ${R(plan.pontoEquilibrio.custosFixos)}`,
+          `% custo variável = custos variáveis ÷ receita prevista = ${P(plan.pontoEquilibrio.custosVariaveisPercent)}`,
+          `Ponto de equilíbrio = ${R(plan.pontoEquilibrio.custosFixos)} ÷ (1 − ${P(plan.pontoEquilibrio.custosVariaveisPercent)}) = ${plan.pontoEquilibrio.valorReais !== null ? R(plan.pontoEquilibrio.valorReais) : "-"}`,
+        ]}
+        logica="Receita mínima no ano para não ter prejuízo (margem de contribuição). Cada real vendido sobra (1 − % variável) para pagar os custos fixos."
+      />
+    ),
+    caixa: (meses: number, valor: number) => (
+      <ExplicacaoSecoes
+        origem="Despesa prevista total do plano, no cenário exibido."
+        calculo={[
+          `Média de despesa mensal = ${R(plan.totais.despesaPrevista)} ÷ 12 = ${R(plan.caixaSeguranca.mediaDespesaMensal)}`,
+          `Caixa de segurança = ${R(plan.caixaSeguranca.mediaDespesaMensal)} × ${meses} meses = ${R(valor)}`,
+        ]}
+        logica={`Reserva de caixa para cobrir ${meses} meses de despesas sem nenhuma receita. Faixas usadas: 6 meses = bom, 12 = ótimo, 18 = excelente.`}
+      />
+    ),
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -287,6 +508,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label={`Volume Previsto (${SCENARIO_LABELS[plan.scenario]})`}
+          explicacao={exp.volPrev}
           value={`${sc(volPrevisto)} sc`}
           icon={Package}
           tone="teal"
@@ -296,6 +518,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         />
         <KpiCard
           label="Volume Realizado"
+          explicacao={exp.volReal}
           value={`${sc(volRealizado)} sc`}
           icon={Package}
           tone="green"
@@ -303,6 +526,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         />
         <KpiCard
           label="Despesa Prevista por Saca"
+          explicacao={exp.despSaca}
           value={despesaPorSaca !== null ? formatCurrencyPrecise(despesaPorSaca) : "-"}
           icon={TrendingDown}
           tone="soft"
@@ -310,6 +534,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         />
         <KpiCard
           label="Ponto de Equilíbrio em Sacas"
+          explicacao={exp.peSacas}
           value={peSacas !== null ? `${sc(peSacas)} sc` : "-"}
           icon={Ship}
           tone="teal"
@@ -317,6 +542,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         />
         <KpiCard
           label={`Receita Prevista (${SCENARIO_LABELS[plan.scenario]})`}
+          explicacao={exp.recPrev}
           value={formatCompactCurrency(plan.totais.receitaPrevista)}
           icon={TrendingUp}
           tone="teal"
@@ -326,24 +552,28 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         />
         <KpiCard
           label="Despesa Prevista"
+          explicacao={exp.despPrev}
           value={formatCompactCurrency(plan.totais.despesaPrevista)}
           icon={TrendingDown}
           tone="soft"
         />
         <KpiCard
           label="Resultado Previsto"
+          explicacao={exp.resPrev}
           value={formatCompactCurrency(plan.totais.resultadoPrevisto)}
           icon={Wallet}
           tone="green"
         />
         <KpiCard
           label="Resultado Realizado"
+          explicacao={exp.resReal}
           value={`${formatCompactCurrency(plan.totais.resultadoRealizado)} (${formatPercent(resultadoRealizadoPercent, 1)})`}
           icon={PiggyBank}
           tone="teal"
         />
         <KpiCard
           label={`Volume Interno (${SCENARIO_LABELS[plan.scenario]})`}
+          explicacao={exp.volInt}
           value={`${sc(volIntPrevisto)} sc`}
           icon={Package}
           tone="teal"
@@ -353,6 +583,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         />
         <KpiCard
           label={`Volume Externo (${SCENARIO_LABELS[plan.scenario]})`}
+          explicacao={exp.volExt}
           value={`${sc(volExtPrevisto)} sc`}
           icon={Package}
           tone="teal"
@@ -362,6 +593,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         />
         <KpiCard
           label={`Receita Interna (${SCENARIO_LABELS[plan.scenario]})`}
+          explicacao={exp.recInt}
           value={formatCompactCurrency(recIntPrevisto)}
           icon={TrendingUp}
           tone="teal"
@@ -371,6 +603,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         />
         <KpiCard
           label={`Receita Externa (${SCENARIO_LABELS[plan.scenario]})`}
+          explicacao={exp.recExt}
           value={formatCompactCurrency(recExtPrevisto)}
           icon={TrendingUp}
           tone="teal"
@@ -380,24 +613,28 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         />
         <KpiCard
           label="Ponto de Equilíbrio"
+          explicacao={exp.pe}
           value={plan.pontoEquilibrio.valorReais !== null ? formatCompactCurrency(plan.pontoEquilibrio.valorReais) : "-"}
           icon={Ship}
           tone="soft"
         />
         <KpiCard
           label="Caixa de Segurança (Bom / 6 meses)"
+          explicacao={exp.caixa(6, plan.caixaSeguranca.bom)}
           value={formatCompactCurrency(plan.caixaSeguranca.bom)}
           icon={PiggyBank}
           tone="green"
         />
         <KpiCard
           label="Caixa de Segurança (Ótimo / 12 meses)"
+          explicacao={exp.caixa(12, plan.caixaSeguranca.otimo)}
           value={formatCompactCurrency(plan.caixaSeguranca.otimo)}
           icon={PiggyBank}
           tone="teal"
         />
         <KpiCard
           label="Caixa de Segurança (Excelente / 18 meses)"
+          explicacao={exp.caixa(18, plan.caixaSeguranca.excelente)}
           value={formatCompactCurrency(plan.caixaSeguranca.excelente)}
           icon={PiggyBank}
           tone="soft"

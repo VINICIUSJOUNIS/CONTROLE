@@ -55,6 +55,15 @@ export default async function PlanejamentoOrcamentarioPage({
           receita: ri.receita + re.receita + pi.receita + pe.receita,
           recInt: ri.receita + pi.receita,
           recExt: re.receita + pe.receita,
+          // Partes da base, para a explicacao (lupa) dos cards.
+          partes: {
+            realizado: `${ultimo === 1 ? m(1) : `${m(1)} a ${m(ultimo)}`}/${String(ano).slice(2)}`,
+            projetado: faltam ? `${faltam} (média ${ano - 2}/${ano - 1})` : null,
+            realInt: ri,
+            realExt: re,
+            projInt: pi,
+            projExt: pe,
+          },
         };
       })()
     : null;
