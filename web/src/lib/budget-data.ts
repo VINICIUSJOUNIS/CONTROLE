@@ -257,6 +257,8 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
     scenario: cenario,
     scenarioSalvo: plan.scenario,
     cotacaoSacaUsd,
+    nivelBolsa: n(plan.nivelBolsa),
+    diferencial: n(plan.diferencial),
     cotacaoDolar,
     crescimentoModerado: n(plan.crescimentoModerado),
     crescimentoOtimista: n(plan.crescimentoOtimista),

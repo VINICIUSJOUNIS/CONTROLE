@@ -1154,7 +1154,12 @@ model BudgetPlan {
   year                     Int            @unique
   name                     String
   scenario                 BudgetScenario @default(CONSERVADOR)
+  // Cotacao da saca em US$ = (nivelBolsa + diferencial, em c/lb) x 1,3228 -
+  // mesma conta do valor do contrato de exportacao. cotacaoSacaUsd guarda o
+  // resultado (calculado ao salvar as premissas).
   cotacaoSacaUsd           Decimal        @default(0) @db.Decimal(18, 2)
+  nivelBolsa               Decimal        @default(0) @db.Decimal(18, 4)
+  diferencial              Decimal        @default(0) @db.Decimal(18, 4)
   cotacaoDolar             Decimal        @default(0) @db.Decimal(18, 4)
   // Crescimento de volume de cada cenario, separado por mercado: as colunas
   // sem sufixo sao o mercado INTERNO; as "Externo" o mercado externo.

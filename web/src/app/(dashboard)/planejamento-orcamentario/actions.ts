@@ -1,5 +1,6 @@
 "use server";
 
+import { LB_SACA } from "@/lib/hedge-cambial/config";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { BudgetGroup, BudgetScenario } from "@/generated/prisma/client";
@@ -14,7 +15,8 @@ function revalidateAll() {
 export type BudgetPlanAssumptionsInput = {
   name: string;
   scenario: BudgetScenario;
-  cotacaoSacaUsd: number;
+  nivelBolsa: number; // c/lb
+  diferencial: number; // c/lb
   cotacaoDolar: number;
   crescimentoModerado: number;
   crescimentoOtimista: number;
@@ -30,7 +32,10 @@ export async function updateBudgetPlanAssumptions(planId: string, input: BudgetP
     data: {
       name: input.name,
       scenario: input.scenario,
-      cotacaoSacaUsd: input.cotacaoSacaUsd,
+      // Mesma conta do contrato de exportacao: (bolsa + diferencial) x 1,3228.
+      nivelBolsa: input.nivelBolsa,
+      diferencial: input.diferencial,
+      cotacaoSacaUsd: Number(((input.nivelBolsa + input.diferencial) * LB_SACA).toFixed(2)),
       cotacaoDolar: input.cotacaoDolar,
       crescimentoModerado: input.crescimentoModerado,
       crescimentoOtimista: input.crescimentoOtimista,

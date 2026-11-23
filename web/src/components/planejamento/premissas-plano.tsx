@@ -9,12 +9,15 @@ import { SCENARIO_LABELS, type BudgetScenarioKey } from "@/lib/budget-constants"
 import { formatCurrencyPrecise } from "@/lib/format";
 import { updateBudgetPlanAssumptions } from "@/app/(dashboard)/planejamento-orcamentario/actions";
 import { Save } from "lucide-react";
+import { LB_SACA } from "@/lib/hedge-cambial/config";
 
 type PlanoPremissas = {
   id: string;
   name: string;
   scenario: BudgetScenarioKey;
   cotacaoSacaUsd: number;
+  nivelBolsa: number;
+  diferencial: number;
   cotacaoDolar: number;
   crescimentoModerado: number;
   crescimentoOtimista: number;
@@ -28,7 +31,8 @@ function formDe(plan: PlanoPremissas) {
   return {
     name: plan.name,
     scenario: plan.scenario,
-    cotacaoSacaUsd: String(plan.cotacaoSacaUsd),
+    nivelBolsa: String(plan.nivelBolsa),
+    diferencial: String(plan.diferencial),
     cotacaoDolar: String(plan.cotacaoDolar),
     crescimentoModerado: String(plan.crescimentoModerado * 100),
     crescimentoOtimista: String(plan.crescimentoOtimista * 100),
@@ -47,7 +51,9 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
   const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState(() => formDe(plan));
   const [salvo, setSalvo] = useState(false);
-  const precoSaca = (Number(form.cotacaoSacaUsd) || 0) * (Number(form.cotacaoDolar) || 0);
+  // Mesma conta do valor do contrato de exportacao: (bolsa + diferencial) x 1,3228.
+  const sacaUsd = Number((((Number(form.nivelBolsa) || 0) + (Number(form.diferencial) || 0)) * LB_SACA).toFixed(2));
+  const precoSaca = sacaUsd * (Number(form.cotacaoDolar) || 0);
 
   function set<K extends keyof ReturnType<typeof formDe>>(k: K, v: ReturnType<typeof formDe>[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -59,7 +65,8 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
       await updateBudgetPlanAssumptions(plan.id, {
         name: form.name.trim() || plan.name,
         scenario: form.scenario,
-        cotacaoSacaUsd: Number(form.cotacaoSacaUsd) || 0,
+        nivelBolsa: Number(form.nivelBolsa) || 0,
+        diferencial: Number(form.diferencial) || 0,
         cotacaoDolar: Number(form.cotacaoDolar) || 0,
         crescimentoModerado: (Number(form.crescimentoModerado) || 0) / 100,
         crescimentoOtimista: (Number(form.crescimentoOtimista) || 0) / 100,
@@ -95,8 +102,20 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
             </Select>
           </div>
           <div>
+            <Label>Nível de bolsa (c/lb)</Label>
+            <Input type="number" step="0.01" value={form.nivelBolsa} onChange={(e) => set("nivelBolsa", e.target.value)} />
+          </div>
+          <div>
+            <Label>Diferencial (c/lb)</Label>
+            <Input type="number" step="0.01" value={form.diferencial} onChange={(e) => set("diferencial", e.target.value)} />
+          </div>
+          <div>
             <Label>Cotação saca (US$)</Label>
-            <Input type="number" step="0.01" value={form.cotacaoSacaUsd} onChange={(e) => set("cotacaoSacaUsd", e.target.value)} />
+            <Input
+              value={sacaUsd.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              disabled
+              title="(Nível de bolsa + Diferencial) × 1,3228"
+            />
           </div>
           <div>
             <Label>Cotação dólar (R$)</Label>
@@ -104,7 +123,8 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
           </div>
         </div>
         <p className="text-[11px] text-muted">
-          Receita do plano = volume × cotação saca × dólar = {formatCurrencyPrecise(precoSaca)} por saca.
+          Cotação saca (US$) = (nível de bolsa + diferencial) × 1,3228, igual ao contrato de exportação. Receita do plano = volume ×
+          cotação saca × dólar = {formatCurrencyPrecise(precoSaca)} por saca.
         </p>
         <div>
           <p className="mb-2 text-xs text-muted">
