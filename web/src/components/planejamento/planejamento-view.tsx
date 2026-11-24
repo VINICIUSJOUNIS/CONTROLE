@@ -41,8 +41,9 @@ import {
 
 type BudgetGroup = (typeof BUDGET_GROUP_ORDER)[number];
 
+// Sem realizado lancado nao ha variacao (antes mostrava -100%).
 function varPercent(previsto: number, realizado: number) {
-  if (!previsto) return null;
+  if (!previsto || !realizado) return null;
   return ((realizado - previsto) / Math.abs(previsto)) * 100;
 }
 
@@ -383,9 +384,9 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
       <ExplicacaoSecoes
         origem={
           <>
-            Soma de todas as linhas dos grupos de despesa abaixo. Cada linha forma o previsto pelo tipo de custo: mês a mês ou fixo mensal
-            (valor digitado para o Conservador, × fator do cenário), por saca (R$/saca × sacas previstas) ou % da receita (% × receita
-            prevista).
+            Soma de todas as linhas dos grupos de despesa abaixo. Cada linha forma o previsto pelo tipo de custo: mês a mês (valor
+            digitado para o Conservador, × fator do cenário), fixo mensal (valor × 12 meses, sem fator), por saca (R$/saca × sacas
+            previstas), % da receita (% × receita prevista) ou automático (regra do imposto).
           </>
         }
         calculo={[
@@ -924,7 +925,12 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
                   </p>
                 </>
               )}
-              {(custoForm.tipo === "FIXO" || custoForm.tipo === "MENSAL") && editingLine && (
+              {custoForm.tipo === "MENSAL" && (
+                <p className="text-[11px] text-muted sm:col-span-3">
+                  Fixo de verdade: o mesmo valor nos 12 meses em qualquer cenário (total = valor × 12).
+                </p>
+              )}
+              {custoForm.tipo === "FIXO" && editingLine && (
                 <p className="text-[11px] text-muted sm:col-span-3">
                   Digite o previsto do cenário Conservador. Nos outros cenários ele cresce junto com o volume:{" "}
                   {editingLine.group === "DESPESA_MERCADO_INTERNO"
