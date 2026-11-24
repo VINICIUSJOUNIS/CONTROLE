@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { sincronizarPtax } from "@/lib/hedge-cambial/ptax";
 
+// Roda em Sao Paulo: o Banco Central costuma recusar ou demorar com acessos de
+// fora do Brasil (as demais funcoes ficam na regiao padrao, perto do banco).
+export const preferredRegion = "gru1";
+export const maxDuration = 60;
+
 // Agendamento diario da Vercel (vercel.json): grava a PTAX do dia no historico.
 // So roda com o CRON_SECRET configurado na Vercel (a Vercel envia o cabecalho
 // Authorization automaticamente). Sem ele, a PTAX continua sendo atualizada

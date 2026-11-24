@@ -18,12 +18,13 @@ function hojeSaoPaulo() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 }
 
-async function buscarNoBcb(de: string, ate: string): Promise<PtaxDia[]> {
+// Fonte principal: servico PTAX (Olinda) do Banco Central.
+async function buscarNoOlinda(de: string, ate: string): Promise<PtaxDia[]> {
   const url =
     "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)" +
     `?@dataInicial='${mmddyyyy(de)}'&@dataFinalCotacao='${mmddyyyy(ate)}'&$format=json&$select=cotacaoCompra,cotacaoVenda,dataHoraCotacao`;
-  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(15000) });
-  if (!res.ok) throw new Error(`BCB HTTP ${res.status}`);
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`Olinda HTTP ${res.status}`);
   const json = (await res.json()) as { value: { cotacaoCompra: number; cotacaoVenda: number; dataHoraCotacao: string }[] };
   // Um registro por dia (se o BCB republicar no mesmo dia, vale o ultimo).
   const porDia = new Map<string, PtaxDia>();
@@ -31,6 +32,40 @@ async function buscarNoBcb(de: string, ate: string): Promise<PtaxDia[]> {
     porDia.set(v.dataHoraCotacao.slice(0, 10), { data: v.dataHoraCotacao.slice(0, 10), compra: v.cotacaoCompra, venda: v.cotacaoVenda });
   }
   return Array.from(porDia.values());
+}
+
+// Fonte reserva, tambem do Banco Central: API de series temporais (SGS),
+// serie 1 = PTAX venda e 10813 = PTAX compra (mesmos valores do Olinda).
+async function buscarNoSgs(de: string, ate: string): Promise<PtaxDia[]> {
+  const ddmmyyyy = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+  const serie = async (codigo: number) => {
+    const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${codigo}/dados?formato=json&dataInicial=${ddmmyyyy(de)}&dataFinal=${ddmmyyyy(ate)}`;
+    const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error(`SGS ${codigo} HTTP ${res.status}`);
+    const json = (await res.json()) as { data: string; valor: string }[];
+    return new Map(json.map((v) => [`${v.data.slice(6, 10)}-${v.data.slice(3, 5)}-${v.data.slice(0, 2)}`, Number(v.valor)]));
+  };
+  const [venda, compra] = await Promise.all([serie(1), serie(10813)]);
+  return Array.from(venda.entries())
+    .filter(([data, v]) => Number.isFinite(v) && compra.has(data))
+    .map(([data, v]) => ({ data, compra: compra.get(data)!, venda: v }))
+    .sort((a, b) => a.data.localeCompare(b.data));
+}
+
+async function buscarNoBcb(de: string, ate: string): Promise<PtaxDia[]> {
+  try {
+    return await buscarNoOlinda(de, ate);
+  } catch (e1) {
+    try {
+      return await buscarNoSgs(de, ate);
+    } catch (e2) {
+      throw new Error(`${e1 instanceof Error ? e1.message : e1} | ${e2 instanceof Error ? e2.message : e2}`);
+    }
+  }
+}
+
+async function gravarParametro(chave: string, valor: string) {
+  await prisma.hedgeParametro.upsert({ where: { chave }, create: { chave, valor }, update: { valor } });
 }
 
 export async function sincronizarPtax({ forcar = false } = {}): Promise<{ novos: number; ultima: string | null }> {
@@ -52,7 +87,16 @@ export async function sincronizarPtax({ forcar = false } = {}): Promise<{ novos:
   // Busca desde o dia da ultima PTAX gravada (rebusca esse dia para pegar
   // eventual correcao) ate hoje; sem historico, os ultimos 30 dias.
   const de = ultimaGravada ? iso(ultimaGravada.data) : iso(new Date(Date.now() - 30 * 86400000));
-  const dias = await buscarNoBcb(de, hoje);
+  let dias: PtaxDia[];
+  try {
+    dias = await buscarNoBcb(de, hoje);
+  } catch (e) {
+    // Guarda o motivo (diagnostico) e tenta de novo em ~2 minutos, nao em 15.
+    await gravarParametro("ptaxUltimoErro", `${new Date().toISOString()} ${e instanceof Error ? e.message : String(e)}`);
+    await gravarParametro(CHAVE_VERIFICADO, new Date(Date.now() - INTERVALO_MS + 2 * 60 * 1000).toISOString());
+    throw e;
+  }
+  await gravarParametro("ptaxUltimaSync", new Date().toISOString());
   let novos = 0;
   for (const d of dias) {
     const data = new Date(`${d.data}T00:00:00.000Z`);
