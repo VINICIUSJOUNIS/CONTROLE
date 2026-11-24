@@ -1178,7 +1178,7 @@ const REGRA_TEXTO: Record<Regra, string> = {
     "Valor negativo (reduz a despesa). Exportação imune e venda interna de café cru com alíquota zero mantêm os créditos das compras (LC 214/2025): crédito = CBS 11,2% + IBS 0,1% contidos no total das despesas com fornecedores PJ (mercado interno/externo, administrativas, fretes e armazenagem) - total × 11,3 / 111,3. Saldo pode ser ressarcido.",
   FERIAS: "Provisão mensal de férias: salário do mês ÷ 12 × 4/3 (férias + 1/3 constitucional). Salário = linhas digitadas que começam com 'Salário' em Despesa com Pessoal.",
   DECIMO_TERCEIRO: "Provisão mensal do 13º: salário do mês ÷ 12.",
-  INSS_FOLHA: "INSS patronal: salário × (20% + RAT ajustado + terceiros, das Premissas) + 20% do pró-labore.",
+  INSS_FOLHA: "INSS patronal: salário × (20% + RAT ajustado + terceiros, das Premissas). Pró-labore não entra.",
   FGTS: "FGTS: 8% do salário do mês.",
   ENCARGOS_13: "Encargos sobre a provisão de 13º: (salário ÷ 12) × (INSS da folha + FGTS 8%).",
   ENCARGOS_FERIAS: "Encargos sobre a provisão de férias: (salário ÷ 12 × 4/3) × (INSS da folha + FGTS 8%).",

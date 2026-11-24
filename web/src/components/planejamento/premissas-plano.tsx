@@ -208,8 +208,8 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
         </div>
         <div>
           <p className="mb-2 text-xs text-muted">
-            Encargos da folha (linhas automáticas de Despesa com Pessoal): INSS = salário × (20% patronal + RAT ajustado + terceiros) +
-            20% do pró-labore; FGTS = 8% do salário; férias + 1/3 e 13º provisionados por mês, com os mesmos encargos.
+            Encargos da folha (linhas automáticas de Despesa com Pessoal): INSS = salário × (20% patronal + RAT ajustado + terceiros)
+            (pró-labore fora do cálculo); FGTS = 8% do salário; férias + 1/3 e 13º provisionados por mês, com os mesmos encargos.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>

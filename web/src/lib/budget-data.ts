@@ -199,11 +199,11 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
   const automaticas = lines.filter((l) => l.tipoCusto === "AUTOMATICO");
 
   // Folha automatica (Despesa com Pessoal), a partir das linhas digitadas de
-  // Salario e Pro-labore do mes (ja no cenario):
+  // Salario do mes (ja no cenario). Pro-labore NAO entra em nenhum encargo
+  // (decisao do usuario, 24/11/2026):
   //  - Ferias + 1/3 = salario / 12 x 4/3 (provisao mensal);
   //  - 13o = salario / 12 (provisao mensal);
-  //  - INSS = salario x (20% patronal + RAT ajustado + terceiros) + 20% do
-  //    pro-labore (contribuinte individual: so a cota patronal);
+  //  - INSS = salario x (20% patronal + RAT ajustado + terceiros);
   //  - FGTS = 8% do salario;
   //  - Encargos sobre provisao de 13o / ferias = provisao x (INSS da folha + FGTS).
   const ratAjustado = n(plan.ratAjustado);
@@ -215,12 +215,11 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
       .filter((l) => l.tipoCusto !== "AUTOMATICO" && l.group === "DESPESA_PESSOAL" && re.test(l.name))
       .reduce((s, l) => s + l.months[m - 1].previsto, 0);
   const salarioMes = (m: number) => somaPessoal(m, /^\s*sal[aá]rio/i);
-  const proLaboreMes = (m: number) => somaPessoal(m, /pr[oó][\s-]*labore/i);
   const r2 = (v: number) => Number(v.toFixed(2));
   const folha: Partial<Record<RegraImposto, (m: number) => number>> = {
     FERIAS: (m) => r2((salarioMes(m) / 12) * (4 / 3)),
     DECIMO_TERCEIRO: (m) => r2(salarioMes(m) / 12),
-    INSS_FOLHA: (m) => r2(salarioMes(m) * aliqInssFolha + proLaboreMes(m) * 0.2),
+    INSS_FOLHA: (m) => r2(salarioMes(m) * aliqInssFolha),
     FGTS: (m) => r2(salarioMes(m) * ALIQ_FGTS),
     ENCARGOS_13: (m) => r2((salarioMes(m) / 12) * (aliqInssFolha + ALIQ_FGTS)),
     ENCARGOS_FERIAS: (m) => r2((salarioMes(m) / 12) * (4 / 3) * (aliqInssFolha + ALIQ_FGTS)),
