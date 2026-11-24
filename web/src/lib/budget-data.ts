@@ -130,15 +130,20 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
   // Deságio de ACC (adiantamento de contrato de cambio) e despesa da
   // exportacao: cresce com o mercado externo, mesmo estando no grupo
   // Emprestimo e Financiamento.
-  const cresceCom = (group: string, name: string): "INTERNO" | "EXTERNO" | "TOTAL" =>
-    group === "DESPESA_MERCADO_INTERNO"
+  // Folha (Salario e Pro-labore) e fixa: igual em todos os cenarios, nao
+  // cresce com o volume (decisao do usuario, 24/11/2026). Ferias, 13o, INSS
+  // e FGTS automaticos saem dela, entao tambem nao crescem.
+  const cresceCom = (group: string, name: string): "INTERNO" | "EXTERNO" | "TOTAL" | "FIXO" =>
+    group === "DESPESA_PESSOAL" && (/^\s*sal[aá]rio/i.test(name) || /pr[oó][\s-]*labore/i.test(name))
+      ? "FIXO"
+      : group === "DESPESA_MERCADO_INTERNO"
       ? "INTERNO"
       : group === "DESPESA_MERCADO_EXTERNO" || (group === "FINANCIAMENTO" && /des[aá]gio|acc/i.test(name))
         ? "EXTERNO"
         : "TOTAL";
   const fatorDespesa = (group: string, name: string) => {
     const c = cresceCom(group, name);
-    return c === "INTERNO" ? multInterno : c === "EXTERNO" ? multExterno : fatorTotal;
+    return c === "FIXO" ? 1 : c === "INTERNO" ? multInterno : c === "EXTERNO" ? multExterno : fatorTotal;
   };
 
   const lines = plan.lines.map((line) => {

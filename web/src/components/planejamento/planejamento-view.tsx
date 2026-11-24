@@ -392,7 +392,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         calculo={[
           ...gruposPrev.map((g) => `${g.label}: ${R(g.totalPrevisto)}`),
           `Despesa prevista = ${R(plan.totais.despesaPrevista)}`,
-          `Fator do cenário ${cen}: mercado interno × ${plan.fatorDespesas.interno.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · externo e deságio ACC × ${plan.fatorDespesas.externo.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · demais grupos × ${plan.fatorDespesas.total.toLocaleString("pt-BR", { maximumFractionDigits: 4 })}`,
+          `Fator do cenário ${cen}: mercado interno × ${plan.fatorDespesas.interno.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · externo e deságio ACC × ${plan.fatorDespesas.externo.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · demais grupos × ${plan.fatorDespesas.total.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · salário e pró-labore fixos (× 1)`,
         ]}
         logica="Total de custos e despesas planejados no ano. Despesas digitadas crescem com o cenário; linhas por saca e % da receita acompanham sozinhas o volume e a receita."
       />
@@ -925,7 +925,13 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
                   </p>
                 </>
               )}
-              {(custoForm.tipo === "FIXO" || custoForm.tipo === "MENSAL") && editingLine && (
+              {(custoForm.tipo === "FIXO" || custoForm.tipo === "MENSAL") && editingLine && editingLine.cresceCom === "FIXO" && (
+                <p className="text-[11px] text-muted sm:col-span-3">
+                  Folha fixa: este valor é o mesmo em todos os cenários (não cresce com o volume). Férias, 13º, INSS e FGTS
+                  automáticos são calculados sobre ele.
+                </p>
+              )}
+              {(custoForm.tipo === "FIXO" || custoForm.tipo === "MENSAL") && editingLine && editingLine.cresceCom !== "FIXO" && (
                 <p className="text-[11px] text-muted sm:col-span-3">
                   Digite o previsto do cenário Conservador. Nos outros cenários ele cresce junto com o volume:{" "}
                   {editingLine.cresceCom === "INTERNO"
