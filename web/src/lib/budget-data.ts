@@ -116,8 +116,9 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
   // base x fator. Despesas do mercado interno/externo usam o % do proprio
   // mercado; os demais grupos, o crescimento do volume total do ano (media
   // ponderada pelo volume base de cada mercado). Por saca e % da receita ja
-  // acompanham o volume do cenario e nao recebem fator. "Fixo mensal" e fixo
-  // de verdade: valor x 12 meses, sem fator (ex.: desagio, juros, tarifas).
+  // acompanham o volume do cenario e nao recebem fator. Tudo que e digitado
+  // (mes a mes e fixo mensal) e o cenario Conservador; os demais cenarios
+  // projetam pelo fator.
   let baseIntAno = 0;
   let baseExtAno = 0;
   for (const v of plan.volumes) {
@@ -147,7 +148,7 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
         ? Number((valorPorSaca * volumePrevistoMes(m, line.baseVolume)).toFixed(2))
         : percentual
           ? Number(((valorPercentual / 100) * volumePrevistoMes(m, line.baseVolume) * cotacaoSacaUsd * cotacaoDolar).toFixed(2))
-          : Number((previstoBase * (mensal ? 1 : fator)).toFixed(2));
+          : Number((previstoBase * fator).toFixed(2));
       const realizado = row ? n(row.valorRealizado) : 0;
       return { month: m, previsto, previstoBase, realizado, variacao: Number((realizado - previsto).toFixed(2)) };
     });
