@@ -127,12 +127,23 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
   }
   const fatorTotal =
     baseIntAno + baseExtAno > 0 ? (baseIntAno * multInterno + baseExtAno * multExterno) / (baseIntAno + baseExtAno) : 1;
-  const fatorDespesa = (group: string) =>
-    group === "DESPESA_MERCADO_INTERNO" ? multInterno : group === "DESPESA_MERCADO_EXTERNO" ? multExterno : fatorTotal;
+  // Deságio de ACC (adiantamento de contrato de cambio) e despesa da
+  // exportacao: cresce com o mercado externo, mesmo estando no grupo
+  // Emprestimo e Financiamento.
+  const cresceCom = (group: string, name: string): "INTERNO" | "EXTERNO" | "TOTAL" =>
+    group === "DESPESA_MERCADO_INTERNO"
+      ? "INTERNO"
+      : group === "DESPESA_MERCADO_EXTERNO" || (group === "FINANCIAMENTO" && /des[aá]gio|acc/i.test(name))
+        ? "EXTERNO"
+        : "TOTAL";
+  const fatorDespesa = (group: string, name: string) => {
+    const c = cresceCom(group, name);
+    return c === "INTERNO" ? multInterno : c === "EXTERNO" ? multExterno : fatorTotal;
+  };
 
   const lines = plan.lines.map((line) => {
     const monthsByNum = new Map(line.months.map((m) => [m.month, m]));
-    const fator = fatorDespesa(line.group);
+    const fator = fatorDespesa(line.group, line.name);
     const porSaca = line.tipoCusto === "POR_SACA";
     const mensal = line.tipoCusto === "MENSAL";
     const percentual = line.tipoCusto === "PERCENTUAL";
@@ -161,6 +172,7 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
       orderIndex: line.orderIndex,
       tipoCusto: line.tipoCusto as "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL" | "AUTOMATICO",
       regraImposto: (line.regraImposto ?? null) as RegraImposto | null,
+      cresceCom: cresceCom(line.group, line.name),
       valorPorSaca,
       valorMensal,
       valorPercentual,

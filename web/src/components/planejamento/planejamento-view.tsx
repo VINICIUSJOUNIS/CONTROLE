@@ -392,7 +392,7 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
         calculo={[
           ...gruposPrev.map((g) => `${g.label}: ${R(g.totalPrevisto)}`),
           `Despesa prevista = ${R(plan.totais.despesaPrevista)}`,
-          `Fator do cenário ${cen}: mercado interno × ${plan.fatorDespesas.interno.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · externo × ${plan.fatorDespesas.externo.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · demais grupos × ${plan.fatorDespesas.total.toLocaleString("pt-BR", { maximumFractionDigits: 4 })}`,
+          `Fator do cenário ${cen}: mercado interno × ${plan.fatorDespesas.interno.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · externo e deságio ACC × ${plan.fatorDespesas.externo.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} · demais grupos × ${plan.fatorDespesas.total.toLocaleString("pt-BR", { maximumFractionDigits: 4 })}`,
         ]}
         logica="Total de custos e despesas planejados no ano. Despesas digitadas crescem com o cenário; linhas por saca e % da receita acompanham sozinhas o volume e a receita."
       />
@@ -928,15 +928,15 @@ export function PlanejamentoView({ plan, anoAnterior }: { plan: NonNullable<Budg
               {(custoForm.tipo === "FIXO" || custoForm.tipo === "MENSAL") && editingLine && (
                 <p className="text-[11px] text-muted sm:col-span-3">
                   Digite o previsto do cenário Conservador. Nos outros cenários ele cresce junto com o volume:{" "}
-                  {editingLine.group === "DESPESA_MERCADO_INTERNO"
+                  {editingLine.cresceCom === "INTERNO"
                     ? "% do mercado interno"
-                    : editingLine.group === "DESPESA_MERCADO_EXTERNO"
+                    : editingLine.cresceCom === "EXTERNO"
                     ? "% do mercado externo"
                     : "crescimento do volume total"}
                   {plan.scenario !== "CONSERVADOR" &&
-                    ` (no cenário ${SCENARIO_LABELS[plan.scenario]}: x ${(editingLine.group === "DESPESA_MERCADO_INTERNO"
+                    ` (no cenário ${SCENARIO_LABELS[plan.scenario]}: x ${(editingLine.cresceCom === "INTERNO"
                       ? plan.fatorDespesas.interno
-                      : editingLine.group === "DESPESA_MERCADO_EXTERNO"
+                      : editingLine.cresceCom === "EXTERNO"
                       ? plan.fatorDespesas.externo
                       : plan.fatorDespesas.total
                     ).toLocaleString("pt-BR", { maximumFractionDigits: 4 })})`}
