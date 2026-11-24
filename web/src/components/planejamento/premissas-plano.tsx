@@ -27,6 +27,8 @@ type PlanoPremissas = {
   crescimentoMuitoOtimistaExterno: number;
   icmsPctInterestadual: number;
   icmsAliquotaInterestadual: number;
+  ratAjustado: number;
+  terceirosFolha: number;
 };
 
 function formDe(plan: PlanoPremissas) {
@@ -44,6 +46,8 @@ function formDe(plan: PlanoPremissas) {
     crescimentoMuitoOtimistaExterno: String(plan.crescimentoMuitoOtimistaExterno * 100),
     icmsPctInterestadual: String(plan.icmsPctInterestadual * 100),
     icmsAliquotaInterestadual: String(plan.icmsAliquotaInterestadual * 100),
+    ratAjustado: String(plan.ratAjustado * 100),
+    terceirosFolha: String(plan.terceirosFolha * 100),
   };
 }
 
@@ -80,6 +84,8 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
         crescimentoMuitoOtimistaExterno: (Number(form.crescimentoMuitoOtimistaExterno) || 0) / 100,
         icmsPctInterestadual: (Number(form.icmsPctInterestadual) || 0) / 100,
         icmsAliquotaInterestadual: (Number(form.icmsAliquotaInterestadual) || 0) / 100,
+        ratAjustado: (Number(form.ratAjustado) || 0) / 100,
+        terceirosFolha: (Number(form.terceirosFolha) || 0) / 100,
       });
       setSalvo(true);
       router.refresh();
@@ -197,6 +203,24 @@ export function PremissasPlano({ plan }: { plan: PlanoPremissas }) {
                 onChange={(e) => set("icmsAliquotaInterestadual", e.target.value)}
               />
               <p className="mt-1 text-[11px] text-muted">12% para S/SE; 7% para N, NE, CO e ES.</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p className="mb-2 text-xs text-muted">
+            Encargos da folha (linhas automáticas de Despesa com Pessoal): INSS = salário × (20% patronal + RAT ajustado + terceiros) +
+            20% do pró-labore; FGTS = 8% do salário; férias + 1/3 e 13º provisionados por mês, com os mesmos encargos.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>RAT ajustado (RAT × FAP) (%)</Label>
+              <Input type="number" step="0.01" value={form.ratAjustado} onChange={(e) => set("ratAjustado", e.target.value)} />
+              <p className="mt-1 text-[11px] text-muted">Consulte o RAT do CNAE e o FAP da empresa (eSocial/Receita).</p>
+            </div>
+            <div>
+              <Label>Terceiros (Sistema S, salário-educação, INCRA) (%)</Label>
+              <Input type="number" step="0.01" value={form.terceirosFolha} onChange={(e) => set("terceirosFolha", e.target.value)} />
+              <p className="mt-1 text-[11px] text-muted">Conforme o FPAS da empresa (comércio: 5,8%).</p>
             </div>
           </div>
         </div>

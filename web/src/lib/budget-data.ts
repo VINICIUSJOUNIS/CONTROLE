@@ -20,7 +20,7 @@ const CUSTO_VARIAVEL_GROUPS: BudgetGroup[] = [
 ];
 const CUSTO_FIXO_GROUPS: BudgetGroup[] = ["DESPESA_ADM_FIXA", "DESPESA_PESSOAL", "FINANCIAMENTO"];
 
-export type RegraImposto = "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS";
+export type RegraImposto = "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS" | "FERIAS" | "DECIMO_TERCEIRO" | "INSS_FOLHA" | "FGTS" | "ENCARGOS_13" | "ENCARGOS_FERIAS";
 // Adicional de IRPJ: 10% sobre o lucro acima de R$ 240 mil/ano = R$ 20 mil/mes.
 const IRPJ_ADICIONAL_MES = 20_000;
 
@@ -185,6 +185,46 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
   const icmsPct = n(plan.icmsPctInterestadual);
   const icmsAliq = n(plan.icmsAliquotaInterestadual);
   const automaticas = lines.filter((l) => l.tipoCusto === "AUTOMATICO");
+
+  // Folha automatica (Despesa com Pessoal), a partir das linhas digitadas de
+  // Salario e Pro-labore do mes (ja no cenario):
+  //  - Ferias + 1/3 = salario / 12 x 4/3 (provisao mensal);
+  //  - 13o = salario / 12 (provisao mensal);
+  //  - INSS = salario x (20% patronal + RAT ajustado + terceiros) + 20% do
+  //    pro-labore (contribuinte individual: so a cota patronal);
+  //  - FGTS = 8% do salario;
+  //  - Encargos sobre provisao de 13o / ferias = provisao x (INSS da folha + FGTS).
+  const ratAjustado = n(plan.ratAjustado);
+  const terceirosFolha = n(plan.terceirosFolha);
+  const aliqInssFolha = 0.2 + ratAjustado + terceirosFolha;
+  const ALIQ_FGTS = 0.08;
+  const somaPessoal = (m: number, re: RegExp) =>
+    lines
+      .filter((l) => l.tipoCusto !== "AUTOMATICO" && l.group === "DESPESA_PESSOAL" && re.test(l.name))
+      .reduce((s, l) => s + l.months[m - 1].previsto, 0);
+  const salarioMes = (m: number) => somaPessoal(m, /^\s*sal[aá]rio/i);
+  const proLaboreMes = (m: number) => somaPessoal(m, /pr[oó][\s-]*labore/i);
+  const r2 = (v: number) => Number(v.toFixed(2));
+  const folha: Partial<Record<RegraImposto, (m: number) => number>> = {
+    FERIAS: (m) => r2((salarioMes(m) / 12) * (4 / 3)),
+    DECIMO_TERCEIRO: (m) => r2(salarioMes(m) / 12),
+    INSS_FOLHA: (m) => r2(salarioMes(m) * aliqInssFolha + proLaboreMes(m) * 0.2),
+    FGTS: (m) => r2(salarioMes(m) * ALIQ_FGTS),
+    ENCARGOS_13: (m) => r2((salarioMes(m) / 12) * (aliqInssFolha + ALIQ_FGTS)),
+    ENCARGOS_FERIAS: (m) => r2((salarioMes(m) / 12) * (4 / 3) * (aliqInssFolha + ALIQ_FGTS)),
+  };
+  for (const l of automaticas) {
+    const regra = l.regraImposto ? folha[l.regraImposto] : undefined;
+    if (!regra) continue;
+    l.months = l.months.map((mm) => {
+      const previsto = regra(mm.month);
+      return { ...mm, previsto, previstoBase: previsto, variacao: Number((mm.realizado - previsto).toFixed(2)) };
+    });
+    l.totalPrevisto = Number(l.months.reduce((s, mm) => s + mm.previsto, 0).toFixed(2));
+  }
+  // Linhas que entram como despesa no lucro (IRPJ/CSLL): todas menos os
+  // impostos automaticos (calculados abaixo) e Investimentos.
+  const ehImpostoAuto = (l: (typeof lines)[number]) => l.tipoCusto === "AUTOMATICO" && !(l.regraImposto && folha[l.regraImposto]);
   const dareMes = (m: number) => Number((volumePrevistoMes(m, "INTERNO") * precoSaca * icmsPct * icmsAliq).toFixed(2));
   const temDare = automaticas.some((l) => l.regraImposto === "DARE");
   //  - Credito de CBS/IBS (valor negativo): exportacao imune e venda interna
@@ -205,11 +245,11 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
   const lucroMes = (m: number) =>
     volumePrevistoMes(m, "TOTAL") * precoSaca -
     lines
-      .filter((l) => l.tipoCusto !== "AUTOMATICO" && l.group !== "INVESTIMENTOS")
+      .filter((l) => !ehImpostoAuto(l) && l.group !== "INVESTIMENTOS")
       .reduce((s, l) => s + l.months[m - 1].previsto, 0) -
     (temDare ? dareMes(m) : 0) -
     (temCredito ? creditoMes(m) : 0);
-  for (const l of automaticas) {
+  for (const l of automaticas.filter(ehImpostoAuto)) {
     l.months = l.months.map((mm) => {
       const lucro = Math.max(lucroMes(mm.month), 0);
       const previsto =
@@ -334,6 +374,8 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
     precoSacaExterno: plan.precoSacaExterno != null ? n(plan.precoSacaExterno) : null,
     icmsPctInterestadual: icmsPct,
     icmsAliquotaInterestadual: icmsAliq,
+    ratAjustado,
+    terceirosFolha,
     months,
     groups,
     totais,

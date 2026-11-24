@@ -26,6 +26,8 @@ export type BudgetPlanAssumptionsInput = {
   crescimentoMuitoOtimistaExterno: number;
   icmsPctInterestadual: number; // fracao, ex. 0.3
   icmsAliquotaInterestadual: number; // fracao, ex. 0.12
+  ratAjustado: number; // fracao, ex. 0.03
+  terceirosFolha: number; // fracao, ex. 0.058
 };
 
 export async function updateBudgetPlanAssumptions(planId: string, input: BudgetPlanAssumptionsInput) {
@@ -47,6 +49,8 @@ export async function updateBudgetPlanAssumptions(planId: string, input: BudgetP
       crescimentoMuitoOtimistaExterno: input.crescimentoMuitoOtimistaExterno,
       icmsPctInterestadual: input.icmsPctInterestadual,
       icmsAliquotaInterestadual: input.icmsAliquotaInterestadual,
+      ratAjustado: input.ratAjustado,
+      terceirosFolha: input.terceirosFolha,
     },
   });
   revalidateAll();
@@ -110,7 +114,7 @@ export async function upsertBudgetLineMonths(lineId: string, rows: BudgetLineMon
 
 export type BudgetLineCustoInput = {
   tipoCusto: "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL" | "AUTOMATICO";
-  regraImposto?: "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS" | null;
+  regraImposto?: "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS" | "FERIAS" | "DECIMO_TERCEIRO" | "INSS_FOLHA" | "FGTS" | "ENCARGOS_13" | "ENCARGOS_FERIAS" | null;
   valorPorSaca: number;
   valorMensal?: number;
   valorPercentual?: number;
@@ -123,7 +127,9 @@ export type BudgetLineCustoInput = {
 export async function updateBudgetLineCusto(lineId: string, input: BudgetLineCustoInput) {
   const tipoCusto = ["POR_SACA", "MENSAL", "PERCENTUAL", "AUTOMATICO"].includes(input.tipoCusto) ? input.tipoCusto : "FIXO";
   const regraImposto =
-    input.regraImposto && ["PIS", "COFINS", "IRPJ", "CSLL", "DARE", "CREDITO_CBS_IBS"].includes(input.regraImposto) ? input.regraImposto : null;
+    input.regraImposto && ["PIS", "COFINS", "IRPJ", "CSLL", "DARE", "CREDITO_CBS_IBS", "FERIAS", "DECIMO_TERCEIRO", "INSS_FOLHA", "FGTS", "ENCARGOS_13", "ENCARGOS_FERIAS"].includes(
+      input.regraImposto
+    ) ? input.regraImposto : null;
   if (tipoCusto === "AUTOMATICO" && !regraImposto) throw new Error("Escolha a regra do imposto");
   const valorMensal = Number(input.valorMensal);
   const valorPercentual = Number(input.valorPercentual);

@@ -1177,6 +1177,10 @@ model BudgetPlan {
   // para fora de MG (dentro de MG o ICMS do cafe cru e diferido) e aliquota.
   icmsPctInterestadual      Decimal        @default(0) @db.Decimal(6, 4)
   icmsAliquotaInterestadual Decimal        @default(0.12) @db.Decimal(6, 4)
+  // Encargos da folha (linhas automaticas de Despesa com Pessoal): RAT
+  // ajustado (RAT x FAP) e terceiros (Sistema S, salario-educacao, INCRA).
+  ratAjustado               Decimal        @default(0.03) @db.Decimal(6, 4)
+  terceirosFolha            Decimal        @default(0.058) @db.Decimal(6, 4)
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
 

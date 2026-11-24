@@ -1141,7 +1141,7 @@ function GroupCard({
 }
 
 type TipoCusto = "FIXO" | "MENSAL" | "POR_SACA" | "PERCENTUAL" | "AUTOMATICO";
-type Regra = "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS";
+type Regra = "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS" | "FERIAS" | "DECIMO_TERCEIRO" | "INSS_FOLHA" | "FGTS" | "ENCARGOS_13" | "ENCARGOS_FERIAS";
 const REGRAS: { value: Regra; label: string }[] = [
   { value: "PIS", label: "PIS" },
   { value: "COFINS", label: "COFINS" },
@@ -1149,11 +1149,23 @@ const REGRAS: { value: Regra; label: string }[] = [
   { value: "CSLL", label: "CSLL" },
   { value: "DARE", label: "DARE (ICMS interestadual)" },
   { value: "CREDITO_CBS_IBS", label: "Crédito CBS/IBS (compras)" },
+  { value: "FERIAS", label: "Férias + 1/3" },
+  { value: "DECIMO_TERCEIRO", label: "13º salário" },
+  { value: "INSS_FOLHA", label: "INSS da folha" },
+  { value: "FGTS", label: "FGTS" },
+  { value: "ENCARGOS_13", label: "Encargos sobre 13º" },
+  { value: "ENCARGOS_FERIAS", label: "Encargos sobre férias" },
 ];
 // Regra sugerida pelo nome da linha ao escolher "Automático".
 const regraPeloNome = (nome: string): Regra => {
   const n = nome.trim().toUpperCase();
   if (n.includes("CRÉDITO") || n.includes("CREDITO")) return "CREDITO_CBS_IBS";
+  if (n.includes("ENCARGO") && n.includes("13")) return "ENCARGOS_13";
+  if (n.includes("ENCARGO") && n.includes("FÉRIAS")) return "ENCARGOS_FERIAS";
+  if (n.includes("FÉRIAS") || n.includes("FERIAS")) return "FERIAS";
+  if (n.includes("13")) return "DECIMO_TERCEIRO";
+  if (n.includes("INSS")) return "INSS_FOLHA";
+  if (n.includes("FGTS")) return "FGTS";
   return (REGRAS.find((r) => n.includes(r.value))?.value ?? "IRPJ") as Regra;
 };
 const REGRA_TEXTO: Record<Regra, string> = {
@@ -1164,6 +1176,12 @@ const REGRA_TEXTO: Record<Regra, string> = {
   DARE: "ICMS interestadual: receita interna prevista × % das vendas internas para outros estados × alíquota (Premissas). Dentro de MG é diferido; exportação não incide.",
   CREDITO_CBS_IBS:
     "Valor negativo (reduz a despesa). Exportação imune e venda interna de café cru com alíquota zero mantêm os créditos das compras (LC 214/2025): crédito = CBS 11,2% + IBS 0,1% contidos no total das despesas com fornecedores PJ (mercado interno/externo, administrativas, fretes e armazenagem) - total × 11,3 / 111,3. Saldo pode ser ressarcido.",
+  FERIAS: "Provisão mensal de férias: salário do mês ÷ 12 × 4/3 (férias + 1/3 constitucional). Salário = linhas digitadas que começam com 'Salário' em Despesa com Pessoal.",
+  DECIMO_TERCEIRO: "Provisão mensal do 13º: salário do mês ÷ 12.",
+  INSS_FOLHA: "INSS patronal: salário × (20% + RAT ajustado + terceiros, das Premissas) + 20% do pró-labore.",
+  FGTS: "FGTS: 8% do salário do mês.",
+  ENCARGOS_13: "Encargos sobre a provisão de 13º: (salário ÷ 12) × (INSS da folha + FGTS 8%).",
+  ENCARGOS_FERIAS: "Encargos sobre a provisão de férias: (salário ÷ 12 × 4/3) × (INSS da folha + FGTS 8%).",
 };
 type BaseVolume = "TOTAL" | "INTERNO" | "EXTERNO";
 
