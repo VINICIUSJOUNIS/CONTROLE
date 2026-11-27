@@ -38,6 +38,21 @@ function ValorPE({ pe, receita }: { pe: PE; receita: number }) {
   return <span className={receita >= pe.valorReais ? "text-success" : "text-danger"}>{formatCurrency(pe.valorReais)}</span>;
 }
 
+// Ponto de equilibrio em sacas = PE em R$ / receita por saca do periodo
+// (receita / volume). Mesma conta do card anual, com a receita e o volume do
+// proprio periodo; sem volume ou sem PE, nao calcula.
+const receitaPorSaca = (receita: number, volume: number) => (volume > 0 && receita > 0 ? receita / volume : null);
+const peEmSacas = (pe: PE, receita: number, volume: number) => {
+  const rps = receitaPorSaca(receita, volume);
+  return pe.valorReais !== null && rps !== null ? pe.valorReais / rps : null;
+};
+
+function SacasPE({ pe, receita, volume }: { pe: PE; receita: number; volume: number }) {
+  const s = peEmSacas(pe, receita, volume);
+  if (s === null) return <span className="text-muted">-</span>;
+  return <span className={volume >= s ? "text-success" : "text-danger"}>{sc(s)}</span>;
+}
+
 // Margem de seguranca: quanto a receita pode cair ate o ponto de equilibrio.
 const margemSeguranca = (pe: PE, receita: number) =>
   pe.valorReais !== null && receita > 0 ? ((receita - pe.valorReais) / receita) * 100 : null;
@@ -119,6 +134,15 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
     return { prev: calcPontoEquilibrio(s.fp, s.vp, s.rp), real: calcPontoEquilibrio(s.fr, s.vr, s.rr) };
   };
   const peAno = pePeriodo(plan.months);
+  const volAno = plan.months.reduce(
+    (a, x) => ({
+      prev: a.prev + x.volumeInternoPrevisto + x.volumeExternoPrevisto,
+      real: a.real + x.volumeInternoRealizado + x.volumeExternoRealizado,
+    }),
+    { prev: 0, real: 0 }
+  );
+  const volPrevMes = m.volumeInternoPrevisto + m.volumeExternoPrevisto;
+  const volRealForm = paraNumero(form.volInt) + paraNumero(form.volExt);
   const peAcum = pePeriodo(plan.months.slice(0, mes));
 
   // Acumulado do ano ate o mes escolhido (valores salvos).
@@ -162,6 +186,8 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                 <th className={TH}>Resultado real.</th>
                 <th className={TH}>Ponto equil. prev.</th>
                 <th className={TH}>Ponto equil. real.</th>
+                <th className={TH}>P.E. sacas prev.</th>
+                <th className={TH}>P.E. sacas real.</th>
               </tr>
             </thead>
             <tbody>
@@ -193,6 +219,20 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                   <td className={TD}>
                     <ValorPE pe={x.pontoEquilibrioRealizado} receita={x.receitaRealizada} />
                   </td>
+                  <td className={TD}>
+                    <SacasPE
+                      pe={x.pontoEquilibrioPrevisto}
+                      receita={x.receitaPrevista}
+                      volume={x.volumeInternoPrevisto + x.volumeExternoPrevisto}
+                    />
+                  </td>
+                  <td className={TD}>
+                    <SacasPE
+                      pe={x.pontoEquilibrioRealizado}
+                      receita={x.receitaRealizada}
+                      volume={x.volumeInternoRealizado + x.volumeExternoRealizado}
+                    />
+                  </td>
                 </tr>
               ))}
               <tr className="font-semibold">
@@ -211,12 +251,19 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                 <td className={TD}>
                   <ValorPE pe={peAno.real} receita={plan.totais.receitaRealizada} />
                 </td>
+                <td className={TD}>
+                  <SacasPE pe={peAno.prev} receita={plan.totais.receitaPrevista} volume={volAno.prev} />
+                </td>
+                <td className={TD}>
+                  <SacasPE pe={peAno.real} receita={plan.totais.receitaRealizada} volume={volAno.real} />
+                </td>
               </tr>
             </tbody>
           </table>
           <p className="mt-2 text-[11px] text-muted">
             Clique em um mês para lançar o realizado. Ponto de equilíbrio = custos fixos ÷ (1 − custos variáveis ÷ receita), com os
-            custos e a receita de cada mês; verde quando a receita cobriu, vermelho quando ficou abaixo. Na linha do ano a conta usa
+            custos e a receita de cada mês; verde quando a receita cobriu, vermelho quando ficou abaixo. Em sacas = ponto de equilíbrio
+            ÷ receita por saca do mês (receita ÷ volume); verde quando o volume vendido cobriu. Na linha do ano a conta usa
             os totais do ano (não é a soma dos meses).
           </p>
         </CardContent>
@@ -421,6 +468,32 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                   )}
                 </td>
               </tr>
+              <tr className="border-b border-border/60">
+                <td className="px-3 py-1.5 pl-6">Receita por saca (receita ÷ volume do mês)</td>
+                <td className={TD}>
+                  {receitaPorSaca(m.receitaPrevista, volPrevMes) !== null ? formatCurrency(receitaPorSaca(m.receitaPrevista, volPrevMes)!) : "-"}
+                </td>
+                <td className={TD}>
+                  {receitaPorSaca(recRealForm, volRealForm) !== null ? formatCurrency(receitaPorSaca(recRealForm, volRealForm)!) : "-"}
+                </td>
+                <td className={TD} />
+                <td className={TD} />
+              </tr>
+              <tr className="border-b border-border/60 font-semibold">
+                <td className="px-3 py-1.5 pl-6">Ponto de equilíbrio em sacas (volume mínimo do mês)</td>
+                <td className={TD}>
+                  <SacasPE pe={pePrevMes} receita={m.receitaPrevista} volume={volPrevMes} />
+                </td>
+                <td className={TD}>
+                  <SacasPE pe={peRealMes} receita={recRealForm} volume={volRealForm} />
+                </td>
+                <td className={TD}>
+                  {peEmSacas(pePrevMes, m.receitaPrevista, volPrevMes) !== null && peEmSacas(peRealMes, recRealForm, volRealForm) !== null
+                    ? sc(peEmSacas(peRealMes, recRealForm, volRealForm)! - peEmSacas(pePrevMes, m.receitaPrevista, volPrevMes)!)
+                    : "-"}
+                </td>
+                <td className={TD} />
+              </tr>
               <tr>
                 <td className="px-3 py-1.5 pl-6">Margem de segurança (receita acima do ponto de equilíbrio)</td>
                 <td className={TD}>
@@ -504,6 +577,21 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                 <td className={TD}>
                   {peAcum.prev.valorReais !== null && peAcum.real.valorReais !== null
                     ? formatCurrency(peAcum.real.valorReais - peAcum.prev.valorReais)
+                    : "-"}
+                </td>
+                <td className={TD} />
+              </tr>
+              <tr className="border-b border-border/60">
+                <td className="px-3 py-1.5">Ponto de equilíbrio em sacas</td>
+                <td className={TD}>
+                  <SacasPE pe={peAcum.prev} receita={acum.recPrev} volume={acum.volPrev} />
+                </td>
+                <td className={TD}>
+                  <SacasPE pe={peAcum.real} receita={acum.recReal} volume={acum.volReal} />
+                </td>
+                <td className={TD}>
+                  {peEmSacas(peAcum.prev, acum.recPrev, acum.volPrev) !== null && peEmSacas(peAcum.real, acum.recReal, acum.volReal) !== null
+                    ? sc(peEmSacas(peAcum.real, acum.recReal, acum.volReal)! - peEmSacas(peAcum.prev, acum.recPrev, acum.volPrev)!)
                     : "-"}
                 </td>
                 <td className={TD} />
