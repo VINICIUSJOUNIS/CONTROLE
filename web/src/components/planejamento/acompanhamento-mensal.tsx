@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import { SCENARIO_LABELS } from "@/lib/budget-constants";
+import { SCENARIO_LABELS, CUSTO_FIXO_GROUPS, CUSTO_VARIAVEL_GROUPS, calcPontoEquilibrio } from "@/lib/budget-constants";
 import type { BudgetPlanData } from "@/lib/budget-data";
 import { salvarRealizadoMes } from "@/app/(dashboard)/planejamento-orcamentario/actions";
 
@@ -26,6 +26,25 @@ function Var({ previsto, realizado, despesa = false }: { previsto: number; reali
   const v = ((realizado - previsto) / Math.abs(previsto)) * 100;
   const bom = despesa ? v <= 0 : v >= 0;
   return <span className={bom ? "text-success" : "text-danger"}>{`${v >= 0 ? "+" : ""}${formatPercent(v, 1)}`}</span>;
+}
+
+type PE = ReturnType<typeof calcPontoEquilibrio>;
+
+// Ponto de equilibrio em R$: verde se a receita do periodo cobriu, vermelho se
+// ficou abaixo; "-" quando nao ha como calcular (sem receita, ou custos
+// variaveis >= receita).
+function ValorPE({ pe, receita }: { pe: PE; receita: number }) {
+  if (pe.valorReais === null) return <span className="text-muted">-</span>;
+  return <span className={receita >= pe.valorReais ? "text-success" : "text-danger"}>{formatCurrency(pe.valorReais)}</span>;
+}
+
+// Margem de seguranca: quanto a receita pode cair ate o ponto de equilibrio.
+const margemSeguranca = (pe: PE, receita: number) =>
+  pe.valorReais !== null && receita > 0 ? ((receita - pe.valorReais) / receita) * 100 : null;
+
+function TextoMargem({ v }: { v: number | null }) {
+  if (v === null) return <span className="text-muted">-</span>;
+  return <span className={v >= 0 ? "text-success" : "text-danger"}>{formatPercent(v, 1)}</span>;
 }
 
 const paraTexto = (v: number) => (v ? String(v) : "");
@@ -75,6 +94,33 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
   const despRealForm = linhas.reduce((s, l) => s + paraNumero(form.linhas[l.id] ?? ""), 0);
   const recRealForm = paraNumero(form.receita);
 
+  // Ponto de equilibrio do mes escolhido: previsto do plano; realizado com os
+  // valores em edicao (ainda nao salvos), para acompanhar enquanto lanca.
+  const somaForm = (gs: string[]) =>
+    linhas.filter((l) => gs.includes(l.group)).reduce((s, l) => s + paraNumero(form.linhas[l.id] ?? ""), 0);
+  const pePrevMes = m.pontoEquilibrioPrevisto;
+  const peRealMes = calcPontoEquilibrio(somaForm(CUSTO_FIXO_GROUPS), somaForm(CUSTO_VARIAVEL_GROUPS), recRealForm);
+
+  // Ponto de equilibrio do ano e acumulado ate o mes: soma dos custos fixos e
+  // variaveis dos meses sobre a receita do periodo (nao e a soma dos pontos
+  // de equilibrio mensais, que tem % variavel diferente a cada mes).
+  const pePeriodo = (meses: Plano["months"]) => {
+    const s = meses.reduce(
+      (a, x) => ({
+        fp: a.fp + x.pontoEquilibrioPrevisto.custosFixos,
+        vp: a.vp + x.pontoEquilibrioPrevisto.custosVariaveis,
+        rp: a.rp + x.receitaPrevista,
+        fr: a.fr + x.pontoEquilibrioRealizado.custosFixos,
+        vr: a.vr + x.pontoEquilibrioRealizado.custosVariaveis,
+        rr: a.rr + x.receitaRealizada,
+      }),
+      { fp: 0, vp: 0, rp: 0, fr: 0, vr: 0, rr: 0 }
+    );
+    return { prev: calcPontoEquilibrio(s.fp, s.vp, s.rp), real: calcPontoEquilibrio(s.fr, s.vr, s.rr) };
+  };
+  const peAno = pePeriodo(plan.months);
+  const peAcum = pePeriodo(plan.months.slice(0, mes));
+
   // Acumulado do ano ate o mes escolhido (valores salvos).
   const acum = plan.months.slice(0, mes).reduce(
     (a, x) => ({
@@ -114,6 +160,8 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                 <th className={TH}>Var.</th>
                 <th className={TH}>Resultado prev.</th>
                 <th className={TH}>Resultado real.</th>
+                <th className={TH}>Ponto equil. prev.</th>
+                <th className={TH}>Ponto equil. real.</th>
               </tr>
             </thead>
             <tbody>
@@ -139,6 +187,12 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                   </td>
                   <td className={TD}>{formatCurrency(x.resultadoPrevisto)}</td>
                   <td className={TD}>{x.receitaRealizada || x.despesaRealizada ? formatCurrency(x.resultadoRealizado) : "-"}</td>
+                  <td className={TD}>
+                    <ValorPE pe={x.pontoEquilibrioPrevisto} receita={x.receitaPrevista} />
+                  </td>
+                  <td className={TD}>
+                    <ValorPE pe={x.pontoEquilibrioRealizado} receita={x.receitaRealizada} />
+                  </td>
                 </tr>
               ))}
               <tr className="font-semibold">
@@ -151,10 +205,20 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                 <td className={TD} />
                 <td className={TD}>{formatCurrency(plan.totais.resultadoPrevisto)}</td>
                 <td className={TD}>{formatCurrency(plan.totais.resultadoRealizado)}</td>
+                <td className={TD}>
+                  <ValorPE pe={peAno.prev} receita={plan.totais.receitaPrevista} />
+                </td>
+                <td className={TD}>
+                  <ValorPE pe={peAno.real} receita={plan.totais.receitaRealizada} />
+                </td>
               </tr>
             </tbody>
           </table>
-          <p className="mt-2 text-[11px] text-muted">Clique em um mês para lançar o realizado.</p>
+          <p className="mt-2 text-[11px] text-muted">
+            Clique em um mês para lançar o realizado. Ponto de equilíbrio = custos fixos ÷ (1 − custos variáveis ÷ receita), com os
+            custos e a receita de cada mês; verde quando a receita cobriu, vermelho quando ficou abaixo. Na linha do ano a conta usa
+            os totais do ano (não é a soma dos meses).
+          </p>
         </CardContent>
       </Card>
 
@@ -299,8 +363,83 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                 </td>
                 <td className={TD} />
               </tr>
+
+              <tr className="bg-primary/5 text-xs font-semibold tracking-wide text-primary">
+                <td className="px-3 py-1.5" colSpan={5}>
+                  PONTO DE EQUILÍBRIO DO MÊS
+                </td>
+              </tr>
+              <tr className="border-b border-border/60">
+                <td className="px-3 py-1.5 pl-6">Custos fixos (adm. fixas, pessoal, financiamento)</td>
+                <td className={TD}>{formatCurrency(pePrevMes.custosFixos)}</td>
+                <td className={TD}>{peRealMes.custosFixos ? formatCurrency(peRealMes.custosFixos) : "-"}</td>
+                <td className={TD}>{peRealMes.custosFixos ? formatCurrency(peRealMes.custosFixos - pePrevMes.custosFixos) : "-"}</td>
+                <td className={TD}>
+                  <Var previsto={pePrevMes.custosFixos} realizado={peRealMes.custosFixos} despesa />
+                </td>
+              </tr>
+              <tr className="border-b border-border/60">
+                <td className="px-3 py-1.5 pl-6">Custos variáveis (fornecedor, mercados, adm. variáveis, impostos)</td>
+                <td className={TD}>{formatCurrency(pePrevMes.custosVariaveis)}</td>
+                <td className={TD}>{peRealMes.custosVariaveis ? formatCurrency(peRealMes.custosVariaveis) : "-"}</td>
+                <td className={TD}>
+                  {peRealMes.custosVariaveis ? formatCurrency(peRealMes.custosVariaveis - pePrevMes.custosVariaveis) : "-"}
+                </td>
+                <td className={TD}>
+                  <Var previsto={pePrevMes.custosVariaveis} realizado={peRealMes.custosVariaveis} despesa />
+                </td>
+              </tr>
+              <tr className="border-b border-border/60">
+                <td className="px-3 py-1.5 pl-6">% custo variável sobre a receita</td>
+                <td className={TD}>
+                  {pePrevMes.custosVariaveisPercent !== null ? formatPercent(pePrevMes.custosVariaveisPercent * 100, 1) : "-"}
+                </td>
+                <td className={TD}>
+                  {peRealMes.custosVariaveisPercent !== null ? formatPercent(peRealMes.custosVariaveisPercent * 100, 1) : "-"}
+                </td>
+                <td className={TD} />
+                <td className={TD} />
+              </tr>
+              <tr className="border-b border-border/60 font-semibold">
+                <td className="px-3 py-1.5 pl-6">Ponto de equilíbrio (receita mínima do mês)</td>
+                <td className={TD}>
+                  <ValorPE pe={pePrevMes} receita={m.receitaPrevista} />
+                </td>
+                <td className={TD}>
+                  <ValorPE pe={peRealMes} receita={recRealForm} />
+                </td>
+                <td className={TD}>
+                  {pePrevMes.valorReais !== null && peRealMes.valorReais !== null
+                    ? formatCurrency(peRealMes.valorReais - pePrevMes.valorReais)
+                    : "-"}
+                </td>
+                <td className={TD}>
+                  {pePrevMes.valorReais !== null && peRealMes.valorReais !== null ? (
+                    <Var previsto={pePrevMes.valorReais} realizado={peRealMes.valorReais} despesa />
+                  ) : (
+                    <span className="text-muted">-</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="px-3 py-1.5 pl-6">Margem de segurança (receita acima do ponto de equilíbrio)</td>
+                <td className={TD}>
+                  <TextoMargem v={margemSeguranca(pePrevMes, m.receitaPrevista)} />
+                </td>
+                <td className={TD}>
+                  <TextoMargem v={margemSeguranca(peRealMes, recRealForm)} />
+                </td>
+                <td className={TD} />
+                <td className={TD} />
+              </tr>
             </tbody>
           </table>
+          {(pePrevMes.valorReais === null || (recRealForm > 0 && peRealMes.valorReais === null)) && (
+            <p className="mt-2 text-[11px] text-muted">
+              &quot;-&quot; no ponto de equilíbrio: sem receita no mês, ou custos variáveis maiores ou iguais à receita (nenhuma receita cobre os
+              fixos com essa margem).
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -352,6 +491,32 @@ export function AcompanhamentoMensal({ plan, mesInicial }: { plan: Plano; mesIni
                 <td className={TD}>{formatCurrency(acum.recPrev - acum.despPrev)}</td>
                 <td className={TD}>{formatCurrency(acum.recReal - acum.despReal)}</td>
                 <td className={TD}>{formatCurrency(acum.recReal - acum.despReal - (acum.recPrev - acum.despPrev))}</td>
+                <td className={TD} />
+              </tr>
+              <tr className="border-t border-border/60">
+                <td className="px-3 py-1.5">Ponto de equilíbrio do período</td>
+                <td className={TD}>
+                  <ValorPE pe={peAcum.prev} receita={acum.recPrev} />
+                </td>
+                <td className={TD}>
+                  <ValorPE pe={peAcum.real} receita={acum.recReal} />
+                </td>
+                <td className={TD}>
+                  {peAcum.prev.valorReais !== null && peAcum.real.valorReais !== null
+                    ? formatCurrency(peAcum.real.valorReais - peAcum.prev.valorReais)
+                    : "-"}
+                </td>
+                <td className={TD} />
+              </tr>
+              <tr>
+                <td className="px-3 py-1.5">Margem de segurança</td>
+                <td className={TD}>
+                  <TextoMargem v={margemSeguranca(peAcum.prev, acum.recPrev)} />
+                </td>
+                <td className={TD}>
+                  <TextoMargem v={margemSeguranca(peAcum.real, acum.recReal)} />
+                </td>
+                <td className={TD} />
                 <td className={TD} />
               </tr>
             </tbody>

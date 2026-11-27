@@ -42,6 +42,35 @@ export const BUDGET_GROUP_LABELS: Record<BudgetGroupKey, string> = {
   INVESTIMENTOS: "Investimentos",
 };
 
+// Grupos tratados como custo variavel (escalam com a receita) e fixo (nao
+// escalam) para o calculo do Ponto de Equilibrio. Investimentos fica de fora
+// - e capex, nao custo operacional recorrente.
+export const CUSTO_VARIAVEL_GROUPS: BudgetGroupKey[] = [
+  "CUSTO_FORNECEDOR",
+  "DESPESA_MERCADO_INTERNO",
+  "DESPESA_MERCADO_EXTERNO",
+  "DESPESA_ADM_VARIAVEL",
+  "IMPOSTOS",
+];
+export const CUSTO_FIXO_GROUPS: BudgetGroupKey[] = ["DESPESA_ADM_FIXA", "DESPESA_PESSOAL", "FINANCIAMENTO"];
+
+// Ponto de Equilibrio pela margem de contribuicao: custos fixos / (1 - %
+// custo variavel sobre a receita). Sem receita nao ha como medir o % variavel
+// (null); com variaveis >= receita, nenhuma receita cobre os fixos (null).
+export function calcPontoEquilibrio(custosFixos: number, custosVariaveis: number, receita: number) {
+  const custosVariaveisPercent = receita > 0 ? custosVariaveis / receita : null;
+  const valorReais =
+    custosVariaveisPercent !== null && custosVariaveisPercent < 1
+      ? Number((custosFixos / (1 - custosVariaveisPercent)).toFixed(2))
+      : null;
+  return {
+    custosFixos: Number(custosFixos.toFixed(2)),
+    custosVariaveis: Number(custosVariaveis.toFixed(2)),
+    custosVariaveisPercent: custosVariaveisPercent !== null ? Number(custosVariaveisPercent.toFixed(4)) : null,
+    valorReais,
+  };
+}
+
 export type BudgetScenarioKey = "CONSERVADOR" | "MODERADO" | "OTIMISTA" | "MUITO_OTIMISTA";
 
 export const SCENARIO_LABELS: Record<BudgetScenarioKey, string> = {

@@ -1,6 +1,15 @@
 import { prisma } from "@/lib/prisma";
-import { BudgetGroup, BudgetScenario } from "@/generated/prisma/client";
-import { ALIQ_CBS_2027, ALIQ_IBS_2027, ehDespesaCreditavel, BUDGET_GROUP_ORDER, BUDGET_GROUP_LABELS } from "@/lib/budget-constants";
+import { BudgetScenario } from "@/generated/prisma/client";
+import {
+  ALIQ_CBS_2027,
+  ALIQ_IBS_2027,
+  ehDespesaCreditavel,
+  BUDGET_GROUP_ORDER,
+  BUDGET_GROUP_LABELS,
+  CUSTO_VARIAVEL_GROUPS,
+  CUSTO_FIXO_GROUPS,
+  calcPontoEquilibrio,
+} from "@/lib/budget-constants";
 import { getSales, getSaleReturns } from "@/lib/data";
 import { addMonths, somaJanela, sazonalidade, type HistoricoMes } from "@/lib/budget-projecao";
 
@@ -8,17 +17,6 @@ function n(value: unknown): number {
   return Number(value);
 }
 
-// Grupos tratados como custo variavel (escalam com a receita) e fixo (nao
-// escalam) para o calculo do Ponto de Equilibrio. Investimentos fica de fora
-// - e capex, nao custo operacional recorrente.
-const CUSTO_VARIAVEL_GROUPS: BudgetGroup[] = [
-  "CUSTO_FORNECEDOR",
-  "DESPESA_MERCADO_INTERNO",
-  "DESPESA_MERCADO_EXTERNO",
-  "DESPESA_ADM_VARIAVEL",
-  "IMPOSTOS",
-];
-const CUSTO_FIXO_GROUPS: BudgetGroup[] = ["DESPESA_ADM_FIXA", "DESPESA_PESSOAL", "FINANCIAMENTO"];
 
 export type RegraImposto = "PIS" | "COFINS" | "IRPJ" | "CSLL" | "DARE" | "CREDITO_CBS_IBS" | "FERIAS" | "DECIMO_TERCEIRO" | "INSS_FOLHA" | "FGTS" | "ENCARGOS_13" | "ENCARGOS_FERIAS";
 // Adicional de IRPJ: 10% sobre o lucro acima de R$ 240 mil/ano = R$ 20 mil/mes.
@@ -304,6 +302,21 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
     const resultadoPrevisto = Number((receitaPrevista - despesaPrevista).toFixed(2));
     const resultadoRealizado = Number((receitaRealizada - despesaRealizada).toFixed(2));
 
+    // Ponto de Equilibrio do mes (mesma regra do anual, com os custos e a
+    // receita so deste mes). Realizado so quando a receita do mes foi lancada.
+    const somaGrupos = (gs: string[], campo: "previsto" | "realizado") =>
+      lines.filter((l) => gs.includes(l.group)).reduce((s, l) => s + (l.months[i]?.[campo] ?? 0), 0);
+    const pontoEquilibrioPrevisto = calcPontoEquilibrio(
+      somaGrupos(CUSTO_FIXO_GROUPS, "previsto"),
+      somaGrupos(CUSTO_VARIAVEL_GROUPS, "previsto"),
+      receitaPrevista
+    );
+    const pontoEquilibrioRealizado = calcPontoEquilibrio(
+      somaGrupos(CUSTO_FIXO_GROUPS, "realizado"),
+      somaGrupos(CUSTO_VARIAVEL_GROUPS, "realizado"),
+      receitaRealizada
+    );
+
     return {
       month: m,
       label: MONTH_LABELS[i],
@@ -319,6 +332,8 @@ export async function getBudgetPlan(year: number, cenarioOverride?: BudgetScenar
       despesaRealizada,
       resultadoPrevisto,
       resultadoRealizado,
+      pontoEquilibrioPrevisto,
+      pontoEquilibrioRealizado,
     };
   });
 
